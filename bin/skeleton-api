@@ -55,7 +55,8 @@ if __name__ == '__main__':
     (options, args) = config.parse_options(oparser)
 
     try:
-        conf, app = config.load_paste_app('skeleton-api', options, args)
+        conf, app = config.load_paste_app('skeleton-api', options, args,
+                                          app_config_dir_name='skeleton')
 
         server = wsgi.Server()
         server.start(app, int(conf['bind_port']), conf['bind_host'])
