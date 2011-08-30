@@ -302,20 +302,27 @@ class Resource(object):
         action_args = self.get_action_args(request.environ)
         action = action_args.pop('action', None)
 
-        deserialized_request = self.dispatch(self.deserializer,
-                                             action, request)
-        action_args.update(deserialized_request)
-
-        action_result = self.dispatch(self.controller, action,
-                                      request, **action_args)
+        deserialized_params = self.deserialize_request(action, request)
+        action_args.update(deserialized_params)
+        action_result = self.execute_action(action, request, **action_args)
         try:
-            response = webob.Response()
-            self.dispatch(self.serializer, action, response, action_result)
-            return response
+            return self.serialize_response(action, action_result, request)
 
         # return unserializable result (typically a webob exc)
         except Exception:
             return action_result
+
+    def deserialize_request(self, action, request):
+        return self.dispatch(self.deserializer, action, request)
+
+    def serialize_response(self, action, action_result, request):
+        response = webob.Response()
+        self.dispatch(self.serializer, action, response,
+                      action_result, request)
+        return response
+
+    def execute_action(self, action, request, **action_args):
+        return self.dispatch(self.controller, action, request, **action_args)
 
     def dispatch(self, obj, action, *args, **kwargs):
         """Find action-specific method on self and call it."""
