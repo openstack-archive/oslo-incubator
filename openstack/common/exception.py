@@ -117,7 +117,7 @@ def wrap_exception(f):
     return _wrap
 
 
-class AppBaseException(Exception):
+class OpenstackException(Exception):
     """
     Base Exception
 
@@ -139,5 +139,5 @@ class AppBaseException(Exception):
         return self._error_string
 
 
-class InvalidContentType(AppBaseException):
+class InvalidContentType(OpenstackException):
     message = "Invalid content type %(content_type)s"

@@ -56,7 +56,7 @@ if __name__ == '__main__':
 
     try:
         conf, app = config.load_paste_app('skeleton-api', options, args,
-                                          app_config_dir_name='skeleton')
+                                          config_dir='skeleton')
 
         server = wsgi.Server()
         server.start(app, int(conf['bind_port']), conf['bind_host'])
