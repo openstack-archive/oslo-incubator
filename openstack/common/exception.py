@@ -20,8 +20,6 @@ Exceptions common to OpenStack projects
 """
 
 import logging
-import sys
-import traceback
 
 
 class ProcessExecutionError(IOError):
@@ -119,9 +117,9 @@ def wrap_exception(f):
     return _wrap
 
 
-class GlanceException(Exception):
+class OpenstackException(Exception):
     """
-    Base Glance Exception
+    Base Exception
 
     To correctly use this class, inherit from it and define
     a 'message' property. That message will get printf'd
@@ -141,5 +139,5 @@ class GlanceException(Exception):
         return self._error_string
 
 
-class InvalidContentType(GlanceException):
+class InvalidContentType(OpenstackException):
     message = "Invalid content type %(content_type)s"
