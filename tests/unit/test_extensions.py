@@ -83,7 +83,7 @@ class ResourceExtensionTest(unittest.TestCase):
         self.assertEqual(200, response.status_int)
         self.assertEqual(json.loads(response.body)['member_action'], "value")
 
-    def skip_resource_extension_for_get_custom_collection_action(self):
+    def test_resource_extension_for_get_custom_collection_action(self):
         controller = self.ResourceExtensionController()
         collections = {'custom_collection_action': "PUT"}
         res_ext = extensions.ResourceExtension('tweedles', controller,
@@ -94,7 +94,7 @@ class ResourceExtensionTest(unittest.TestCase):
         self.assertEqual(200, response.status_int)
         self.assertEqual(json.loads(response.body)['collection'], "value")
 
-    def skip_resource_extension_for_put_custom_collection_action(self):
+    def test_resource_extension_for_put_custom_collection_action(self):
         controller = self.ResourceExtensionController()
         collections = {'custom_collection_action': "PUT"}
         res_ext = extensions.ResourceExtension('tweedles', controller,
@@ -118,7 +118,7 @@ class ResourceExtensionTest(unittest.TestCase):
         self.assertEqual(200, response.status_int)
         self.assertEqual(json.loads(response.body)['collection'], 'value')
 
-    def skip_resource_extension_for_delete_custom_collection_action(self):
+    def test_resource_extension_for_delete_custom_collection_action(self):
         controller = self.ResourceExtensionController()
         collections = {'custom_collection_action': "DELETE"}
         res_ext = extensions.ResourceExtension('tweedles', controller,
