@@ -139,5 +139,9 @@ class OpenstackException(Exception):
         return self._error_string
 
 
+class MalformedRequestBody(OpenstackException):
+    message = "Malformed message body: %(reason)s"
+
+
 class InvalidContentType(OpenstackException):
     message = "Invalid content type %(content_type)s"

@@ -210,31 +210,47 @@ class Router(object):
 
 
 class Request(webob.Request):
-
     """Add some Openstack API-specific logic to the base webob.Request."""
 
+    default_request_content_types = ('application/json', 'application/xml')
+    default_accept_types = ('application/json', 'application/xml')
+    default_accept_type = 'application/json'
+
     def best_match_content_type(self, supported_content_types=None):
-        """Determine the requested response content-type."""
-        supported_content_types = (supported_content_types
-                                   or ("application/xml",
-                                       "application/json",))
+        """Determine the requested response content-type.
+
+        Based on the query extension then the Accept header.
+        Defaults to default_accept_type if we don't find a preference
+
+        """
+        supported_content_types = (supported_content_types or
+                                   self.default_accept_types)
+
+        parts = self.path.rsplit('.', 1)
+        if len(parts) > 1:
+            ctype = 'application/{0}'.format(parts[1])
+            if ctype in supported_content_types:
+                return ctype
+
         bm = self.accept.best_match(supported_content_types)
-        return bm or 'application/json'
+        return bm or self.default_accept_type
 
     def get_content_type(self, allowed_content_types=None):
-        """Determine content type of the request body."""
+        """Determine content type of the request body.
 
-        allowed_content_types = allowed_content_types or ("application/xml",
-                                                          "application/json",)
+        Does not do any body introspection, only checks header
+
+        """
         if not "Content-Type" in self.headers:
-            raise exception.InvalidContentType(content_type=None)
+            return None
 
         content_type = self.content_type
+        allowed_content_types = (allowed_content_types or
+                                 self.default_request_content_types)
 
         if content_type not in allowed_content_types:
             raise exception.InvalidContentType(content_type=content_type)
-        else:
-            return content_type
+        return content_type
 
 
 class Resource(object):
@@ -269,11 +285,19 @@ class Resource(object):
     @webob.dec.wsgify(RequestClass=Request)
     def __call__(self, request):
         """WSGI method that controls (de)serialization and method dispatch."""
-        action, action_args, accept = self.deserialize_request(request)
+
+        try:
+            action, action_args, accept = self.deserialize_request(request)
+        except exception.InvalidContentType:
+            msg = _("Unsupported Content-Type")
+            return webob.exc.HTTPUnsupportedMediaType(explanation=msg)
+        except exception.MalformedRequestBody:
+            msg = _("Malformed request body")
+            return webob.exc.HTTPBadRequest(explanation=msg)
+
         action_result = self.execute_action(action, request, **action_args)
         try:
             return self.serialize_response(action, action_result, accept)
-
         # return unserializable result (typically a webob exc)
         except Exception:
             return action_result
@@ -327,107 +351,6 @@ class ActionDispatcher(object):
 
     def default(self, data):
         raise NotImplementedError()
-
-
-class TextDeserializer(ActionDispatcher):
-    """Default request body deserialization"""
-
-    def deserialize(self, datastring, action='default'):
-        return self.dispatch(datastring, action=action)
-
-    def default(self, datastring):
-        return {}
-
-
-class JSONDeserializer(TextDeserializer):
-
-    def _from_json(self, datastring):
-        try:
-            return json.loads(datastring)
-        except ValueError:
-            msg = _("cannot understand JSON")
-            raise exception.MalformedRequestBody(reason=msg)
-
-    def default(self, datastring):
-        return {'body': self._from_json(datastring)}
-
-
-class XMLDeserializer(TextDeserializer):
-
-    def __init__(self, metadata=None):
-        """
-        :param metadata: information needed to deserialize xml into
-                         a dictionary.
-        """
-        super(XMLDeserializer, self).__init__()
-        self.metadata = metadata or {}
-
-    def _from_xml(self, datastring):
-        plurals = set(self.metadata.get('plurals', {}))
-
-        try:
-            node = minidom.parseString(datastring).childNodes[0]
-            return {node.nodeName: self._from_xml_node(node, plurals)}
-        except expat.ExpatError:
-            msg = _("cannot understand XML")
-            raise exception.MalformedRequestBody(reason=msg)
-
-    def _from_xml_node(self, node, listnames):
-        """Convert a minidom node to a simple Python type.
-
-        :param listnames: list of XML node names whose subnodes should
-                          be considered list items.
-
-        """
-        if len(node.childNodes) == 1 and node.childNodes[0].nodeType == 3:
-            return node.childNodes[0].nodeValue
-        elif node.nodeName in listnames:
-            return [self._from_xml_node(n, listnames) for n in node.childNodes]
-        else:
-            result = dict()
-            for attr in node.attributes.keys():
-                result[attr] = node.attributes[attr].nodeValue
-            for child in node.childNodes:
-                if child.nodeType != node.TEXT_NODE:
-                    result[child.nodeName] = self._from_xml_node(child,
-                                                                 listnames)
-            return result
-
-    def find_first_child_named(self, parent, name):
-        """Search a nodes children for the first child with a given name"""
-        for node in parent.childNodes:
-            if node.nodeName == name:
-                return node
-        return None
-
-    def find_children_named(self, parent, name):
-        """Return all of a nodes children who have the given name"""
-        for node in parent.childNodes:
-            if node.nodeName == name:
-                yield node
-
-    def extract_text(self, node):
-        """Get the text field contained by the given node"""
-        if len(node.childNodes) == 1:
-            child = node.childNodes[0]
-            if child.nodeType == child.TEXT_NODE:
-                return child.nodeValue
-        return ""
-
-    def default(self, datastring):
-        return {'body': self._from_xml(datastring)}
-
-
-class MetadataXMLDeserializer(XMLDeserializer):
-
-    def extract_metadata(self, metadata_node):
-        """Marshal the metadata attribute of a parsed request"""
-        metadata = {}
-        if metadata_node is not None:
-            for meta_node in self.find_children_named(metadata_node, "meta"):
-                key = meta_node.getAttribute("key")
-                metadata[key] = self.extract_text(meta_node)
-        return metadata
 
 
 class DictSerializer(ActionDispatcher):
@@ -619,8 +542,7 @@ class RequestDeserializer(object):
     def __init__(self, body_deserializers=None, headers_deserializer=None,
                  supported_content_types=None):
 
-        self.supported_content_types = supported_content_types or \
-                ('application/json', 'application/xml')
+        self.supported_content_types = supported_content_types
 
         self.body_deserializers = {
             'application/xml': XMLDeserializer(),
@@ -662,7 +584,7 @@ class RequestDeserializer(object):
             content_type = request.get_content_type()
         except exception.InvalidContentType:
             LOG.debug(_("Unrecognized Content-Type provided in request"))
-            return {}
+            raise
 
         if content_type is None:
             LOG.debug(_("No Content-Type provided in request"))
@@ -703,3 +625,93 @@ class RequestDeserializer(object):
             pass
 
         return args
+
+
+class TextDeserializer(ActionDispatcher):
+    """Default request body deserialization"""
+
+    def deserialize(self, datastring, action='default'):
+        return self.dispatch(datastring, action=action)
+
+    def default(self, datastring):
+        return {}
+
+
+class JSONDeserializer(TextDeserializer):
+
+    def _from_json(self, datastring):
+        try:
+            return json.loads(datastring)
+        except ValueError:
+            msg = _("cannot understand JSON")
+            raise exception.MalformedRequestBody(reason=msg)
+
+    def default(self, datastring):
+        return {'body': self._from_json(datastring)}
+
+
+class XMLDeserializer(TextDeserializer):
+
+    def __init__(self, metadata=None):
+        """
+        :param metadata: information needed to deserialize xml into
+                         a dictionary.
+        """
+        super(XMLDeserializer, self).__init__()
+        self.metadata = metadata or {}
+
+    def _from_xml(self, datastring):
+        plurals = set(self.metadata.get('plurals', {}))
+
+        try:
+            node = minidom.parseString(datastring).childNodes[0]
+            return {node.nodeName: self._from_xml_node(node, plurals)}
+        except expat.ExpatError:
+            msg = _("cannot understand XML")
+            raise exception.MalformedRequestBody(reason=msg)
+
+    def _from_xml_node(self, node, listnames):
+        """Convert a minidom node to a simple Python type.
+
+        :param listnames: list of XML node names whose subnodes should
+                          be considered list items.
+
+        """
+
+        if len(node.childNodes) == 1 and node.childNodes[0].nodeType == 3:
+            return node.childNodes[0].nodeValue
+        elif node.nodeName in listnames:
+            return [self._from_xml_node(n, listnames) for n in node.childNodes]
+        else:
+            result = dict()
+            for attr in node.attributes.keys():
+                result[attr] = node.attributes[attr].nodeValue
+            for child in node.childNodes:
+                if child.nodeType != node.TEXT_NODE:
+                    result[child.nodeName] = self._from_xml_node(child,
+                                                                 listnames)
+            return result
+
+    def find_first_child_named(self, parent, name):
+        """Search a nodes children for the first child with a given name"""
+        for node in parent.childNodes:
+            if node.nodeName == name:
+                return node
+        return None
+
+    def find_children_named(self, parent, name):
+        """Return all of a nodes children who have the given name"""
+        for node in parent.childNodes:
+            if node.nodeName == name:
+                yield node
+
+    def extract_text(self, node):
+        """Get the text field contained by the given node"""
+        if len(node.childNodes) == 1:
+            child = node.childNodes[0]
+            if child.nodeType == child.TEXT_NODE:
+                return child.nodeValue
+        return ""
+
+    def default(self, datastring):
+        return {'body': self._from_xml(datastring)}

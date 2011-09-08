@@ -46,7 +46,7 @@ class StubBaseAppController(object):
     def show(self, request, id):
         return {'fort': 'knox'}
 
-    def update(self, request, id):
+    def update(self, request, id, body=None):
         return {'uneditable': 'original_value'}
 
     def create_resource(self):

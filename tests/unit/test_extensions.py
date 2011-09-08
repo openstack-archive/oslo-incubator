@@ -15,10 +15,13 @@
 #    under the License.
 
 import json
+from lxml import etree
 import os.path
 import routes
 import unittest
+
 from webtest import TestApp
+
 
 from openstack.common import wsgi
 from openstack.common import config
@@ -32,6 +35,9 @@ from openstack.common.extensions import (ExtensionManager,
 test_conf_file = os.path.join(os.path.dirname(__file__), os.pardir,
                               os.pardir, 'etc', 'openstack-common.conf.test')
 extensions_path = os.path.join(os.path.dirname(__file__), "extensions")
+
+NS = "{http://docs.openstack.org/}"
+ATOMNS = "{http://www.w3.org/2005/Atom}"
 
 
 class ExtensionsTestApp(wsgi.Router):
@@ -254,19 +260,21 @@ class RequestExtensionTest(unittest.TestCase):
 
         def _update_handler(req, res):
             data = json.loads(res.body)
-            data['uneditable'] = req.params['uneditable']
+            data['uneditable'] = json.loads(req.body)['uneditable']
             res.body = json.dumps(data)
             return res
 
         base_app = TestApp(setup_base_app())
         response = base_app.put("/dummy_resources/1",
-                                {'uneditable': "new_value"})
+                                json.dumps({'uneditable': "new_value"}),
+                                headers={'Content-Type': "application/json"})
         self.assertEqual(response.json['uneditable'], "original_value")
 
         ext_app = self._setup_app_with_request_handler(_update_handler,
                                                             'PUT')
         ext_response = ext_app.put("/dummy_resources/1",
-                                    {'uneditable': "new_value"})
+                                  json.dumps({'uneditable': "new_value"}),
+                                  headers={'Content-Type': "application/json"})
         self.assertEqual(ext_response.json['uneditable'], "new_value")
 
     def _setup_app_with_request_handler(self, handler, verb):
@@ -306,22 +314,144 @@ class ExtensionControllerTest(unittest.TestCase):
         response = self.test_app.get("/extensions")
         foxnsox = response.json["extensions"][0]
 
-        self.assertEqual(foxnsox["alias"], "FOXNSOX")
-        self.assertEqual(foxnsox["namespace"],
-                         "http://www.fox.in.socks/api/ext/pie/v1.0")
+        self.assertEqual(foxnsox, {
+                'namespace': 'http://www.fox.in.socks/api/ext/pie/v1.0',
+                'name': 'Fox In Socks',
+                'updated': '2011-01-22T13:25:27-06:00',
+                'description': 'The Fox In Socks Extension',
+                'alias': 'FOXNSOX',
+                'links': []
+            }
+        )
 
     def test_extension_can_be_accessed_by_alias(self):
         json_response = self.test_app.get("/extensions/FOXNSOX").json
-        foxnsox_extension = json_response['extension']
+        foxnsox = json_response['extension']
 
-        self.assertEqual(foxnsox_extension["alias"], "FOXNSOX")
-        self.assertEqual(foxnsox_extension["namespace"],
-                         "http://www.fox.in.socks/api/ext/pie/v1.0")
+        self.assertEqual(foxnsox, {
+                'namespace': 'http://www.fox.in.socks/api/ext/pie/v1.0',
+                'name': 'Fox In Socks',
+                'updated': '2011-01-22T13:25:27-06:00',
+                'description': 'The Fox In Socks Extension',
+                'alias': 'FOXNSOX',
+                'links': []
+            }
+        )
 
     def test_show_returns_not_found_for_non_existant_extension(self):
         response = self.test_app.get("/extensions/non_existant", status="*")
 
         self.assertEqual(response.status_int, 404)
+
+    def test_list_extensions_xml(self):
+        response = self.test_app.get("/extensions.xml")
+
+        self.assertEqual(200, response.status_int)
+        root = etree.XML(response.body)
+        self.assertEqual(root.tag.split('extensions')[0], NS)
+
+        # Make sure that Fox in Sox extension is correct.
+        exts = root.findall('{0}extension'.format(NS))
+        fox_ext = exts[0]
+        self.assertEqual(fox_ext.get('name'), 'Fox In Socks')
+        self.assertEqual(fox_ext.get('namespace'),
+            'http://www.fox.in.socks/api/ext/pie/v1.0')
+        self.assertEqual(fox_ext.get('updated'), '2011-01-22T13:25:27-06:00')
+        self.assertEqual(fox_ext.findtext('{0}description'.format(NS)),
+            'The Fox In Socks Extension')
+
+    def test_get_extension_xml(self):
+        response = self.test_app.get("/extensions/FOXNSOX.xml")
+        self.assertEqual(200, response.status_int)
+        xml = response.body
+
+        root = etree.XML(xml)
+        self.assertEqual(root.tag.split('extension')[0], NS)
+        self.assertEqual(root.get('alias'), 'FOXNSOX')
+        self.assertEqual(root.get('name'), 'Fox In Socks')
+        self.assertEqual(root.get('namespace'),
+            'http://www.fox.in.socks/api/ext/pie/v1.0')
+        self.assertEqual(root.get('updated'), '2011-01-22T13:25:27-06:00')
+        self.assertEqual(root.findtext('{0}description'.format(NS)),
+            'The Fox In Socks Extension')
+
+
+class ExtensionsXMLSerializerTest(unittest.TestCase):
+
+    def test_serialize_extenstion(self):
+        serializer = extensions.ExtensionsXMLSerializer()
+        data = {'extension': {
+          'name': 'ext1',
+          'namespace': 'http://docs.rack.com/servers/api/ext/pie/v1.0',
+          'alias': 'RS-PIE',
+          'updated': '2011-01-22T13:25:27-06:00',
+          'description': 'Adds the capability to share an image.',
+          'links': [{'rel': 'describedby',
+                     'type': 'application/pdf',
+                     'href': 'http://docs.rack.com/servers/api/ext/cs.pdf'},
+                    {'rel': 'describedby',
+                     'type': 'application/vnd.sun.wadl+xml',
+                     'href': 'http://docs.rack.com/servers/api/ext/cs.wadl'}]}}
+
+        xml = serializer.serialize(data, 'show')
+        root = etree.XML(xml)
+        ext_dict = data['extension']
+        self.assertEqual(root.findtext('{0}description'.format(NS)),
+            ext_dict['description'])
+
+        for key in ['name', 'namespace', 'alias', 'updated']:
+            self.assertEqual(root.get(key), ext_dict[key])
+
+        link_nodes = root.findall('{0}link'.format(ATOMNS))
+        self.assertEqual(len(link_nodes), 2)
+        for i, link in enumerate(ext_dict['links']):
+            for key, value in link.items():
+                self.assertEqual(link_nodes[i].get(key), value)
+
+    def test_serialize_extensions(self):
+        serializer = extensions.ExtensionsXMLSerializer()
+        data = {"extensions": [{
+                "name": "Public Image Extension",
+                "namespace": "http://foo.com/api/ext/pie/v1.0",
+                "alias": "RS-PIE",
+                "updated": "2011-01-22T13:25:27-06:00",
+                "description": "Adds the capability to share an image.",
+                "links": [{"rel": "describedby",
+                            "type": "application/pdf",
+                            "type": "application/vnd.sun.wadl+xml",
+                            "href": "http://foo.com/api/ext/cs-pie.pdf"},
+                           {"rel": "describedby",
+                            "type": "application/vnd.sun.wadl+xml",
+                            "href": "http://foo.com/api/ext/cs-pie.wadl"}]},
+                {"name": "Cloud Block Storage",
+                 "namespace": "http://foo.com/api/ext/cbs/v1.0",
+                 "alias": "RS-CBS",
+                 "updated": "2011-01-12T11:22:33-06:00",
+                 "description": "Allows mounting cloud block storage.",
+                 "links": [{"rel": "describedby",
+                             "type": "application/pdf",
+                             "href": "http://foo.com/api/ext/cs-cbs.pdf"},
+                            {"rel": "describedby",
+                             "type": "application/vnd.sun.wadl+xml",
+                             "href": "http://foo.com/api/ext/cs-cbs.wadl"}]}]}
+
+        xml = serializer.serialize(data, 'index')
+        root = etree.XML(xml)
+        ext_elems = root.findall('{0}extension'.format(NS))
+        self.assertEqual(len(ext_elems), 2)
+        for i, ext_elem in enumerate(ext_elems):
+            ext_dict = data['extensions'][i]
+            self.assertEqual(ext_elem.findtext('{0}description'.format(NS)),
+                             ext_dict['description'])
+
+            for key in ['name', 'namespace', 'alias', 'updated']:
+                self.assertEqual(ext_elem.get(key), ext_dict[key])
+
+            link_nodes = ext_elem.findall('{0}link'.format(ATOMNS))
+            self.assertEqual(len(link_nodes), 2)
+            for i, link in enumerate(ext_dict['links']):
+                for key, value in link.items():
+                    self.assertEqual(link_nodes[i].get(key), value)
 
 
 def app_factory(global_conf, **local_conf):
