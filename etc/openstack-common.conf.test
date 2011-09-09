@@ -18,6 +18,9 @@ log_file = /tmp/openstack-common.log
 # Send logs to syslog (/dev/log) instead of to file specified by `log_file`
 use_syslog = False
 
+# Path to the extensions
+api_extensions_path = tests/unit/extensions
+
 [pipeline:extensions_app_with_filter]
 pipeline = extensions extensions_test_app
 
