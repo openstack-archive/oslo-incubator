@@ -18,16 +18,12 @@
 import json
 
 from openstack.common import extensions
-from openstack.common import wsgi
 
 
 class FoxInSocksController(object):
 
     def index(self, request):
         return "Try to say this Mr. Knox, sir..."
-
-    def create_resource(self):
-        return wsgi.Resource(self)
 
 
 class Foxinsocks(object):

@@ -275,7 +275,7 @@ class ResponseSerializerTest(unittest.TestCase):
 
         self.body_serializers = {
             'application/json': JSONSerializer(),
-            'application/XML': XMLSerializer(),
+            'application/xml': XMLSerializer(),
         }
 
         self.serializer = wsgi.ResponseSerializer(self.body_serializers,
@@ -294,10 +294,16 @@ class ResponseSerializerTest(unittest.TestCase):
                           self.serializer.get_body_serializer,
                           'application/unknown')
 
-    def test_serialize_response(self):
+    def test_serialize_json_response(self):
         response = self.serializer.serialize({}, 'application/json')
         self.assertEqual(response.headers['Content-Type'], 'application/json')
         self.assertEqual(response.body, 'pew_json')
+        self.assertEqual(response.status_int, 404)
+
+    def test_serialize_xml_response(self):
+        response = self.serializer.serialize({}, 'application/xml')
+        self.assertEqual(response.headers['Content-Type'], 'application/xml')
+        self.assertEqual(response.body, 'pew_xml')
         self.assertEqual(response.status_int, 404)
 
     def test_serialize_response_None(self):
@@ -326,14 +332,20 @@ class RequestDeserializerTest(unittest.TestCase):
 
         self.body_deserializers = {
             'application/json': JSONDeserializer(),
-            'application/XML': XMLDeserializer(),
+            'application/xml': XMLDeserializer(),
         }
 
         self.deserializer = wsgi.RequestDeserializer(self.body_deserializers)
 
     def test_get_deserializer(self):
-        expected = self.deserializer.get_body_deserializer('application/json')
-        self.assertEqual(expected, self.body_deserializers['application/json'])
+        expected_json_serializer = self.deserializer.get_body_deserializer(
+            'application/json')
+        expected_xml_serializer = self.deserializer.get_body_deserializer(
+            'application/xml')
+        self.assertEqual(expected_json_serializer,
+                         self.body_deserializers['application/json'])
+        self.assertEqual(expected_xml_serializer,
+                         self.body_deserializers['application/xml'])
 
     def test_get_deserializer_unknown_content_type(self):
         self.assertRaises(exception.InvalidContentType,
