@@ -28,6 +28,8 @@ Common components for Openstack including paster templates.
       ],
       entry_points="""
       # -*- Entry points: -*-
+      [paste.global_paster_command]
+      openstack = openstack.paste.commands:OpenstackCommand
       [paste.paster_create_template]
       openstack = openstack.paste.templates:OpenstackTemplate
       """,
