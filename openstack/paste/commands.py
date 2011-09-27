@@ -30,7 +30,20 @@ class OpenstackCommand(create_distro.CreateDistroCommand):
                                              no_interactive=True,
                                              quiet=True,
                                              overwrite=True)
+    parser.add_option('-o', '--output-dir',
+                      dest='output_dir',
+                      metavar='DIR',
+                      default='.',
+                      help="Write put the directory into DIR (default current directory)")
 
     def command(self):
         # NOTE(jkoelker): Only support the *one* Openstack template
         self.options.templates = ['openstack']
+
+        # NOTE(jkoelekr): We fake out what we don't want
+        self.options.list_templates = False
+        self.options.list_variables = False
+        self.options.config = False
+        self.options.inspect_files = False
+        self.options.svn_repository = False
+        create_distro.CreateDistroCommand.command(self)
