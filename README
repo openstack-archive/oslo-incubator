@@ -1,0 +1,5 @@
+Common code for Openstack Projects and paster template for creating new projects.
+
+1. Install (python setup.py develop, pip install /path/to/setup.py)
+2. paster openstack newopenstackproject
+3. Profit
