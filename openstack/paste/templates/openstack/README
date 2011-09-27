@@ -1,0 +1,10 @@
+This is the OpenStack Skeleton project. It serves two main purposes:
+
+* As a template for new projects wanting to join the OpenStack project
+* As a proving ground for determining best practices and common code
+  for all OpenStack projects
+
+The skeleton project is designed to show a recommended set of modules
+for creating a simple WSGI server, with a versioned API, clean separation
+of modules, a standard way of structuring both unit and functional tests,
+configuration files, and documentation.
