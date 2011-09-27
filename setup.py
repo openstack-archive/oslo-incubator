@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 version = '0.1'
 
-setup(name='openstack.commons',
+setup(name='openstack.common',
       version=version,
       description="Common components for Openstack",
       long_description="""\
