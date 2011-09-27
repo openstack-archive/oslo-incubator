@@ -15,17 +15,17 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""Determine version of Skeleton library"""
+"""Determine version of {{project}} library"""
 
 try:
-    from skeleton.vcsversion import version_info
+    from {{package}}.vcsversion import version_info
 except ImportError:
     version_info = {'branch_nick': u'LOCALBRANCH',
                     'revision_id': 'LOCALREVISION',
                     'revno': 0}
 
-SKELETON_VERSION = ['2011', '3']
-YEAR, COUNT = SKELETON_VERSION
+{{package.upper()}}VERSION = ['2011', '3']
+YEAR, COUNT = {{package.upper()}}_VERSION
 
 FINAL = False   # This becomes true at Release Candidate time
 
