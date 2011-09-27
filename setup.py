@@ -23,8 +23,8 @@ Common components for Openstack including paster templates.
       packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
       include_package_data=True,
       zip_safe=True,
-      install_requires=[
-          # -*- Extra requirements: -*-
+      install_requires=['PasteDeploy',
+                        'PasteScript',
       ],
       entry_points="""
       # -*- Entry points: -*-
