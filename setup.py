@@ -28,5 +28,7 @@ Common components for Openstack including paster templates.
       ],
       entry_points="""
       # -*- Entry points: -*-
+      [paste.paster_create_template]
+      openstack = openstack.paste.templates:OpenstackTemplate
       """,
       )
