@@ -90,8 +90,9 @@ requires = ['eventlet'
            ]
 
 
-setup_requires = ['nose',
-                  'coverage',
+# Uncomment these to run tests through setup.py
+setup_requires = [#'nose',
+                  #'coverage',
                  ]
 
 
