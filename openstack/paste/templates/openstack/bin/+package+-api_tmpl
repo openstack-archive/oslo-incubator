@@ -17,24 +17,24 @@
 #    under the License.
 
 """
-Simple Skeleton API Server
+Simple {{project}} API Server
 """
 
 import optparse
 import os
 import sys
 
-# If ../skeleton/__init__.py exists, add ../ to Python search path, so that
+# If ../{{package}}/__init__.py exists, add ../ to Python search path, so that
 # it will override what happens to be installed in /usr/(local/)lib/python...
 possible_topdir = os.path.normpath(os.path.join(os.path.abspath(sys.argv[0]),
                                    os.pardir,
                                    os.pardir))
-if os.path.exists(os.path.join(possible_topdir, 'skeleton', '__init__.py')):
+if os.path.exists(os.path.join(possible_topdir, '{{package}}', '__init__.py')):
     sys.path.insert(0, possible_topdir)
 
 from openstack.common import config
 from openstack.common import wsgi
-from skeleton import version
+from {{package}} import version
 
 
 def create_options(parser):
@@ -55,8 +55,8 @@ if __name__ == '__main__':
     (options, args) = config.parse_options(oparser)
 
     try:
-        conf, app = config.load_paste_app('skeleton-api', options, args,
-                                          config_dir='skeleton')
+        conf, app = config.load_paste_app('{{package}}-api', options, args,
+                                          config_dir='{{package}}')
 
         server = wsgi.Server()
         server.start(app, int(conf['bind_port']), conf['bind_host'])
