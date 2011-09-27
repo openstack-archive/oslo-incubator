@@ -24,7 +24,7 @@ except ImportError:
                     'revision_id': 'LOCALREVISION',
                     'revno': 0}
 
-{{package.upper()}}VERSION = ['2011', '3']
+{{package.upper()}}_VERSION = ['2011', '3']
 YEAR, COUNT = {{package.upper()}}_VERSION
 
 FINAL = False   # This becomes true at Release Candidate time
