@@ -1,0 +1,8 @@
+*.swp
+*.pyc
+*.log
+.openstack-common-venv/
+skeleton.egg-info/
+build/
+dist/
+

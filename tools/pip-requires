@@ -1,0 +1,13 @@
+greenlet>=0.3.1
+pep8==0.6.1
+pylint==0.19
+eventlet>=0.9.12
+PasteDeploy
+routes
+webob==1.0.8
+nose
+nose-exclude
+mox==0.5.0
+bzr
+webtest
+lxml==2.3
