@@ -7,7 +7,7 @@ routes
 webob==1.0.8
 nose
 nose-exclude
-mox==0.5.0
+mox
 bzr
 webtest
 lxml==2.3
