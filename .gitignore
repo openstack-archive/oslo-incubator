@@ -1,6 +1,7 @@
 *.swp
 *.pyc
 *.log
+.coverage
 .openstack-common-venv/
 skeleton.egg-info/
 build/

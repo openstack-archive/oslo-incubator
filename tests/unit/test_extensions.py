@@ -19,22 +19,15 @@ from lxml import etree
 import os.path
 import routes
 import unittest
-
 from webtest import TestApp
 
-
-from openstack.common import wsgi
 from openstack.common import config
 from openstack.common import extensions
-from tests.unit.extension_stubs import (StubExtension,
-                                        StubBaseAppController)
-from openstack.common.extensions import (ExtensionManager,
-                                       ExtensionMiddleware)
-
+from openstack.common import wsgi
+from tests.unit import extension_stubs
 
 test_conf_file = os.path.join(os.path.dirname(__file__), os.pardir,
                               os.pardir, 'etc', 'openstack-common.conf.test')
-extensions_path = os.path.join(os.path.dirname(__file__), "extensions")
 
 NS = "{http://docs.openstack.org/}"
 ATOMNS = "{http://www.w3.org/2005/Atom}"
@@ -44,7 +37,7 @@ class ExtensionsTestApp(wsgi.Router):
 
     def __init__(self, options={}):
         mapper = routes.Mapper()
-        controller = StubBaseAppController()
+        controller = extension_stubs.StubBaseAppController()
         mapper.resource("dummy_resource", "/dummy_resources",
                         controller=controller.create_resource())
         super(ExtensionsTestApp, self).__init__(mapper)
@@ -296,9 +289,9 @@ class ExtensionManagerTest(unittest.TestCase):
             def get_alias(self):
                 return "invalid_extension"
 
-        ext_mgr = ExtensionManager('')
+        ext_mgr = extensions.ExtensionManager('')
         ext_mgr.add_extension(InvalidExtension())
-        ext_mgr.add_extension(StubExtension("valid_extension"))
+        ext_mgr.add_extension(extension_stubs.StubExtension("valid_extension"))
 
         self.assertTrue('valid_extension' in ext_mgr.extensions)
         self.assertFalse('invalid_extension' in ext_mgr.extensions)
@@ -374,6 +367,27 @@ class ExtensionControllerTest(unittest.TestCase):
         self.assertEqual(root.get('updated'), '2011-01-22T13:25:27-06:00')
         self.assertEqual(root.findtext('{0}description'.format(NS)),
             'The Fox In Socks Extension')
+
+
+class DefaultXmlnsTest(unittest.TestCase):
+
+    def setUp(self):
+        super(DefaultXmlnsTest, self).setUp()
+        self.original_default_xmlns = extensions.DEFAULT_XMLNS
+        extensions.DEFAULT_XMLNS = "http://blah"
+        self.test_app = setup_extensions_test_app()
+
+    def test_default_xmlns_can_be_changed(self):
+        response = self.test_app.get("/extensions/FOXNSOX.xml")
+        self.assertEqual(200, response.status_int)
+        xml = response.body
+
+        root = etree.XML(xml)
+        self.assertEqual(root.tag.split('extension')[0], "{http://blah}")
+
+    def tearDown(self):
+        super(DefaultXmlnsTest, self).tearDown()
+        extensions.DEFAULT_XMLNS = self.original_default_xmlns
 
 
 class ExtensionsXMLSerializerTest(unittest.TestCase):
@@ -467,11 +481,9 @@ def setup_base_app():
 
 
 def setup_extensions_middleware(extension_manager=None):
-    extension_manager = (extension_manager or
-                         ExtensionManager(extensions_path))
     options = {'config_file': test_conf_file}
     conf, app = config.load_paste_app('extensions_test_app', options, None)
-    return ExtensionMiddleware(app, extension_manager)
+    return extensions.ExtensionMiddleware(app, conf, extension_manager)
 
 
 def setup_extensions_test_app(extension_manager=None):
