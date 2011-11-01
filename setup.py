@@ -24,10 +24,18 @@ Common components for Openstack including paster templates.
       include_package_data=True,
       zip_safe=True,
       install_requires=[
-          'PasteDeploy',
+          'greenlet>=0.3.1',
+          'pep8',
+          'pylint',
           'eventlet',
+          'PasteDeploy',
           'routes',
-          'WebOb',
+          'webob',
+          'nose',
+          'nose-exclude',
+          'mox',
+          'webtest',
+          'lxml',
       ],
       entry_points="""
       # -*- Entry points: -*-
