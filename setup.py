@@ -33,7 +33,7 @@ Common components for Openstack including paster templates.
           'webob',
           'nose',
           'nose-exclude',
-          'mox',
+          'mock',
           'webtest',
           'lxml',
       ],
