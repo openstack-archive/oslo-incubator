@@ -90,13 +90,10 @@ def create_virtualenv(venv=VENV):
     print 'done.'
 
 
-def install_dependencies(venv=VENV):
-    print 'Installing dependencies with pip (this can take a while)...'
-
-    # Install greenlet by hand - just listing it in the requires file does not
-    # get it in stalled in the right order
+def install_package(venv=VENV):
+    print 'Installing packages (this can take a while)...'
     venv_tool = 'tools/with_venv.sh'
-    run_command([venv_tool, 'pip', 'install', '-E', venv, '-r', PIP_REQUIRES],
+    run_command([venv_tool, 'pip', 'install', '-E', venv, '-e', ROOT],
                 redirect_output=False)
 
     # Tell the virtual env how to "import openstack-common"
@@ -140,7 +137,7 @@ def print_help():
 def main(argv):
     check_dependencies()
     create_virtualenv()
-    install_dependencies()
+    install_package()
     print_help()
 
 if __name__ == '__main__':
