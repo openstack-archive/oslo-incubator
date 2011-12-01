@@ -14,11 +14,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import inspect
 import json
-from lxml import etree
 import os.path
 import routes
 import unittest
+
+import mock
+import webob
+
+from lxml import etree
 from webtest import TestApp
 
 from openstack.common import config
@@ -514,3 +519,63 @@ class SimpleExtensionManager(object):
         if self.request_ext:
             request_extensions.append(self.request_ext)
         return request_extensions
+
+
+class ExtensionDescriptorInterfaceTest(unittest.TestCase):
+
+    def test_interface_functions(self):
+        # NOTE(jkoelker) This is why we should be using zope.interface for
+        #                our contracts. If you came here because this test
+        #                failed then you need to make sure you update the
+        #                implementors or notify the mailing list that the
+        #                contract has changed.
+        contract_methods = ['get_name', 'get_alias', 'get_description',
+                            'get_namespace', 'get_updated', 'get_resources',
+                            'get_actions', 'get_request_extensions']
+
+        predicate = lambda a: (inspect.ismethod(a) and
+                              not a.__name__.startswith('_'))
+        for method in inspect.getmembers(extensions.ExtensionDescriptor,
+                                         predicate):
+            self.assertFalse(method[0] not in contract_methods)
+
+        contract = extensions.ExtensionDescriptor()
+        self.assertRaises(NotImplementedError, contract.get_name)
+        self.assertRaises(NotImplementedError, contract.get_alias)
+        self.assertRaises(NotImplementedError, contract.get_description)
+        self.assertRaises(NotImplementedError, contract.get_namespace)
+        self.assertRaises(NotImplementedError, contract.get_updated)
+
+        self.assertFalse(contract.get_resources())
+        self.assertFalse(contract.get_actions())
+        self.assertFalse(contract.get_request_extensions())
+
+
+class ExtensionsResourceTest(unittest.TestCase):
+
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        manager = mock.Mock(spec=extensions.ExtensionManager)
+        self.extenstions_resource = extensions.ExtensionsResource(manager)
+
+    def test_delete_404(self):
+        self.assertRaises(webob.exc.HTTPNotFound,
+                          self.extenstions_resource.delete, None, None)
+
+    def test_create_404(self):
+        self.assertRaises(webob.exc.HTTPNotFound,
+                          self.extenstions_resource.create, None)
+
+
+class ExtensionMIddlewareTest(unittest.TestCase):
+
+    def test_factory(self):
+        global_config = mock.sentinel.global_config
+        app = mock.sentinel.app
+
+        with mock.patch.object(extensions.ExtensionMiddleware,
+                               '__init__',
+                               mock.Mock(return_value=None)) as init:
+            factory = extensions.ExtensionMiddleware.factory(global_config)
+            factory(app)
+            init.assert_called_with(app, global_config)
