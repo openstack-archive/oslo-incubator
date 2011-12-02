@@ -15,6 +15,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import datetime
+import sys
 import unittest
 
 import mock
@@ -66,5 +68,56 @@ class UtilsTest(unittest.TestCase):
         self.assertEqual(1, utils.int_from_bool_as_string(True))
         self.assertEqual(0, utils.int_from_bool_as_string(False))
 
+    # NOTE(jkoelker) Moar tests from nova need to be ported. But they
+    #                need to be mock'd out. Currently they requre actually
+    #                running code.
     def test_execute_unknown_kwargs(self):
         self.assertRaises(exception.Error, utils.execute, hozer=True)
+
+    # NOTE(jkoelker) There has GOT to be a way to test this. But mocking
+    #                __import__ is the devil. Right now we just make
+    #               sure we can import something from the stdlib
+    def test_import_class(self):
+        dt = utils.import_class('datetime.datetime')
+        self.assertEqual(sys.modules['datetime'].datetime, dt)
+
+    def test_import_bad_class(self):
+        self.assertRaises(exception.NotFound, utils.import_class,
+                          'lol.u_mad.brah')
+
+    def test_import_object(self):
+        dt = utils.import_object('datetime')
+        self.assertEqual(sys.modules['datetime'], dt)
+
+    def test_import_object_class(self):
+        dt = utils.import_object('datetime.datetime')
+        self.assertEqual(sys.modules['datetime'].datetime, dt)
+
+    def test_isotime(self):
+        skynet_self_aware_time_str = '1997-08-29T06:14:00Z'
+        skynet_self_aware_time = datetime.datetime(1997, 8, 29, 6, 14, 0)
+        with mock.patch('datetime.datetime') as datetime_mock:
+            datetime_mock.utcnow.return_value = skynet_self_aware_time
+            dt = utils.isotime()
+            self.assertEqual(dt, skynet_self_aware_time_str)
+
+    def test_parse_isotime(self):
+        skynet_self_aware_time_str = '1997-08-29T06:14:00Z'
+        skynet_self_aware_time = datetime.datetime(1997, 8, 29, 6, 14, 0)
+        self.assertEqual(skynet_self_aware_time,
+                         utils.parse_isotime(skynet_self_aware_time_str))
+
+    def test_str_dict_replace(self):
+        string = 'Johnnie T. Hozer'
+        mapping = {'T.': 'The'}
+        self.assertEqual('Johnnie The Hozer',
+                         utils.str_dict_replace(string, mapping))
+
+    def test_utcnow(self):
+        utils.set_time_override(mock.sentinel.utcnow)
+        self.assertEqual(utils.utcnow(), mock.sentinel.utcnow)
+
+        utils.clear_time_override()
+        self.assertFalse(utils.utcnow() == mock.sentinel.utcnow)
+
+        self.assertTrue(utils.utcnow())
