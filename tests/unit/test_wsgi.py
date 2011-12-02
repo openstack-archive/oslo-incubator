@@ -18,6 +18,8 @@
 import unittest
 import webob
 
+import mock
+
 from openstack.common import exception
 from openstack.common import wsgi
 
@@ -423,3 +425,21 @@ class ResourceTest(unittest.TestCase):
 
         response = resource(request)
         self.assertEqual(response.status, '415 Unsupported Media Type')
+
+
+class ServerTest(unittest.TestCase):
+
+    def test_run_server(self):
+        listen_patcher = mock.patch('eventlet.listen')
+        server_patcher = mock.patch('eventlet.wsgi.server')
+
+        listen_mock = listen_patcher.start()
+        server_mock = server_patcher.start()
+        try:
+            listen_mock.return_value = mock.sentinel.sock
+            wsgi.run_server(mock.sentinel.application, mock.sentinel.port)
+            server_mock.assert_called_with(mock.sentinel.sock,
+                                           mock.sentinel.application)
+        finally:
+            listen_patcher.stop()
+            server_patcher.stop()
