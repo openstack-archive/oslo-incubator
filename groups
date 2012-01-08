@@ -1,5 +1,5 @@
 # UUID                                  	Group Name
 #
 2c6802522201d0091571720a39b3851e0cc805d5	Administrators
-d3f3b342d6cf4fed8addd558fdd0ad7c5f1edff2	openstack-common-core
 aad70c50674247bda22abe3a9117885381c05b63	openstack-common-drivers
+d3f3b342d6cf4fed8addd558fdd0ad7c5f1edff2	openstack-common-core
