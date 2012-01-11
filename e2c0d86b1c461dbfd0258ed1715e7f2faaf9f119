@@ -1,0 +1,9 @@
+Approved+1: James E. Blair <corvus@inaugust.com>
+Verified+1: Jenkins
+Approved+1: Jason Kölker <jason@koelker.net>
+Code-Review+2: Jason Kölker <jason@koelker.net>
+Submitted-by: Jenkins
+Submitted-at: Wed, 11 Jan 2012 17:08:29 +0000
+Reviewed-on: https://review.openstack.org/2941
+Project: openstack/openstack-common
+Branch: refs/heads/master
