@@ -6,5 +6,4 @@ eventlet
 nose
 coverage
 tissue
-
--e git+https://github.com/jkoelker/openstack-nose.git#egg=openstack.nose_plugin
+openstack.nose_plugin
