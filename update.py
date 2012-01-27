@@ -63,6 +63,7 @@ import sys
 
 from openstack.common import cfg
 
+
 opts = [
     cfg.ListOpt('modules',
                 default=[],
@@ -75,83 +76,100 @@ opts = [
                help='Destination project directory'),
     ]
 
-conf = cfg.ConfigOpts(usage='Usage: %prog [config-file|dest-dir]')
-conf.register_cli_opts(opts)
-args = conf()
 
-if len(args) == 1:
-    def def_config_file(dest_dir):
-        return os.path.join(dest_dir, 'openstack-common.conf')
+def _parse_args(argv):
+    conf = cfg.ConfigOpts(usage='Usage: %prog [config-file|dest-dir]')
+    conf.register_cli_opts(opts)
+    args = conf(argv)
 
-    argv = sys.argv[1:]
-    i = argv.index(args[0])
+    if len(args) == 1:
+        def def_config_file(dest_dir):
+            return os.path.join(dest_dir, 'openstack-common.conf')
 
-    config_file = None
-    if os.path.isfile(argv[i]):
-        config_file = argv[i]
-    elif os.path.isdir(argv[i]) and os.path.isfile(def_config_file(argv[i])):
-        config_file = def_config_file(argv[i])
+        i = argv.index(args[0])
 
-    if config_file:
-        argv[i:i+1] = ['--config-file', config_file]
-        args = conf(argv)
+        config_file = None
+        if os.path.isfile(argv[i]):
+            config_file = argv[i]
+        elif os.path.isdir(argv[i]) and os.path.isfile(def_config_file(argv[i])):
+            config_file = def_config_file(argv[i])
+
+        if config_file:
+            argv[i:i+1] = ['--config-file', config_file]
+            args = conf(argv)
+
+    if args:
+        conf.print_usage(file=sys.stderr)
+        sys.exit(1)
+
+    return conf
 
 
-if args:
-    conf.print_usage(file=sys.stderr)
-    sys.exit(1)
+def _mod_to_path(mod):
+    return os.path.join(*mod.split('.'))
 
-dest_dir = conf.dest_dir
-if not dest_dir:
-    dest_dir = os.path.dirname(conf.config_file[-1])
 
-if not dest_dir or not os.path.isdir(dest_dir):
-    print >> sys.stderr, "A valid destination dir is required"
-    sys.exit(1)
+def _dest_path(path, base, dest_dir):
+    return os.path.join(dest_dir, _mod_to_path(base), path)
 
-if not conf.modules:
-    print >> sys.stderr, "A list of modules to copy is required"
-    sys.exit(1)
 
-if not conf.base:
-    print >> sys.stderr, "A destination base module is required"
-    sys.exit(1)
+def _replace(path, pattern, replacement):
+    with open(path, "r+") as f:
+        lines = f.readlines()
+        f.seek(0)
+        f.truncate()
+        for line in lines:
+            f.write(re.sub(pattern, replacement, line))
 
-print "Copying the %s modules under the %s module in %s" % \
-    (','.join(conf.modules), conf.base, dest_dir)
 
-for mod in conf.modules:
+def _copy_file(path, base, dest_dir):
+    dest = _dest_path(path, base, dest_dir)
 
-    def mod_to_path(mod):
-        return os.path.join(*mod.split('.'))
+    if not os.path.isdir(os.path.dirname(dest)):
+        os.makedirs(os.path.dirname(dest))
 
-    def dest_path(path):
-        return os.path.join(dest_dir, mod_to_path(conf.base), path)
+    shutil.copy2(path, dest)
 
-    def replace(path, pattern, replacement):
-        with open(path, "r+") as f:
-            lines = f.readlines()
-            f.seek(0)
-            f.truncate()
-            for line in lines:
-                f.write(re.sub(pattern, replacement, line))
+    _replace(dest,
+             '^from openstack.common',
+             'from ' + base + '.openstack.common')
 
-    def copy_file(path):
-        dest = dest_path(path)
 
-        if not os.path.isdir(os.path.dirname(dest)):
-            os.makedirs(os.path.dirname(dest))
-
-        shutil.copy2(path, dest)
-
-        replace(dest,
-                '^from openstack.common',
-                'from ' + conf.base + '.openstack.common')
+def _copy_module(mod, base, dest_dir):
+    print "Copying openstack.common.%s under the %s module in %s" % \
+        (mod, base, dest_dir)
 
     if '.' in mod:
-        path = mod_to_path('openstack.common')
+        path = _mod_to_path('openstack.common')
         for d in mod.split('.')[:-1]:
             path = os.path.join(path, d)
-            copy_file(os.path.join(path, '__init__.py'))
+            _copy_file(os.path.join(path, '__init__.py'), base, dest_dir)
 
-    copy_file(mod_to_path('openstack.common.' + mod) + '.py')
+    _copy_file(_mod_to_path('openstack.common.' + mod) + '.py', base, dest_dir)
+
+
+def main(argv):
+    conf = _parse_args(argv)
+
+    dest_dir = conf.dest_dir
+    if not dest_dir and conf.config_file:
+        dest_dir = os.path.dirname(conf.config_file[-1])
+
+    if not dest_dir or not os.path.isdir(dest_dir):
+        print >> sys.stderr, "A valid destination dir is required"
+        sys.exit(1)
+
+    if not conf.modules:
+        print >> sys.stderr, "A list of modules to copy is required"
+        sys.exit(1)
+
+    if not conf.base:
+        print >> sys.stderr, "A destination base module is required"
+        sys.exit(1)
+
+    for mod in conf.modules:
+        _copy_module(mod, conf.base, dest_dir)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
