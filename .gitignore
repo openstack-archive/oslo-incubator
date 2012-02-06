@@ -2,7 +2,11 @@
 *.pyc
 *.log
 .coverage
+requirements.txt
+.venv
+.tox
 cover/
+openstack.common.egg-info/
 .openstack-common-venv/
 skeleton.egg-info/
 build/
