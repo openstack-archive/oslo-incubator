@@ -6,11 +6,8 @@ from openstack.common.setup import write_requirements
 
 version = '0.1'
 
-requires = parse_requirements(['requirements.txt', 'tools/pip-requires'])
-
-depend_links = parse_dependency_links(['requirements.txt',
-                                       'tools/pip-requires'])
-
+requires = parse_requirements()
+depend_links = parse_dependency_links()
 write_requirements()
 
 setup(name='openstack.common',
