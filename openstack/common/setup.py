@@ -112,3 +112,13 @@ version_info = {
     'revno': %s
 }
 """ % (branch_nick, revid, revno))
+
+
+def write_git_changelog():
+    """ Write a changelog based on the git changelog """
+    if os.path.isdir('.git'):
+        git_log_cmd = 'git log --stat'
+        changelog = _run_shell_command(git_log_cmd)
+        mailmap = parse_mailmap()
+        with open("ChangeLog", "w") as changelog_file:
+            changelog_file.write(str_dict_replace(changelog, mailmap))
