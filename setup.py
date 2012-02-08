@@ -40,4 +40,5 @@ Common components for Openstack including paster templates.
       entry_points="""
       # -*- Entry points: -*-
       """,
+      namespace_packages=['openstack'],
       )
