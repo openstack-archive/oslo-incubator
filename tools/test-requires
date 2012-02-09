@@ -1,0 +1,10 @@
+# Packages needed for dev testing
+distribute>=0.6.24
+
+coverage
+nose
+nose-exclude
+nosexcover
+openstack.nose_plugin
+pep8==0.6.1
+pylint

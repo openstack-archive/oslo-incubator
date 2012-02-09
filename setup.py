@@ -1,6 +1,17 @@
 from setuptools import setup, find_packages
+from openstack.common.setup import parse_requirements
+from openstack.common.setup import parse_dependency_links
+from openstack.common.setup import write_requirements
+
 
 version = '0.1'
+
+requires = parse_requirements(['requirements.txt', 'tools/pip-requires'])
+
+depend_links = parse_dependency_links(['requirements.txt',
+                                       'tools/pip-requires'])
+
+write_requirements()
 
 setup(name='openstack.common',
       version=version,
@@ -23,20 +34,8 @@ Common components for Openstack including paster templates.
       packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
       include_package_data=True,
       zip_safe=True,
-      install_requires=[
-          'greenlet>=0.3.1',
-          'pep8',
-          'pylint',
-          'eventlet',
-          'PasteDeploy',
-          'routes',
-          'webob',
-          'nose',
-          'nose-exclude',
-          'mock',
-          'webtest',
-          'lxml',
-      ],
+      install_requires=requires,
+      dependency_links=depend_links,
       entry_points="""
       # -*- Entry points: -*-
       """,
