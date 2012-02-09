@@ -23,6 +23,7 @@ import mock
 
 from openstack.common import exception
 from openstack.common import utils
+from openstack.common import setup
 
 
 class UtilsTest(unittest.TestCase):
@@ -111,7 +112,7 @@ class UtilsTest(unittest.TestCase):
         string = 'Johnnie T. Hozer'
         mapping = {'T.': 'The'}
         self.assertEqual('Johnnie The Hozer',
-                         utils.str_dict_replace(string, mapping))
+                         setup.str_dict_replace(string, mapping))
 
     def test_utcnow(self):
         utils.set_time_override(mock.sentinel.utcnow)
