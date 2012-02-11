@@ -16,9 +16,8 @@ write_requirements()
 setup(name='openstack.common',
       version=version,
       description="Common components for Openstack",
-      long_description="""\
-Common components for Openstack including paster templates.
-""",
+      long_description="Common components for Openstack "
+                       "including paster templates.",
       classifiers=[
           'Development Status :: 4 - Beta',
           'License :: OSI Approved :: Apache Software License',

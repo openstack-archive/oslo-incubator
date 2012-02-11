@@ -495,8 +495,8 @@ class ResponseSerializer(object):
         }
         self.body_serializers.update(body_serializers or {})
 
-        self.headers_serializer = headers_serializer or \
-                                    ResponseHeadersSerializer()
+        self.headers_serializer = (headers_serializer or
+                                   ResponseHeadersSerializer())
 
     def serialize(self, response_data, content_type, action='default'):
         """Serialize a dict into a string and wrap in a wsgi.Request object.
@@ -550,8 +550,8 @@ class RequestDeserializer(object):
         }
         self.body_deserializers.update(body_deserializers or {})
 
-        self.headers_deserializer = headers_deserializer or \
-                                        RequestHeadersDeserializer()
+        self.headers_deserializer = (headers_deserializer or
+                                     RequestHeadersDeserializer())
 
     def deserialize(self, request):
         """Extract necessary pieces of the request.
