@@ -40,7 +40,7 @@ Or:
 Where ../myproj is a project directory which contains a differently named
 configuration file, or:
 
-  $> python update.py --config-file ../myproj/myproj/openstack/common.conf \
+  $> python update.py --config-file ../myproj/myproj/openstack/common.conf
                       --dest-dir ../myproj
 
 Where ../myproject is a project directory, but the configuration file is
@@ -136,8 +136,8 @@ def _copy_file(path, base, dest_dir):
 
 
 def _copy_module(mod, base, dest_dir):
-    print "Copying openstack.common.%s under the %s module in %s" % \
-        (mod, base, dest_dir)
+    print ("Copying openstack.common.%s under the %s module in %s" %
+           (mod, base, dest_dir))
 
     if '.' in mod:
         path = _mod_to_path('openstack.common')
