@@ -1,0 +1,8 @@
+Verified+1: Jenkins
+Approved+1: Mark McLoughlin <markmc@redhat.com>
+Code-Review+2: Mark McLoughlin <markmc@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Sun, 12 Feb 2012 11:09:35 +0000
+Reviewed-on: https://review.openstack.org/4059
+Project: openstack/openstack-common
+Branch: refs/heads/master
