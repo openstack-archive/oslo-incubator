@@ -7,3 +7,4 @@ mock
 mox==0.5.3
 routes==1.12.3
 webtest
+iso8601>=0.1.4
