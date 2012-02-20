@@ -23,7 +23,6 @@ import mock
 
 from openstack.common import exception
 from openstack.common import utils
-from openstack.common import setup
 
 
 class UtilsTest(unittest.TestCase):
@@ -107,12 +106,6 @@ class UtilsTest(unittest.TestCase):
         skynet_self_aware_time = datetime.datetime(1997, 8, 29, 6, 14, 0)
         self.assertEqual(skynet_self_aware_time,
                          utils.parse_isotime(skynet_self_aware_time_str))
-
-    def test_str_dict_replace(self):
-        string = 'Johnnie T. Hozer'
-        mapping = {'T.': 'The'}
-        self.assertEqual('Johnnie The Hozer',
-                         setup.str_dict_replace(string, mapping))
 
     def test_utcnow(self):
         utils.set_time_override(mock.sentinel.utcnow)
