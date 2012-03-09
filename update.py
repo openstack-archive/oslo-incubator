@@ -55,14 +55,24 @@ the modules to copy and the base destination module
 Obviously, the first way is the easiest!
 """
 
+import imp
 import os
 import os.path
 import re
 import shutil
 import sys
 
-from openstack.common import cfg
-
+try:
+    from openstack import common
+    cfg = common.cfg
+except AttributeError:
+    # NOTE(jkoelker) Workaround for LP951197
+    try:
+        f, path, description = imp.find_module('openstack/common/cfg')
+        cfg = imp.load_module('cfg', f, path, description)
+    finally:
+        if f is not None:
+            f.close()
 
 opts = [
     cfg.ListOpt('modules',
@@ -91,11 +101,12 @@ def _parse_args(argv):
         config_file = None
         if os.path.isfile(argv[i]):
             config_file = argv[i]
-        elif os.path.isdir(argv[i]) and os.path.isfile(def_config_file(argv[i])):
+        elif (os.path.isdir(argv[i])
+              and os.path.isfile(def_config_file(argv[i]))):
             config_file = def_config_file(argv[i])
 
         if config_file:
-            argv[i:i+1] = ['--config-file', config_file]
+            argv[i:i + 1] = ['--config-file', config_file]
             args = conf(argv)
 
     if args:
@@ -122,9 +133,15 @@ def _replace(path, pattern, replacement):
             f.write(re.sub(pattern, replacement, line))
 
 
+def _make_dirs(path):
+    if not os.path.isdir(os.path.dirname(path)):
+        os.makedirs(os.path.dirname(path))
+
+
 def _copy_file(path, base, dest_dir):
     dest = _dest_path(path, base, dest_dir)
 
+    _make_dirs(dest)
     if not os.path.isdir(os.path.dirname(dest)):
         os.makedirs(os.path.dirname(dest))
 
@@ -166,6 +183,12 @@ def main(argv):
     if not conf.base:
         print >> sys.stderr, "A destination base module is required"
         sys.exit(1)
+
+    init_path = os.path.join(_dest_path('openstack', conf.base, dest_dir),
+                             '__init__.py')
+    if not os.path.exists(init_path):
+        _make_dirs(init_path)
+        open(init_path, 'w').close()
 
     for mod in conf.modules:
         _copy_module(mod, conf.base, dest_dir)
