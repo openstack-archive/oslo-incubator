@@ -445,24 +445,22 @@ class ConfigFileOptsTestCase(BaseTestCase):
         self.assertEquals(self.conf.foo, ['bar'])
 
     def test_conf_file_multistr_values_append(self):
-        self.conf.register_cli_opt(ListOpt('foo'))
+        self.conf.register_cli_opt(MultiStrOpt('foo'))
 
         paths = self.create_tempfiles([('1.conf',
                                         '[DEFAULT]\n'
-                                        'foo = bar\n'),
+                                        'foo = bar1\n'),
                                        ('2.conf',
                                         '[DEFAULT]\n'
-                                        'foo = bar\n')])
+                                        'foo = bar2\n')])
 
-        self.conf(['--foo', 'bar',
+        self.conf(['--foo', 'bar0',
                    '--config-file', paths[0],
                    '--config-file', paths[1]])
 
         self.assertTrue(hasattr(self.conf, 'foo'))
 
-        # FIXME(markmc): values spread across the CLI and multiple
-        #                config files should be appended
-        # self.assertEquals(self.conf.foo, ['bar', 'bar', 'bar'])
+        self.assertEquals(self.conf.foo, ['bar0', 'bar1', 'bar2'])
 
     def test_conf_file_multiple_opts(self):
         self.conf.register_opts([StrOpt('foo'), StrOpt('bar')])

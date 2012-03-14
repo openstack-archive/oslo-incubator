@@ -398,6 +398,7 @@ class Opt(object):
       help:
         an string explaining how the options value is used
     """
+    multi = False
 
     def __init__(self, name, dest=None, short=None,
                  default=None, metavar=None, help=None):
@@ -433,7 +434,7 @@ class Opt(object):
         :param cparser: a ConfigParser object
         :param section: a section name
         """
-        return cparser.get(section, self.dest, raw=True)
+        return cparser.get(section, self.dest)
 
     def _add_to_cli(self, parser, group=None):
         """Makes the option available in the command line interface.
@@ -595,7 +596,7 @@ class ListOpt(Opt):
 
     def _get_from_config_parser(self, cparser, section):
         """Retrieve the opt value as a list from ConfigParser."""
-        return cparser.get(section, self.dest).split(',')
+        return [v.split(',') for v in cparser.get(section, self.dest)]
 
     def _get_optparse_kwargs(self, group, **kwargs):
         """Extends the base optparse keyword dict for list options."""
@@ -617,14 +618,7 @@ class MultiStrOpt(Opt):
     Multistr opt values are string opts which may be specified multiple times.
     The opt value is a list containing all the string values specified.
     """
-
-    def _get_from_config_parser(self, cparser, section):
-        """Retrieve the opt value as a multistr from ConfigParser."""
-        # FIXME(markmc): values spread across the CLI and multiple
-        #                config files should be appended
-        value = super(MultiStrOpt, self)._get_from_config_parser(cparser,
-                                                                 section)
-        return value if value is None else [value]
+    multi = True
 
     def _get_optparse_kwargs(self, group, **kwargs):
         """Extends the base optparse keyword dict for multi str options."""
@@ -689,6 +683,41 @@ class OptGroup(object):
             self._optparse_group = optparse.OptionGroup(parser, self.title,
                                                         self.help)
         return self._optparse_group
+
+
+class MultiDict(dict):
+    """Dictionary that uses lists for values and will keep multiple values
+    for duplicate keys"""
+    def __setitem__(self, key, value):
+        if key in self:
+            self[key].append(value)
+        else:
+            super(MultiDict, self).__setitem__(key, [value])
+
+
+class MultiConfigParser(ConfigParser.SafeConfigParser):
+    def __init__(self):
+        ConfigParser.SafeConfigParser.__init__(self, dict_type=MultiDict)
+        # ConfigParser will also create _sections with dict_type, which
+        # we don't want, reset it here
+        self._sections = dict()
+
+    def get(self, section, option):
+        # Always enable raw mode. Substitution is handled in ConfigOpts
+        return ConfigParser.SafeConfigParser.get(self, section, option,
+                                                 raw=True)
+
+    def _get(self, section, conv, option):
+        # These are all single value options so only worry about the last one
+        return [conv(self.get(section, option)[-1])]
+
+    def getboolean(self, section, option):
+        # All of the get* methods call _get except for getboolean
+        def check_boolean(v):
+            if v.lower() not in self._boolean_states:
+                raise ValueError('Not a boolean: %s' % v)
+            return self._boolean_states[v.lower()]
+        return self._get(section, check_boolean, option)
 
 
 class ConfigOpts(collections.Mapping):
@@ -986,20 +1015,31 @@ class ConfigOpts(collections.Mapping):
         if override is not None:
             return override
 
+        values = []
         if self._cparser is not None:
             section = group.name if group is not None else 'DEFAULT'
             try:
-                return opt._get_from_config_parser(self._cparser, section)
+                values = opt._get_from_config_parser(self._cparser, section)
             except (ConfigParser.NoOptionError,
                     ConfigParser.NoSectionError):
                 pass
             except ValueError, ve:
                 raise ConfigFileValueError(str(ve))
+            else:
+                if not opt.multi:
+                    # No need to continue since the last value wins
+                    return values[-1]
 
         name = name if group is None else group.name + '_' + name
         value = self._cli_values.get(name, None)
         if value is not None:
-            return value
+            if not opt.multi:
+                return value
+
+            return value + values
+
+        if values:
+            return values
 
         if default is not None:
             return default
@@ -1069,7 +1109,7 @@ class ConfigOpts(collections.Mapping):
 
         :raises: ConfigFilesNotFoundError, ConfigFileParseError
         """
-        self._cparser = ConfigParser.SafeConfigParser()
+        self._cparser = MultiConfigParser()
 
         try:
             read_ok = self._cparser.read(config_files)
