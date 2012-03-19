@@ -11,4 +11,5 @@ openstack.common.egg-info/
 skeleton.egg-info/
 build/
 dist/
+.idea/
 
