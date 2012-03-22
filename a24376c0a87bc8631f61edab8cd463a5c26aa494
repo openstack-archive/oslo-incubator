@@ -1,0 +1,9 @@
+Verified+1: Jenkins
+Code-Review+2: Jay Pipes <jaypipes@gmail.com>
+Approved+1: Mark McLoughlin <markmc@redhat.com>
+Code-Review+2: Mark McLoughlin <markmc@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Thu, 22 Mar 2012 18:49:18 +0000
+Reviewed-on: https://review.openstack.org/5694
+Project: openstack/openstack-common
+Branch: refs/heads/master
