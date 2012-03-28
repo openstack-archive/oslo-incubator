@@ -165,6 +165,20 @@ def _copy_module(mod, base, dest_dir):
     _copy_file(_mod_to_path('openstack.common.' + mod) + '.py', base, dest_dir)
 
 
+def _create_module_init(base, dest_dir, *sub_paths):
+    """Create module __init__ files."""
+    init_path = _dest_path('openstack', base, dest_dir)
+
+    if sub_paths:
+        init_path = os.path.join(init_path, *sub_paths)
+
+    init_path = os.path.join(init_path, '__init__.py')
+
+    if not os.path.exists(init_path):
+        _make_dirs(init_path)
+        open(init_path, 'w').close()
+
+
 def main(argv):
     conf = _parse_args(argv)
 
@@ -184,11 +198,8 @@ def main(argv):
         print >> sys.stderr, "A destination base module is required"
         sys.exit(1)
 
-    init_path = os.path.join(_dest_path('openstack', conf.base, dest_dir),
-                             '__init__.py')
-    if not os.path.exists(init_path):
-        _make_dirs(init_path)
-        open(init_path, 'w').close()
+    _create_module_init(conf.base, dest_dir)
+    _create_module_init(conf.base, dest_dir, 'common')
 
     for mod in conf.modules:
         _copy_module(mod, conf.base, dest_dir)
