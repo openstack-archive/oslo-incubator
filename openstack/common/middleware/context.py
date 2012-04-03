@@ -19,9 +19,9 @@
 Middleware that attaches a context to the WSGI request
 """
 
-from openstack.common import utils
-from openstack.common import wsgi
 from openstack.common import context
+from openstack.common import importutils
+from openstack.common import wsgi
 
 
 class ContextMiddleware(wsgi.Middleware):
@@ -37,7 +37,7 @@ class ContextMiddleware(wsgi.Middleware):
         # Determine the context class to use
         ctxcls = context.RequestContext
         if 'context_class' in self.options:
-            ctxcls = utils.import_class(self.options['context_class'])
+            ctxcls = importutils.import_class(self.options['context_class'])
 
         return ctxcls(*args, **kwargs)
 

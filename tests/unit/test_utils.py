@@ -84,25 +84,6 @@ class UtilsTest(unittest.TestCase):
     def test_execute_unknown_kwargs(self):
         self.assertRaises(exception.Error, utils.execute, hozer=True)
 
-    # NOTE(jkoelker) There has GOT to be a way to test this. But mocking
-    #                __import__ is the devil. Right now we just make
-    #               sure we can import something from the stdlib
-    def test_import_class(self):
-        dt = utils.import_class('datetime.datetime')
-        self.assertEqual(sys.modules['datetime'].datetime, dt)
-
-    def test_import_bad_class(self):
-        self.assertRaises(exception.NotFound, utils.import_class,
-                          'lol.u_mad.brah')
-
-    def test_import_object(self):
-        dt = utils.import_object('datetime')
-        self.assertEqual(sys.modules['datetime'], dt)
-
-    def test_import_object_class(self):
-        dt = utils.import_object('datetime.datetime')
-        self.assertEqual(sys.modules['datetime'].datetime, dt)
-
     def test_isotime(self):
         skynet_self_aware_time_str = '1997-08-29T06:14:00Z'
         skynet_self_aware_time = datetime.datetime(1997, 8, 29, 6, 14, 0,

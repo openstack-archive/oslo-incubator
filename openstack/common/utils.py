@@ -24,7 +24,6 @@ import logging
 import os
 import random
 import shlex
-import sys
 
 from eventlet import greenthread
 from eventlet.green import subprocess
@@ -142,25 +141,6 @@ def execute(*cmd, **kwargs):
             #               call clean something up in between calls, without
             #               it two execute calls in a row hangs the second one
             greenthread.sleep(0)
-
-
-def import_class(import_str):
-    """Returns a class from a string including module and class"""
-    mod_str, _sep, class_str = import_str.rpartition('.')
-    try:
-        __import__(mod_str)
-        return getattr(sys.modules[mod_str], class_str)
-    except (ImportError, ValueError, AttributeError):
-        raise exception.NotFound('Class %s cannot be found' % class_str)
-
-
-def import_object(import_str):
-    """Returns an object including a module or module and class"""
-    try:
-        __import__(import_str)
-        return sys.modules[import_str]
-    except ImportError:
-        return import_class(import_str)
 
 
 def isotime(at=None):
