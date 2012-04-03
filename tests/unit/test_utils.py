@@ -100,8 +100,8 @@ class UtilsTest(unittest.TestCase):
         self.assertEqual(sys.modules['datetime'], dt)
 
     def test_import_object_class(self):
-        dt = utils.import_object('datetime.datetime')
-        self.assertEqual(sys.modules['datetime'].datetime, dt)
+        dt = utils.import_object('datetime.time')
+        self.assertTrue(isinstance(dt, sys.modules['datetime'].time))
 
     def test_isotime(self):
         skynet_self_aware_time_str = '1997-08-29T06:14:00Z'

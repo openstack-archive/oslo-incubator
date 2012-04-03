@@ -160,7 +160,7 @@ def import_object(import_str):
         __import__(import_str)
         return sys.modules[import_str]
     except ImportError:
-        return import_class(import_str)
+        return import_class(import_str)()
 
 
 def isotime(at=None):
