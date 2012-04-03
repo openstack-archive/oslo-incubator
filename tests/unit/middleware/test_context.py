@@ -53,7 +53,7 @@ class ContextMiddlewareTest(unittest.TestCase):
         app = mock.Mock()
         import_class = mock.Mock()
         options = {'context_class': mock.sentinel.context_class}
-        with mock.patch('openstack.common.utils.import_class',
+        with mock.patch('openstack.common.importutils.import_class',
                         mock.Mock(return_value=import_class)):
             ctx_middleware = context.ContextMiddleware(app, options)
             ctx_middleware.make_context(mock.sentinel.arg)
