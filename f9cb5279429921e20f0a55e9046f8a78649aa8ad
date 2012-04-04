@@ -1,0 +1,12 @@
+Verified+1: Jenkins
+Code-Review+1: Vish Ishaya <vishvananda@gmail.com>
+Approved+1: Jason Kölker <jason@koelker.net>
+Code-Review+2: Jason Kölker <jason@koelker.net>
+Code-Review+1: Kevin L. Mitchell <kevin.mitchell@rackspace.com>
+Code-Review+1: Russell Bryant <rbryant@redhat.com>
+Code-Review+1: Duncan McGreggor <duncan@dreamhost.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 04 Apr 2012 02:13:12 +0000
+Reviewed-on: https://review.openstack.org/5464
+Project: openstack/openstack-common
+Branch: refs/heads/master
