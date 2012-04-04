@@ -101,9 +101,3 @@ class UtilsTest(unittest.TestCase):
     def test_import_object_class(self):
         dt = utils.import_object('datetime.datetime')
         self.assertEqual(sys.modules['datetime'].datetime, dt)
-
-    def test_auth_str_equal(self):
-        self.assertTrue(utils.auth_str_equal('abc123', 'abc123'))
-        self.assertFalse(utils.auth_str_equal('a', 'aaaaa'))
-        self.assertFalse(utils.auth_str_equal('aaaaa', 'a'))
-        self.assertFalse(utils.auth_str_equal('ABC123', 'abc123'))
