@@ -117,6 +117,9 @@ Option values in config files override those on the command line. Config files
 are parsed in order, with values in later files overriding those in earlier
 files.
 
+If option is not defined in config files and command line and no default
+attribute is defined for option, UndefinedOptError is raised.
+
 The parsing of CLI args and config files is initiated by invoking the config
 manager e.g.::
 
@@ -229,6 +232,9 @@ import sys
 from openstack.common import iniparser
 
 
+UNDEFINED = object()
+
+
 class Error(Exception):
     """Base class for cfg exceptions."""
 
@@ -282,6 +288,19 @@ class DuplicateOptError(Error):
 
     def __str__(self):
         return "duplicate option: %s" % self.opt_name
+
+
+class UndefinedOptError(Error):
+    def __init__(self, opt_name, group_name=None):
+        self.opt_name = opt_name
+        self.group_name = group_name
+
+    def __str__(self):
+        if self.group_name:
+            return "option %s is not defined in group %s" % (self.opt_name,
+                                                             self.group_name)
+        else:
+            return "option %s is not defined" % (self.opt_name,)
 
 
 class TemplateSubstitutionError(Error):
@@ -411,7 +430,7 @@ class Opt(object):
     """
     multi = False
 
-    def __init__(self, name, dest=None, short=None, default=None,
+    def __init__(self, name, dest=None, short=None, default=UNDEFINED,
                  metavar=None, help=None, secret=False):
         """Construct an Opt object.
 
@@ -1028,6 +1047,12 @@ class ConfigOpts(collections.Mapping):
         logger.log(lvl, "config files: %s", self.config_file)
         logger.log(lvl, "=" * 80)
 
+        def safe_get(obj, attr):
+            try:
+                return getattr(obj, attr)
+            except UndefinedOptError:
+                return '<UNDEFINED>'
+
         def _sanitize(opt, value):
             """Obfuscate values of options declared secret"""
             return value if not opt.secret else '*' * len(str(value))
@@ -1035,7 +1060,7 @@ class ConfigOpts(collections.Mapping):
         for opt_name in sorted(self._opts):
             opt = self._get_opt_info(opt_name)['opt']
             logger.log(lvl, "%-30s = %s", opt_name,
-                       _sanitize(opt, getattr(self, opt_name)))
+                       _sanitize(opt, safe_get(self, opt_name)))
 
         for group_name in self._groups:
             group_attr = self.GroupAttr(self, self._get_group(group_name))
@@ -1043,7 +1068,7 @@ class ConfigOpts(collections.Mapping):
                 opt = self._get_opt_info(opt_name, group_name)['opt']
                 logger.log(lvl, "%-30s = %s",
                            "%s.%s" % (group_name, opt_name),
-                           _sanitize(opt, getattr(group_attr, opt_name)))
+                           _sanitize(opt, safe_get(group_attr, opt_name)))
 
         logger.log(lvl, "*" * 80)
 
@@ -1088,8 +1113,8 @@ class ConfigOpts(collections.Mapping):
                     return value[-1]
                 values.extend(value)
 
-        name = name if group is None else group.name + '_' + name
-        value = self._cli_values.get(name)
+        cli_name = name if group is None else group.name + '_' + name
+        value = self._cli_values.get(cli_name, None)
         if value is not None:
             if not opt.multi:
                 return value
@@ -1102,7 +1127,11 @@ class ConfigOpts(collections.Mapping):
         if default is not None:
             return default
 
-        return opt.default
+        if opt.default is UNDEFINED:
+            group_name = group.name if group is not None else None
+            raise UndefinedOptError(name, group_name)
+        else:
+            return opt.default
 
     def _substitute(self, value):
         """Perform string template substitution.
@@ -1260,6 +1289,7 @@ class CommonConfigOpts(ConfigOpts):
 
     logging_cli_opts = [
         StrOpt('log-config',
+               default=None,
                metavar='PATH',
                help='If this option is specified, the logging configuration '
                     'file specified is used and overrides any other logging '
@@ -1278,10 +1308,12 @@ class CommonConfigOpts(ConfigOpts):
                help='Format string for %(asctime)s in log records. '
                     'Default: %default'),
         StrOpt('log-file',
+               default=None,
                metavar='PATH',
                help='(Optional) Name of log file to output to. '
                     'If not set, logging will go to stdout.'),
         StrOpt('log-dir',
+               default=None,
                help='(Optional) The directory to keep log files in '
                     '(will be prepended to --logfile)'),
         BoolOpt('use-syslog',

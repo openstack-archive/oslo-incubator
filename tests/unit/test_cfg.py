@@ -732,7 +732,7 @@ class OverridesTestCase(BaseTestCase):
     def test_no_default_override(self):
         self.conf.register_opt(StrOpt('foo'))
         self.conf([])
-        self.assertEquals(self.conf.foo, None)
+        self.assertRaises(UndefinedOptError, getattr, self.conf, 'foo')
         self.conf.set_default('foo', 'bar')
         self.assertEquals(self.conf.foo, 'bar')
 
@@ -755,7 +755,7 @@ class OverridesTestCase(BaseTestCase):
         self.conf.register_group(OptGroup('blaa'))
         self.conf.register_opt(StrOpt('foo'), group='blaa')
         self.conf([])
-        self.assertEquals(self.conf.blaa.foo, None)
+        self.assertRaises(UndefinedOptError, getattr, self.conf.blaa, 'foo')
         self.conf.set_default('foo', 'bar', group='blaa')
         self.assertEquals(self.conf.blaa.foo, 'bar')
 
@@ -799,7 +799,7 @@ class SadPathTestCase(BaseTestCase):
         self.assertRaises(NoSuchOptError, getattr, self.conf.blaa, 'foo')
 
     def test_ok_duplicate(self):
-        opt = StrOpt('foo')
+        opt = StrOpt('foo', default=None)
         self.conf.register_cli_opt(opt)
         self.conf.register_cli_opt(opt)
 
@@ -936,6 +936,7 @@ class OptDumpingTestCase(BaseTestCase):
     def test_log_opt_values(self):
         self.conf.register_cli_opt(StrOpt('foo'))
         self.conf.register_cli_opt(StrOpt('passwd', secret=True))
+        self.conf.register_cli_opt(StrOpt('undefined'))
         self.conf.register_group(OptGroup('blaa'))
         self.conf.register_cli_opt(StrOpt('bar'), 'blaa')
         self.conf.register_cli_opt(StrOpt('key', secret=True), 'blaa')
@@ -957,6 +958,7 @@ class OptDumpingTestCase(BaseTestCase):
                 "config_file                    = []",
                 "foo                            = this",
                 "passwd                         = ****",
+                "undefined                      = <UNDEFINED>",
                  "blaa.bar                       = that",
                 "blaa.key                       = *****",
                 "*" * 80,
