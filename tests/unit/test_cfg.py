@@ -15,6 +15,7 @@
 #    under the License.
 
 import os
+import shutil
 import sys
 import StringIO
 import tempfile
@@ -72,6 +73,7 @@ class BaseTestCase(unittest.TestCase):
                                usage='%prog FOO BAR',
                                default_config_files=[])
         self.tempfiles = []
+        self.tempdirs = []
         self.stubs = stubout.StubOutForTesting()
 
     def tearDown(self):
@@ -80,7 +82,7 @@ class BaseTestCase(unittest.TestCase):
 
     def create_tempfiles(self, files):
         for (basename, contents) in files:
-            (fd, path) = tempfile.mkstemp(prefix=basename)
+            (fd, path) = tempfile.mkstemp(prefix=basename, suffix='.conf')
             self.tempfiles.append(path)
             try:
                 os.write(fd, contents)
@@ -91,6 +93,8 @@ class BaseTestCase(unittest.TestCase):
     def remove_tempfiles(self):
         for p in self.tempfiles:
             os.remove(p)
+        for d in self.tempdirs:
+            shutil.rmtree(d, ignore_errors=True)
 
 
 class UsageTestCase(BaseTestCase):
@@ -199,8 +203,8 @@ class CliOptsTestCase(BaseTestCase):
         self.assertTrue('1.0' in sys.stdout.getvalue())
 
     def test_config_file(self):
-        paths = self.create_tempfiles([('1.conf', '[DEFAULT]'),
-                                       ('2.conf', '[DEFAULT]')])
+        paths = self.create_tempfiles([('1', '[DEFAULT]'),
+                                       ('2', '[DEFAULT]')])
 
         self.conf(['--config-file', paths[0], '--config-file', paths[1]])
 
@@ -224,7 +228,7 @@ class ConfigFileOptsTestCase(BaseTestCase):
     def test_conf_file_str_default(self):
         self.conf.register_opt(StrOpt('foo', default='bar'))
 
-        paths = self.create_tempfiles([('test.conf',
+        paths = self.create_tempfiles([('test',
                                         '[DEFAULT]\n')])
 
         self.conf(['--config-file', paths[0]])
@@ -235,7 +239,7 @@ class ConfigFileOptsTestCase(BaseTestCase):
     def test_conf_file_str_value(self):
         self.conf.register_opt(StrOpt('foo'))
 
-        paths = self.create_tempfiles([('test.conf',
+        paths = self.create_tempfiles([('test',
                                         '[DEFAULT]\n'
                                         'foo = bar\n')])
 
@@ -247,10 +251,10 @@ class ConfigFileOptsTestCase(BaseTestCase):
     def test_conf_file_str_value_override(self):
         self.conf.register_cli_opt(StrOpt('foo'))
 
-        paths = self.create_tempfiles([('1.conf',
+        paths = self.create_tempfiles([('1',
                                         '[DEFAULT]\n'
                                         'foo = baar\n'),
-                                       ('2.conf',
+                                       ('2',
                                         '[DEFAULT]\n'
                                         'foo = baaar\n')])
 
@@ -264,7 +268,7 @@ class ConfigFileOptsTestCase(BaseTestCase):
     def test_conf_file_bool_default(self):
         self.conf.register_opt(BoolOpt('foo', default=False))
 
-        paths = self.create_tempfiles([('test.conf',
+        paths = self.create_tempfiles([('test',
                                         '[DEFAULT]\n')])
 
         self.conf(['--config-file', paths[0]])
@@ -275,7 +279,7 @@ class ConfigFileOptsTestCase(BaseTestCase):
     def test_conf_file_bool_value(self):
         self.conf.register_opt(BoolOpt('foo'))
 
-        paths = self.create_tempfiles([('test.conf',
+        paths = self.create_tempfiles([('test',
                                         '[DEFAULT]\n'
                                         'foo = true\n')])
 
@@ -287,10 +291,10 @@ class ConfigFileOptsTestCase(BaseTestCase):
     def test_conf_file_bool_value_override(self):
         self.conf.register_cli_opt(BoolOpt('foo'))
 
-        paths = self.create_tempfiles([('1.conf',
+        paths = self.create_tempfiles([('1',
                                         '[DEFAULT]\n'
                                         'foo = 0\n'),
-                                       ('2.conf',
+                                       ('2',
                                         '[DEFAULT]\n'
                                         'foo = yes\n')])
 
@@ -304,7 +308,7 @@ class ConfigFileOptsTestCase(BaseTestCase):
     def test_conf_file_int_default(self):
         self.conf.register_opt(IntOpt('foo', default=666))
 
-        paths = self.create_tempfiles([('test.conf',
+        paths = self.create_tempfiles([('test',
                                         '[DEFAULT]\n')])
 
         self.conf(['--config-file', paths[0]])
@@ -315,7 +319,7 @@ class ConfigFileOptsTestCase(BaseTestCase):
     def test_conf_file_int_value(self):
         self.conf.register_opt(IntOpt('foo'))
 
-        paths = self.create_tempfiles([('test.conf',
+        paths = self.create_tempfiles([('test',
                                         '[DEFAULT]\n'
                                         'foo = 666\n')])
 
@@ -327,10 +331,10 @@ class ConfigFileOptsTestCase(BaseTestCase):
     def test_conf_file_int_value_override(self):
         self.conf.register_cli_opt(IntOpt('foo'))
 
-        paths = self.create_tempfiles([('1.conf',
+        paths = self.create_tempfiles([('1',
                                         '[DEFAULT]\n'
                                         'foo = 66\n'),
-                                       ('2.conf',
+                                       ('2',
                                         '[DEFAULT]\n'
                                         'foo = 666\n')])
 
@@ -344,7 +348,7 @@ class ConfigFileOptsTestCase(BaseTestCase):
     def test_conf_file_float_default(self):
         self.conf.register_opt(FloatOpt('foo', default=6.66))
 
-        paths = self.create_tempfiles([('test.conf',
+        paths = self.create_tempfiles([('test',
                                         '[DEFAULT]\n')])
 
         self.conf(['--config-file', paths[0]])
@@ -355,7 +359,7 @@ class ConfigFileOptsTestCase(BaseTestCase):
     def test_conf_file_float_value(self):
         self.conf.register_opt(FloatOpt('foo'))
 
-        paths = self.create_tempfiles([('test.conf',
+        paths = self.create_tempfiles([('test',
                                         '[DEFAULT]\n'
                                         'foo = 6.66\n')])
 
@@ -367,10 +371,10 @@ class ConfigFileOptsTestCase(BaseTestCase):
     def test_conf_file_float_value_override(self):
         self.conf.register_cli_opt(FloatOpt('foo'))
 
-        paths = self.create_tempfiles([('1.conf',
+        paths = self.create_tempfiles([('1',
                                         '[DEFAULT]\n'
                                         'foo = 6.6\n'),
-                                       ('2.conf',
+                                       ('2',
                                         '[DEFAULT]\n'
                                         'foo = 6.66\n')])
 
@@ -384,7 +388,7 @@ class ConfigFileOptsTestCase(BaseTestCase):
     def test_conf_file_list_default(self):
         self.conf.register_opt(ListOpt('foo', default=['bar']))
 
-        paths = self.create_tempfiles([('test.conf',
+        paths = self.create_tempfiles([('test',
                                         '[DEFAULT]\n')])
 
         self.conf(['--config-file', paths[0]])
@@ -395,7 +399,7 @@ class ConfigFileOptsTestCase(BaseTestCase):
     def test_conf_file_list_value(self):
         self.conf.register_opt(ListOpt('foo'))
 
-        paths = self.create_tempfiles([('test.conf',
+        paths = self.create_tempfiles([('test',
                                         '[DEFAULT]\n'
                                         'foo = bar\n')])
 
@@ -407,10 +411,10 @@ class ConfigFileOptsTestCase(BaseTestCase):
     def test_conf_file_list_value_override(self):
         self.conf.register_cli_opt(ListOpt('foo'))
 
-        paths = self.create_tempfiles([('1.conf',
+        paths = self.create_tempfiles([('1',
                                         '[DEFAULT]\n'
                                         'foo = bar,bar\n'),
-                                       ('2.conf',
+                                       ('2',
                                         '[DEFAULT]\n'
                                         'foo = b,a,r\n')])
 
@@ -424,7 +428,7 @@ class ConfigFileOptsTestCase(BaseTestCase):
     def test_conf_file_multistr_default(self):
         self.conf.register_opt(MultiStrOpt('foo', default=['bar']))
 
-        paths = self.create_tempfiles([('test.conf',
+        paths = self.create_tempfiles([('test',
                                         '[DEFAULT]\n')])
 
         self.conf(['--config-file', paths[0]])
@@ -435,7 +439,7 @@ class ConfigFileOptsTestCase(BaseTestCase):
     def test_conf_file_multistr_value(self):
         self.conf.register_opt(MultiStrOpt('foo'))
 
-        paths = self.create_tempfiles([('test.conf',
+        paths = self.create_tempfiles([('test',
                                         '[DEFAULT]\n'
                                         'foo = bar\n')])
 
@@ -447,10 +451,10 @@ class ConfigFileOptsTestCase(BaseTestCase):
     def test_conf_file_multistr_values_append(self):
         self.conf.register_cli_opt(MultiStrOpt('foo'))
 
-        paths = self.create_tempfiles([('1.conf',
+        paths = self.create_tempfiles([('1',
                                         '[DEFAULT]\n'
                                         'foo = bar1\n'),
-                                       ('2.conf',
+                                       ('2',
                                         '[DEFAULT]\n'
                                         'foo = bar2\n'
                                         'foo = bar3\n')])
@@ -466,7 +470,7 @@ class ConfigFileOptsTestCase(BaseTestCase):
     def test_conf_file_multiple_opts(self):
         self.conf.register_opts([StrOpt('foo'), StrOpt('bar')])
 
-        paths = self.create_tempfiles([('test.conf',
+        paths = self.create_tempfiles([('test',
                                         '[DEFAULT]\n'
                                         'foo = bar\n'
                                         'bar = foo\n')])
@@ -481,7 +485,7 @@ class ConfigFileOptsTestCase(BaseTestCase):
     def test_conf_file_raw_value(self):
         self.conf.register_opt(StrOpt('foo'))
 
-        paths = self.create_tempfiles([('test.conf',
+        paths = self.create_tempfiles([('test',
                                         '[DEFAULT]\n'
                                         'foo = bar-%08x\n')])
 
@@ -528,7 +532,7 @@ class OptGroupsTestCase(BaseTestCase):
         self.conf.register_group(OptGroup('blaa'))
         self.conf.register_opt(StrOpt('foo'), group='blaa')
 
-        paths = self.create_tempfiles([('test.conf',
+        paths = self.create_tempfiles([('test',
                                         '[blaa]\n'
                                         'foo = bar\n')])
 
@@ -548,7 +552,7 @@ class MappingInterfaceTestCase(BaseTestCase):
 
         self.assertTrue('foo' in self.conf)
         self.assertTrue('config_file' in self.conf)
-        self.assertEquals(len(self.conf), 2)
+        self.assertEquals(len(self.conf), 3)
         self.assertEquals(self.conf['foo'], 'bar')
         self.assertEquals(self.conf.get('foo'), 'bar')
         self.assertTrue('bar' in self.conf.values())
@@ -619,7 +623,7 @@ class TemplateSubstitutionTestCase(BaseTestCase):
     def test_str_sub_default_from_config_file(self):
         self._prep_test_str_sub(bar_default='$foo')
 
-        paths = self.create_tempfiles([('test.conf',
+        paths = self.create_tempfiles([('test',
                                         '[DEFAULT]\n'
                                         'foo = blaa\n')])
 
@@ -644,7 +648,7 @@ class TemplateSubstitutionTestCase(BaseTestCase):
     def test_str_sub_arg_from_config_file(self):
         self._prep_test_str_sub()
 
-        paths = self.create_tempfiles([('test.conf',
+        paths = self.create_tempfiles([('test',
                                         '[DEFAULT]\n'
                                         'foo = blaa\n')])
 
@@ -655,7 +659,7 @@ class TemplateSubstitutionTestCase(BaseTestCase):
     def test_str_sub_config_file_from_default(self):
         self._prep_test_str_sub(foo_default='blaa')
 
-        paths = self.create_tempfiles([('test.conf',
+        paths = self.create_tempfiles([('test',
                                         '[DEFAULT]\n'
                                         'bar = $foo\n')])
 
@@ -666,7 +670,7 @@ class TemplateSubstitutionTestCase(BaseTestCase):
     def test_str_sub_config_file_from_arg(self):
         self._prep_test_str_sub()
 
-        paths = self.create_tempfiles([('test.conf',
+        paths = self.create_tempfiles([('test',
                                         '[DEFAULT]\n'
                                         'bar = $foo\n')])
 
@@ -677,7 +681,7 @@ class TemplateSubstitutionTestCase(BaseTestCase):
     def test_str_sub_config_file_from_config_file(self):
         self._prep_test_str_sub()
 
-        paths = self.create_tempfiles([('test.conf',
+        paths = self.create_tempfiles([('test',
                                         '[DEFAULT]\n'
                                         'bar = $foo\n'
                                         'foo = blaa\n')])
@@ -697,6 +701,37 @@ class TemplateSubstitutionTestCase(BaseTestCase):
         self.assertTrue(hasattr(self.conf.ba, 'r'))
         self.assertEquals(self.conf.ba.r, 'blaa')
 
+    def test_config_dir(self):
+        snafu_group = OptGroup('snafu')
+        self.conf.register_group(snafu_group)
+        self.conf.register_cli_opt(StrOpt('foo'))
+        self.conf.register_cli_opt(StrOpt('bell'), group=snafu_group)
+
+        dir = tempfile.mkdtemp()
+        self.tempdirs.append(dir)
+
+        paths = self.create_tempfiles([(os.path.join(dir, '00-test'),
+                                        '[DEFAULT]\n'
+                                        'foo = bar-00\n'
+                                        '[snafu]\n'
+                                        'bell = whistle-00\n'),
+                                       (os.path.join(dir, '02-test'),
+                                        '[snafu]\n'
+                                        'bell = whistle-02\n'
+                                        '[DEFAULT]\n'
+                                        'foo = bar-02\n'),
+                                       (os.path.join(dir, '01-test'),
+                                        '[DEFAULT]\n'
+                                        'foo = bar-02\n')])
+
+        self.conf(['--foo', 'bar',
+                   '--config-dir', os.path.dirname(paths[0])])
+
+        self.assertTrue(hasattr(self.conf, 'foo'))
+        self.assertEquals(self.conf.foo, 'bar-02')
+        self.assertTrue(hasattr(self.conf, 'snafu'))
+        self.assertTrue(hasattr(self.conf.snafu, 'bell'))
+        self.assertEquals(self.conf.snafu.bell, 'whistle-02')
 
 class ReparseTestCase(BaseTestCase):
 
@@ -704,7 +739,7 @@ class ReparseTestCase(BaseTestCase):
         self.conf.register_group(OptGroup('blaa'))
         self.conf.register_cli_opt(StrOpt('foo', default='r'), group='blaa')
 
-        paths = self.create_tempfiles([('test.conf',
+        paths = self.create_tempfiles([('test',
                                         '[blaa]\n'
                                         'foo = b\n')])
 
@@ -858,7 +893,7 @@ class SadPathTestCase(BaseTestCase):
         self._do_test_bad_cli_value(FloatOpt)
 
     def test_conf_file_not_found(self):
-        paths = self.create_tempfiles([('test.conf', '')])
+        paths = self.create_tempfiles([('test', '')])
         os.remove(paths[0])
         self.tempfiles.remove(paths[0])
 
@@ -866,7 +901,7 @@ class SadPathTestCase(BaseTestCase):
                           self.conf, ['--config-file', paths[0]])
 
     def test_conf_file_broken(self):
-        paths = self.create_tempfiles([('test.conf', 'foo')])
+        paths = self.create_tempfiles([('test', 'foo')])
 
         self.assertRaises(ConfigFileParseError,
                           self.conf, ['--config-file', paths[0]])
@@ -874,7 +909,7 @@ class SadPathTestCase(BaseTestCase):
     def _do_test_conf_file_bad_value(self, opt_class):
         self.conf.register_opt(opt_class('foo'))
 
-        paths = self.create_tempfiles([('test.conf',
+        paths = self.create_tempfiles([('test',
                                         '[DEFAULT]\n'
                                         'foo = bar\n')])
 
@@ -954,6 +989,7 @@ class OptDumpingTestCase(BaseTestCase):
                 "'--blaa-key', 'admin', '--passwd', 'hush']",
                 "config files: []",
                 "=" * 80,
+                "config_dir                     = None",
                 "config_file                    = []",
                 "foo                            = this",
                 "passwd                         = ****",
