@@ -63,9 +63,8 @@ import shutil
 import sys
 
 try:
-    from openstack import common
-    cfg = common.cfg
-except AttributeError:
+    from openstack.common import cfg
+except ImportError:
     # NOTE(jkoelker) Workaround for LP951197
     try:
         f, path, description = imp.find_module('openstack/common/cfg')
