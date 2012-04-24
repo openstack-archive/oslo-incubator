@@ -63,8 +63,7 @@ import shutil
 import sys
 
 try:
-    from openstack import common
-    cfg = common.cfg
+    from openstack.common import cfg
 except AttributeError:
     # NOTE(jkoelker) Workaround for LP951197
     try:
