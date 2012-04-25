@@ -334,6 +334,7 @@ def find_config_files(project=None, prog=None, extension='.conf'):
       ~/
       /etc/${project}/
       /etc/
+      etc/
 
     We return an absolute path for (at most) one of each the default config
     files, for the topmost directory it exists in.
@@ -353,7 +354,8 @@ def find_config_files(project=None, prog=None, extension='.conf'):
         fix_path(os.path.join('~', '.' + project)) if project else None,
         fix_path('~'),
         os.path.join('/etc', project) if project else None,
-        '/etc'
+        '/etc',
+        'etc'
         ]
     cfg_dirs = filter(bool, cfg_dirs)
 
