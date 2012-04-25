@@ -1,0 +1,9 @@
+Verified+1: Jenkins
+Approved+1: Jason Kölker <jason@koelker.net>
+Code-Review+2: Jason Kölker <jason@koelker.net>
+Code-Review+1: Yuriy Taraday <yorik.sar@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 25 Apr 2012 15:09:35 +0000
+Reviewed-on: https://review.openstack.org/6767
+Project: openstack/openstack-common
+Branch: refs/heads/master
