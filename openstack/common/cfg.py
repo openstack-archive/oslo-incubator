@@ -319,7 +319,7 @@ class ConfigFileValueError(Error):
     pass
 
 
-def find_config_files(project=None, prog=None):
+def find_config_files(project=None, prog=None, filetype='conf'):
     """Return a list of default configuration files.
 
     :param project: an optional project name
@@ -364,8 +364,9 @@ def find_config_files(project=None, prog=None):
 
     config_files = []
     if project:
-        config_files.append(search_dirs(cfg_dirs, '%s.conf' % project))
-    config_files.append(search_dirs(cfg_dirs, '%s.conf' % prog))
+        project_files = search_dirs(cfg_dirs, '%s.%s' % (project, filetype))
+        config_files.append(project_files)
+    config_files.append(search_dirs(cfg_dirs, '%s.%s' % (prog, filetype)))
 
     return filter(bool, config_files)
 
