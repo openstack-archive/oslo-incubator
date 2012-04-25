@@ -133,6 +133,17 @@ class FindConfigFilesTestCase(BaseTestCase):
 
         self.assertEquals(find_config_files(project='blaa'), config_files)
 
+    def test_find_config_files_with_filetype(self):
+        config_files = ['/etc/foo.json']
+
+        self.stubs.Set(sys, 'argv', ['foo'])
+        self.stubs.Set(os.path, 'exists', lambda p: p in config_files)
+
+        self.assertEquals(find_config_files(project='blaa'), [])
+        self.assertEquals(find_config_files(project='blaa', filetype='json'),
+                          config_files)
+
+
 
 class CliOptsTestCase(BaseTestCase):
 
