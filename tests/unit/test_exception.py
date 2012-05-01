@@ -32,6 +32,10 @@ def bad_function_exception():
     raise Exception()
 
 
+class TestException(exception.OpenstackException):
+    message = '%(test)s'
+
+
 class WrapExceptionTest(unittest.TestCase):
 
     def test_wrap_exception_good_return(self):
@@ -133,19 +137,50 @@ class UnknownSchemeTest(unittest.TestCase):
 
 
 class OpenstackExceptionTest(unittest.TestCase):
-    class TestException(exception.OpenstackException):
-        message = '%(test)s'
 
     def test_format_error_string(self):
         test_message = 'Know Your Meme'
-        err = self.TestException(test=test_message)
+        err = TestException(test=test_message)
         self.assertEqual(err._error_string, test_message)
 
     def test_error_forating_error_string(self):
-        err = self.TestException(lol='U mad brah')
-        self.assertEqual(err._error_string, self.TestException.message)
+        err = TestException(lol='U mad brah')
+        self.assertEqual(err._error_string, TestException.message)
 
     def test_str(self):
         message = 'Y u no fail'
-        err = self.TestException(test=message)
+        err = TestException(test=message)
         self.assertEqual(str(err), message)
+
+
+class SaveAndReraiseTest(unittest.TestCase):
+
+    def test_save_and_reraise_exception(self):
+        e = None
+        msg = 'foo'
+        try:
+            try:
+                raise TestException(test=msg)
+            except:
+                with exception.save_and_reraise_exception():
+                    pass
+        except Exception, _e:
+            e = _e
+
+        self.assertTrue(isinstance(e, TestException))
+        self.assertEqual(str(e), msg)
+
+    def test_save_and_reraise_exception_dropped(self):
+        e = None
+        msg = 'second exception'
+        try:
+            try:
+                raise TestException(test='dropped')
+            except:
+                with exception.save_and_reraise_exception():
+                    raise TestException(test=msg)
+        except Exception, _e:
+            e = _e
+
+        self.assertTrue(isinstance(e, TestException))
+        self.assertEqual(str(e), msg)
