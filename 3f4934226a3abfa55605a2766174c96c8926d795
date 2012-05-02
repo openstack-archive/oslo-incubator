@@ -1,0 +1,10 @@
+Verified+1: Jenkins
+Approved+1: Jason Kölker <jason@koelker.net>
+Code-Review+2: Jason Kölker <jason@koelker.net>
+Code-Review+1: Brian Waldon <brian.waldon@rackspace.com>
+Code-Review+1: eglynn
+Submitted-by: Jenkins
+Submitted-at: Wed, 02 May 2012 14:57:45 +0000
+Reviewed-on: https://review.openstack.org/6821
+Project: openstack/openstack-common
+Branch: refs/heads/master
