@@ -21,8 +21,6 @@ Import related utilities and helper functions.
 
 import sys
 
-from openstack.common import exception
-
 
 def import_class(import_str):
     """Returns a class from a string including module and class"""
@@ -31,7 +29,7 @@ def import_class(import_str):
         __import__(mod_str)
         return getattr(sys.modules[mod_str], class_str)
     except (ImportError, ValueError, AttributeError), exc:
-        raise exception.NotFound('Class %s cannot be found (%s)' %
+        raise ImportError('Class %s cannot be found (%s)' %
                 (class_str, str(exc)))
 
 
