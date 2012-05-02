@@ -19,7 +19,6 @@ import datetime
 import sys
 import unittest
 
-from openstack.common import exception
 from openstack.common import importutils
 
 
@@ -32,7 +31,7 @@ class ImportUtilsTest(unittest.TestCase):
         self.assertEqual(sys.modules['datetime'].datetime, dt)
 
     def test_import_bad_class(self):
-        self.assertRaises(exception.NotFound, importutils.import_class,
+        self.assertRaises(ImportError, importutils.import_class,
                           'lol.u_mad.brah')
 
     def test_import_module(self):
