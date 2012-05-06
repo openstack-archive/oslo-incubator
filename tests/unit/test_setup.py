@@ -15,19 +15,43 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import os
 import unittest
+from tempfile import mkstemp
 
-import mock
-
-from openstack.common import exception
-from openstack.common import utils
-from openstack.common import setup
+from openstack.common.setup import canonicalize_emails
+from openstack.common.setup import parse_mailmap
 
 
-class UtilsTest(unittest.TestCase):
+class SetupTest(unittest.TestCase):
+
+    def setUp(self):
+        (fd, self.mailmap) = mkstemp(prefix='openstack', suffix='.mailmap')
 
     def test_str_dict_replace(self):
         string = 'Johnnie T. Hozer'
         mapping = {'T.': 'The'}
         self.assertEqual('Johnnie The Hozer',
-                         setup.canonicalize_emails(string, mapping))
+                         canonicalize_emails(string, mapping))
+
+    def test_mailmap_with_fullname(self):
+        with open(self.mailmap, 'w') as mm_fh:
+            mm_fh.write("Foo Bar <email@foo.com> Foo Bar <email@bar.com>\n")
+        self.assertEqual({'<email@bar.com>': '<email@foo.com>'},
+                        parse_mailmap(self.mailmap))
+
+    def test_mailmap_with_firstname(self):
+        with open(self.mailmap, 'w') as mm_fh:
+            mm_fh.write("Foo <email@foo.com> Foo <email@bar.com>\n")
+        self.assertEqual({'<email@bar.com>': '<email@foo.com>'},
+                        parse_mailmap(self.mailmap))
+
+    def test_mailmap_with_noname(self):
+        with open(self.mailmap, 'w') as mm_fh:
+            mm_fh.write("<email@foo.com> <email@bar.com>\n")
+        self.assertEqual({'<email@bar.com>': '<email@foo.com>'},
+                        parse_mailmap(self.mailmap))
+
+    def tearDown(self):
+        if os.path.exists(self.mailmap):
+            os.remove(self.mailmap)
