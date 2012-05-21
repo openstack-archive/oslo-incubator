@@ -146,6 +146,8 @@ class FindConfigFilesTestCase(BaseTestCase):
 
         self.stubs.Set(sys, 'argv', ['foo'])
         self.stubs.Set(os.path, 'exists', lambda p: p in config_files)
+        self.stubs.Set(os, 'access',
+                       lambda p, f: p in config_files and f == os.R_OK)
 
         self.assertEquals(find_config_files(project='blaa'), config_files)
 
@@ -154,6 +156,8 @@ class FindConfigFilesTestCase(BaseTestCase):
 
         self.stubs.Set(sys, 'argv', ['foo'])
         self.stubs.Set(os.path, 'exists', lambda p: p in config_files)
+        self.stubs.Set(os, 'access',
+                       lambda p, f: p in config_files and f == os.R_OK)
 
         self.assertEquals(find_config_files(project='blaa'), [])
         self.assertEquals(find_config_files(project='blaa', extension='.json'),
@@ -1158,6 +1162,8 @@ class FindFileTestCase(BaseTestCase):
         policy_file = '/etc/policy.json'
 
         self.stubs.Set(os.path, 'exists', lambda p: p == policy_file)
+        self.stubs.Set(os, 'access',
+                       lambda p, f: p == policy_file and f == os.R_OK)
 
         self.assertEquals(self.conf.find_file('foo.json'), None)
         self.assertEquals(self.conf.find_file('policy.json'), policy_file)

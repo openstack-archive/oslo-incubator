@@ -393,7 +393,7 @@ def _search_dirs(dirs, basename, extension=""):
     """
     for d in dirs:
         path = os.path.join(d, '%s%s' % (basename, extension))
-        if os.path.exists(path):
+        if os.path.exists(path) and os.access(path, os.R_OK):
             return path
 
 
