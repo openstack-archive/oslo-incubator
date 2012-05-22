@@ -494,7 +494,8 @@ class Opt(object):
     multi = False
 
     def __init__(self, name, dest=None, short=None, default=None,
-                 metavar=None, help=None, secret=False, required=False):
+                 metavar=None, help=None, secret=False, required=False,
+                 deprecated_name=None):
         """Construct an Opt object.
 
         The only required parameter is the option's name. However, it is
@@ -508,6 +509,7 @@ class Opt(object):
         :param help: an explanation of how the option is used
         :param secret: true iff the value should be obfuscated in log output
         :param required: true iff a value must be supplied for this option
+        :param deprecated_name: deprecated name option.  Acts like an alias
         """
         self.name = name
         if dest is None:
@@ -520,6 +522,10 @@ class Opt(object):
         self.help = help
         self.secret = secret
         self.required = required
+        if deprecated_name != None:
+            self.deprecated_name = deprecated_name.replace('-', '_')
+        else:
+            self.deprecated_name = None
 
     def _get_from_config_parser(self, cparser, section):
         """Retrieves the option value from a MultiConfigParser object.
@@ -531,7 +537,21 @@ class Opt(object):
         :param cparser: a ConfigParser object
         :param section: a section name
         """
-        return cparser.get(section, self.dest)
+        return self._cparser_get_with_deprecated(cparser, section)
+
+    def _cparser_get_with_deprecated(self, cparser, section):
+        """If cannot find option as dest try deprecated_name alias.
+
+        Record if deprecated_name is used (for logging)
+        """
+        try:
+            return cparser.get(section, self.dest)
+        except KeyError:
+            if self.deprecated_name != None:
+                rvalue = cparser.get(section, self.deprecated_name)
+                return rvalue
+            else:
+                raise
 
     def _add_to_cli(self, parser, group=None):
         """Makes the option available in the command line interface.
@@ -546,9 +566,11 @@ class Opt(object):
         container = self._get_optparse_container(parser, group)
         kwargs = self._get_optparse_kwargs(group)
         prefix = self._get_optparse_prefix('', group)
-        self._add_to_optparse(container, self.name, self.short, kwargs, prefix)
+        self._add_to_optparse(container, self.name, self.short, kwargs, prefix,
+                self.deprecated_name)
 
-    def _add_to_optparse(self, container, name, short, kwargs, prefix=''):
+    def _add_to_optparse(self, container, name, short, kwargs, prefix='',
+            deprecated_name=None):
         """Add an option to an optparse parser or group.
 
         :param container: an optparse.OptionContainer object
@@ -561,6 +583,8 @@ class Opt(object):
         args = ['--' + prefix + name]
         if short:
             args += ['-' + short]
+        if deprecated_name:
+            args += ['--' + prefix + deprecated_name]
         for a in args:
             if container.has_option(a):
                 raise DuplicateOptError(a)
@@ -645,7 +669,8 @@ class BoolOpt(Opt):
 
             return value
 
-        return [convert_bool(v) for v in cparser.get(section, self.dest)]
+        return [convert_bool(v) for v in
+                self._cparser_get_with_deprecated(cparser, section)]
 
     def _add_to_cli(self, parser, group=None):
         """Extends the base class method to add the --nooptname option."""
@@ -658,7 +683,8 @@ class BoolOpt(Opt):
         kwargs = self._get_optparse_kwargs(group, action='store_false')
         prefix = self._get_optparse_prefix('no', group)
         kwargs["help"] = "The inverse of --" + self.name
-        self._add_to_optparse(container, self.name, None, kwargs, prefix)
+        self._add_to_optparse(container, self.name, None, kwargs, prefix,
+                self.deprecated_name)
 
     def _get_optparse_kwargs(self, group, action='store_true', **kwargs):
         """Extends the base optparse keyword dict for boolean options."""
@@ -672,7 +698,8 @@ class IntOpt(Opt):
 
     def _get_from_config_parser(self, cparser, section):
         """Retrieve the opt value as a integer from ConfigParser."""
-        return [int(v) for v in cparser.get(section, self.dest)]
+        return [int(v) for v in self._cparser_get_with_deprecated(cparser,
+                section)]
 
     def _get_optparse_kwargs(self, group, **kwargs):
         """Extends the base optparse keyword dict for integer options."""
@@ -686,7 +713,8 @@ class FloatOpt(Opt):
 
     def _get_from_config_parser(self, cparser, section):
         """Retrieve the opt value as a float from ConfigParser."""
-        return [float(v) for v in cparser.get(section, self.dest)]
+        return [float(v) for v in
+                self._cparser_get_with_deprecated(cparser, section)]
 
     def _get_optparse_kwargs(self, group, **kwargs):
         """Extends the base optparse keyword dict for float options."""
@@ -703,7 +731,8 @@ class ListOpt(Opt):
 
     def _get_from_config_parser(self, cparser, section):
         """Retrieve the opt value as a list from ConfigParser."""
-        return [v.split(',') for v in cparser.get(section, self.dest)]
+        return [v.split(',') for v in
+                self._cparser_get_with_deprecated(cparser, section)]
 
     def _get_optparse_kwargs(self, group, **kwargs):
         """Extends the base optparse keyword dict for list options."""
@@ -1323,7 +1352,7 @@ class ConfigOpts(collections.Mapping):
     def _substitute(self, value):
         """Perform string template substitution.
 
-        Substititue any template variables (e.g. $foo, ${bar}) in the supplied
+        Substitute any template variables (e.g. $foo, ${bar}) in the supplied
         string value(s) with opt values.
 
         :param value: the string value, or list of string values
