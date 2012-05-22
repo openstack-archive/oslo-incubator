@@ -478,7 +478,8 @@ class Opt(object):
     multi = False
 
     def __init__(self, name, dest=None, short=None, default=None,
-                 metavar=None, help=None, secret=False, required=False):
+                 metavar=None, help=None, secret=False, required=False,
+                 alias=None):
         """Construct an Opt object.
 
         The only required parameter is the option's name. However, it is
@@ -492,6 +493,7 @@ class Opt(object):
         :param help: an explanation of how the option is used
         :param secret: true iff the value should be obfuscated in log output
         :param required: true iff a value must be supplied for this option
+        :param alias: deprecated name stored as an alias
         """
         self.name = name
         if dest is None:
@@ -504,6 +506,11 @@ class Opt(object):
         self.help = help
         self.secret = secret
         self.required = required
+        if alias != None:
+            self.alias = alias.replace('-', '_')
+        else:
+            self.alias = None
+        self.alias_used = False
 
     def _get_from_config_parser(self, cparser, section):
         """Retrieves the option value from a MultiConfigParser object.
@@ -515,7 +522,23 @@ class Opt(object):
         :param cparser: a ConfigParser object
         :param section: a section name
         """
-        return cparser.get(section, self.dest)
+        return self._cparser_get_with_alias(cparser, section)
+
+    def _cparser_get_with_alias(self, cparser, section):
+        """If cannot find option as dest try alias.
+
+        Since an alias is a deprecated name, record if alias is used
+        for logging
+        """
+        try:
+            return cparser.get(section, self.dest)
+        except KeyError:
+            if self.alias != None:
+                rvalue = cparser.get(section, self.alias)
+                self.alias_used = True
+                return rvalue
+            else:
+                raise
 
     def _add_to_cli(self, parser, group=None):
         """Makes the option available in the command line interface.
@@ -629,7 +652,8 @@ class BoolOpt(Opt):
 
             return value
 
-        return [convert_bool(v) for v in cparser.get(section, self.dest)]
+        return [convert_bool(v) for v in
+                self._cparser_get_with_alias(cparser, section)]
 
     def _add_to_cli(self, parser, group=None):
         """Extends the base class method to add the --nooptname option."""
@@ -656,7 +680,7 @@ class IntOpt(Opt):
 
     def _get_from_config_parser(self, cparser, section):
         """Retrieve the opt value as a integer from ConfigParser."""
-        return [int(v) for v in cparser.get(section, self.dest)]
+        return [int(v) for v in self._cparser_get_with_alias(cparser, section)]
 
     def _get_optparse_kwargs(self, group, **kwargs):
         """Extends the base optparse keyword dict for integer options."""
@@ -670,7 +694,8 @@ class FloatOpt(Opt):
 
     def _get_from_config_parser(self, cparser, section):
         """Retrieve the opt value as a float from ConfigParser."""
-        return [float(v) for v in cparser.get(section, self.dest)]
+        return [float(v) for v in
+                self._cparser_get_with_alias(cparser, section)]
 
     def _get_optparse_kwargs(self, group, **kwargs):
         """Extends the base optparse keyword dict for float options."""
@@ -687,7 +712,8 @@ class ListOpt(Opt):
 
     def _get_from_config_parser(self, cparser, section):
         """Retrieve the opt value as a list from ConfigParser."""
-        return [v.split(',') for v in cparser.get(section, self.dest)]
+        return [v.split(',') for v in
+                self._cparser_get_with_alias(cparser, section)]
 
     def _get_optparse_kwargs(self, group, **kwargs):
         """Extends the base optparse keyword dict for list options."""
@@ -1187,9 +1213,16 @@ class ConfigOpts(collections.Mapping):
             """Obfuscate values of options declared secret"""
             return value if not opt.secret else '*' * len(str(value))
 
+        def _aliased(opt_name, opt):
+            """Write warning if used alias to set opt"""
+            if not opt.alias_used:
+                return opt_name
+            else:
+                return "%s<DEPRECATED ALIAS USED>" % opt_name
+
         for opt_name in sorted(self._opts):
             opt = self._get_opt_info(opt_name)['opt']
-            logger.log(lvl, "%-30s = %s", opt_name,
+            logger.log(lvl, "%-30s = %s", _aliased(opt_name, opt),
                        _sanitize(opt, getattr(self, opt_name)))
 
         for group_name in self._groups:
@@ -1197,7 +1230,7 @@ class ConfigOpts(collections.Mapping):
             for opt_name in sorted(self._groups[group_name]._opts):
                 opt = self._get_opt_info(opt_name, group_name)['opt']
                 logger.log(lvl, "%-30s = %s",
-                           "%s.%s" % (group_name, opt_name),
+                           "%s.%s" % (group_name, _aliased(opt_name, opt)),
                            _sanitize(opt, getattr(group_attr, opt_name)))
 
         logger.log(lvl, "*" * 80)
@@ -1274,7 +1307,7 @@ class ConfigOpts(collections.Mapping):
     def _substitute(self, value):
         """Perform string template substitution.
 
-        Substititue any template variables (e.g. $foo, ${bar}) in the supplied
+        Substitute any template variables (e.g. $foo, ${bar}) in the supplied
         string value(s) with opt values.
 
         :param value: the string value, or list of string values
