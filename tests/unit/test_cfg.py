@@ -247,6 +247,25 @@ class CliOptsTestCase(BaseTestCase):
 
 class ConfigFileOptsTestCase(BaseTestCase):
 
+    def _do_alias_test(self, opt_class, value, result):
+        self.conf.register_opt(opt_class('newfoo', alias='oldfoo'))
+
+        paths = self.create_tempfiles([('test',
+                                        '[DEFAULT]\n'
+                                        'oldfoo = %s\n' % value)])
+
+        self.conf(['--config-file', paths[0]])
+        self.assertTrue(hasattr(self.conf, 'newfoo'))
+        self.assertEquals(self.conf.newfoo, result)
+
+        paths2 = self.create_tempfiles([('test',
+                                        '[DEFAULT]\n'
+                                        'newfoo = %s\n' % value)])
+
+        self.conf(['--config-file', paths2[0]])
+        self.assertTrue(hasattr(self.conf, 'newfoo'))
+        self.assertEquals(self.conf.newfoo, result)
+
     def test_conf_file_str_default(self):
         self.conf.register_opt(StrOpt('foo', default='bar'))
 
@@ -286,6 +305,9 @@ class ConfigFileOptsTestCase(BaseTestCase):
 
         self.assertTrue(hasattr(self.conf, 'foo'))
         self.assertEquals(self.conf.foo, 'baaar')
+
+    def test_conf_file_str_alias(self):
+        self._do_alias_test(StrOpt, 'value1', 'value1')
 
     def test_conf_file_bool_default(self):
         self.conf.register_opt(BoolOpt('foo', default=False))
@@ -327,6 +349,9 @@ class ConfigFileOptsTestCase(BaseTestCase):
         self.assertTrue(hasattr(self.conf, 'foo'))
         self.assertEquals(self.conf.foo, True)
 
+    def test_conf_file_bool_alias(self):
+        self._do_alias_test(BoolOpt, 'yes', True)
+
     def test_conf_file_int_default(self):
         self.conf.register_opt(IntOpt('foo', default=666))
 
@@ -366,6 +391,9 @@ class ConfigFileOptsTestCase(BaseTestCase):
 
         self.assertTrue(hasattr(self.conf, 'foo'))
         self.assertEquals(self.conf.foo, 666)
+
+    def test_conf_file_int_alias(self):
+        self._do_alias_test(IntOpt, '66', 66)
 
     def test_conf_file_float_default(self):
         self.conf.register_opt(FloatOpt('foo', default=6.66))
@@ -407,6 +435,9 @@ class ConfigFileOptsTestCase(BaseTestCase):
         self.assertTrue(hasattr(self.conf, 'foo'))
         self.assertEquals(self.conf.foo, 6.66)
 
+    def test_conf_file_float_alias(self):
+        self._do_alias_test(FloatOpt, '66.54', 66.54)
+
     def test_conf_file_list_default(self):
         self.conf.register_opt(ListOpt('foo', default=['bar']))
 
@@ -446,6 +477,9 @@ class ConfigFileOptsTestCase(BaseTestCase):
 
         self.assertTrue(hasattr(self.conf, 'foo'))
         self.assertEquals(self.conf.foo, ['b', 'a', 'r'])
+
+    def test_conf_file_list_alias(self):
+        self._do_alias_test(ListOpt, 'a,b,c', ['a', 'b', 'c'])
 
     def test_conf_file_multistr_default(self):
         self.conf.register_opt(MultiStrOpt('foo', default=['bar']))
@@ -488,6 +522,18 @@ class ConfigFileOptsTestCase(BaseTestCase):
         self.assertTrue(hasattr(self.conf, 'foo'))
 
         self.assertEquals(self.conf.foo, ['bar0', 'bar1', 'bar2', 'bar3'])
+
+    def test_conf_file_multistr_alias(self):
+        self.conf.register_opt(MultiStrOpt('newfoo', alias='oldfoo'))
+
+        paths = self.create_tempfiles([('test',
+                                        '[DEFAULT]\n'
+                                        'oldfoo= bar1\n'
+                                        'oldfoo = bar2\n')])
+
+        self.conf(['--config-file', paths[0]])
+        self.assertTrue(hasattr(self.conf, 'newfoo'))
+        self.assertEquals(self.conf.newfoo, ['bar1', 'bar2'])
 
     def test_conf_file_multiple_opts(self):
         self.conf.register_opts([StrOpt('foo'), StrOpt('bar')])
@@ -566,6 +612,20 @@ class OptGroupsTestCase(BaseTestCase):
         paths = self.create_tempfiles([('test',
                                         '[blaa]\n'
                                         'foo = bar\n')])
+
+        self.conf(['--config-file', paths[0]])
+
+        self.assertTrue(hasattr(self.conf, 'blaa'))
+        self.assertTrue(hasattr(self.conf.blaa, 'foo'))
+        self.assertEquals(self.conf.blaa.foo, 'bar')
+
+    def test_arg_group_in_config_file_with_alias(self):
+        self.conf.register_group(OptGroup('blaa'))
+        self.conf.register_opt(StrOpt('foo', alias='oldfoo'), group='blaa')
+
+        paths = self.create_tempfiles([('test',
+                                        '[blaa]\n'
+                                        'oldfoo = bar\n')])
 
         self.conf(['--config-file', paths[0]])
 
@@ -1231,6 +1291,23 @@ class OptDumpingTestCase(BaseTestCase):
                 "blaa.key                       = *****",
                 "*" * 80,
                 ])
+
+    def test_alias_warning(self):
+        self.conf.register_opt(IntOpt('newfoo', alias='oldfoo'))
+
+        paths = self.create_tempfiles([('test',
+                                        '[DEFAULT]\n'
+                                        'oldfoo = 55\n')])
+
+        self.conf(['--config-file', paths[0]])
+        self.assertTrue(getattr(self.conf, 'newfoo'))
+
+        logger = self.FakeLogger(self, 666)
+
+        self.conf.log_opt_values(logger, 666)
+
+        self.assertEquals(logger.logged[7],
+                "newfoo<DEPRECATED ALIAS USED>  = 55")
 
 
 class CommonOptsTestCase(BaseTestCase):
