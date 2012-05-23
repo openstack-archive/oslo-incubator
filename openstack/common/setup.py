@@ -78,7 +78,7 @@ def parse_dependency_links(requirements_files=['requirements.txt',
     for line in get_reqs_from_files(requirements_files):
         if re.match(r'(\s*#)|(\s*$)', line):
             continue
-        if re.match(r'\s*-[ef]\s+', line):
+        if re.match(r'\s*-[ef]\s+(http(s?)://\S+)', line):
             dependency_links.append(re.sub(r'\s*-[ef]\s+', '', line))
     return dependency_links
 
