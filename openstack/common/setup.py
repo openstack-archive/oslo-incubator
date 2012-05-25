@@ -80,6 +80,8 @@ def parse_dependency_links(requirements_files=['requirements.txt',
             continue
         if re.match(r'\s*-[ef]\s+', line):
             dependency_links.append(re.sub(r'\s*-[ef]\s+', '', line))
+        elif re.match(r'\s*https?:', line):
+            dependency_links.append(line)
     return dependency_links
 
 
