@@ -61,10 +61,9 @@ def parse_requirements(requirements_files=['requirements.txt',
                                            'tools/pip-requires']):
     requirements = []
     for line in get_reqs_from_files(requirements_files):
-        if re.match(r'\s*-e\s+', line):
-            requirements.append(re.sub(r'\s*-e\s+.*#egg=(.*)$', r'\1',
-                                line))
-        elif re.match(r'\s*-f\s+', line):
+        if re.match(r'\s*-[ef]\s+', line):
+            pass
+        elif re.match(r'\s*https?:', line):
             pass
         else:
             requirements.append(line)
@@ -80,6 +79,8 @@ def parse_dependency_links(requirements_files=['requirements.txt',
             continue
         if re.match(r'\s*-[ef]\s+', line):
             dependency_links.append(re.sub(r'\s*-[ef]\s+', '', line))
+        elif re.match(r'\s*https?:', line):
+            dependency_links.append(line)
     return dependency_links
 
 
