@@ -19,8 +19,10 @@
 Time related utilities and helper functions.
 """
 
+import base64
 import calendar
 import datetime
+import pickle
 
 import iso8601
 
@@ -106,3 +108,15 @@ def advance_time_seconds(seconds):
 def clear_time_override():
     """Remove the overridden time."""
     utcnow.override_time = None
+
+
+def pickle_now(now=None):
+    """Make an rpc-safe datetime."""
+    if not now:
+        now = utcnow()
+    return base64.b64encode(pickle.dumps(now))
+
+
+def unpickle_time(binary):
+    """Unmarshall a pickled datetime."""
+    return pickle.loads(base64.b64decode(binary))

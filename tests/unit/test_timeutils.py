@@ -104,6 +104,12 @@ class TimeUtilsTest(unittest.TestCase):
         timeutils.advance_time_seconds(60)
         self.assertEqual(timeutils.utcnow(), self.skynet_self_aware_time)
 
+    def test_pickle_time(self):
+        now = timeutils.utcnow()
+        binary = timeutils.pickle_now(now)
+        backagain = timeutils.unpickle_time(binary)
+        self.assertEqual(now, backagain)
+
 
 class TestIso8601Time(unittest.TestCase):
 
