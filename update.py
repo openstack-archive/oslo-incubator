@@ -88,9 +88,9 @@ opts = [
 
 
 def _parse_args(argv):
-    conf = cfg.ConfigOpts(usage='Usage: %prog [config-file|dest-dir]')
+    conf = cfg.ConfigOpts()
     conf.register_cli_opts(opts)
-    args = conf(argv)
+    args = conf(argv, usage='Usage: %prog [config-file|dest-dir]')
 
     if len(args) == 1:
         def def_config_file(dest_dir):
