@@ -30,7 +30,7 @@ TIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
 def isotime(at=None):
     """Stringify time in ISO 8601 format"""
     if not at:
-        at = datetime.datetime.utcnow()
+        at = utcnow()
     str = at.strftime(TIME_FORMAT)
     tz = at.tzinfo.tzname(None) if at.tzinfo else 'UTC'
     str += ('Z' if tz == 'UTC' else tz)
@@ -63,7 +63,7 @@ def utcnow():
 utcnow.override_time = None
 
 
-def set_time_override(override_time=datetime.datetime.utcnow()):
+def set_time_override(override_time=utcnow()):
     """Override utils.utcnow to return a constant time."""
     utcnow.override_time = override_time
 
