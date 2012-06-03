@@ -25,11 +25,11 @@ This module provides a few things:
     1) A handy function for getting an object down to something that can be
     JSON serialized.  See to_primitive().
 
-    2) Wrappers around loads() and dumps().  The dumps() wrapper will
+    2) Wrappers around load(), loads() and dumps().  The dumps() wrapper will
     automatically use to_primitive() for you if needed.
 
-    3) This sets up anyjson to use the loads() and dumps() wrappers if anyjson
-    is available.
+    3) This sets up anyjson to use the load(), loads() and dumps() wrappers
+    if anyjson is available.
 '''
 
 
@@ -119,6 +119,10 @@ def dumps(value):
     return json.dumps(value, default=to_primitive)
 
 
+def load(s):
+    return json.load(s)
+
+
 def loads(s):
     return json.loads(s)
 
@@ -129,5 +133,6 @@ except ImportError:
     pass
 else:
     anyjson._modules.append((__name__, 'dumps', TypeError,
+                                       'load', ValueError,
                                        'loads', ValueError))
     anyjson.force_implementation(__name__)
