@@ -119,6 +119,10 @@ def dumps(value):
     return json.dumps(value, default=to_primitive)
 
 
+def load(s):
+    return json.load(s)
+
+
 def loads(s):
     return json.loads(s)
 
