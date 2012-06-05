@@ -62,6 +62,8 @@ import re
 import shutil
 import sys
 
+from pip import req
+
 try:
     from openstack import common
     cfg = common.cfg
@@ -84,6 +86,8 @@ opts = [
     cfg.StrOpt('dest-dir',
                default=None,
                help='Destination project directory'),
+    cfg.BoolOpt('requirements-only', default=False,
+                help="Don't copy modules, only sync requirement files"),
     ]
 
 
@@ -189,6 +193,45 @@ def _create_module_init(base, dest_dir, *sub_paths):
         open(init_path, 'w').close()
 
 
+def _parse_reqs(filename):
+
+    reqs = dict()
+
+    pip_requires = open(filename, "r").readlines()
+    for pip in pip_requires:
+        pip = pip.strip()
+        if pip.startswith("#") or len(pip) == 0:
+            continue
+        install_require = req.InstallRequirement.from_line(pip)
+        if install_require.editable:
+            reqs[pip] = pip
+        elif install_require.url:
+            reqs[pip] = pip
+        else:
+            reqs[install_require.req.key] = pip
+    return reqs
+
+
+def _copy_requires(req, dest_dir):
+    """Copy requirements files."""
+
+    dest_path = _dest_path(req, 'tools', dest_dir)
+    source_path = os.path.join('tools', 'global-%s' % req)
+
+    source_reqs = _parse_reqs(dest_path)
+    dest_reqs = _parse_reqs(dest_path)
+    dest_keys = [key.lower() for key in dest_reqs.keys()]
+    dest_keys.sort()
+
+    print "Syncing %s" % req
+    with open(dest_path, 'w') as new_reqs:
+        new_reqs.write("# This file is managed by openstack-common\n")
+        for old_require in dest_keys:
+            if old_require not in source_reqs:
+                continue
+            new_reqs.write("%s\n" % source_reqs[old_require])
+
+
 def main(argv):
     conf = _parse_args(argv)
 
@@ -199,6 +242,12 @@ def main(argv):
     if not dest_dir or not os.path.isdir(dest_dir):
         print >> sys.stderr, "A valid destination dir is required"
         sys.exit(1)
+
+    for req in ('pip-requires', 'test-requires'):
+        _copy_requires(req, dest_dir)
+
+    if conf.requirements_only:
+        sys.exit(0)
 
     if not conf.modules:
         print >> sys.stderr, "A list of modules to copy is required"
@@ -213,7 +262,6 @@ def main(argv):
 
     for mod in conf.modules:
         _copy_module(mod, conf.base, dest_dir)
-
 
 if __name__ == "__main__":
     main(sys.argv[1:])

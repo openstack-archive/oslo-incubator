@@ -1,7 +1,6 @@
-# Packages needed for dev testing
-distribute>=0.6.24
-
+# This file is managed by openstack-common
 coverage
+distribute>=0.6.24
 mock
 mox==0.5.3
 nose
