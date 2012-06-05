@@ -1,9 +1,10 @@
-PasteDeploy==1.5.0
-WebOb==1.0.8
+# This file is managed by openstack-common
+anyjson==0.2.4
 eventlet
 greenlet>=0.3.1
-lxml
-routes==1.12.3
 iso8601>=0.1.4
-anyjson==0.2.4
 kombu==1.0.4
+lxml
+PasteDeploy==1.5.0
+routes==1.12.3
+WebOb==1.0.8
