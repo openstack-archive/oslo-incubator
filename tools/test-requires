@@ -1,13 +1,30 @@
-# Packages needed for dev testing
+https://github.com/openstack/python-keystoneclient/zipball/master#egg=python-keystoneclient
+https://github.com/openstack/quantum/zipball/master#egg=quantum
+https://github.com/openstack/swift/zipball/master#egg=swift
+Babel
+MySQL-python
+Sphinx>=1.1.2 # required to build documentation
+coverage # computes code coverage percentages
 distribute>=0.6.24
-
-coverage
-mock
+django-nose
+eventlet
+httplib2
+iso8601>=0.1.4
+mock>=0.7.1
 mox==0.5.3
-nose
+netaddr
+netifaces
+nose # for test discovery and console feedback
 nose-exclude
 nosexcover
-openstack.nose_plugin
-pep8==0.6.1
-pylint
-webtest
+openstack.nose_plugin>=0.7
+pep8
+pep8==1.2
+prettytable==0.5.0
+pylint # static code analysis
+python-ldap==2.3.13 # authenticate against an existing LDAP server
+python-memcached
+requests
+selenium
+unittest2 # backport of unittest lib in python 2.7
+webtest # test wsgi apps without starting an http server
