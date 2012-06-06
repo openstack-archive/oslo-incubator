@@ -26,21 +26,55 @@ from openstack.common import timeutils
 
 class TimeUtilsTest(unittest.TestCase):
 
-    def test_isotime(self):
-        skynet_self_aware_time_str = '1997-08-29T06:14:00Z'
-        skynet_self_aware_time = datetime.datetime(1997, 8, 29, 6, 14, 0,
+    def setUp(self):
+        utc_timezone = iso8601.iso8601.UTC
+        self.skynet_self_aware_time_str = '1997-08-29T06:14:00Z'
+        self.skynet_self_aware_time = datetime.datetime(1997, 8, 29, 6, 14, 0,
+                                                        tzinfo=utc_timezone)
+        self.one_minute_before = datetime.datetime(1997, 8, 29, 6, 13, 0,
                                                    tzinfo=iso8601.iso8601.UTC)
+        self.skynet_self_aware_time_perfect_str = '1997-08-29T06:14:00.000000'
+        self.skynet_self_aware_time_perfect = datetime.datetime(1997, 8, 29,
+                                                                6, 14, 0)
+
+    def tearDown(self):
+        timeutils.clear_time_override()
+
+    def test_isotime(self):
         with mock.patch('datetime.datetime') as datetime_mock:
-            datetime_mock.utcnow.return_value = skynet_self_aware_time
+            datetime_mock.utcnow.return_value = self.skynet_self_aware_time
             dt = timeutils.isotime()
-            self.assertEqual(dt, skynet_self_aware_time_str)
+            self.assertEqual(dt, self.skynet_self_aware_time_str)
 
     def test_parse_isotime(self):
-        skynet_self_aware_time_str = '1997-08-29T06:14:00Z'
-        skynet_self_aware_time = datetime.datetime(1997, 8, 29, 6, 14, 0,
-                                                   tzinfo=iso8601.iso8601.UTC)
-        self.assertEqual(skynet_self_aware_time,
-                         timeutils.parse_isotime(skynet_self_aware_time_str))
+        expect = timeutils.parse_isotime(self.skynet_self_aware_time_str)
+        self.assertEqual(self.skynet_self_aware_time, expect)
+
+    def test_strtime(self):
+        expect = timeutils.strtime(self.skynet_self_aware_time_perfect)
+        self.assertEqual(self.skynet_self_aware_time_perfect_str, expect)
+
+    def test_parse_strtime(self):
+        perfect_time_format = self.skynet_self_aware_time_perfect_str
+        expect = timeutils.parse_strtime(perfect_time_format)
+        self.assertEqual(self.skynet_self_aware_time_perfect, expect)
+
+    def test_is_older_than(self):
+        with mock.patch('datetime.datetime') as datetime_mock:
+            datetime_mock.utcnow.return_value = self.skynet_self_aware_time
+            expect_true = timeutils.is_older_than(self.one_minute_before, 59)
+            self.assertTrue(expect_true)
+            expect_false = timeutils.is_older_than(self.one_minute_before, 60)
+            self.assertFalse(expect_false)
+            expect_false = timeutils.is_older_than(self.one_minute_before, 61)
+            self.assertFalse(expect_false)
+
+    def test_utcnow_ts(self):
+        skynet_self_aware_timestamp = 872806440.0
+        with mock.patch('datetime.datetime') as datetime_mock:
+            datetime_mock.utcnow.return_value = self.skynet_self_aware_time
+            ts = timeutils.utcnow_ts()
+            self.assertEqual(ts, skynet_self_aware_timestamp)
 
     def test_utcnow(self):
         timeutils.set_time_override(mock.sentinel.utcnow)
@@ -50,6 +84,16 @@ class TimeUtilsTest(unittest.TestCase):
         self.assertFalse(timeutils.utcnow() == mock.sentinel.utcnow)
 
         self.assertTrue(timeutils.utcnow())
+
+    def test_advance_time_delta(self):
+        timeutils.set_time_override(self.one_minute_before)
+        timeutils.advance_time_delta(datetime.timedelta(seconds=60))
+        self.assertEqual(timeutils.utcnow(), self.skynet_self_aware_time)
+
+    def test_advance_time_seconds(self):
+        timeutils.set_time_override(self.one_minute_before)
+        timeutils.advance_time_seconds(60)
+        self.assertEqual(timeutils.utcnow(), self.skynet_self_aware_time)
 
 
 class TestIso8601Time(unittest.TestCase):
