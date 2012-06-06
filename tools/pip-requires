@@ -3,9 +3,6 @@ WebOb==1.0.8
 eventlet
 greenlet>=0.3.1
 lxml
-mock
-mox==0.5.3
 routes==1.12.3
-webtest
 iso8601>=0.1.4
 anyjson==0.2.4

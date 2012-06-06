@@ -2,9 +2,11 @@
 distribute>=0.6.24
 
 coverage
+mock
 nose
 nose-exclude
 nosexcover
 openstack.nose_plugin
 pep8==0.6.1
 pylint
+webtest
