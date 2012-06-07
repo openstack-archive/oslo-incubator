@@ -17,6 +17,7 @@
 
 import datetime
 import unittest
+import xmlrpclib
 
 from openstack.common import jsonutils
 
@@ -51,6 +52,12 @@ class ToPrimitiveTestCase(unittest.TestCase):
         x = datetime.datetime(1, 2, 3, 4, 5, 6, 7)
         self.assertEquals(jsonutils.to_primitive(x),
                           "0001-02-03 04:05:06.000007")
+
+    def test_DateTime(self):
+        x = xmlrpclib.DateTime()
+        x.decode("19710203T04:05:06")
+        self.assertEquals(jsonutils.to_primitive(x),
+                          "1971-02-03 04:05:06")
 
     def test_iter(self):
         class IterClass(object):
