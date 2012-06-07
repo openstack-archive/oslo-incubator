@@ -29,7 +29,7 @@ class _MatchMakerTestCase(unittest.TestCase):
         matched_hosts = map(lambda x: x[1], queues)
 
         for host in matched_hosts:
-            self.assertIn(host, self.hosts)
+            self.assertTrue(host in self.hosts)
 
     def test_fanout_host_matches(self):
         """For known hosts, see if they're in fanout."""
@@ -38,7 +38,7 @@ class _MatchMakerTestCase(unittest.TestCase):
 
         LOG.info("Received result from matchmaker: %s", queues)
         for host in self.hosts:
-            self.assertIn(host, matched_hosts)
+            self.assertTrue(host in matched_hosts)
 
 
 class MatchMakerFileTestCase(_MatchMakerTestCase):
