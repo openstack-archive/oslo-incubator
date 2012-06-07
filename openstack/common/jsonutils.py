@@ -115,8 +115,8 @@ def to_primitive(value, convert_instances=False, level=0):
         return unicode(value)
 
 
-def dumps(value):
-    return json.dumps(value, default=to_primitive)
+def dumps(value, cls=None, default=to_primitive):
+    return json.dumps(value, cls=cls, default=default)
 
 
 def loads(s):
