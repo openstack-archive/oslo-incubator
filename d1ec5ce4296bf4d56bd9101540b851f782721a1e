@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Code-Review+2: Mark McLoughlin <markmc@redhat.com>
+Approved+1: Doug Hellmann <doug.hellmann@dreamhost.com>
+Code-Review+2: Doug Hellmann <doug.hellmann@dreamhost.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 08 Jun 2012 14:25:08 +0000
+Reviewed-on: https://review.openstack.org/7651
+Project: openstack/openstack-common
+Branch: refs/heads/master
