@@ -162,7 +162,17 @@ def _copy_module(mod, base, dest_dir):
             path = os.path.join(path, d)
             _copy_file(os.path.join(path, '__init__.py'), base, dest_dir)
 
-    _copy_file(_mod_to_path('openstack.common.' + mod) + '.py', base, dest_dir)
+    mod_path = _mod_to_path('openstack.common.%s' % mod)
+    mod_file = '%s.py' % mod_path
+    if os.path.isfile(mod_file):
+        _copy_file(mod_file, base, dest_dir)
+    elif os.path.isdir(mod_path):
+        dest = os.path.join(dest_dir, _mod_to_path(base),
+                            'openstack', 'common', mod)
+        _make_dirs(dest)
+        sources = filter(lambda x: x[-3:] == '.py', os.listdir(mod_path))
+        for s in sources:
+            _copy_file(os.path.join(mod_path, s), base, dest_dir)
 
 
 def _create_module_init(base, dest_dir, *sub_paths):
