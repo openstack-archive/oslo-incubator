@@ -70,7 +70,10 @@ class TimeUtilsTest(unittest.TestCase):
             self.assertFalse(expect_false)
 
     def test_utcnow_ts(self):
-        skynet_self_aware_timestamp = 872806440.0
+        skynet_self_aware_timestamp = 872835240
+        dt = datetime.datetime.utcfromtimestamp(skynet_self_aware_timestamp)
+        expect = dt.replace(tzinfo=iso8601.iso8601.UTC)
+        self.assertEqual(self.skynet_self_aware_time, expect)
         with mock.patch('datetime.datetime') as datetime_mock:
             datetime_mock.utcnow.return_value = self.skynet_self_aware_time
             ts = timeutils.utcnow_ts()
