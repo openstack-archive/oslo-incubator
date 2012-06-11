@@ -61,16 +61,31 @@ import os.path
 import re
 import shutil
 import sys
+import types
 
 try:
     from openstack import common
     cfg = common.cfg
-except AttributeError:
-    # NOTE(jkoelker) Workaround for LP951197
+except (ImportError, AttributeError):
     try:
+        # NOTE(jkoelker) Workaround for LP951197. We have to build the
+        #                namespace from scratch
+        i, path, description = imp.find_module('openstack/common/iniparser')
+        iniparser = imp.load_module('iniparser', i, path, description)
+
+        import openstack
+        openstack.common = types.ModuleType('common')
+        openstack.common.iniparser = iniparser
+
+        sys.modules['openstack.common'] = openstack.common
+        sys.modules['openstack.common.iniparser'] = iniparser
+
         f, path, description = imp.find_module('openstack/common/cfg')
         cfg = imp.load_module('cfg', f, path, description)
     finally:
+        if i is not None:
+            i.close()
+
         if f is not None:
             f.close()
 
