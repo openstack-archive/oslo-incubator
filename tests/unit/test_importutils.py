@@ -23,6 +23,7 @@ from openstack.common import importutils
 
 
 class ImportUtilsTest(unittest.TestCase):
+
     # NOTE(jkoelker) There has GOT to be a way to test this. But mocking
     #                __import__ is the devil. Right now we just make
     #               sure we can import something from the stdlib
@@ -37,6 +38,20 @@ class ImportUtilsTest(unittest.TestCase):
     def test_import_module(self):
         dt = importutils.import_module('datetime')
         self.assertEqual(sys.modules['datetime'], dt)
+
+    def test_import_object_with_flags(self):
+        obj = importutils.import_object('tests.unit.fake.FakeDriver')
+        self.assertTrue(obj.__class__.__name__, 'FakeDriver')
+        obj = importutils.import_object('tests.unit.fake.FakeDriver',
+                                        first_arg=False)
+        self.assertTrue(obj.__class__.__name__, 'FakeDriver')
+
+        # arg 1 isn't optional here
+        self.assertRaises(TypeError, importutils.import_object,
+                          'tests.unit.fake.FakeDriver2')
+        obj = importutils.import_object('tests.unit.fake.FakeDriver2',
+                                        first_arg=False)
+        self.assertTrue(obj.__class__.__name__, 'FakeDriver2')
 
     def test_import_object(self):
         dt = importutils.import_object('datetime.time')
