@@ -19,6 +19,7 @@
 Time related utilities and helper functions.
 """
 
+import calendar
 import datetime
 import time
 
@@ -74,7 +75,7 @@ def is_older_than(before, seconds):
 
 def utcnow_ts():
     """Timestamp version of our utcnow function."""
-    return time.mktime(utcnow().timetuple())
+    return calendar.timegm(utcnow().timetuple())
 
 
 def utcnow():
