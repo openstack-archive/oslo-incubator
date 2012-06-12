@@ -139,6 +139,7 @@ class ConsumerBase(object):
         """Fetch the message and pass it to the callback object"""
         message = self.receiver.fetch()
         self.callback(message.content)
+        self.session.acknowledge(message)
 
     def get_receiver(self):
         return self.receiver
