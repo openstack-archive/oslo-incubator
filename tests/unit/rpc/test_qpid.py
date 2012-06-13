@@ -53,13 +53,13 @@ class RpcQpidTestCase(unittest.TestCase):
     that the right operations happen on them when the various public rpc API
     calls are exercised.  The API calls tested here include:
 
-        nova.rpc.create_connection()
-        nova.rpc.common.Connection.create_consumer()
-        nova.rpc.common.Connection.close()
-        nova.rpc.cast()
-        nova.rpc.fanout_cast()
-        nova.rpc.call()
-        nova.rpc.multicall()
+        openstack.common.rpc.create_connection()
+        openstack.common.rpc.common.Connection.create_consumer()
+        openstack.common.rpc.common.Connection.close()
+        openstack.common.rpc.cast()
+        openstack.common.rpc.fanout_cast()
+        openstack.common.rpc.call()
+        openstack.common.rpc.multicall()
     """
 
     def setUp(self):
