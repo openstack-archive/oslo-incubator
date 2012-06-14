@@ -19,6 +19,7 @@
 System-level utilities and helper functions.
 """
 
+import datetime
 import logging
 import os
 import random
@@ -138,3 +139,13 @@ def execute(*cmd, **kwargs):
             #               call clean something up in between calls, without
             #               it two execute calls in a row hangs the second one
             greenthread.sleep(0)
+
+
+def utcnow():
+    """Overridable version of utils.utcnow."""
+    if utcnow.override_time:
+        return utcnow.override_time
+    return datetime.datetime.utcnow()
+
+
+utcnow.override_time = None

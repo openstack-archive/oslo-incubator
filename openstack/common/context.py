@@ -38,3 +38,19 @@ class RequestContext(object):
         self.is_admin = is_admin
         self.read_only = read_only
         self.show_deleted = show_deleted
+
+    def to_dict(self):
+        return {'user': self.user,
+                'tenant': self.tenant,
+                'is_admin': self.is_admin,
+                'read_only': self.read_only,
+                'show_deleted': self.show_deleted,
+                'auth_token': self.auth_tok}
+
+
+def get_admin_context(show_deleted="no"):
+    context = RequestContext(None,
+                             tenant=None,
+                             is_admin=True,
+                             show_deleted=show_deleted)
+    return context
