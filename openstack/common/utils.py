@@ -23,6 +23,7 @@ import logging
 import os
 import random
 import shlex
+import uuid
 
 from eventlet import greenthread
 from eventlet.green import subprocess
@@ -138,3 +139,6 @@ def execute(*cmd, **kwargs):
             #               call clean something up in between calls, without
             #               it two execute calls in a row hangs the second one
             greenthread.sleep(0)
+
+def gen_uuid():
+    return uuid.uuid4()
