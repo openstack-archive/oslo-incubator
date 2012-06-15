@@ -22,6 +22,12 @@ Projects should subclass this class if they wish to enhance the request
 context or provide additional information in their specific WSGI pipeline.
 """
 
+import uuid
+
+
+def generate_request_id():
+    return 'req-' + str(uuid.uuid4())
+
 
 class RequestContext(object):
 
@@ -31,10 +37,30 @@ class RequestContext(object):
     """
 
     def __init__(self, auth_tok=None, user=None, tenant=None, is_admin=False,
-                 read_only=False, show_deleted=False):
+                 read_only=False, show_deleted=False, request_id=None):
         self.auth_tok = auth_tok
         self.user = user
         self.tenant = tenant
         self.is_admin = is_admin
         self.read_only = read_only
         self.show_deleted = show_deleted
+        if not request_id:
+            request_id = generate_request_id()
+        self.request_id = request_id
+
+    def to_dict(self):
+        return {'user': self.user,
+                'tenant': self.tenant,
+                'is_admin': self.is_admin,
+                'read_only': self.read_only,
+                'show_deleted': self.show_deleted,
+                'auth_token': self.auth_tok,
+                'request_id': self.request_id}
+
+
+def get_admin_context(show_deleted="no"):
+    context = RequestContext(None,
+                             tenant=None,
+                             is_admin=True,
+                             show_deleted=show_deleted)
+    return context
