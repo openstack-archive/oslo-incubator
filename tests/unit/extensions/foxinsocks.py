@@ -49,7 +49,7 @@ class Foxinsocks(object):
     def get_resources(self):
         resources = []
         resource = extensions.ResourceExtension('foxnsocks',
-                                               FoxInSocksController())
+                                                FoxInSocksController())
         resources.append(resource)
         return resources
 
@@ -73,7 +73,7 @@ class Foxinsocks(object):
             return res
 
         req_ext1 = extensions.RequestExtension('GET', '/dummy_resources/:(id)',
-                                                _goose_handler)
+                                               _goose_handler)
         request_exts.append(req_ext1)
 
         def _bands_handler(req, res):
@@ -85,7 +85,7 @@ class Foxinsocks(object):
             return res
 
         req_ext2 = extensions.RequestExtension('GET', '/dummy_resources/:(id)',
-                                                _bands_handler)
+                                               _bands_handler)
         request_exts.append(req_ext2)
         return request_exts
 

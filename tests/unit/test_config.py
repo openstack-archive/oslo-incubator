@@ -86,7 +86,7 @@ class TestConfig(unittest.TestCase):
 
         # Test that an app cannot be configured
         with mock.patch('openstack.common.config.find_config_file',
-                       mock.Mock(return_value=True)):
+                        mock.Mock(return_value=True)):
             self.assertRaises(RuntimeError, config.load_paste_config,
                               'fake_app', {}, [])
 

@@ -65,8 +65,9 @@ class ResourceExtensionTest(unittest.TestCase):
             return {'collection': 'value'}
 
     def test_resource_can_be_added_as_extension(self):
-        res_ext = extensions.ResourceExtension('tweedles',
-                                            self.ResourceExtensionController())
+        res_ext = extensions.ResourceExtension(
+            'tweedles',
+            self.ResourceExtensionController())
         test_app = setup_extensions_app(SimpleExtensionManager(res_ext))
 
         index_response = test_app.get("/tweedles")
@@ -179,8 +180,9 @@ class ActionExtensionTest(unittest.TestCase):
         action_name = 'FOXNSOX:add_tweedle'
         action_params = dict(name='Beetle')
         req_body = json.dumps({action_name: action_params})
-        response = self.extension_app.post('/dummy_resources/1/action',
-                                     req_body, content_type='application/json')
+        response = self.extension_app.post(
+            '/dummy_resources/1/action',
+            req_body, content_type='application/json')
 
         self.assertEqual("Tweedle Beetle Added.", response.json)
 
@@ -188,8 +190,9 @@ class ActionExtensionTest(unittest.TestCase):
         action_name = 'FOXNSOX:delete_tweedle'
         action_params = dict(name='Bailey')
         req_body = json.dumps({action_name: action_params})
-        response = self.extension_app.post("/dummy_resources/1/action",
-                                     req_body, content_type='application/json')
+        response = self.extension_app.post(
+            "/dummy_resources/1/action",
+            req_body, content_type='application/json')
         self.assertEqual("Tweedle Bailey Deleted.", response.json)
 
     def test_returns_404_for_non_existant_action(self):
@@ -197,9 +200,10 @@ class ActionExtensionTest(unittest.TestCase):
         action_params = dict(name="test")
         req_body = json.dumps({non_existant_action: action_params})
 
-        response = self.extension_app.post("/dummy_resources/1/action",
-                                     req_body, content_type='application/json',
-                                     status='*')
+        response = self.extension_app.post(
+            "/dummy_resources/1/action",
+            req_body, content_type='application/json',
+            status='*')
 
         self.assertEqual(404, response.status_int)
 
@@ -208,8 +212,9 @@ class ActionExtensionTest(unittest.TestCase):
         action_params = dict(name='Beetle')
         req_body = json.dumps({action_name: action_params})
 
-        response = self.extension_app.post("/asdf/1/action", req_body,
-                                   content_type='application/json', status='*')
+        response = self.extension_app.post(
+            "/asdf/1/action", req_body,
+            content_type='application/json', status='*')
         self.assertEqual(404, response.status_int)
 
 
@@ -226,7 +231,7 @@ class RequestExtensionTest(unittest.TestCase):
                            headers={'X-NEW-REQUEST-HEADER': "sox"})
 
         self.assertEqual(response.headers['X-NEW-RESPONSE-HEADER'],
-                                                   "response_header_data")
+                         "response_header_data")
 
     def test_extend_get_resource_response(self):
         def extend_response_data(req, res):
@@ -269,15 +274,17 @@ class RequestExtensionTest(unittest.TestCase):
         self.assertEqual(response.json['uneditable'], "original_value")
 
         ext_app = self._setup_app_with_request_handler(_update_handler,
-                                                            'PUT')
-        ext_response = ext_app.put("/dummy_resources/1",
-                                  json.dumps({'uneditable': "new_value"}),
-                                  headers={'Content-Type': "application/json"})
+                                                       'PUT')
+        ext_response = ext_app.put(
+            "/dummy_resources/1",
+            json.dumps({'uneditable': "new_value"}),
+            headers={'Content-Type': "application/json"})
         self.assertEqual(ext_response.json['uneditable'], "new_value")
 
     def _setup_app_with_request_handler(self, handler, verb):
-        req_ext = extensions.RequestExtension(verb,
-                                   '/dummy_resources/:(id)', handler)
+        req_ext = extensions.RequestExtension(
+            verb,
+            '/dummy_resources/:(id)', handler)
         manager = SimpleExtensionManager(None, None, req_ext)
         return setup_extensions_app(manager)
 
@@ -312,7 +319,8 @@ class ExtensionControllerTest(unittest.TestCase):
         response = self.test_app.get("/extensions")
         foxnsox = response.json["extensions"][0]
 
-        self.assertEqual(foxnsox, {
+        self.assertEqual(
+            foxnsox, {
                 'namespace': 'http://www.fox.in.socks/api/ext/pie/v1.0',
                 'name': 'Fox In Socks',
                 'updated': '2011-01-22T13:25:27-06:00',
@@ -326,7 +334,8 @@ class ExtensionControllerTest(unittest.TestCase):
         json_response = self.test_app.get("/extensions/FOXNSOX").json
         foxnsox = json_response['extension']
 
-        self.assertEqual(foxnsox, {
+        self.assertEqual(
+            foxnsox, {
                 'namespace': 'http://www.fox.in.socks/api/ext/pie/v1.0',
                 'name': 'Fox In Socks',
                 'updated': '2011-01-22T13:25:27-06:00',
@@ -352,10 +361,12 @@ class ExtensionControllerTest(unittest.TestCase):
         exts = root.findall('{0}extension'.format(NS))
         fox_ext = exts[0]
         self.assertEqual(fox_ext.get('name'), 'Fox In Socks')
-        self.assertEqual(fox_ext.get('namespace'),
+        self.assertEqual(
+            fox_ext.get('namespace'),
             'http://www.fox.in.socks/api/ext/pie/v1.0')
         self.assertEqual(fox_ext.get('updated'), '2011-01-22T13:25:27-06:00')
-        self.assertEqual(fox_ext.findtext('{0}description'.format(NS)),
+        self.assertEqual(
+            fox_ext.findtext('{0}description'.format(NS)),
             'The Fox In Socks Extension')
 
     def test_get_extension_xml(self):
@@ -367,10 +378,12 @@ class ExtensionControllerTest(unittest.TestCase):
         self.assertEqual(root.tag.split('extension')[0], NS)
         self.assertEqual(root.get('alias'), 'FOXNSOX')
         self.assertEqual(root.get('name'), 'Fox In Socks')
-        self.assertEqual(root.get('namespace'),
+        self.assertEqual(
+            root.get('namespace'),
             'http://www.fox.in.socks/api/ext/pie/v1.0')
         self.assertEqual(root.get('updated'), '2011-01-22T13:25:27-06:00')
-        self.assertEqual(root.findtext('{0}description'.format(NS)),
+        self.assertEqual(
+            root.findtext('{0}description'.format(NS)),
             'The Fox In Socks Extension')
 
 
@@ -399,13 +412,15 @@ class ExtensionsXMLSerializerTest(unittest.TestCase):
 
     def test_serialize_extenstion(self):
         serializer = extensions.ExtensionsXMLSerializer()
-        data = {'extension': {
-          'name': 'ext1',
-          'namespace': 'http://docs.rack.com/servers/api/ext/pie/v1.0',
-          'alias': 'RS-PIE',
-          'updated': '2011-01-22T13:25:27-06:00',
-          'description': 'Adds the capability to share an image.',
-          'links': [{'rel': 'describedby',
+        data = {
+            'extension': {
+                'name': 'ext1',
+                'namespace': 'http://docs.rack.com/servers/api/ext/pie/v1.0',
+                'alias': 'RS-PIE',
+                'updated': '2011-01-22T13:25:27-06:00',
+                'description': 'Adds the capability to share an image.',
+                'links': [
+                    {'rel': 'describedby',
                      'type': 'application/pdf',
                      'href': 'http://docs.rack.com/servers/api/ext/cs.pdf'},
                     {'rel': 'describedby',
@@ -416,7 +431,7 @@ class ExtensionsXMLSerializerTest(unittest.TestCase):
         root = etree.XML(xml)
         ext_dict = data['extension']
         self.assertEqual(root.findtext('{0}description'.format(NS)),
-            ext_dict['description'])
+                         ext_dict['description'])
 
         for key in ['name', 'namespace', 'alias', 'updated']:
             self.assertEqual(root.get(key), ext_dict[key])
@@ -429,30 +444,31 @@ class ExtensionsXMLSerializerTest(unittest.TestCase):
 
     def test_serialize_extensions(self):
         serializer = extensions.ExtensionsXMLSerializer()
-        data = {"extensions": [{
+        data = {
+            "extensions": [{
                 "name": "Public Image Extension",
                 "namespace": "http://foo.com/api/ext/pie/v1.0",
                 "alias": "RS-PIE",
                 "updated": "2011-01-22T13:25:27-06:00",
                 "description": "Adds the capability to share an image.",
                 "links": [{"rel": "describedby",
-                            "type": "application/pdf",
-                            "type": "application/vnd.sun.wadl+xml",
-                            "href": "http://foo.com/api/ext/cs-pie.pdf"},
-                           {"rel": "describedby",
-                            "type": "application/vnd.sun.wadl+xml",
-                            "href": "http://foo.com/api/ext/cs-pie.wadl"}]},
+                           "type": "application/pdf",
+                           "type": "application/vnd.sun.wadl+xml",
+                           "href": "http://foo.com/api/ext/cs-pie.pdf"},
+                          {"rel": "describedby",
+                           "type": "application/vnd.sun.wadl+xml",
+                           "href": "http://foo.com/api/ext/cs-pie.wadl"}]},
                 {"name": "Cloud Block Storage",
                  "namespace": "http://foo.com/api/ext/cbs/v1.0",
                  "alias": "RS-CBS",
                  "updated": "2011-01-12T11:22:33-06:00",
                  "description": "Allows mounting cloud block storage.",
                  "links": [{"rel": "describedby",
-                             "type": "application/pdf",
-                             "href": "http://foo.com/api/ext/cs-cbs.pdf"},
-                            {"rel": "describedby",
-                             "type": "application/vnd.sun.wadl+xml",
-                             "href": "http://foo.com/api/ext/cs-cbs.wadl"}]}]}
+                            "type": "application/pdf",
+                            "href": "http://foo.com/api/ext/cs-cbs.pdf"},
+                           {"rel": "describedby",
+                            "type": "application/vnd.sun.wadl+xml",
+                            "href": "http://foo.com/api/ext/cs-cbs.wadl"}]}]}
 
         xml = serializer.serialize(data, 'index')
         root = etree.XML(xml)
@@ -534,7 +550,7 @@ class ExtensionDescriptorInterfaceTest(unittest.TestCase):
                             'get_actions', 'get_request_extensions']
 
         predicate = lambda a: (inspect.ismethod(a) and
-                              not a.__name__.startswith('_'))
+                               not a.__name__.startswith('_'))
         for method in inspect.getmembers(extensions.ExtensionDescriptor,
                                          predicate):
             self.assertFalse(method[0] not in contract_methods)

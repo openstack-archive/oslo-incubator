@@ -80,8 +80,8 @@ class BaseRpcTestCase(unittest.TestCase):
 
         value = 42
         result = self.rpc.call(FLAGS, self.context, self.topic,
-                          {"method": "echo_three_times_yield",
-                           "args": {"value": value}})
+                               {"method": "echo_three_times_yield",
+                                "args": {"value": value}})
         self.assertEqual(value + 2, result)
 
     def test_multicall_succeed_once(self):
@@ -90,9 +90,9 @@ class BaseRpcTestCase(unittest.TestCase):
 
         value = 42
         result = self.rpc.multicall(FLAGS, self.context,
-                              self.topic,
-                              {"method": "echo",
-                               "args": {"value": value}})
+                                    self.topic,
+                                    {"method": "echo",
+                                     "args": {"value": value}})
         for i, x in enumerate(result):
             if i > 0:
                 self.fail('should only receive one response')
@@ -104,9 +104,9 @@ class BaseRpcTestCase(unittest.TestCase):
 
         value = 42
         result = self.rpc.multicall(FLAGS, self.context,
-                              self.topic,
-                              {"method": "multicall_three_nones",
-                               "args": {"value": value}})
+                                    self.topic,
+                                    {"method": "multicall_three_nones",
+                                     "args": {"value": value}})
         for i, x in enumerate(result):
             self.assertEqual(x, None)
         # i should have been 0, 1, and finally 2:
@@ -118,9 +118,9 @@ class BaseRpcTestCase(unittest.TestCase):
 
         value = 42
         result = self.rpc.multicall(FLAGS, self.context,
-                              self.topic,
-                              {"method": "echo_three_times_yield",
-                               "args": {"value": value}})
+                                    self.topic,
+                                    {"method": "echo_three_times_yield",
+                                     "args": {"value": value}})
         for i, x in enumerate(result):
             self.assertEqual(value + i, x)
 
@@ -131,8 +131,8 @@ class BaseRpcTestCase(unittest.TestCase):
         """Makes sure a context is passed through rpc call."""
         value = 42
         result = self.rpc.call(FLAGS, self.context,
-                          self.topic, {"method": "context",
-                                   "args": {"value": value}})
+                               self.topic, {"method": "context",
+                                            "args": {"value": value}})
         self.assertEqual(self.context.to_dict(), result)
 
     def _test_cast(self, fanout=False):
@@ -189,14 +189,14 @@ class BaseRpcTestCase(unittest.TestCase):
             def echo(context, queue, value):
                 """Calls echo in the passed queue."""
                 LOG.debug(_("Nested received %(queue)s, %(value)s")
-                        % locals())
+                          % locals())
                 # TODO(comstud):
                 # so, it will replay the context and use the same REQID?
                 # that's bizarre.
                 ret = self.rpc.call(FLAGS, context,
-                               queue,
-                               {"method": "echo",
-                                "args": {"value": value}})
+                                    queue,
+                                    {"method": "echo",
+                                     "args": {"value": value}})
                 LOG.debug(_("Nested return %s"), ret)
                 return value
 
@@ -228,10 +228,10 @@ class BaseRpcTestCase(unittest.TestCase):
                            "args": {"value": value}}, timeout=1)
         try:
             self.rpc.call(FLAGS, self.context,
-                     self.topic,
-                     {"method": "block",
-                      "args": {"value": value}},
-                     timeout=1)
+                          self.topic,
+                          {"method": "block",
+                           "args": {"value": value}},
+                          timeout=1)
             self.fail("should have thrown Timeout")
         except rpc_common.Timeout as exc:
             pass
@@ -272,8 +272,8 @@ class BaseRpcAMQPTestCase(BaseRpcTestCase):
 
         value = 42
         result = self.rpc.call(FLAGS, self.context, self.topic,
-                {"method": "echo",
-                 "args": {"value": value}})
+                               {"method": "echo",
+                                "args": {"value": value}})
         self.assertEqual(value, result)
 
 
