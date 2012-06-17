@@ -51,7 +51,7 @@ class MyException(Exception):
 
 
 def _raise_exc_stub(stubs, times, obj, method, exc_msg,
-        exc_class=MyException):
+                    exc_class=MyException):
     info = {'called': 0}
     orig_method = getattr(obj, method)
 
@@ -166,13 +166,14 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         class MyConnection(impl_kombu.Connection):
             def __init__(myself, *args, **kwargs):
                 super(MyConnection, myself).__init__(*args, **kwargs)
-                self.assertEqual(myself.params,
-                        {'hostname': FLAGS.rabbit_host,
-                         'userid': FLAGS.rabbit_userid,
-                         'password': FLAGS.rabbit_password,
-                         'port': FLAGS.rabbit_port,
-                         'virtual_host': FLAGS.rabbit_virtual_host,
-                         'transport': 'memory'})
+                self.assertEqual(
+                    myself.params,
+                    {'hostname': FLAGS.rabbit_host,
+                     'userid': FLAGS.rabbit_userid,
+                     'password': FLAGS.rabbit_password,
+                     'port': FLAGS.rabbit_port,
+                     'virtual_host': FLAGS.rabbit_virtual_host,
+                     'transport': 'memory'})
 
             def topic_send(_context, topic, msg):
                 pass
@@ -198,13 +199,14 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         class MyConnection(impl_kombu.Connection):
             def __init__(myself, *args, **kwargs):
                 super(MyConnection, myself).__init__(*args, **kwargs)
-                self.assertEqual(myself.params,
-                        {'hostname': server_params['hostname'],
-                         'userid': server_params['username'],
-                         'password': server_params['password'],
-                         'port': server_params['port'],
-                         'virtual_host': server_params['virtual_host'],
-                         'transport': 'memory'})
+                self.assertEqual(
+                    myself.params,
+                    {'hostname': server_params['hostname'],
+                     'userid': server_params['username'],
+                     'password': server_params['password'],
+                     'port': server_params['port'],
+                     'virtual_host': server_params['virtual_host'],
+                     'transport': 'memory'})
 
             def topic_send(_context, topic, msg):
                 pass
@@ -213,7 +215,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         self.stubs.Set(impl_kombu, 'Connection', MyConnection)
 
         impl_kombu.cast_to_server(FLAGS, ctxt, server_params,
-                'fake_topic', {'msg': 'fake'})
+                                  'fake_topic', {'msg': 'fake'})
 
     @testutils.skip_test("kombu memory transport seems buggy with "
                          "fanout queues as this test passes when "
@@ -248,11 +250,11 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         # Test that any exception with 'timeout' in it causes a
         # reconnection
         info = _raise_exc_stub(self.stubs, 2, self.rpc.DirectConsumer,
-                '__init__', 'foo timeout foo')
+                               '__init__', 'foo timeout foo')
 
         conn = self.rpc.Connection(FLAGS)
         result = conn.declare_consumer(self.rpc.DirectConsumer,
-                'test_topic', None)
+                                       'test_topic', None)
 
         self.assertEqual(info['called'], 3)
         self.assertTrue(isinstance(result, self.rpc.DirectConsumer))
@@ -262,13 +264,13 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         self.stubs.UnsetAll()
 
         info = _raise_exc_stub(self.stubs, 1, self.rpc.DirectConsumer,
-                '__init__', 'meow')
+                               '__init__', 'meow')
 
         conn = self.rpc.Connection(FLAGS)
         conn.connection_errors = (MyException, )
 
         result = conn.declare_consumer(self.rpc.DirectConsumer,
-                'test_topic', None)
+                                       'test_topic', None)
 
         self.assertEqual(info['called'], 2)
         self.assertTrue(isinstance(result, self.rpc.DirectConsumer))
@@ -277,11 +279,11 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
     def test_declare_consumer_ioerrors_will_reconnect(self):
         """Test that an IOError exception causes a reconnection"""
         info = _raise_exc_stub(self.stubs, 2, self.rpc.DirectConsumer,
-                '__init__', 'Socket closed', exc_class=IOError)
+                               '__init__', 'Socket closed', exc_class=IOError)
 
         conn = self.rpc.Connection(FLAGS)
         result = conn.declare_consumer(self.rpc.DirectConsumer,
-                'test_topic', None)
+                                       'test_topic', None)
 
         self.assertEqual(info['called'], 3)
         self.assertTrue(isinstance(result, self.rpc.DirectConsumer))
@@ -292,7 +294,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         # reconnection when declaring the publisher class and when
         # calling send()
         info = _raise_exc_stub(self.stubs, 2, self.rpc.DirectPublisher,
-                '__init__', 'foo timeout foo')
+                               '__init__', 'foo timeout foo')
 
         conn = self.rpc.Connection(FLAGS)
         conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', 'msg')
@@ -301,7 +303,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         self.stubs.UnsetAll()
 
         info = _raise_exc_stub(self.stubs, 2, self.rpc.DirectPublisher,
-                'send', 'foo timeout foo')
+                               'send', 'foo timeout foo')
 
         conn = self.rpc.Connection(FLAGS)
         conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', 'msg')
@@ -314,7 +316,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         self.stubs.UnsetAll()
 
         info = _raise_exc_stub(self.stubs, 1, self.rpc.DirectPublisher,
-                '__init__', 'meow')
+                               '__init__', 'meow')
 
         conn = self.rpc.Connection(FLAGS)
         conn.connection_errors = (MyException, )
@@ -325,7 +327,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         self.stubs.UnsetAll()
 
         info = _raise_exc_stub(self.stubs, 1, self.rpc.DirectPublisher,
-                'send', 'meow')
+                               'send', 'meow')
 
         conn = self.rpc.Connection(FLAGS)
         conn.connection_errors = (MyException, )
@@ -348,7 +350,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         conn.direct_send('a_direct', message)
 
         info = _raise_exc_stub(self.stubs, 1, conn.connection,
-                'drain_events', 'foo timeout foo')
+                               'drain_events', 'foo timeout foo')
         conn.consume(limit=1)
         conn.close()
 
@@ -374,9 +376,9 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
                            "args": {"value": value}})
         try:
             self.rpc.call(FLAGS, self.context,
-                     'test',
-                     {"method": "fail",
-                      "args": {"value": value}})
+                          'test',
+                          {"method": "fail",
+                           "args": {"value": value}})
             self.fail("should have thrown Exception")
         except NotImplementedError as exc:
             self.assertTrue(value in unicode(exc))
@@ -404,9 +406,9 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
                            "args": {"value": value}})
         try:
             self.rpc.call(FLAGS, self.context,
-                     'test',
-                     {"method": "fail_converted",
-                      "args": {"value": value}})
+                          'test',
+                          {"method": "fail_converted",
+                           "args": {"value": value}})
             self.fail("should have thrown Exception")
         except exception.ApiError as exc:
             self.assertTrue(value in unicode(exc))

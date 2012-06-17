@@ -131,10 +131,12 @@ class BrainTestCase(unittest.TestCase):
 }"""
         brain = policy.Brain.load_json(exemplar, "default")
 
-        self.assertEqual(brain.rules, dict(
+        self.assertEqual(
+            brain.rules, dict(
                 admin_or_owner=[["role:admin"], ["project_id:%(project_id)s"]],
                 default=[],
-                ))
+            )
+        )
         self.assertEqual(brain.default_rule, "default")
 
     def test_add_rule(self):
@@ -142,7 +144,8 @@ class BrainTestCase(unittest.TestCase):
         brain.add_rule("rule1",
                        [["role:admin"], ["project_id:%(project_id)s"]])
 
-        self.assertEqual(brain.rules, dict(
+        self.assertEqual(
+            brain.rules, dict(
                 rule1=[["role:admin"], ["project_id:%(project_id)s"]]))
 
     def test_check_with_badmatch(self):
@@ -384,8 +387,8 @@ class HttpBrainTestCase(unittest.TestCase):
         self.assertEqual(result, False)
         self.assertEqual(self.url, "//spam.example.org/spam")
         self.assertEqual(self.decode_post_data(), dict(
-                target=dict(tenant="spam"),
-                credentials=dict(roles=["a", "b", "c"])))
+                         target=dict(tenant="spam"),
+                         credentials=dict(roles=["a", "b", "c"])))
 
     def test_http_true(self):
         self.urlopen_result = "True"
@@ -397,5 +400,5 @@ class HttpBrainTestCase(unittest.TestCase):
         self.assertEqual(result, True)
         self.assertEqual(self.url, "//spam.example.org/spam")
         self.assertEqual(self.decode_post_data(), dict(
-                target=dict(tenant="spam"),
-                credentials=dict(roles=["a", "b", "c"])))
+                         target=dict(tenant="spam"),
+                         credentials=dict(roles=["a", "b", "c"])))

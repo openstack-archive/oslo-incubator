@@ -124,20 +124,22 @@ class RpcQpidTestCase(unittest.TestCase):
         self.mock_connection.session().AndReturn(self.mock_session)
         if fanout:
             # The link name includes a UUID, so match it with a regex.
-            expected_address = mox.Regex(r'^impl_qpid_test_fanout ; '
+            expected_address = mox.Regex(
+                r'^impl_qpid_test_fanout ; '
                 '{"node": {"x-declare": {"auto-delete": true, "durable": '
                 'false, "type": "fanout"}, "type": "topic"}, "create": '
                 '"always", "link": {"x-declare": {"auto-delete": true, '
                 '"exclusive": true, "durable": false}, "durable": true, '
                 '"name": "impl_qpid_test_fanout_.*"}}$')
         else:
-            expected_address = ('nova/impl_qpid_test ; {"node": {"x-declare": '
+            expected_address = (
+                'nova/impl_qpid_test ; {"node": {"x-declare": '
                 '{"auto-delete": true, "durable": true}, "type": "topic"}, '
                 '"create": "always", "link": {"x-declare": {"auto-delete": '
                 'true, "exclusive": false, "durable": false}, "durable": '
                 'true, "name": "impl_qpid_test"}}')
         self.mock_session.receiver(expected_address).AndReturn(
-                                                        self.mock_receiver)
+            self.mock_receiver)
         self.mock_receiver.capacity = 1
         self.mock_connection.close()
 
@@ -173,7 +175,7 @@ class RpcQpidTestCase(unittest.TestCase):
             'true, "exclusive": false, "durable": false}, "durable": '
             'true, "name": "impl.qpid.test.workers"}}')
         self.mock_session.receiver(expected_address).AndReturn(
-                                                        self.mock_receiver)
+            self.mock_receiver)
         self.mock_receiver.capacity = 1
         self.mock_connection.close()
 
@@ -196,12 +198,14 @@ class RpcQpidTestCase(unittest.TestCase):
 
         self.mock_connection.session().AndReturn(self.mock_session)
         if fanout:
-            expected_address = ('impl_qpid_test_fanout ; '
+            expected_address = (
+                'impl_qpid_test_fanout ; '
                 '{"node": {"x-declare": {"auto-delete": true, '
                 '"durable": false, "type": "fanout"}, '
                 '"type": "topic"}, "create": "always"}')
         else:
-            expected_address = ('nova/impl_qpid_test ; {"node": {"x-declare": '
+            expected_address = (
+                'nova/impl_qpid_test ; {"node": {"x-declare": '
                 '{"auto-delete": true, "durable": false}, "type": "topic"}, '
                 '"create": "always"}')
         self.mock_session.sender(expected_address).AndReturn(self.mock_sender)
@@ -253,12 +257,12 @@ class RpcQpidTestCase(unittest.TestCase):
             def __init__(myself, *args, **kwargs):
                 super(MyConnection, myself).__init__(*args, **kwargs)
                 self.assertEqual(myself.connection.username,
-                        server_params['username'])
+                                 server_params['username'])
                 self.assertEqual(myself.connection.password,
-                        server_params['password'])
+                                 server_params['password'])
                 self.assertEqual(myself.broker,
-                        server_params['hostname'] + ':' +
-                                str(server_params['port']))
+                                 server_params['hostname'] + ':' +
+                                 str(server_params['port']))
 
         MyConnection.pool = rpc_amqp.Pool(FLAGS, MyConnection)
         self.stubs.Set(impl_qpid, 'Connection', MyConnection)
@@ -290,43 +294,43 @@ class RpcQpidTestCase(unittest.TestCase):
         self.mock_connection.opened().AndReturn(False)
         self.mock_connection.open()
         self.mock_connection.session().AndReturn(self.mock_session)
-        rcv_addr = mox.Regex(r'^.*/.* ; {"node": {"x-declare": {"auto-delete":'
-                   ' true, "durable": true, "type": "direct"}, "type": '
-                   '"topic"}, "create": "always", "link": {"x-declare": '
-                   '{"auto-delete": true, "exclusive": true, "durable": '
-                   'false}, "durable": true, "name": ".*"}}')
+        rcv_addr = mox.Regex(
+            r'^.*/.* ; {"node": {"x-declare": {"auto-delete":'
+            ' true, "durable": true, "type": "direct"}, "type": '
+            '"topic"}, "create": "always", "link": {"x-declare": '
+            '{"auto-delete": true, "exclusive": true, "durable": '
+            'false}, "durable": true, "name": ".*"}}')
         self.mock_session.receiver(rcv_addr).AndReturn(self.mock_receiver)
         self.mock_receiver.capacity = 1
-        send_addr = ('nova/impl_qpid_test ; {"node": {"x-declare": '
+        send_addr = (
+            'nova/impl_qpid_test ; {"node": {"x-declare": '
             '{"auto-delete": true, "durable": false}, "type": "topic"}, '
             '"create": "always"}')
         self.mock_session.sender(send_addr).AndReturn(self.mock_sender)
         self.mock_sender.send(mox.IgnoreArg())
 
         self.mock_session.next_receiver(timeout=mox.IsA(int)).AndReturn(
-                                                        self.mock_receiver)
+            self.mock_receiver)
         self.mock_receiver.fetch().AndReturn(qpid.messaging.Message(
-                        {"result": "foo", "failure": False, "ending": False}))
+            {"result": "foo", "failure": False, "ending": False}))
         self.mock_session.acknowledge(mox.IgnoreArg())
         if multi:
             self.mock_session.next_receiver(timeout=mox.IsA(int)).AndReturn(
-                                                        self.mock_receiver)
+                self.mock_receiver)
             self.mock_receiver.fetch().AndReturn(
-                            qpid.messaging.Message(
-                                {"result": "bar", "failure": False,
-                                 "ending": False}))
+                qpid.messaging.Message({"result": "bar", "failure": False,
+                                        "ending": False}))
             self.mock_session.acknowledge(mox.IgnoreArg())
             self.mock_session.next_receiver(timeout=mox.IsA(int)).AndReturn(
-                                                        self.mock_receiver)
+                self.mock_receiver)
             self.mock_receiver.fetch().AndReturn(
-                            qpid.messaging.Message(
-                                {"result": "baz", "failure": False,
-                                 "ending": False}))
+                qpid.messaging.Message({"result": "baz", "failure": False,
+                                        "ending": False}))
             self.mock_session.acknowledge(mox.IgnoreArg())
         self.mock_session.next_receiver(timeout=mox.IsA(int)).AndReturn(
-                                                        self.mock_receiver)
+            self.mock_receiver)
         self.mock_receiver.fetch().AndReturn(qpid.messaging.Message(
-                        {"failure": False, "ending": True}))
+            {"failure": False, "ending": True}))
         self.mock_session.acknowledge(mox.IgnoreArg())
         self.mock_session.close()
         self.mock_connection.session().AndReturn(self.mock_session)
@@ -342,7 +346,7 @@ class RpcQpidTestCase(unittest.TestCase):
                 method = impl_qpid.call
 
             res = method(FLAGS, ctx, "impl_qpid_test",
-                           {"method": "test_method", "args": {}})
+                         {"method": "test_method", "args": {}})
 
             if multi:
                 self.assertEquals(list(res), ["foo", "bar", "baz"])

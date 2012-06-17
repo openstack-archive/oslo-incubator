@@ -412,8 +412,9 @@ class ResourceTest(unittest.TestCase):
 
     def test_malformed_request_body_throws_bad_request(self):
         resource = wsgi.Resource(None)
-        request = wsgi.Request.blank("/", body="{mal:formed", method='POST',
-                                  headers={'Content-Type': "application/json"})
+        request = wsgi.Request.blank(
+            "/", body="{mal:formed", method='POST',
+            headers={'Content-Type': "application/json"})
 
         response = resource(request)
         self.assertEqual(response.status, '400 Bad Request')
@@ -421,7 +422,7 @@ class ResourceTest(unittest.TestCase):
     def test_wrong_content_type_throws_unsupported_media_type_error(self):
         resource = wsgi.Resource(None)
         request = wsgi.Request.blank("/", body="{some:json}", method='POST',
-                                  headers={'Content-Type': "xxx"})
+                                     headers={'Content-Type': "xxx"})
 
         response = resource(request)
         self.assertEqual(response.status, '415 Unsupported Media Type')

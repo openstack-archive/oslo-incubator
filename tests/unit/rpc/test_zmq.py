@@ -54,7 +54,7 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
         self.rpc = impl_zmq
         self.rpc.register_opts(FLAGS)
         FLAGS.set_default('rpc_zmq_matchmaker',
-            'mod_matchmaker.MatchMakerLocalhost')
+                          'mod_matchmaker.MatchMakerLocalhost')
 
         # We'll change this if we detect no daemon running.
         ipc_dir = FLAGS.rpc_zmq_ipc_dir
@@ -87,17 +87,18 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
             consumption_proxy = impl_zmq.InternalContext(None)
 
             self.reactor.register(consumption_proxy,
-                             consume_in, zmq.PULL, out_bind=True)
+                                  consume_in,
+                                  zmq.PULL,
+                                  out_bind=True)
             self.reactor.consume_in_thread()
         except zmq.ZMQError:
             assert False, _("Could not create ZeroMQ receiver daemon. "
                             "Socket may already be in use.")
         except OSError:
-            assert False, _("Could not create IPC directory %s") % \
-                                                                (ipc_dir, )
+            assert False, _("Could not create IPC directory %s") % (ipc_dir, )
         finally:
-            super(_RpcZmqBaseTestCase, self).setUp(
-                  topic=topic, topic_nested=topic_nested)
+            super(RpcZmqBaseTestCase, self).setUp(
+                topic=topic, topic_nested=topic_nested)
 
     def tearDown(self):
         if not impl_zmq:
@@ -128,5 +129,5 @@ class RpcZmqDirectTopicTestCase(_RpcZmqBaseTestCase):
     """
     def setUp(self):
         super(RpcZmqDirectTopicTestCase, self).setUp(
-              topic='test.localhost',
-              topic_nested='nested.localhost')
+            topic='test.localhost',
+            topic_nested='nested.localhost')

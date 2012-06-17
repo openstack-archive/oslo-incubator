@@ -39,14 +39,14 @@ class RpcProxyTestCase(unittest.TestCase):
         super(RpcProxyTestCase, self).tearDown()
 
     def _test_rpc_method(self, rpc_method, has_timeout=False, has_retval=False,
-            server_params=None, supports_topic_override=True):
+                         server_params=None, supports_topic_override=True):
         topic = 'fake_topic'
         timeout = 123
         rpc_proxy = proxy.RpcProxy(topic, '1.0')
         ctxt = context.RequestContext('fake_user', 'fake_project')
         msg = {'method': 'fake_method', 'args': {'x': 'y'}}
         expected_msg = {'method': 'fake_method', 'args': {'x': 'y'},
-                'version': '1.0'}
+                        'version': '1.0'}
 
         expected_retval = 'hi' if has_retval else None
 
@@ -120,8 +120,9 @@ class RpcProxyTestCase(unittest.TestCase):
         self._test_rpc_method('cast_to_server', server_params={'blah': 1})
 
     def test_fanout_cast_to_server(self):
-        self._test_rpc_method('fanout_cast_to_server',
-                server_params={'blah': 1}, supports_topic_override=False)
+        self._test_rpc_method(
+            'fanout_cast_to_server',
+            server_params={'blah': 1}, supports_topic_override=False)
 
     def test_make_msg(self):
         self.assertEqual(proxy.RpcProxy.make_msg('test_method', a=1, b=2),
