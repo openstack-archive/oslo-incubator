@@ -25,6 +25,8 @@ import unittest
 from openstack.common import cfg
 from openstack.common import context
 from openstack.common import exception
+from openstack.common import importutils
+from openstack.common import rpc
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
 from tests.unit.rpc import common
@@ -148,3 +150,26 @@ class RpcCommonTestCase(unittest.TestCase):
         #assure the traceback was added
         self.assertTrue('raise FakeIDontExistException' in unicode(after_exc))
         FLAGS.reset()
+
+    def test_loading_old_nova_config(self):
+        FLAGS.set_override('rpc_backend', 'nova.rpc.impl_qpid')
+        rpc._RPCIMPL = None
+
+        self.mod = None
+
+        def fake_import_module(m):
+            if not self.mod:
+                # The first time import_module is called, before the replace()
+                self.mod = m
+                raise ImportError
+            self.mod = m
+
+        orig_import_module = importutils.import_module
+        importutils.import_module = fake_import_module
+
+        rpc._get_impl()
+
+        importutils.import_module = orig_import_module
+        FLAGS.reset()
+
+        self.assertEqual(self.mod, 'nova.openstack.common.rpc.impl_qpid')

@@ -31,7 +31,7 @@ from openstack.common import importutils
 
 rpc_opts = [
     cfg.StrOpt('rpc_backend',
-               default='nova.rpc.impl_kombu',
+               default='%s.impl_kombu' % __package__,
                help="The messaging module to use, defaults to kombu."),
     cfg.IntOpt('rpc_thread_pool_size',
                default=64,
@@ -248,5 +248,11 @@ def _get_impl():
     """Delay import of rpc_backend until configuration is loaded."""
     global _RPCIMPL
     if _RPCIMPL is None:
-        _RPCIMPL = importutils.import_module(cfg.CONF.rpc_backend)
+        try:
+            _RPCIMPL = importutils.import_module(cfg.CONF.rpc_backend)
+        except ImportError:
+            # For backwards compatibility with older nova config.
+            impl = cfg.CONF.rpc_backend.replace('nova.rpc',
+                                                'nova.openstack.common.rpc')
+            _RPCIMPL = importutils.import_module(impl)
     return _RPCIMPL
