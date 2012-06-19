@@ -113,7 +113,34 @@ def write_requirements():
 def _run_shell_command(cmd):
     output = subprocess.Popen(["/bin/sh", "-c", cmd],
                               stdout=subprocess.PIPE)
-    return output.communicate()[0].strip()
+    out = output.communicate()
+    if len(out) == 0:
+        return None
+    if len(out[0].strip()) == 0:
+        return None
+    return out[0].strip()
+
+
+def _get_git_current_tag():
+    return _run_shell_command("git tag --contains HEAD")
+
+
+def _get_git_latest_tag():
+    return _run_shell_command("git describe --tags --abbrev=0")
+
+
+def _get_git_post_version():
+    latest_tag = _get_git_latest_tag()
+    if latest_tag is None:
+        base_version = "0.0"
+        cmd = "git --no-pager log --oneline"
+    else:
+        base_version = latest_tag
+        # We're appending version, so we only want revs since last tag
+        cmd = "git --no-pager log --oneline %s..HEAD" % latest_tag
+    out = _run_shell_command(cmd)
+    log_lines = out.split("\n")
+    return "%s.%s" % (base_version, len(log_lines))
 
 
 def write_vcsversion(location):
@@ -250,3 +277,15 @@ def get_cmdclass():
         pass
 
     return cmdclass
+
+
+def get_post_version():
+    """Return a version which is equal to the tag that's on the current
+    revision if there is one, or tag plus number of additional revisions
+    if the current revision has no tag."""
+
+    if os.path.isdir('.git'):
+        current_tag = _get_git_current_tag()
+        if current_tag is not None:
+            return current_tag
+        return _get_git_post_version()
