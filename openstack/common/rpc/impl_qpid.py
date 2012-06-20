@@ -141,7 +141,7 @@ class ConsumerBase(object):
         try:
             self.callback(message.content)
         except Exception:
-            logging.exception(_("Failed to process message... skipping it."))
+            LOG.exception(_("Failed to process message... skipping it."))
         finally:
             self.session.acknowledge(message)
 
