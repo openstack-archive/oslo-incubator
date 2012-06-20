@@ -18,21 +18,28 @@
 import os
 import unittest
 from tempfile import mkstemp
+import sys
 
-from openstack.common.setup import canonicalize_emails
-from openstack.common.setup import parse_mailmap
+from openstack.common.setup import *
 
 
-class SetupTest(unittest.TestCase):
-
-    def setUp(self):
-        (fd, self.mailmap) = mkstemp(prefix='openstack', suffix='.mailmap')
+class EmailTestCase(unittest.TestCase):
 
     def test_str_dict_replace(self):
         string = 'Johnnie T. Hozer'
         mapping = {'T.': 'The'}
         self.assertEqual('Johnnie The Hozer',
                          canonicalize_emails(string, mapping))
+
+
+class MailmapTestCase(unittest.TestCase):
+
+    def setUp(self):
+        (fd, self.mailmap) = mkstemp(prefix='openstack', suffix='.setup')
+
+    def tearDown(self):
+        if os.path.exists(self.mailmap):
+            os.remove(self.mailmap)
 
     def test_mailmap_with_fullname(self):
         with open(self.mailmap, 'w') as mm_fh:
@@ -52,6 +59,39 @@ class SetupTest(unittest.TestCase):
         self.assertEqual({'<email@bar.com>': '<email@foo.com>'},
                          parse_mailmap(self.mailmap))
 
+
+class ParseRequirementsTest(unittest.TestCase):
+
+    def setUp(self):
+        (fd, self.tmp_file) = mkstemp(prefix='openstack', suffix='.setup')
+
     def tearDown(self):
-        if os.path.exists(self.mailmap):
-            os.remove(self.mailmap)
+        if os.path.exists(self.tmp_file):
+            os.remove(self.tmp_file)
+
+    def test_parse_requirements_normal(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write("foo\nbar")
+        self.assertEqual(['foo', 'bar'],
+                         parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_with_git_egg_url(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write("-e git://foo.com/zipball#egg=bar")
+        self.assertEqual(['bar'], parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_with_http_egg_url(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write("https://foo.com/zipball#egg=bar")
+        self.assertEqual(['bar'], parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_removes_index_lines(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write("-f foobar")
+        self.assertEqual([], parse_requirements([self.tmp_file]))
+
+    def test_parse_requirements_removes_argparse(self):
+        with open(self.tmp_file, 'w') as fh:
+            fh.write("argparse")
+        if sys.version_info >= (2, 7):
+            self.assertEqual([], parse_requirements([self.tmp_file]))
