@@ -36,7 +36,7 @@ from eventlet import semaphore
 
 from openstack.common import excutils
 from openstack.common import local
-import openstack.common.rpc.common as rpc_common
+from openstack.common.rpc import common as rpc_common
 
 
 LOG = logging.getLogger(__name__)
