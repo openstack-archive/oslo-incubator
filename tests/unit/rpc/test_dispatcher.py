@@ -112,3 +112,17 @@ class RpcDispatcherTestCase(unittest.TestCase):
 
         self.assertEqual(v1.test_method_ctxt, self.ctxt)
         self.assertEqual(v1.test_method_arg1, 1)
+
+    def test_missing_method_version_match(self):
+        v1 = self.API1()
+        disp = dispatcher.RpcDispatcher([v1])
+        self.assertRaises(AttributeError,
+                          disp.dispatch,
+                          self.ctxt, "1.0", "does_not_exist")
+
+    def test_missing_method_version_no_match(self):
+        v1 = self.API1()
+        disp = dispatcher.RpcDispatcher([v1])
+        self.assertRaises(rpc_common.UnsupportedRpcVersion,
+                          disp.dispatch,
+                          self.ctxt, "2.0", "does_not_exist")
