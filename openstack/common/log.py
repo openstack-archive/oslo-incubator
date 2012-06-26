@@ -42,6 +42,7 @@ import sys
 import traceback
 
 from openstack.common import cfg
+from openstack.common import jsonutils
 from openstack.common import local
 from openstack.common import notifier
 
@@ -241,7 +242,7 @@ class JSONFormatter(logging.Formatter):
         if record.exc_info:
             message['traceback'] = self.formatException(record.exc_info)
 
-        return json.dumps(message)
+        return jsonutils.dumps(message)
 
 
 class PublishErrorsHandler(logging.Handler):
