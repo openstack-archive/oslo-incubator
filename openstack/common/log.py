@@ -327,7 +327,9 @@ def _setup_logging_from_conf(product_name):
         log_root.addHandler(streamlog)
 
     elif not CONF.log_file:
-        streamlog = logging.StreamHandler(stream=sys.stdout)
+        # pass sys.stdout as a positional argument
+        # python2.6 calls the argument strm, in 2.7 it's stream
+        streamlog = logging.StreamHandler(sys.stdout)
         log_root.addHandler(streamlog)
 
     if CONF.publish_errors:
