@@ -151,6 +151,14 @@ def _copy_file(path, base, dest_dir):
              '^from openstack.common',
              'from ' + base + '.openstack.common')
 
+    _replace(dest,
+             '\'openstack\.common',
+             '\'' + base + '.openstack.common')
+
+    _replace(dest,
+             '\"openstack\.common',
+             '\"' + base + '.openstack.common')
+
 
 def _copy_module(mod, base, dest_dir):
     print ("Copying openstack.common.%s under the %s module in %s" %
