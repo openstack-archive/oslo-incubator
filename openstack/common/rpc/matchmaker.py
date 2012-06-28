@@ -24,6 +24,7 @@ import json
 import logging
 
 from openstack.common import cfg
+from openstack.common.gettextutils import _
 
 
 matchmaker_opts = [
