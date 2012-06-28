@@ -21,6 +21,7 @@ import logging
 import urllib
 import urllib2
 
+from openstack.common.gettextutils import _
 from openstack.common import jsonutils
 
 

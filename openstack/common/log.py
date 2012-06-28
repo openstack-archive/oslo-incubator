@@ -41,6 +41,7 @@ import sys
 import traceback
 
 from openstack.common import cfg
+from openstack.common.gettextutils import _
 from openstack.common import jsonutils
 from openstack.common import local
 from openstack.common import notifier

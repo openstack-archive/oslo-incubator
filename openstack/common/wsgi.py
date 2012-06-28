@@ -33,6 +33,7 @@ from xml.dom import minidom
 from xml.parsers import expat
 
 from openstack.common import exception
+from openstack.common.gettextutils import _
 from openstack.common import jsonutils
 
 
