@@ -18,6 +18,7 @@ import uuid
 
 from openstack.common import cfg
 from openstack.common import exception
+from openstack.common.gettextutils import _
 from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import log as logging
