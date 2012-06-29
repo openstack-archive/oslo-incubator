@@ -44,16 +44,13 @@ FLAGS = cfg.CONF
 
 
 class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
-#    @testutils.skip_if(zmq is None, "Test requires zmq")
-    @testutils.skip_if(True, "Zmq tests broken on jenkins")
+    @testutils.skip_if(zmq is None, "Test requires zmq")
     def setUp(self, topic='test', topic_nested='nested'):
         if not impl_zmq:
             return None
 
         self.reactor = None
-        FLAGS.register_opts(rpc.rpc_opts)
         self.rpc = impl_zmq
-        self.rpc.register_opts(FLAGS)
         FLAGS.set_default('rpc_zmq_matchmaker',
                           'mod_matchmaker.MatchMakerLocalhost')
 
