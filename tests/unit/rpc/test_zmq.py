@@ -97,7 +97,7 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
         except OSError:
             assert False, _("Could not create IPC directory %s") % (ipc_dir, )
         finally:
-            super(RpcZmqBaseTestCase, self).setUp(
+            super(_RpcZmqBaseTestCase, self).setUp(
                 topic=topic, topic_nested=topic_nested)
 
     def tearDown(self):
