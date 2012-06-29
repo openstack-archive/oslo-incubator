@@ -29,6 +29,6 @@ def notify(_context, message):
     priority = message.get('priority',
                            CONF.default_notification_level)
     priority = priority.lower()
-    logger = logging.getLogger(
-            'openstack.common.notification.%s' % message['event_type'])
+    logger = logging.getLogger('openstack.common.notification.%s'
+                               % message['event_type'])
     getattr(logger, priority)(json.dumps(message))
