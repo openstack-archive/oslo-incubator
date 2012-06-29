@@ -42,7 +42,7 @@ class NotifierTestCase(test_utils.BaseTestCase):
             self.notify_called = True
 
         self.stubs.Set(no_op_notifier, 'notify',
-                mock_notify)
+                       mock_notify)
 
         notifier_api.notify(ctxt, 'publisher_id', 'event_type',
                             notifier_api.WARN, dict(a=3))
@@ -64,13 +64,13 @@ class NotifierTestCase(test_utils.BaseTestCase):
             self.assertEqual(context, ctxt)
 
         self.stubs.Set(no_op_notifier, 'notify',
-                message_assert)
+                       message_assert)
         notifier_api.notify(ctxt, 'publisher_id', 'event_type',
                             notifier_api.WARN, dict(a=3))
 
     def test_send_rabbit_notification(self):
         self.stubs.Set(cfg.CONF, 'notification_driver',
-                'openstack.common.notifier.rabbit_notifier')
+                       'openstack.common.notifier.rabbit_notifier')
         self.mock_notify = False
 
         def mock_notify(cls, *args):
@@ -84,12 +84,12 @@ class NotifierTestCase(test_utils.BaseTestCase):
 
     def test_invalid_priority(self):
         self.assertRaises(notifier_api.BadPriorityException,
-                notifier_api.notify, ctxt, 'publisher_id',
-                'event_type', 'not a priority', dict(a=3))
+                          notifier_api.notify, ctxt, 'publisher_id',
+                          'event_type', 'not a priority', dict(a=3))
 
     def test_rabbit_priority_queue(self):
         self.stubs.Set(cfg.CONF, 'notification_driver',
-                'openstack.common.notifier.rabbit_notifier')
+                       'openstack.common.notifier.rabbit_notifier')
         self.stubs.Set(cfg.CONF, 'notification_topics',
                        ['testnotify', ])
 
@@ -105,7 +105,7 @@ class NotifierTestCase(test_utils.BaseTestCase):
 
     def test_error_notification(self):
         self.stubs.Set(cfg.CONF, 'notification_driver',
-            'openstack.common.notifier.rabbit_notifier')
+                       'openstack.common.notifier.rabbit_notifier')
         self.stubs.Set(cfg.CONF, 'publish_errors', True)
         LOG = log.getLogger('common')
         log.setup(None)
@@ -128,15 +128,14 @@ class NotifierTestCase(test_utils.BaseTestCase):
         def example_api(arg1, arg2):
             return arg1 + arg2
 
-        example_api = notifier_api.notify_decorator(
-                            'example_api',
-                             example_api)
+        example_api = notifier_api.notify_decorator('example_api',
+                                                    example_api)
 
         def mock_notify(cls, *args):
             self.notify_called = True
 
         self.stubs.Set(no_op_notifier, 'notify',
-                mock_notify)
+                       mock_notify)
 
         self.assertEqual(3, example_api(1, 2))
         self.assertEqual(self.notify_called, True)
@@ -152,20 +151,18 @@ class NotifierTestCase(test_utils.BaseTestCase):
         def example_api2(arg1, arg2, **kw):
             return arg1 + arg2
 
-        example_api = notifier_api.notify_decorator(
-                            'example_api',
-                             example_api)
+        example_api = notifier_api.notify_decorator('example_api',
+                                                    example_api)
 
-        example_api2 = notifier_api.notify_decorator(
-                             'example_api2',
-                              example_api2)
+        example_api2 = notifier_api.notify_decorator('example_api2',
+                                                     example_api2)
 
         def mock_notify(context, cls, _type, _priority, _payload):
             self.notify_called = True
             self.context_arg = context
 
         self.stubs.Set(notifier_api, 'notify',
-                mock_notify)
+                       mock_notify)
 
         # Test positional context
         self.assertEqual(3, example_api(1, 2, ctxt))
