@@ -44,43 +44,68 @@ FLAGS = cfg.CONF
 
 
 class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
-#    @testutils.skip_if(zmq is None, "Test requires zmq")
-    @testutils.skip_if(True, "Zmq tests broken on jenkins")
+    @testutils.skip_if(zmq is None, "Test requires zmq")
     def setUp(self, topic='test', topic_nested='nested'):
         if not impl_zmq:
             return None
 
         self.reactor = None
-        FLAGS.register_opts(rpc.rpc_opts)
         self.rpc = impl_zmq
-        self.rpc.register_opts(FLAGS)
+
+        FLAGS.set_override('rpc_response_timeout', 5)
         FLAGS.set_default('rpc_zmq_matchmaker',
                           'mod_matchmaker.MatchMakerLocalhost')
+
+        internal_ipc_dir = '/tmp/openstack-zmq.ipc.test'
 
         # We'll change this if we detect no daemon running.
         ipc_dir = FLAGS.rpc_zmq_ipc_dir
 
-        # Only launch the router if it isn't running independently.
+        # Only launch the router if it isn't running.
         if not os.path.exists(os.path.join(ipc_dir, "zmq_topic_zmq_replies")):
+
             LOG.info(_("Running internal zmq receiver."))
             # The normal ipc_dir default needs to run as root,
             # /tmp is easier within a testing environment.
-            FLAGS.set_default('rpc_zmq_ipc_dir', '/tmp/openstack-zmq.ipc.test')
+            FLAGS.set_default('rpc_zmq_ipc_dir',
+                              '/tmp/openstack-zmq.ipc.test')
 
             # Value has changed.
             ipc_dir = FLAGS.rpc_zmq_ipc_dir
+            self.setupReceiver(ipc_dir)
+        elif ipc_dir != internal_ipc_dir:
+            LOG.warning(_("Detected zmq-receiver socket."))
+            LOG.warning(_("Assuming nova-rpc-zmq-receiver is running."))
+            LOG.warning(_("Using system zmq receiver deamon."))
+
+        super(_RpcZmqBaseTestCase, self).setUp(
+            topic=topic, topic_nested=topic_nested)
+
+    def tearDown(self):
+        if not impl_zmq:
+            return None
+        if self.reactor:
+            try:
+                self.reactor.close()
+            finally:
+                try:
+                    utils.execute('rm', '-rf', FLAGS.rpc_zmq_ipc_dir)
+                except exception.Error:
+                    pass
+
+        super(_RpcZmqBaseTestCase, self).tearDown()
+
+    def setupReceiver(self, ipc_dir):
+        # Only launch the receiver if it isn't running independently.
+        # This is checked again, with the (possibly) new ipc_dir.
+        if not os.path.isdir(ipc_dir):
+            try:
+                os.mkdir(ipc_dir)
+            except OSError:
+                assert False, \
+                    _("Could not create IPC directory %s") % (ipc_dir, )
 
         try:
-            # Only launch the receiver if it isn't running independently.
-            # This is checked again, with the (possibly) new ipc_dir.
-            if os.path.exists(os.path.join(ipc_dir, "zmq_topic_zmq_replies")):
-                LOG.warning(_("Detected zmq-receiver socket. "
-                              "Assuming nova-rpc-zmq-receiver is running."))
-                return
-
-            if not os.path.isdir(ipc_dir):
-                os.mkdir(ipc_dir)
-
             self.reactor = impl_zmq.ZmqProxy(FLAGS)
             consume_in = "tcp://%s:%s" % \
                 (FLAGS.rpc_zmq_bind_address,
@@ -95,24 +120,6 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
         except zmq.ZMQError:
             assert False, _("Could not create ZeroMQ receiver daemon. "
                             "Socket may already be in use.")
-        except OSError:
-            assert False, _("Could not create IPC directory %s") % (ipc_dir, )
-        finally:
-            super(_RpcZmqBaseTestCase, self).setUp(
-                topic=topic, topic_nested=topic_nested)
-
-    def tearDown(self):
-        if not impl_zmq:
-            return None
-        if self.reactor:
-            self.reactor.close()
-
-            try:
-                utils.execute('rm', '-rf', FLAGS.rpc_zmq_ipc_dir)
-            except exception.Error:
-                pass
-
-        super(_RpcZmqBaseTestCase, self).tearDown()
 
 
 class RpcZmqBaseTopicTestCase(_RpcZmqBaseTestCase):
