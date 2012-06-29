@@ -44,40 +44,40 @@ FLAGS = cfg.CONF
 
 
 class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
-#    @testutils.skip_if(zmq is None, "Test requires zmq")
-    @testutils.skip_if(True, "Zmq tests broken on jenkins")
+    @testutils.skip_if(zmq is None, "Test requires zmq")
     def setUp(self, topic='test', topic_nested='nested'):
         if not impl_zmq:
             return None
 
         self.reactor = None
-        FLAGS.register_opts(rpc.rpc_opts)
         self.rpc = impl_zmq
-        self.rpc.register_opts(FLAGS)
         FLAGS.set_default('rpc_zmq_matchmaker',
                           'mod_matchmaker.MatchMakerLocalhost')
 
         # We'll change this if we detect no daemon running.
         ipc_dir = FLAGS.rpc_zmq_ipc_dir
 
-        # Only launch the router if it isn't running independently.
-        if not os.path.exists(os.path.join(ipc_dir, "zmq_topic_zmq_replies")):
-            LOG.info(_("Running internal zmq receiver."))
-            # The normal ipc_dir default needs to run as root,
-            # /tmp is easier within a testing environment.
-            FLAGS.set_default('rpc_zmq_ipc_dir', '/tmp/openstack-zmq.ipc.test')
-
-            # Value has changed.
-            ipc_dir = FLAGS.rpc_zmq_ipc_dir
-
         try:
-            # Only launch the receiver if it isn't running independently.
-            # This is checked again, with the (possibly) new ipc_dir.
-            if os.path.exists(os.path.join(ipc_dir, "zmq_topic_zmq_replies")):
-                LOG.warning(_("Detected zmq-receiver socket. "
-                              "Assuming nova-rpc-zmq-receiver is running."))
+            # Only launch the router if it isn't running independently.
+            if not os.path.exists(os.path.join(ipc_dir,
+                                  "zmq_topic_zmq_replies")):
+                LOG.info(_("Running internal zmq receiver."))
+                # The normal ipc_dir default needs to run as root,
+                # /tmp is easier within a testing environment.
+                FLAGS.set_default('rpc_zmq_ipc_dir',
+                                  '/tmp/openstack-zmq.ipc.test')
+
+                # Value has changed.
+                ipc_dir = FLAGS.rpc_zmq_ipc_dir
+            else:
+                LOG.warning(_("Detected zmq-receiver socket."))
+                LOG.warning(_("Assuming nova-rpc-zmq-receiver is running."))
+                LOG.warning(_("Using system zmq receiver deamon."))
+                # Goes to finally: block.
                 return
 
+            # Only launch the receiver if it isn't running independently.
+            # This is checked again, with the (possibly) new ipc_dir.
             if not os.path.isdir(ipc_dir):
                 os.mkdir(ipc_dir)
 
@@ -105,12 +105,13 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
         if not impl_zmq:
             return None
         if self.reactor:
-            self.reactor.close()
-
             try:
-                utils.execute('rm', '-rf', FLAGS.rpc_zmq_ipc_dir)
-            except exception.Error:
-                pass
+                self.reactor.close()
+            finally:
+                try:
+                    utils.execute('rm', '-rf', FLAGS.rpc_zmq_ipc_dir)
+                except exception.Error:
+                    pass
 
         super(_RpcZmqBaseTestCase, self).tearDown()
 
