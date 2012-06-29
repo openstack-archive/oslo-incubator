@@ -204,7 +204,7 @@ class LocalhostExchange(Exchange):
         super(Exchange, self).__init__()
 
     def run(self, key):
-        return [(key.split('.')[0] + '.localhost', 'localhost')]
+        return [(key.split('.')[0] + '.localhost', 'locahost')]
 
 
 class DirectExchange(Exchange):
