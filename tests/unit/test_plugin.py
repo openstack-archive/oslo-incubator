@@ -57,7 +57,7 @@ class NotifyTestCase(test_utils.BaseTestCase):
         # Set up a 'normal' notifier to make sure the plugin logic
         #  doesn't mess anything up.
         self.stubs.Set(cfg.CONF, 'notification_driver',
-                SimplerNotifier())
+                       SimplerNotifier())
         global simpler_notify_called
         simpler_notify_called = False
 
@@ -82,7 +82,7 @@ class NotifyTestCase(test_utils.BaseTestCase):
             return [MockEntrypoint("fake", "fake", ["fake"])]
 
         self.stubs.Set(pkg_resources, 'iter_entry_points',
-                mock_iter_entry_points)
+                       mock_iter_entry_points)
 
         plugmgr = pluginmanager.PluginManager("testproject", "testservice")
         plugmgr.load_plugins()
@@ -141,7 +141,7 @@ class APITestCase(test_utils.BaseTestCase):
             return [MockEntrypoint("fake", "fake", ["fake"])]
 
         self.stubs.Set(pkg_resources, 'iter_entry_points',
-                mock_iter_entry_points)
+                       mock_iter_entry_points)
 
         stubLoaded = False
 

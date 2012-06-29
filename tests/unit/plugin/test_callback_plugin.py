@@ -59,7 +59,7 @@ class CallbackTestCase(test_utils.BaseTestCase):
             return [MockEntrypoint("fake", "fake", ["fake"])]
 
         self.stubs.Set(pkg_resources, 'iter_entry_points',
-                mock_iter_entry_points)
+                       mock_iter_entry_points)
 
         plugmgr = pluginmanager.PluginManager("testproject", "testservice")
         plugmgr.load_plugins()

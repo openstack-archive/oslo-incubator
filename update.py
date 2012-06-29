@@ -78,7 +78,7 @@ opts = [
     cfg.StrOpt('dest-dir',
                default=None,
                help='Destination project directory'),
-    ]
+]
 
 
 def _parse_args(argv):

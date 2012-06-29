@@ -59,12 +59,12 @@ class LogHandlerTestCase(test_utils.BaseTestCase):
     def test_log_path_logdir(self):
         self.config(logdir='/some/path', logfile=None)
         self.assertEquals(log._get_log_file_path(binary='foo-bar'),
-                         '/some/path/foo-bar.log')
+                          '/some/path/foo-bar.log')
 
     def test_log_path_logfile(self):
         self.config(logfile='/some/path/foo-bar.log')
         self.assertEquals(log._get_log_file_path(binary='foo-bar'),
-                         '/some/path/foo-bar.log')
+                          '/some/path/foo-bar.log')
 
     def test_log_path_none(self):
         self.config(logdir=None, logfile=None)
@@ -72,9 +72,9 @@ class LogHandlerTestCase(test_utils.BaseTestCase):
 
     def test_log_path_logfile_overrides_logdir(self):
         self.config(logdir='/some/other/path',
-                   logfile='/some/path/foo-bar.log')
+                    logfile='/some/path/foo-bar.log')
         self.assertEquals(log._get_log_file_path(binary='foo-bar'),
-                         '/some/path/foo-bar.log')
+                          '/some/path/foo-bar.log')
 
 
 class PublishErrorsHandlerTestCase(test_utils.BaseTestCase):
@@ -117,7 +117,7 @@ class LoggerTestCase(test_utils.BaseTestCase):
         levels = CONF.default_log_levels
         levels.append("nova-test=AUDIT")
         self.config(default_log_levels=levels,
-                   verbose=True)
+                    verbose=True)
         log.setup('testing')
         self.log = log.getLogger('nova-test')
 
