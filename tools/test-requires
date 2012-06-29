@@ -13,3 +13,4 @@ pylint
 setuptools-git>=0.4
 sphinx
 webtest
+pyzmq
