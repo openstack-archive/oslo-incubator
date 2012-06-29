@@ -65,7 +65,7 @@ class ImportUtilsTest(unittest.TestCase):
 
     def test_import_object_ns_optional_arg_present(self):
         obj = importutils.import_object_ns('tests.unit', 'fake.FakeDriver',
-                                        first_arg=False)
+                                           first_arg=False)
         self.assertTrue(obj.__class__.__name__, 'FakeDriver')
 
     def test_import_object_ns_required_arg_not_present(self):
@@ -75,7 +75,7 @@ class ImportUtilsTest(unittest.TestCase):
 
     def test_import_object_ns_required_arg_present(self):
         obj = importutils.import_object_ns('tests.unit', 'fake.FakeDriver2',
-                                        first_arg=False)
+                                           first_arg=False)
         self.assertTrue(obj.__class__.__name__, 'FakeDriver2')
 
     # namespace tests
