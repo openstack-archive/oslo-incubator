@@ -63,6 +63,11 @@ zmq_opts = [
 
     cfg.StrOpt('rpc_zmq_ipc_dir', default='/var/run/openstack',
                help='Directory for holding IPC sockets'),
+
+# NOTE(ewindisch): The host option is our identity/return-path for replies,
+#                  Nova defines this, but we won't have that in all
+#                  projects using RPC via openstack-common.
+#                  Should match Nova's CONF.host
     cfg.StrOpt('rpc_zmq_host', default=socket.gethostname(),
                help='Name of this node. Must be a valid hostname, FQDN, or '
                     'IP address')
@@ -719,3 +724,6 @@ def register_opts(conf):
         mm_impl = importutils.import_module(mm_module)
         mm_constructor = getattr(mm_impl, mm_class)
         matchmaker = mm_constructor()
+
+
+register_opts(cfg.CONF)
