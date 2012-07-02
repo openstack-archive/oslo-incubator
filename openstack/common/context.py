@@ -64,3 +64,20 @@ def get_admin_context(show_deleted="no"):
                              is_admin=True,
                              show_deleted=show_deleted)
     return context
+
+
+def get_context_from_function_and_args(function, args, kwargs):
+    """Find an arg of type RequestContext and return it.
+
+       This is useful in a couple of decorators where we don't
+       know much about the function we're wrapping.
+    """
+
+    # import here to avoid circularity:
+    from openstack.common import context
+
+    for arg in itertools.chain(kwargs.values(), args):
+        if isinstance(arg, context.RequestContext):
+            return arg
+
+    return None
