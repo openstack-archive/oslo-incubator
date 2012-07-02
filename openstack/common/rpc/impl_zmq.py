@@ -707,7 +707,7 @@ def register_opts(conf):
         if mm_path[-1][0] not in string.ascii_uppercase:
             LOG.error(_("Matchmaker could not be loaded.\n"
                       "rpc_zmq_matchmaker is not a class."))
-            raise
+            raise RPCException(_("Error loading Matchmaker."))
 
         mm_impl = importutils.import_module(mm_module)
         mm_constructor = getattr(mm_impl, mm_class)
