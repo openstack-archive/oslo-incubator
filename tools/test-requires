@@ -10,4 +10,6 @@ nosexcover
 openstack.nose_plugin
 pep8==0.6.1
 pylint
+setuptools-git>=0.4
+sphinx
 webtest
