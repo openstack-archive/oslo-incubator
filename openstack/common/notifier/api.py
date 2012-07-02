@@ -17,12 +17,11 @@ import inspect
 import uuid
 
 from openstack.common import cfg
-from openstack.common import exception
+from openstack.common import context
 from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import log as logging
 from openstack.common import timeutils
-from openstack.common import utils
 
 
 LOG = logging.getLogger(__name__)
@@ -72,8 +71,8 @@ def notify_decorator(name, fn):
         for key in kwarg:
             body['kwarg'][key] = kwarg[key]
 
-        context = exception.get_context_from_function_and_args(fn, args, kwarg)
-        notify(context,
+        ctxt = context.get_context_from_function_and_args(fn, args, kwarg)
+        notify(ctxt,
                CONF.default_publisher_id,
                name,
                CONF.default_notification_level,
