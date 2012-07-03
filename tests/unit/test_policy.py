@@ -17,7 +17,6 @@
 
 """Test of Policy Engine For Nova"""
 
-import json
 import os.path
 import StringIO
 import unittest
@@ -26,6 +25,7 @@ import urllib
 import mock
 import urllib2
 
+from openstack.common import jsonutils
 from openstack.common import policy
 
 
@@ -374,7 +374,7 @@ class HttpBrainTestCase(unittest.TestCase):
         result = {}
         for item in self.post_data.split('&'):
             key, _sep, value = item.partition('=')
-            result[key] = json.loads(urllib.unquote_plus(value))
+            result[key] = jsonutils.loads(urllib.unquote_plus(value))
 
         return result
 
