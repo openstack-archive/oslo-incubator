@@ -15,7 +15,6 @@
 #    under the License.
 
 import inspect
-import json
 import os.path
 import routes
 import unittest
@@ -28,6 +27,7 @@ from webtest import TestApp
 
 from openstack.common import config
 from openstack.common import extensions
+from openstack.common import jsonutils
 from openstack.common import wsgi
 from tests.unit import extension_stubs
 
@@ -86,7 +86,7 @@ class ResourceExtensionTest(unittest.TestCase):
 
         response = test_app.get("/tweedles/some_id/custom_member_action")
         self.assertEqual(200, response.status_int)
-        self.assertEqual(json.loads(response.body)['member_action'], "value")
+        self.assertEqual(jsonutils.loads(response.body)['member_action'], "value")
 
     def test_resource_extension_for_get_custom_collection_action(self):
         controller = self.ResourceExtensionController()
@@ -97,7 +97,7 @@ class ResourceExtensionTest(unittest.TestCase):
 
         response = test_app.put("/tweedles/custom_collection_action")
         self.assertEqual(200, response.status_int)
-        self.assertEqual(json.loads(response.body)['collection'], "value")
+        self.assertEqual(jsonutils.loads(response.body)['collection'], "value")
 
     def test_resource_extension_for_put_custom_collection_action(self):
         controller = self.ResourceExtensionController()
@@ -109,7 +109,7 @@ class ResourceExtensionTest(unittest.TestCase):
         response = test_app.put("/tweedles/custom_collection_action")
 
         self.assertEqual(200, response.status_int)
-        self.assertEqual(json.loads(response.body)['collection'], 'value')
+        self.assertEqual(jsonutils.loads(response.body)['collection'], 'value')
 
     def test_resource_extension_for_post_custom_collection_action(self):
         controller = self.ResourceExtensionController()
@@ -121,7 +121,7 @@ class ResourceExtensionTest(unittest.TestCase):
         response = test_app.post("/tweedles/custom_collection_action")
 
         self.assertEqual(200, response.status_int)
-        self.assertEqual(json.loads(response.body)['collection'], 'value')
+        self.assertEqual(jsonutils.loads(response.body)['collection'], 'value')
 
     def test_resource_extension_for_delete_custom_collection_action(self):
         controller = self.ResourceExtensionController()
@@ -133,7 +133,7 @@ class ResourceExtensionTest(unittest.TestCase):
         response = test_app.delete("/tweedles/custom_collection_action")
 
         self.assertEqual(200, response.status_int)
-        self.assertEqual(json.loads(response.body)['collection'], 'value')
+        self.assertEqual(jsonutils.loads(response.body)['collection'], 'value')
 
     def test_resource_ext_for_formatted_req_on_custom_collection_action(self):
         controller = self.ResourceExtensionController()
@@ -145,7 +145,7 @@ class ResourceExtensionTest(unittest.TestCase):
         response = test_app.get("/tweedles/custom_collection_action.json")
 
         self.assertEqual(200, response.status_int)
-        self.assertEqual(json.loads(response.body)['collection'], "value")
+        self.assertEqual(jsonutils.loads(response.body)['collection'], "value")
 
     def test_resource_ext_for_nested_resource_custom_collection_action(self):
         controller = self.ResourceExtensionController()
@@ -160,7 +160,7 @@ class ResourceExtensionTest(unittest.TestCase):
                                 "/tweedles/custom_collection_action")
 
         self.assertEqual(200, response.status_int)
-        self.assertEqual(json.loads(response.body)['collection'], "value")
+        self.assertEqual(jsonutils.loads(response.body)['collection'], "value")
 
     def test_returns_404_for_non_existant_extension(self):
         test_app = setup_extensions_app(SimpleExtensionManager(None))
@@ -179,7 +179,7 @@ class ActionExtensionTest(unittest.TestCase):
     def test_extended_action_for_adding_extra_data(self):
         action_name = 'FOXNSOX:add_tweedle'
         action_params = dict(name='Beetle')
-        req_body = json.dumps({action_name: action_params})
+        req_body = jsonutils.dumps({action_name: action_params})
         response = self.extension_app.post(
             '/dummy_resources/1/action',
             req_body, content_type='application/json')
@@ -189,7 +189,7 @@ class ActionExtensionTest(unittest.TestCase):
     def test_extended_action_for_deleting_extra_data(self):
         action_name = 'FOXNSOX:delete_tweedle'
         action_params = dict(name='Bailey')
-        req_body = json.dumps({action_name: action_params})
+        req_body = jsonutils.dumps({action_name: action_params})
         response = self.extension_app.post(
             "/dummy_resources/1/action",
             req_body, content_type='application/json')
@@ -198,7 +198,7 @@ class ActionExtensionTest(unittest.TestCase):
     def test_returns_404_for_non_existant_action(self):
         non_existant_action = 'blah_action'
         action_params = dict(name="test")
-        req_body = json.dumps({non_existant_action: action_params})
+        req_body = jsonutils.dumps({non_existant_action: action_params})
 
         response = self.extension_app.post(
             "/dummy_resources/1/action",
@@ -210,7 +210,7 @@ class ActionExtensionTest(unittest.TestCase):
     def test_returns_404_for_non_existant_resource(self):
         action_name = 'add_tweedle'
         action_params = dict(name='Beetle')
-        req_body = json.dumps({action_name: action_params})
+        req_body = jsonutils.dumps({action_name: action_params})
 
         response = self.extension_app.post(
             "/asdf/1/action", req_body,
@@ -235,9 +235,9 @@ class RequestExtensionTest(unittest.TestCase):
 
     def test_extend_get_resource_response(self):
         def extend_response_data(req, res):
-            data = json.loads(res.body)
+            data = jsonutils.loads(res.body)
             data['FOXNSOX:extended_key'] = req.GET.get('extended_key')
-            res.body = json.dumps(data)
+            res.body = jsonutils.dumps(data)
             return res
 
         app = self._setup_app_with_request_handler(extend_response_data, 'GET')
@@ -245,7 +245,7 @@ class RequestExtensionTest(unittest.TestCase):
 
         self.assertEqual(200, response.status_int)
 
-        response_data = json.loads(response.body)
+        response_data = jsonutils.loads(response.body)
         self.assertEqual('extended_data',
                          response_data['FOXNSOX:extended_key'])
         self.assertEqual('knox', response_data['fort'])
@@ -255,21 +255,21 @@ class RequestExtensionTest(unittest.TestCase):
 
         response = app.get("/dummy_resources/1?chewing=newblue")
 
-        response_data = json.loads(response.body)
+        response_data = jsonutils.loads(response.body)
         self.assertEqual('newblue', response_data['FOXNSOX:googoose'])
         self.assertEqual("Pig Bands!", response_data['FOXNSOX:big_bands'])
 
     def test_edit_previously_uneditable_field(self):
 
         def _update_handler(req, res):
-            data = json.loads(res.body)
-            data['uneditable'] = json.loads(req.body)['uneditable']
-            res.body = json.dumps(data)
+            data = jsonutils.loads(res.body)
+            data['uneditable'] = jsonutils.loads(req.body)['uneditable']
+            res.body = jsonutils.dumps(data)
             return res
 
         base_app = TestApp(setup_base_app())
         response = base_app.put("/dummy_resources/1",
-                                json.dumps({'uneditable': "new_value"}),
+                                jsonutils.dumps({'uneditable': "new_value"}),
                                 headers={'Content-Type': "application/json"})
         self.assertEqual(response.json['uneditable'], "original_value")
 
@@ -277,7 +277,7 @@ class RequestExtensionTest(unittest.TestCase):
                                                        'PUT')
         ext_response = ext_app.put(
             "/dummy_resources/1",
-            json.dumps({'uneditable': "new_value"}),
+            jsonutils.dumps({'uneditable': "new_value"}),
             headers={'Content-Type': "application/json"})
         self.assertEqual(ext_response.json['uneditable'], "new_value")
 

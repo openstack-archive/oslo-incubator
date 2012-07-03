@@ -13,9 +13,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import json
 
 from openstack.common import cfg
+from openstack.common import jsonutils
 from openstack.common import log as logging
 
 
@@ -31,4 +31,4 @@ def notify(_context, message):
     priority = priority.lower()
     logger = logging.getLogger(
             'openstack.common.notification.%s' % message['event_type'])
-    getattr(logger, priority)(json.dumps(message))
+    getattr(logger, priority)(jsonutils.dumps(message))
