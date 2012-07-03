@@ -1,10 +1,10 @@
 import cStringIO
-import json
 import logging
 import sys
 
 from openstack.common import context
 from openstack.common import cfg
+from openstack.common import jsonutils
 from openstack.common import log
 from openstack.common.notifier import api as notifier
 from openstack.common.notifier import list_notifier
@@ -144,7 +144,7 @@ class JSONFormatterTestCase(test_utils.BaseTestCase):
         test_data = {'test': 'log'}
         self.log.debug(test_msg, test_data)
 
-        data = json.loads(self.stream.getvalue())
+        data = jsonutils.loads(self.stream.getvalue())
         self.assertTrue(data)
         self.assertTrue('extra' in data)
         self.assertEqual('test-json', data['name'])
@@ -168,7 +168,7 @@ class JSONFormatterTestCase(test_utils.BaseTestCase):
         except Exception:
             self.log.exception(test_msg, test_data)
 
-        data = json.loads(self.stream.getvalue())
+        data = jsonutils.loads(self.stream.getvalue())
         self.assertTrue(data)
         self.assertTrue('extra' in data)
         self.assertEqual('test-json', data['name'])
