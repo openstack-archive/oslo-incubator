@@ -25,6 +25,7 @@ import sys
 def import_class(import_str):
     """Returns a class from a string including module and class"""
     mod_str, _sep, class_str = import_str.rpartition('.')
+    import_str = _addcommonprefix(import_str)
     try:
         __import__(mod_str)
         return getattr(sys.modules[mod_str], class_str)
@@ -53,5 +54,24 @@ def import_object_ns(name_space, import_str, *args, **kwargs):
 
 def import_module(import_str):
     """Import a module."""
+    import_str = _addcommonprefix(import_str)
     __import__(import_str)
     return sys.modules[import_str]
+
+
+def _addcommonprefix(import_str):
+    """Prefix openstack.common paths as needed.
+
+    Frequently we'll try to import a module from common with a
+    name like 'openstack.common.foobar' which will fail because
+    the actual file is 'nova.openstack.common.foobar'.  Fortuitously,
+    importutils is also in common, so we can use the current
+    namespace to alter the import paths as needed.
+    """
+
+    nameparts = __name__.partition('.openstack.common')
+    if nameparts[1] != "":
+        if import_str.startswith('openstack.common'):
+            return "%s.%s" % (nameparts[0], import_str)
+
+    return import_str
