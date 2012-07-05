@@ -50,9 +50,7 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
             return None
 
         self.reactor = None
-        FLAGS.register_opts(rpc.rpc_opts)
         self.rpc = impl_zmq
-        self.rpc.register_opts(FLAGS)
         FLAGS.set_default('rpc_zmq_matchmaker',
                           'mod_matchmaker.MatchMakerLocalhost')
 
