@@ -119,9 +119,9 @@ class ZmqSocket(object):
         for f in do_sub:
             self.subscribe(f)
 
-        LOG.debug(_("Connecting to %{addr}s with %{type}s"
-                    "\n-> Subscribed to %{subscribe}s"
-                    "\n-> bind: %{bind}s"),
+        LOG.debug(_("Connecting to %(addr)s with %(type)s"
+                    "\n-> Subscribed to %(subscribe)s"
+                    "\n-> bind: %(bind)s"),
                   {'addr': addr, 'type': self.socket_s(),
                    'subscribe': subscribe, 'bind': bind})
 
