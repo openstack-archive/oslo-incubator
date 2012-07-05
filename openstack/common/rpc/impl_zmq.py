@@ -16,6 +16,7 @@
 
 import json
 import pprint
+import socket
 import string
 import sys
 import types
@@ -59,6 +60,11 @@ zmq_opts = [
 
     cfg.StrOpt('rpc_zmq_ipc_dir', default='/var/run/openstack',
                help='Directory for holding IPC sockets'),
+]
+
+host_opt = [
+    cfg.StrOpt('host', default=socket.gethostname(),
+               help='identity of this machine as host or IP.'),
 ]
 
 
@@ -694,6 +700,8 @@ def register_opts(conf):
     if not FLAGS:
         conf.register_opts(zmq_opts)
         FLAGS = conf
+    if not 'host' in FLAGS:
+        conf.register_opts(host_opt)
     # Don't re-set, if this method is called twice.
     if not ZMQ_CTX:
         ZMQ_CTX = zmq.Context(conf.rpc_zmq_contexts)
@@ -712,3 +720,6 @@ def register_opts(conf):
         mm_impl = importutils.import_module(mm_module)
         mm_constructor = getattr(mm_impl, mm_class)
         matchmaker = mm_constructor()
+
+
+register_opts(cfg.CONF)
