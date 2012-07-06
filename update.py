@@ -63,16 +63,10 @@ import shutil
 import sys
 
 try:
-    from openstack import common
-    cfg = common.cfg
-except AttributeError:
-    # NOTE(jkoelker) Workaround for LP951197
-    try:
-        f, path, description = imp.find_module('openstack/common/cfg')
-        cfg = imp.load_module('cfg', f, path, description)
-    finally:
-        if f is not None:
-            f.close()
+    from openstack.common import cfg
+except:
+    sys.stderr.write("Try running update.sh")
+    raise
 
 opts = [
     cfg.ListOpt('modules',
