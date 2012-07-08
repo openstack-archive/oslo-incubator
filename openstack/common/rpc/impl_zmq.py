@@ -127,7 +127,7 @@ class ZmqSocket(object):
                     'subscribe': subscribe, 'bind': bind}
 
         LOG.debug(_("Connecting to %(addr)s with %(type)s"), str_data)
-        LOG.debug(_("-> Subscribed to %(subscribe)s"),  str_data)
+        LOG.debug(_("-> Subscribed to %(subscribe)s"), str_data)
         LOG.debug(_("-> bind: %(bind)s"), str_data)
 
         try:
