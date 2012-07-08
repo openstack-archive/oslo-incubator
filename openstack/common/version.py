@@ -81,6 +81,7 @@ def canonical_version_string(package, python_package=None, pre_version=None):
     vcs_string = version_string_with_vcs(package, python_package, pre_version)
     return vcs_string.split('~')[0]
 
+
 def version_string(package, python_package=None, pre_version=None):
     """Return the base version of the package.
 
