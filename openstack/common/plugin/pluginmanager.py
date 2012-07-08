@@ -53,14 +53,14 @@ class PluginManager(object):
         self._service_name = service_name
         self.plugins = []
 
-        # Make sure we're using the list_notifier.
-        if not hasattr(CONF, "list_notifier_drivers"):
-            CONF.list_notifier_drivers = []
-        old_notifier = CONF.notification_driver
-        CONF.notification_driver = 'openstack.common.notifier.list_notifier'
-        if (old_notifier and
-            old_notifier != 'openstack.common.notifier.list_notifier'):
-            list_notifier.add_driver(old_notifier)
+    def _force_use_list_notifier(self):
+        if (CONF.notification_driver !=
+            'openstack.common.notifier.list_notifier'):
+            if not hasattr(CONF, "list_notifier_drivers"):
+                CONF.list_notifier_drivers = []
+            old_notifier = CONF.notification_driver
+            drvstring = 'openstack.common.notifier.list_notifier'
+            CONF.notification_driver = drvstring
 
     def load_plugins(self):
         self.plugins = []
@@ -77,6 +77,7 @@ class PluginManager(object):
 
         for plugin in self.plugins:
             for notifier in plugin.notifiers:
+                self._force_use_list_notifier()
                 list_notifier.add_driver(notifier)
 
     def plugin_extension_factory(self, ext_mgr):
