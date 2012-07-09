@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Code-Review+2: Jason Kölker <jason@koelker.net>
+Approved+1: Doug Hellmann <doug.hellmann@dreamhost.com>
+Code-Review+2: Doug Hellmann <doug.hellmann@dreamhost.com>
+Submitted-by: Jenkins
+Submitted-at: Mon, 09 Jul 2012 16:39:27 +0000
+Reviewed-on: https://review.openstack.org/9075
+Project: openstack/openstack-common
+Branch: refs/heads/master
