@@ -15,7 +15,6 @@
 #    under the License.
 
 import pprint
-import socket
 import string
 import sys
 import types
@@ -60,9 +59,6 @@ zmq_opts = [
 
     cfg.StrOpt('rpc_zmq_ipc_dir', default='/var/run/openstack',
                help='Directory for holding IPC sockets'),
-    cfg.StrOpt('rpc_zmq_host', default=socket.gethostname(),
-               help='Name of this node. Must be a valid hostname, FQDN, or '
-                    'IP address')
 ]
 
 
@@ -123,12 +119,11 @@ class ZmqSocket(object):
         for f in do_sub:
             self.subscribe(f)
 
-        str_data = {'addr': addr, 'type': self.socket_s(),
-                    'subscribe': subscribe, 'bind': bind}
-
-        LOG.debug(_("Connecting to %(addr)s with %(type)s"), str_data)
-        LOG.debug(_("-> Subscribed to %(subscribe)s"),  str_data)
-        LOG.debug(_("-> bind: %(bind)s"), str_data)
+        LOG.debug(_("Connecting to %{addr}s with %{type}s"
+                    "\n-> Subscribed to %{subscribe}s"
+                    "\n-> bind: %{bind}s"),
+                  {'addr': addr, 'type': self.socket_s(),
+                   'subscribe': subscribe, 'bind': bind})
 
         try:
             if bind:
@@ -547,7 +542,8 @@ def _call(addr, context, msg_id, topic, msg, timeout=None):
     msg_id = str(uuid.uuid4().hex)
 
     # Replies always come into the reply service.
-    reply_topic = "zmq_replies.%s" % FLAGS.rpc_zmq_host
+    # We require that FLAGS.host is a FQDN, IP, or resolvable hostname.
+    reply_topic = "zmq_replies.%s" % FLAGS.host
 
     LOG.debug(_("Creating payload"))
     # Curry the original request into a reply method.
