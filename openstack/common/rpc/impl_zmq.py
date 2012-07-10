@@ -14,7 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import json
 import pprint
 import string
 import sys
@@ -28,6 +27,7 @@ import greenlet
 from openstack.common import cfg
 from openstack.common.gettextutils import _
 from openstack.common import importutils
+from openstack.common import jsonutils
 from openstack.common.rpc import common as rpc_common
 
 
@@ -76,7 +76,7 @@ def _serialize(data):
     Error if a developer passes us bad data.
     """
     try:
-        return str(json.dumps(data, ensure_ascii=True))
+        return str(jsonutils.dumps(data, ensure_ascii=True))
     except TypeError:
         LOG.error(_("JSON serialization failed."))
         raise
@@ -87,7 +87,7 @@ def _deserialize(data):
     Deserialization wrapper
     """
     LOG.debug(_("Deserializing: %s"), data)
-    return json.loads(data)
+    return jsonutils.loads(data)
 
 
 class ZmqSocket(object):

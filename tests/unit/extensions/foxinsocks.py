@@ -15,9 +15,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import json
 
 from openstack.common import extensions
+from openstack.common import jsonutils
 
 
 class FoxInSocksController(object):
@@ -67,9 +67,9 @@ class Foxinsocks(object):
         def _goose_handler(req, res):
             #NOTE: This only handles JSON responses.
             # You can use content type header to test for XML.
-            data = json.loads(res.body)
+            data = jsonutils.loads(res.body)
             data['FOXNSOX:googoose'] = req.GET.get('chewing')
-            res.body = json.dumps(data)
+            res.body = jsonutils.dumps(data)
             return res
 
         req_ext1 = extensions.RequestExtension('GET', '/dummy_resources/:(id)',
@@ -79,9 +79,9 @@ class Foxinsocks(object):
         def _bands_handler(req, res):
             #NOTE: This only handles JSON responses.
             # You can use content type header to test for XML.
-            data = json.loads(res.body)
+            data = jsonutils.loads(res.body)
             data['FOXNSOX:big_bands'] = 'Pig Bands!'
-            res.body = json.dumps(data)
+            res.body = jsonutils.dumps(data)
             return res
 
         req_ext2 = extensions.RequestExtension('GET', '/dummy_resources/:(id)',

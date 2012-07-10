@@ -23,7 +23,6 @@ import eventlet.wsgi
 
 eventlet.patcher.monkey_patch(all=False, socket=True)
 
-import json
 import logging
 import sys
 import routes
@@ -34,6 +33,7 @@ from xml.dom import minidom
 from xml.parsers import expat
 
 from openstack.common import exception
+from openstack.common import jsonutils
 
 
 LOG = logging.getLogger('wsgi')
@@ -372,7 +372,7 @@ class JSONDictSerializer(DictSerializer):
                 _dtime = obj - datetime.timedelta(microseconds=obj.microsecond)
                 return _dtime.isoformat()
             return obj
-        return json.dumps(data, default=sanitizer)
+        return jsonutils.dumps(data, default=sanitizer)
 
 
 class XMLDictSerializer(DictSerializer):
@@ -641,7 +641,7 @@ class JSONDeserializer(TextDeserializer):
 
     def _from_json(self, datastring):
         try:
-            return json.loads(datastring)
+            return jsonutils.loads(datastring)
         except ValueError:
             msg = _("cannot understand JSON")
             raise exception.MalformedRequestBody(reason=msg)
