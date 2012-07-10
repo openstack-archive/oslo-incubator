@@ -147,7 +147,7 @@ def _get_git_next_version_suffix(branch_name):
         milestonever = branch_name
     post_version = _get_git_post_version()
     # post version should look like:
-    # 0.1.1.4.gcc9e28a
+    # 0.1.1.4.cc9e28a
     # where the bit after the last . is the short sha, and the bit between
     # the last and second to last is the revno count
     (revno, sha) = post_version.split(".")[-2:]
@@ -180,6 +180,8 @@ def _get_git_post_version():
             tag_infos = tag_info.split("-")
             base_version = "-".join(tag_infos[:-2])
             (revno, sha) = tag_infos[-2:]
+            # git describe prefixes the sha with a g
+            sha = sha[1:]
         return "%s.%s.%s" % (base_version, revno, sha)
 
 
