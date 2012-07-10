@@ -66,7 +66,7 @@ class VersionInfo(object):
     def _newer_version(self, pending_version):
         """Check to see if we're working with a stale version or not.
         We expect a version string that either looks like:
-          2012.2~f3~20120708.10.g4426392
+          2012.2~f3~20120708.10.4426392
         which is an unreleased version of a pre-version, or:
           0.1.1.4.gcc9e28a
         which is an unreleased version of a post-version, or:
