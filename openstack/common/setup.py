@@ -127,6 +127,13 @@ def _run_shell_command(cmd):
     return out[0].strip()
 
 
+def _get_git_branch_name():
+    branch_ref = _run_shell_command("git symbolic-ref -q HEAD")
+    if branch_ref is None:
+        return "HEAD"
+    return branch_ref[len("refs/heads/"):]
+
+
 def _get_git_next_version_suffix(branch_name):
     datestamp = datetime.datetime.now().strftime('%Y%m%d')
     if branch_name == 'milestone-proposed':
@@ -137,7 +144,7 @@ def _get_git_next_version_suffix(branch_name):
     milestone_cmd = "git show meta/openstack/release:%s" % branch_name
     milestonever = _run_shell_command(milestone_cmd)
     if not milestonever:
-        milestonever = ""
+        milestonever = branch_name
     post_version = _get_git_post_version()
     # post version should look like:
     # 0.1.1.4.gcc9e28a
@@ -310,15 +317,6 @@ def get_cmdclass():
     return cmdclass
 
 
-def get_git_branchname():
-    for branch in _run_shell_command("git branch --color=never").split("\n"):
-        if branch.startswith('*'):
-            _branch_name = branch.split()[1].strip()
-    if _branch_name == "(no":
-        _branch_name = "no-branch"
-    return _branch_name
-
-
 def get_pre_version(projectname, base_version):
     """Return a version which is leading up to a version that will
        be released in the future."""
@@ -329,7 +327,7 @@ def get_pre_version(projectname, base_version):
         else:
             branch_name = os.getenv('BRANCHNAME',
                                     os.getenv('GERRIT_REFNAME',
-                                              get_git_branchname()))
+                                              _get_git_branch_name()))
             version_suffix = _get_git_next_version_suffix(branch_name)
             version = "%s~%s" % (base_version, version_suffix)
         write_versioninfo(projectname, version)
