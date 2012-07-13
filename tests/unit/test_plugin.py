@@ -16,6 +16,7 @@
 import pkg_resources
 import unittest
 
+from openstack.common import cfg
 from openstack.common import notifier
 from openstack.common.notifier import api as notifier_api
 from openstack.common.notifier import no_op_notifier
@@ -31,6 +32,12 @@ class SimpleNotifier(object):
     def notify(self, context, message):
         self.context = context
         self.message_list.append(message)
+
+
+class SimplerNotifier(object):
+    def notify(self, context, message):
+        global simpler_notify_called
+        simpler_notify_called = True
 
 
 class ManagerTestCase(test_utils.BaseTestCase):
@@ -49,13 +56,10 @@ class NotifyTestCase(test_utils.BaseTestCase):
 
         # Set up a 'normal' notifier to make sure the plugin logic
         #  doesn't mess anything up.
-        self.config(
-                notification_driver='openstack.common.notifier.no_op_notifier')
-
-        def mock_notify(cls, *args):
-            self.no_op_notify_called = True
-        self.stubs.Set(no_op_notifier, 'notify',
-                mock_notify)
+        self.stubs.Set(cfg.CONF, 'notification_driver',
+                SimplerNotifier())
+        global simpler_notify_called
+        simpler_notify_called = False
 
     def tearDown(self):
         super(NotifyTestCase, self).tearDown()
@@ -90,7 +94,11 @@ class NotifyTestCase(test_utils.BaseTestCase):
                             notifier_api.WARN, dict(a=3))
 
         self.assertEqual(len(notifier.message_list), 1)
-        self.assertTrue(self.no_op_notify_called)
+
+        # Verify that the original baseline notifier is still
+        # installed and working.
+        global simpler_notify_called
+        self.assertTrue(simpler_notify_called)
 
 
 class StubControllerExtension(object):
