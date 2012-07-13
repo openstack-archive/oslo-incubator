@@ -35,8 +35,8 @@ from eventlet import pools
 from eventlet import semaphore
 
 from openstack.common import excutils
-from openstack.common import local
 from openstack.common.gettextutils import _
+from openstack.common import local
 from openstack.common.rpc import common as rpc_common
 
 
