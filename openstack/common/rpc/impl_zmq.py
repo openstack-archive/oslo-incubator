@@ -49,7 +49,7 @@ zmq_opts = [
     # The module.Class to use for matchmaking.
     cfg.StrOpt(
         'rpc_zmq_matchmaker',
-        default=('openstack.common.rpc'
+        default=('openstack.common.rpc.'
                  'matchmaker.MatchMakerLocalhost'),
         help='MatchMaker driver',
         ),
