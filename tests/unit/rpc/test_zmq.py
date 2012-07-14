@@ -54,6 +54,9 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
         FLAGS.register_opts(rpc.rpc_opts)
         self.rpc = impl_zmq
         self.rpc.register_opts(FLAGS)
+
+        FLAGS.set_override('rpc_zmq_bind_address', '127.0.0.1')
+        FLAGS.set_override('rpc_zmq_host', '127.0.0.1')
         FLAGS.set_default('rpc_zmq_matchmaker',
                           'mod_matchmaker.MatchMakerLocalhost')
 
