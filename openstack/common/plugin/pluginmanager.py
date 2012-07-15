@@ -57,7 +57,8 @@ class PluginManager(object):
         if not hasattr(CONF, "list_notifier_drivers"):
             CONF.list_notifier_drivers = []
         old_notifier = CONF.notification_driver
-        CONF.notification_driver = 'openstack.common.notifier.list_notifier'
+        drvstring = 'openstack.common.notifier.list_notifier'
+        CONF.notification_driver = drvstring
         if (old_notifier and
             old_notifier != 'openstack.common.notifier.list_notifier'):
             list_notifier.add_driver(old_notifier)

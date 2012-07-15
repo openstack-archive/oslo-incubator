@@ -13,8 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from openstack.common.plugin import plugin
 from openstack.common import log as logging
+from openstack.common.plugin import plugin
 
 
 LOG = logging.getLogger(__name__)
