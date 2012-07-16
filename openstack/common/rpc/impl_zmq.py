@@ -719,3 +719,6 @@ def register_opts(conf):
         mm_impl = importutils.import_module(mm_module)
         mm_constructor = getattr(mm_impl, mm_class)
         matchmaker = mm_constructor()
+
+
+register_opts(cfg.CONF)
