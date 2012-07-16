@@ -59,6 +59,12 @@ class TimeUtilsTest(unittest.TestCase):
         expect = timeutils.parse_strtime(perfect_time_format)
         self.assertEqual(self.skynet_self_aware_time_perfect, expect)
 
+    def test_strtime_and_back(self):
+        orig_t = datetime.datetime(1997, 8, 29, 6, 14, 0)
+        s = timeutils.strtime(orig_t)
+        t = timeutils.parse_strtime(s)
+        self.assertEqual(orig_t, t)
+
     def test_is_older_than(self):
         with mock.patch('datetime.datetime') as datetime_mock:
             datetime_mock.utcnow.return_value = self.skynet_self_aware_time
