@@ -107,7 +107,7 @@ def to_primitive(value, convert_instances=False, level=0):
         elif hasattr(value, 'iteritems'):
             return to_primitive(dict(value.iteritems()),
                                 convert_instances=convert_instances,
-                                level=level)
+                                level=level + 1)
         elif hasattr(value, '__iter__'):
             return to_primitive(list(value), level)
         elif convert_instances and hasattr(value, '__dict__'):

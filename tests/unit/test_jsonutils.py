@@ -95,6 +95,24 @@ class ToPrimitiveTestCase(unittest.TestCase):
         p = jsonutils.to_primitive(x)
         self.assertEquals(p, {'a': 1, 'b': 2, 'c': 3})
 
+    def test_iteritems_with_cycle(self):
+        class IterItemsClass(object):
+            def __init__(self):
+                self.data = dict(a=1, b=2, c=3)
+                self.index = 0
+
+            def iteritems(self):
+                return self.data.items()
+
+        x = IterItemsClass()
+        x2 = IterItemsClass()
+        x.data['other'] = x2
+        x2.data['other'] = x
+
+        # If the cycle isn't caught, to_primitive() will eventually result in
+        # an exception due to excessive recursion depth.
+        p = jsonutils.to_primitive(x)
+
     def test_instance(self):
         class MysteryClass(object):
             a = 10
