@@ -109,7 +109,9 @@ def to_primitive(value, convert_instances=False, level=0):
                                 convert_instances=convert_instances,
                                 level=level + 1)
         elif hasattr(value, '__iter__'):
-            return to_primitive(list(value), level)
+            return to_primitive(list(value),
+                                convert_instances=convert_instances,
+                                level=level)
         elif convert_instances and hasattr(value, '__dict__'):
             # Likely an instance of something. Watch for cycles.
             # Ignore class member vars.
