@@ -28,9 +28,12 @@ from openstack.common import timeutils
 LOG = logging.getLogger(__name__)
 
 notifier_opts = [
-    cfg.StrOpt('notification_driver',
-               default='openstack.common.notifier.no_op_notifier',
-               help='Default driver for sending notifications'),
+    cfg.MultiStrOpt('notification_driver',
+                    default=[],
+                    help='Default driver for sending notifications'),
+    cfg.MultiStrOpt('list_notifier_drivers',
+                    default=[],
+           help='DEPRECATED  Use multi-option notification_driver instead.'),
     cfg.StrOpt('default_notification_level',
                default='INFO',
                help='Default notification level for outgoing notifications'),
@@ -127,16 +130,108 @@ def notify(context, publisher_id, event_type, priority, payload):
     # Ensure everything is JSON serializable.
     payload = jsonutils.to_primitive(payload, convert_instances=True)
 
-    driver = importutils.import_module(CONF.notification_driver)
     msg = dict(message_id=str(uuid.uuid4()),
                publisher_id=publisher_id,
                event_type=event_type,
                priority=priority,
                payload=payload,
                timestamp=str(timeutils.utcnow()))
-    try:
-        driver.notify(context, msg)
-    except Exception, e:
-        LOG.exception(_("Problem '%(e)s' attempting to "
-                        "send to notification system. Payload=%(payload)s") %
-                      locals())
+
+    for driver in _get_drivers():
+        try:
+            driver.notify(context, msg)
+        except Exception, e:
+            LOG.exception(_("Problem '%(e)s' attempting to "
+              "send to notification system. Payload=%(payload)s") %
+                            locals())
+
+
+class ImportFailureNotifier(object):
+    """Noisily re-raises some exception a few times when notify is called."""
+
+    def __init__(self, exception):
+        self.exception = exception
+
+    def notify(self, context, message):
+        raise self.exception
+
+
+drivers = None
+
+
+def _get_drivers():
+    """Instantiate, cache, and return drivers based on the CONF."""
+    global drivers
+    if drivers is None:
+        drivers = []
+        for notification_driver in CONF.notification_driver:
+            try:
+                drivers.append(importutils.import_module(notification_driver))
+            except ImportError as e:
+                drivers.append(ImportFailureNotifier(e))
+
+        # FIXME: This block is transitional, should maybe be removed
+        # in Grizzly.
+        if CONF.list_notifier_drivers:
+            LOG.warn(_("list_notifier_drivers is deprecated."
+                       "The notificiation_driver option can now take"
+                       "multiple values; use that instead."))
+            for ln_driver in CONF.list_notifier_drivers:
+                try:
+                    drivers.append(importutils.import_module(ln_driver))
+                except ImportError as e:
+                    drivers.append(ImportFailureNotifier(e))
+    return drivers
+
+
+def add_driver(notification_driver):
+    """Add a notification driver at runtime."""
+    # Make sure the driver list is initialized.
+    _get_drivers()
+    if isinstance(notification_driver, basestring):
+        # Load and add
+        try:
+            drivers.append(importutils.import_module(notification_driver))
+        except ImportError as e:
+            drivers.append(ImportFailureNotifier(e))
+    else:
+        # Driver is already loaded; just add the object.
+        drivers.append(notification_driver)
+
+
+def _object_name(obj):
+    name = []
+    if hasattr(obj, '__module__'):
+        name.append(obj.__module__)
+    if hasattr(obj, '__name__'):
+        name.append(obj.__name__)
+    else:
+        name.append(obj.__class__.__name__)
+    return '.'.join(name)
+
+
+def remove_driver(notification_driver):
+    """Remove a notification driver at runtime."""
+    # Make sure the driver list is initialized.
+    _get_drivers()
+    removed = False
+    if notification_driver in drivers:
+        # We're removing an object.  Easy.
+        drivers.remove(notification_driver)
+        removed = True
+    else:
+        # We're removing a driver by name.  Search for it.
+        for driver in drivers:
+            if _object_name(driver) == notification_driver:
+                drivers.remove(driver)
+                removed = True
+
+    if not removed:
+        raise ValueError("Cannot remove; %s is not in list" %
+                         notification_driver)
+
+
+def _reset_drivers():
+    """Used by unit tests to reset the drivers."""
+    global drivers
+    drivers = None
