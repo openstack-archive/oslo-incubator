@@ -10,7 +10,6 @@ from openstack.common import cfg
 from openstack.common import jsonutils
 from openstack.common import log
 from openstack.common.notifier import api as notifier
-from openstack.common.notifier import list_notifier
 from tests import utils as test_utils
 
 CONF = cfg.CONF
@@ -86,20 +85,8 @@ class PublishErrorsHandlerTestCase(test_utils.BaseTestCase):
         super(PublishErrorsHandlerTestCase, self).setUp()
         self.publiserrorshandler = log.PublishErrorsHandler(logging.ERROR)
 
-    def test_emit_cfg_list_notifier_drivers_in_flags(self):
-        self.stub_flg = False
-
-        def fake_notifier(*args, **kwargs):
-            self.stub_flg = True
-
-        self.stubs.Set(notifier, 'notify', fake_notifier)
-        logrecord = logging.LogRecord('name', 'WARN', '/tmp', 1,
-                                      'Message', None, None)
-        self.publiserrorshandler.emit(logrecord)
-        self.assertTrue(self.stub_flg)
-
-    def test_emit_cfg_log_notifier_in_list_notifier_drivers(self):
-        self.config(list_notifier_drivers=[
+    def test_emit_cfg_log_notifier_in_notifier_drivers(self):
+        self.config(notification_driver=[
             'openstack.common.notifier.rabbit_notifier',
             'openstack.common.notifier.log_notifier'])
         self.stub_flg = True
