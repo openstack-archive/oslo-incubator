@@ -507,8 +507,8 @@ class Opt(object):
         :param default: the default value of the option
         :param metavar: the option argument to show in --help
         :param help: an explanation of how the option is used
-        :param secret: true iff the value should be obfuscated in log output
-        :param required: true iff a value must be supplied for this option
+        :param secret: true if the value should be obfuscated in log output
+        :param required: true if a value must be supplied for this option
         :param deprecated_name: deprecated name option.  Acts like an alias
         """
         self.name = name
