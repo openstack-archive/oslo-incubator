@@ -17,6 +17,7 @@ from openstack.common import cfg
 from openstack.common import context
 from openstack.common import log
 from openstack.common.notifier import api as notifier_api
+from openstack.common.notifier import log_notifier
 from openstack.common.notifier import no_op_notifier
 from openstack.common.notifier import rabbit_notifier
 from openstack.common import rpc
@@ -31,9 +32,13 @@ class NotifierTestCase(test_utils.BaseTestCase):
     """Test case for notifications"""
     def setUp(self):
         super(NotifierTestCase, self).setUp()
-        self.config(notification_driver='openstack.common.'
-                                        'notifier.no_op_notifier')
+        self.config(notification_driver=['openstack.common.'
+                                        'notifier.no_op_notifier'])
         self.config(default_publisher_id='publisher')
+
+    def tearDown(self):
+        notifier_api._reset_drivers()
+        super(NotifierTestCase, self).tearDown()
 
     def test_send_notification(self):
         self.notify_called = False
@@ -70,7 +75,7 @@ class NotifierTestCase(test_utils.BaseTestCase):
 
     def test_send_rabbit_notification(self):
         self.stubs.Set(cfg.CONF, 'notification_driver',
-                       'openstack.common.notifier.rabbit_notifier')
+                       ['openstack.common.notifier.rabbit_notifier'])
         self.mock_notify = False
 
         def mock_notify(cls, *args):
@@ -89,7 +94,7 @@ class NotifierTestCase(test_utils.BaseTestCase):
 
     def test_rabbit_priority_queue(self):
         self.stubs.Set(cfg.CONF, 'notification_driver',
-                       'openstack.common.notifier.rabbit_notifier')
+                       ['openstack.common.notifier.rabbit_notifier'])
         self.stubs.Set(cfg.CONF, 'notification_topics',
                        ['testnotify', ])
 
@@ -105,7 +110,7 @@ class NotifierTestCase(test_utils.BaseTestCase):
 
     def test_error_notification(self):
         self.stubs.Set(cfg.CONF, 'notification_driver',
-                       'openstack.common.notifier.rabbit_notifier')
+                       ['openstack.common.notifier.rabbit_notifier'])
         self.stubs.Set(cfg.CONF, 'publish_errors', True)
         LOG = log.getLogger('common')
         log.setup(None)
@@ -184,3 +189,106 @@ class NotifierTestCase(test_utils.BaseTestCase):
         self.assertEqual(3, example_api2(1, 2, bananas="delicious"))
         self.assertEqual(self.notify_called, True)
         self.assertEqual(self.context_arg, None)
+
+
+class SimpleNotifier(object):
+    def __init__(self):
+        self.notified = False
+
+    def notify(self, *args):
+        self.notified = True
+
+
+class MultiNotifierTestCase(test_utils.BaseTestCase):
+    """Test case for notifications"""
+
+    def setUp(self):
+        super(MultiNotifierTestCase, self).setUp()
+        # Mock log to add one to exception_count when log.exception is called
+
+        def mock_exception(cls, *args):
+            self.exception_count += 1
+
+        self.exception_count = 0
+
+        notifier_log = log.getLogger(
+            'openstack.common.notifier.api')
+        self.stubs.Set(notifier_log, "exception", mock_exception)
+
+        # Mock no_op notifier to add one to notify_count when called.
+        def mock_notify(cls, *args):
+            self.notify_count += 1
+
+        self.notify_count = 0
+        self.stubs.Set(no_op_notifier, 'notify', mock_notify)
+        # Mock log_notifier to raise RuntimeError when called.
+
+        def mock_notify2(cls, *args):
+            raise RuntimeError("Bad notifier.")
+
+        self.stubs.Set(log_notifier, 'notify', mock_notify2)
+
+    def tearDown(self):
+        notifier_api._reset_drivers()
+        super(MultiNotifierTestCase, self).tearDown()
+
+    def test_send_notifications_successfully(self):
+        self.config(notification_driver=[
+                       'openstack.common.notifier.no_op_notifier',
+                       'openstack.common.notifier.no_op_notifier'])
+        notifier_api.notify('contextarg', 'publisher_id', 'event_type',
+                notifier_api.WARN, dict(a=3))
+        self.assertEqual(self.notify_count, 2)
+        self.assertEqual(self.exception_count, 0)
+
+    def test_send_notifications_with_errors(self):
+        self.config(notification_driver=[
+                       'openstack.common.notifier.no_op_notifier',
+                       'openstack.common.notifier.log_notifier'])
+        notifier_api.notify('contextarg', 'publisher_id',
+                'event_type', notifier_api.WARN, dict(a=3))
+        self.assertEqual(self.notify_count, 1)
+        self.assertEqual(self.exception_count, 1)
+
+    def test_when_driver_fails_to_import(self):
+        self.config(notification_driver=[
+                       'openstack.common.notifier.no_op_notifier',
+                       'openstack.common.notifier.logo_notifier',
+                       'fdsjgsdfhjkhgsfkj'])
+        notifier_api.notify('contextarg', 'publisher_id',
+                'event_type', notifier_api.WARN, dict(a=3))
+        self.assertEqual(self.exception_count, 2)
+        self.assertEqual(self.notify_count, 1)
+
+    def test_adding_and_removing_notifier_object(self):
+        self.notifier_object = SimpleNotifier()
+        self.config(notification_driver=[
+                       'openstack.common.notifier.no_op_notifier'])
+
+        notifier_api.add_driver(self.notifier_object)
+        notifier_api.notify(None, 'publisher_id', 'event_type',
+                notifier_api.WARN, dict(a=3))
+        self.assertEqual(self.notify_count, 1)
+        self.assertTrue(self.notifier_object.notified)
+
+        self.notifier_object.notified = False
+        notifier_api.remove_driver(self.notifier_object)
+
+        notifier_api.notify(None, 'publisher_id', 'event_type',
+                notifier_api.WARN, dict(a=3))
+        self.assertEqual(self.notify_count, 2)
+        self.assertFalse(self.notifier_object.notified)
+
+    def test_adding_and_removing_notifier_module(self):
+        self.config(notification_driver=[])
+
+        notifier_api.add_driver('openstack.common.notifier.no_op_notifier')
+        notifier_api.notify(None, 'publisher_id', 'event_type',
+                notifier_api.WARN, dict(a=3))
+        self.assertEqual(self.notify_count, 1)
+
+        notifier_api.remove_driver('openstack.common.notifier.no_op_notifier')
+
+        notifier_api.notify(None, 'publisher_id', 'event_type',
+                notifier_api.WARN, dict(a=3))
+        self.assertEqual(self.notify_count, 1)
