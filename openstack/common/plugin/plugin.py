@@ -14,7 +14,6 @@
 #    under the License.
 
 from openstack.common import log as logging
-from openstack.common.notifier import list_notifier
 
 
 LOG = logging.getLogger(__name__)
