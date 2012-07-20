@@ -19,7 +19,6 @@ Unit Tests for 'common' functons used through rpc code.
 
 import logging
 import sys
-import unittest
 
 from openstack.common import cfg
 from openstack.common import context
@@ -30,6 +29,7 @@ from openstack.common import rpc
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
 from tests.unit.rpc import common
+from tests import utils as test_utils
 
 
 FLAGS = cfg.CONF
@@ -45,7 +45,7 @@ class FakeUserDefinedException(Exception):
         Exception.__init__(self, "Test Message")
 
 
-class RpcCommonTestCase(unittest.TestCase):
+class RpcCommonTestCase(test_utils.BaseTestCase):
     def test_serialize_remote_exception(self):
         expected = {
             'class': 'Exception',
@@ -114,8 +114,7 @@ class RpcCommonTestCase(unittest.TestCase):
 
     def test_deserialize_remote_exception_user_defined_exception(self):
         """Ensure a user defined exception can be deserialized."""
-        FLAGS.set_override('allowed_rpc_exception_modules',
-                           [self.__class__.__module__])
+        self.config(allowed_rpc_exception_modules=[self.__class__.__module__])
         failure = {
             'class': 'FakeUserDefinedException',
             'module': self.__class__.__module__,
@@ -127,7 +126,6 @@ class RpcCommonTestCase(unittest.TestCase):
         self.assertTrue(isinstance(after_exc, FakeUserDefinedException))
         #assure the traceback was added
         self.assertTrue('raise FakeUserDefinedException' in unicode(after_exc))
-        FLAGS.reset()
 
     def test_deserialize_remote_exception_cannot_recreate(self):
         """Ensure a RemoteError is returned on initialization failure.
@@ -136,8 +134,7 @@ class RpcCommonTestCase(unittest.TestCase):
         RemoteError with the exception informations should still be returned.
 
         """
-        FLAGS.set_override('allowed_rpc_exception_modules',
-                           [self.__class__.__module__])
+        self.config(allowed_rpc_exception_modules=[self.__class__.__module__])
         failure = {
             'class': 'FakeIDontExistException',
             'module': self.__class__.__module__,
@@ -149,10 +146,9 @@ class RpcCommonTestCase(unittest.TestCase):
         self.assertTrue(isinstance(after_exc, rpc_common.RemoteError))
         #assure the traceback was added
         self.assertTrue('raise FakeIDontExistException' in unicode(after_exc))
-        FLAGS.reset()
 
     def test_loading_old_nova_config(self):
-        FLAGS.set_override('rpc_backend', 'nova.rpc.impl_qpid')
+        self.config(rpc_backend='nova.rpc.impl_qpid')
         rpc._RPCIMPL = None
 
         self.mod = None
@@ -170,6 +166,5 @@ class RpcCommonTestCase(unittest.TestCase):
         rpc._get_impl()
 
         importutils.import_module = orig_import_module
-        FLAGS.reset()
 
         self.assertEqual(self.mod, 'nova.openstack.common.rpc.impl_qpid')
