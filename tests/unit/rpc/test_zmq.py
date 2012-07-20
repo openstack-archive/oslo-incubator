@@ -54,6 +54,7 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
         FLAGS.register_opts(rpc.rpc_opts)
         self.rpc = impl_zmq
         self.rpc.register_opts(FLAGS)
+        FLAGS.set_override('rpc_response_timeout', 5)
         FLAGS.set_default('rpc_zmq_matchmaker',
                           'mod_matchmaker.MatchMakerLocalhost')
 
