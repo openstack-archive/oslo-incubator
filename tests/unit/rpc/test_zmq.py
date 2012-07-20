@@ -52,9 +52,14 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
 
         self.reactor = None
         self.rpc = impl_zmq
+<<<<<<< HEAD
 
         FLAGS.set_override('rpc_zmq_bind_address', '127.0.0.1')
         FLAGS.set_override('rpc_zmq_host', '127.0.0.1')
+=======
+        self.rpc.register_opts(FLAGS)
+        FLAGS.set_override('rpc_response_timeout', 5)
+>>>>>>> 52c9b80... Reduce test_zmq's reponse timeout.
         FLAGS.set_default('rpc_zmq_matchmaker',
                           'mod_matchmaker.MatchMakerLocalhost')
 
