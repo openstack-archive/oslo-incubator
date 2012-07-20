@@ -464,9 +464,10 @@ def _is_opt_registered(opts, opt):
     :raises: DuplicateOptError if a naming conflict is detected
     """
     if opt.dest in opts:
-        if opts[opt.dest]['opt'] is not opt:
+        if opts[opt.dest]['opt'] == opt:
+            return True
+        else:
             raise DuplicateOptError(opt.name)
-        return True
     else:
         return False
 
@@ -526,6 +527,9 @@ class Opt(object):
             self.deprecated_name = deprecated_name.replace('-', '_')
         else:
             self.deprecated_name = None
+
+    def __eq__(self, another):
+        return self.__dict__ == another.__dict__
 
     def _get_from_config_parser(self, cparser, section):
         """Retrieves the option value from a MultiConfigParser object.
