@@ -88,19 +88,30 @@ class ToPrimitiveTestCase(unittest.TestCase):
                 self.data = dict(a=1, b=2, c=3).items()
                 self.index = 0
 
-            def __iter__(self):
-                return self
-
-            def next(self):
-                if self.index == len(self.data):
-                    raise StopIteration
-                self.index = self.index + 1
-                return self.data[self.index - 1]
+            def iteritems(self):
+                return self.data
 
         x = IterItemsClass()
-        ordered = jsonutils.to_primitive(x)
-        ordered.sort()
-        self.assertEquals(ordered, [['a', 1], ['b', 2], ['c', 3]])
+        p = jsonutils.to_primitive(x)
+        self.assertEquals(p, {'a': 1, 'b': 2, 'c': 3})
+
+    def test_iteritems_with_cycle(self):
+        class IterItemsClass(object):
+            def __init__(self):
+                self.data = dict(a=1, b=2, c=3)
+                self.index = 0
+
+            def iteritems(self):
+                return self.data.items()
+
+        x = IterItemsClass()
+        x2 = IterItemsClass()
+        x.data['other'] = x2
+        x2.data['other'] = x
+
+        # If the cycle isn't caught, to_primitive() will eventually result in
+        # an exception due to excessive recursion depth.
+        p = jsonutils.to_primitive(x)
 
     def test_instance(self):
         class MysteryClass(object):
