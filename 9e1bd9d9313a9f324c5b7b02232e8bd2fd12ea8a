@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Approved+1: Jason Kölker <jason@koelker.net>
+Code-Review+2: Jason Kölker <jason@koelker.net>
+Code-Review+2: Mark McLoughlin <markmc@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Mon, 23 Jul 2012 15:00:28 +0000
+Reviewed-on: https://review.openstack.org/9983
+Project: openstack/openstack-common
+Branch: refs/heads/master
