@@ -22,6 +22,7 @@ Unit Tests for remote procedure calls using kombu
 import eventlet
 eventlet.monkey_patch()
 
+import contextlib
 import logging
 import unittest
 
@@ -32,6 +33,7 @@ from openstack.common import exception
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
 from openstack.common import testutils
+from tests import utils
 from tests.unit.rpc import common
 
 try:
@@ -64,7 +66,8 @@ def _raise_exc_stub(stubs, times, obj, method, exc_msg,
     return info
 
 
-class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
+class KombuStubs:
+    @staticmethod
     def setUp(self):
         self.stubs = stubout.StubOutForTesting()
         if kombu:
@@ -73,14 +76,23 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
             self.rpc = impl_kombu
         else:
             self.rpc = None
-        super(RpcKombuTestCase, self).setUp()
 
+    @staticmethod
     def tearDown(self):
         self.stubs.UnsetAll()
         self.stubs.SmartUnsetAll()
         if kombu:
             impl_kombu.cleanup()
-        super(RpcKombuTestCase, self).tearDown()
+
+
+class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
+    def setUp(self):
+        KombuStubs.setUp(self)
+        common.BaseRpcAMQPTestCase.setUp(self)
+
+    def tearDown(self):
+        common.BaseRpcAMQPTestCase.tearDown(self)
+        KombuStubs.tearDown(self)
 
     @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_reusing_connection(self):
@@ -166,13 +178,13 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
             def __init__(myself, *args, **kwargs):
                 super(MyConnection, myself).__init__(*args, **kwargs)
                 self.assertEqual(
-                    myself.params,
-                    {'hostname': FLAGS.rabbit_host,
+                    myself.params_list,
+                   [{'hostname': FLAGS.rabbit_host,
                      'userid': FLAGS.rabbit_userid,
                      'password': FLAGS.rabbit_password,
                      'port': FLAGS.rabbit_port,
                      'virtual_host': FLAGS.rabbit_virtual_host,
-                     'transport': 'memory'})
+                     'transport': 'memory'}])
 
             def topic_send(_context, topic, msg):
                 pass
@@ -199,13 +211,13 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
             def __init__(myself, *args, **kwargs):
                 super(MyConnection, myself).__init__(*args, **kwargs)
                 self.assertEqual(
-                    myself.params,
-                    {'hostname': server_params['hostname'],
+                    myself.params_list,
+                   [{'hostname': server_params['hostname'],
                      'userid': server_params['username'],
                      'password': server_params['password'],
                      'port': server_params['port'],
                      'virtual_host': server_params['virtual_host'],
-                     'transport': 'memory'})
+                     'transport': 'memory'}])
 
             def topic_send(_context, topic, msg):
                 pass
@@ -411,3 +423,88 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
             self.assertTrue(value in unicode(exc))
             #Traceback should be included in exception message
             self.assertTrue('exception.ApiError' in unicode(exc))
+
+
+class RpcKombuHATestCase(utils.BaseTestCase):
+    def setUp(self):
+        utils.BaseTestCase.setUp(self)
+        KombuStubs.setUp(self)
+
+    def tearDown(self):
+        FLAGS.reset()
+        KombuStubs.tearDown(self)
+        utils.BaseTestCase.tearDown(self)
+
+    @testutils.skip_if(kombu is None, "Test requires kombu")
+    def test_roundrobin_reconnect(self):
+        """Test that rabbits are tried in roundrobin at connection failures."""
+        self.config(rabbit_hosts=['host1:1234', 'host2:5678'])
+
+        info = {
+            'attempt': 0,
+            'params_list': [
+               {'hostname': 'host1',
+                'userid': FLAGS.rabbit_userid,
+                'password': FLAGS.rabbit_password,
+                'port': 1234,
+                'virtual_host': FLAGS.rabbit_virtual_host,
+                'transport': 'memory'},
+               {'hostname': 'host2',
+                'userid': FLAGS.rabbit_userid,
+                'password': FLAGS.rabbit_password,
+                'port': 5678,
+                'virtual_host': FLAGS.rabbit_virtual_host,
+                'transport': 'memory'},
+              ]
+            }
+
+        import kombu.connection
+
+        class MyConnection(kombu.connection.BrokerConnection):
+            def __init__(myself, *args, **params):
+                super(MyConnection, myself).__init__(*args, **params)
+                self.assertEqual(params, info['params_list'][info['attempt'] %
+                                           len(info['params_list'])])
+                info['attempt'] = info['attempt'] + 1
+
+            def connect(myself):
+                if info['attempt'] < 3:
+                    # the word timeout is important (see impl_kombu.py:486)
+                    raise Exception('connection timeout')
+                super(kombu.connection.BrokerConnection, myself).connect()
+
+        self.stubs.Set(kombu.connection, 'BrokerConnection', MyConnection)
+
+        conn = self.rpc.Connection(FLAGS)
+
+        self.assertEqual(info['attempt'], 3)
+
+    @testutils.skip_if(kombu is None, "Test requires kombu")
+    def test_queue_not_declared_ha_if_ha_off(self):
+        self.config(rabbit_ha_queues=False)
+
+        import kombu.entity
+
+        def my_declare(myself):
+            self.assertEqual(None,
+                (myself.queue_arguments or {}).get('x-ha-policy'))
+
+        self.stubs.Set(kombu.entity.Queue, 'declare', my_declare)
+
+        with contextlib.closing(self.rpc.create_connection(FLAGS)) as conn:
+            conn.declare_topic_consumer('a_topic', lambda *args: None)
+
+    @testutils.skip_if(kombu is None, "Test requires kombu")
+    def test_queue_declared_ha_if_ha_on(self):
+        self.config(rabbit_ha_queues=True)
+
+        import kombu.entity
+
+        def my_declare(myself):
+            self.assertEqual('all',
+                (myself.queue_arguments or {}).get('x-ha-policy'))
+
+        self.stubs.Set(kombu.entity.Queue, 'declare', my_declare)
+
+        with contextlib.closing(self.rpc.create_connection(FLAGS)) as conn:
+            conn.declare_topic_consumer('a_topic', lambda *args: None)
