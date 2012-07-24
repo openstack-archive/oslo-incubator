@@ -54,6 +54,9 @@ kombu_opts = [
     cfg.IntOpt('rabbit_port',
                default=5672,
                help='the RabbitMQ port'),
+    cfg.ListOpt('rabbit_addresses',
+               default=['$rabbit_host:$rabbit_port'],
+               help='RabbitMQ HA cluster host:port pairs'),
     cfg.BoolOpt('rabbit_use_ssl',
                 default=False,
                 help='connect over SSL for RabbitMQ'),
@@ -80,6 +83,11 @@ kombu_opts = [
     cfg.BoolOpt('rabbit_durable_queues',
                 default=False,
                 help='use durable queues in RabbitMQ'),
+    cfg.BoolOpt('rabbit_ha_queues',
+                default=False,
+                help='use H/A queues in RabbitMQ (x-ha-policy: all).'
+                     'You need to wipe RabbitMQ database when '
+                     'changing this option.'),
 
 ]
 
@@ -207,6 +215,8 @@ class TopicConsumer(ConsumerBase):
         """
         # Default options
         options = {'durable': conf.rabbit_durable_queues,
+                   'queue_arguments':
+                      {'x-ha-policy': 'all'} if conf.rabbit_ha_queues else {},
                    'auto_delete': False,
                    'exclusive': False}
         options.update(kwargs)
@@ -331,6 +341,7 @@ class NotifyPublisher(TopicPublisher):
 
     def __init__(self, conf, channel, topic, **kwargs):
         self.durable = kwargs.pop('durable', conf.rabbit_durable_queues)
+        self.rabbit_ha_queues = conf.rabbit_ha_queues
         super(NotifyPublisher, self).__init__(conf, channel, topic, **kwargs)
 
     def reconnect(self, channel):
@@ -339,11 +350,13 @@ class NotifyPublisher(TopicPublisher):
         # NOTE(jerdfelt): Normally the consumer would create the queue, but
         # we do this to ensure that messages don't get dropped if the
         # consumer is started after we do
+        args = {'x-ha-policy': 'all'} if self.rabbit_ha_queues else {}
         queue = kombu.entity.Queue(channel=channel,
                                    exchange=self.exchange,
                                    durable=self.durable,
                                    name=self.routing_key,
-                                   routing_key=self.routing_key)
+                                   routing_key=self.routing_key,
+                                   queue_arguments=args)
         queue.declare()
 
 
@@ -368,31 +381,34 @@ class Connection(object):
 
         if server_params is None:
             server_params = {}
-
         # Keys to translate from server_params to kombu params
         server_params_to_kombu_params = {'username': 'userid'}
 
-        params = {}
-        for sp_key, value in server_params.iteritems():
-            p_key = server_params_to_kombu_params.get(sp_key, sp_key)
-            params[p_key] = value
+        params_list = []
+        for adr in self.conf.rabbit_addresses:
+            hostname, port = adr.split(':')
+            params = {}
 
-        params.setdefault('hostname', self.conf.rabbit_host)
-        params.setdefault('port', self.conf.rabbit_port)
-        params.setdefault('userid', self.conf.rabbit_userid)
-        params.setdefault('password', self.conf.rabbit_password)
-        params.setdefault('virtual_host', self.conf.rabbit_virtual_host)
+            for sp_key, value in server_params.iteritems():
+                p_key = server_params_to_kombu_params.get(sp_key, sp_key)
+                params[p_key] = value
 
-        self.params = params
+            params.setdefault('hostname', hostname)
+            params.setdefault('port', int(port))
+            params.setdefault('userid', self.conf.rabbit_userid)
+            params.setdefault('password', self.conf.rabbit_password)
+            params.setdefault('virtual_host', self.conf.rabbit_virtual_host)
 
-        if self.conf.fake_rabbit:
-            self.params['transport'] = 'memory'
-            self.memory_transport = True
-        else:
-            self.memory_transport = False
+            if self.conf.fake_rabbit:
+                params['transport'] = 'memory'
+            if self.conf.rabbit_use_ssl:
+                params['ssl'] = self._fetch_ssl_params()
 
-        if self.conf.rabbit_use_ssl:
-            self.params['ssl'] = self._fetch_ssl_params()
+            params_list.append(params)
+
+        self.params_list = params_list
+
+        self.memory_transport = self.conf.fake_rabbit
 
         self.connection = None
         self.reconnect()
@@ -422,14 +438,14 @@ class Connection(object):
             # Return the extended behavior
             return ssl_params
 
-    def _connect(self):
+    def _connect(self, params):
         """Connect to rabbit.  Re-establish any queues that may have
         been declared before if we are reconnecting.  Exceptions should
         be handled by the caller.
         """
         if self.connection:
             LOG.info(_("Reconnecting to AMQP server on "
-                     "%(hostname)s:%(port)d") % self.params)
+                     "%(hostname)s:%(port)d") % params)
             try:
                 self.connection.close()
             except self.connection_errors:
@@ -437,7 +453,7 @@ class Connection(object):
             # Setting this in case the next statement fails, though
             # it shouldn't be doing any network operations, yet.
             self.connection = None
-        self.connection = kombu.connection.BrokerConnection(**self.params)
+        self.connection = kombu.connection.BrokerConnection(**params)
         self.connection_errors = self.connection.connection_errors
         if self.memory_transport:
             # Kludge to speed up tests.
@@ -450,8 +466,8 @@ class Connection(object):
             self.channel._new_queue('ae.undeliver')
         for consumer in self.consumers:
             consumer.reconnect(self.channel)
-        LOG.info(_('Connected to AMQP server on %(hostname)s:%(port)d'),
-                 self.params)
+        LOG.info(_('Connected to AMQP server on %(hostname)s:%(port)d')
+            % params)
 
     def reconnect(self):
         """Handles reconnecting and re-establishing queues.
@@ -464,11 +480,12 @@ class Connection(object):
 
         attempt = 0
         while True:
+            params = self.params_list[attempt % len(self.params_list)]
             attempt += 1
             try:
-                self._connect()
+                self._connect(params)
                 return
-            except (self.connection_errors, IOError), e:
+            except (IOError, self.connection_errors) as e:
                 pass
             except Exception, e:
                 # NOTE(comstud): Unfortunately it's possible for amqplib
@@ -483,7 +500,7 @@ class Connection(object):
             log_info = {}
             log_info['err_str'] = str(e)
             log_info['max_retries'] = self.max_retries
-            log_info.update(self.params)
+            log_info.update(params)
 
             if self.max_retries and attempt == self.max_retries:
                 LOG.exception(_('Unable to connect to AMQP server on '
