@@ -48,7 +48,6 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
         self.supports_timeouts = supports_timeouts
         self.context = rpc_common.CommonRpcContext(user='fake_user',
                                                    pw='fake_pw')
-
         if self.rpc:
             receiver = TestReceiver()
             self.conn = self._create_consumer(receiver, self.topic)
