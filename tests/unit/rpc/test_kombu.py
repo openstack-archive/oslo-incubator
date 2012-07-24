@@ -82,6 +82,12 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
             impl_kombu.cleanup()
         super(RpcKombuTestCase, self).tearDown()
 
+    @testutils.skip_test("kombu memory transport seems buggy with "
+                         "fanout queues as this test passes when "
+                         "you use rabbit (fake_rabbit=False)")
+    def test_fanout_success(self):
+        self._test_cast(True)
+
     @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_reusing_connection(self):
         """Test that reusing a connection returns same one."""
