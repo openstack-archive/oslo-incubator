@@ -38,7 +38,6 @@ from tests import utils as test_utils
 FLAGS = cfg.CONF
 LOG = logging.getLogger(__name__)
 
-
 class BaseRpcTestCase(test_utils.BaseTestCase):
     def setUp(self, supports_timeouts=True, topic='test',
               topic_nested='nested'):
@@ -48,7 +47,6 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
         self.supports_timeouts = supports_timeouts
         self.context = rpc_common.CommonRpcContext(user='fake_user',
                                                    pw='fake_pw')
-
         if self.rpc:
             receiver = TestReceiver()
             self.conn = self._create_consumer(receiver, self.topic)
