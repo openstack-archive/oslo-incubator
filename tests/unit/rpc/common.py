@@ -39,6 +39,24 @@ FLAGS = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
+# Decorator for tests that require a TestReceiver to be listening.
+# Better not to put it into the whole test's setUp/tearDown, because
+# it can interefere with the logic of some tests, e.g it does interfere
+# with test_kombu.py:test_roundrobin_reconnect
+def withTestReceiver(f):
+    def new_f(self):
+        if self.rpc:
+            receiver = TestReceiver()
+            self.conn = self._create_consumer(receiver, self.topic)
+
+        try:
+            return f(self)
+        finally:
+            if self.rpc:
+                self.conn.close()
+
+    return new_f
+
 class BaseRpcTestCase(unittest.TestCase):
     def setUp(self, supports_timeouts=True, topic='test',
               topic_nested='nested'):
@@ -49,15 +67,6 @@ class BaseRpcTestCase(unittest.TestCase):
         self.context = rpc_common.CommonRpcContext(user='fake_user',
                                                    pw='fake_pw')
 
-        if self.rpc:
-            receiver = TestReceiver()
-            self.conn = self._create_consumer(receiver, self.topic)
-
-    def tearDown(self):
-        if self.rpc:
-            self.conn.close()
-        super(BaseRpcTestCase, self).tearDown()
-
     def _create_consumer(self, proxy, topic, fanout=False):
         dispatcher = rpc_dispatcher.RpcDispatcher([proxy])
         conn = self.rpc.create_connection(FLAGS, True)
@@ -65,6 +74,7 @@ class BaseRpcTestCase(unittest.TestCase):
         conn.consume_in_thread()
         return conn
 
+    @withTestReceiver
     def test_call_succeed(self):
         if not self.rpc:
             raise nose.SkipTest('rpc driver not available.')
@@ -74,6 +84,7 @@ class BaseRpcTestCase(unittest.TestCase):
                                {"method": "echo", "args": {"value": value}})
         self.assertEqual(value, result)
 
+    @withTestReceiver
     def test_call_succeed_despite_multiple_returns_yield(self):
         if not self.rpc:
             raise nose.SkipTest('rpc driver not available.')
@@ -84,6 +95,7 @@ class BaseRpcTestCase(unittest.TestCase):
                                 "args": {"value": value}})
         self.assertEqual(value + 2, result)
 
+    @withTestReceiver
     def test_multicall_succeed_once(self):
         if not self.rpc:
             raise nose.SkipTest('rpc driver not available.')
@@ -98,6 +110,7 @@ class BaseRpcTestCase(unittest.TestCase):
                 self.fail('should only receive one response')
             self.assertEqual(value + i, x)
 
+    @withTestReceiver
     def test_multicall_three_nones(self):
         if not self.rpc:
             raise nose.SkipTest('rpc driver not available.')
@@ -112,6 +125,7 @@ class BaseRpcTestCase(unittest.TestCase):
         # i should have been 0, 1, and finally 2:
         self.assertEqual(i, 2)
 
+    @withTestReceiver
     def test_multicall_succeed_three_times_yield(self):
         if not self.rpc:
             raise nose.SkipTest('rpc driver not available.')
@@ -124,6 +138,7 @@ class BaseRpcTestCase(unittest.TestCase):
         for i, x in enumerate(result):
             self.assertEqual(value + i, x)
 
+    @withTestReceiver
     def test_context_passed(self):
         if not self.rpc:
             raise nose.SkipTest('rpc driver not available.')
@@ -179,6 +194,7 @@ class BaseRpcTestCase(unittest.TestCase):
     def test_fanout_success(self):
         self._test_cast(True)
 
+    @withTestReceiver
     def test_nested_calls(self):
         if not self.rpc:
             raise nose.SkipTest('rpc driver not available.')
@@ -211,6 +227,7 @@ class BaseRpcTestCase(unittest.TestCase):
         conn.close()
         self.assertEqual(value, result)
 
+    @withTestReceiver
     def test_call_timeout(self):
         if not self.rpc:
             raise nose.SkipTest('rpc driver not available.')
@@ -239,6 +256,7 @@ class BaseRpcTestCase(unittest.TestCase):
 
 class BaseRpcAMQPTestCase(BaseRpcTestCase):
     """Base test class for all AMQP-based RPC tests."""
+    @withTestReceiver
     def test_proxycallback_handles_exceptions(self):
         """Make sure exceptions unpacking messages don't cause hangs."""
         if not self.rpc:
