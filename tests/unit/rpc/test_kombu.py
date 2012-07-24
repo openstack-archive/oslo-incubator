@@ -173,13 +173,13 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
             def __init__(myself, *args, **kwargs):
                 super(MyConnection, myself).__init__(*args, **kwargs)
                 self.assertEqual(
-                    myself.params,
-                    {'hostname': FLAGS.rabbit_host,
+                    myself.params_list,
+                   [{'hostname': FLAGS.rabbit_host,
                      'userid': FLAGS.rabbit_userid,
                      'password': FLAGS.rabbit_password,
                      'port': FLAGS.rabbit_port,
                      'virtual_host': FLAGS.rabbit_virtual_host,
-                     'transport': 'memory'})
+                     'transport': 'memory'}])
 
             def topic_send(_context, topic, msg):
                 pass
@@ -206,13 +206,13 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
             def __init__(myself, *args, **kwargs):
                 super(MyConnection, myself).__init__(*args, **kwargs)
                 self.assertEqual(
-                    myself.params,
-                    {'hostname': server_params['hostname'],
+                    myself.params_list,
+                   [{'hostname': server_params['hostname'],
                      'userid': server_params['username'],
                      'password': server_params['password'],
                      'port': server_params['port'],
                      'virtual_host': server_params['virtual_host'],
-                     'transport': 'memory'})
+                     'transport': 'memory'}])
 
             def topic_send(_context, topic, msg):
                 pass
@@ -364,6 +364,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         # Only called once, because our stub goes away during reconnection
 
     @testutils.skip_if(kombu is None, "Test requires kombu")
+    @common.withTestReceiver
     def test_call_exception(self):
         """Test that exception gets passed back properly.
 
@@ -394,6 +395,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         FLAGS.reset()
 
     @testutils.skip_if(kombu is None, "Test requires kombu")
+    @common.withTestReceiver
     def test_call_converted_exception(self):
         """Test that exception gets passed back properly.
 
@@ -420,3 +422,48 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
             self.assertTrue(value in unicode(exc))
             #Traceback should be included in exception message
             self.assertTrue('exception.ApiError' in unicode(exc))
+
+    @testutils.skip_if(kombu is None, "Test requires kombu")
+    def test_roundrobin_reconnect(self):
+        """Test that rabbits are tried in roundrobin at connection failures."""
+        FLAGS.rabbit_addresses = ['host1:1234', 'host2:5678']
+
+        info = {
+            'attempt': 0,
+            'params_list': [
+               {'hostname': 'host1',
+                'userid': FLAGS.rabbit_userid,
+                'password': FLAGS.rabbit_password,
+                'port': 1234,
+                'virtual_host': FLAGS.rabbit_virtual_host,
+                'transport': 'memory'},
+               {'hostname': 'host2',
+                'userid': FLAGS.rabbit_userid,
+                'password': FLAGS.rabbit_password,
+                'port': 5678,
+                'virtual_host': FLAGS.rabbit_virtual_host,
+                'transport': 'memory'},
+              ]
+            }
+
+        import kombu.connection
+
+        class MyConnection(kombu.connection.BrokerConnection):
+            def __init__(myself, *args, **params):
+                super(kombu.connection.BrokerConnection, myself).__init__(
+                    *args, **params)
+                self.assertEqual(params, info['params_list'][info['attempt'] %
+                                           len(info['params_list'])])
+                info['attempt'] = info['attempt'] + 1
+
+            def connect(myself):
+                if info['attempt'] < 3:
+                    # the word timeout is important (see impl_kombu.py:486)
+                    raise Exception('connection timeout')
+                super(kombu.connection.BrokerConnection, myself).connect()
+
+        self.stubs.Set(kombu.connection, 'BrokerConnection', MyConnection)
+
+        conn = self.rpc.Connection(FLAGS)
+
+        self.assertEqual(info['attempt'], 3)
