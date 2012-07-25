@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Code-Review+2: Mark McLoughlin <markmc@redhat.com>
+Approved+1: Russell Bryant <rbryant@redhat.com>
+Code-Review+2: Russell Bryant <rbryant@redhat.com>
+Code-Review+1: Sean Dague <sdague@linux.vnet.ibm.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 25 Jul 2012 20:12:30 +0000
+Reviewed-on: https://review.openstack.org/10081
+Project: openstack/openstack-common
+Branch: refs/heads/master
