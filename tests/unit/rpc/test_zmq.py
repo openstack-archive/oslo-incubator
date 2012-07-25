@@ -51,9 +51,7 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
             return None
 
         self.reactor = None
-        FLAGS.register_opts(rpc.rpc_opts)
         self.rpc = impl_zmq
-        self.rpc.register_opts(FLAGS)
 
         FLAGS.set_override('rpc_zmq_bind_address', '127.0.0.1')
         FLAGS.set_override('rpc_zmq_host', '127.0.0.1')
