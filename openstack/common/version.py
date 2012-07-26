@@ -20,7 +20,6 @@ Utilities for consuming the auto-generated versioninfo files.
 
 import datetime
 import pkg_resources
-import os
 
 import setup
 
