@@ -138,3 +138,15 @@ def execute(*cmd, **kwargs):
             #               call clean something up in between calls, without
             #               it two execute calls in a row hangs the second one
             greenthread.sleep(0)
+
+
+def delete_if_exists(pathname):
+    """delete a file, but ignore file not found error"""
+
+    try:
+        os.unlink(pathname)
+    except OSError as e:
+        if e.errno == errno.ENOENT:
+            return
+        else:
+            raise
