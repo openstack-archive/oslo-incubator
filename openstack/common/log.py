@@ -405,8 +405,12 @@ class LegacyFormatter(logging.Formatter):
 
     def format(self, record):
         """Uses contextstring if request_id is set, otherwise default."""
-        if 'instance' not in record.__dict__:
-            record.__dict__['instance'] = ''
+        # NOTE(sdague): default the fancier formating params
+        # to an empty string so we don't throw an exception if
+        # they get used
+        for key in ('instance', 'color'):
+            if key not in record.__dict__:
+                record.__dict__[key] = ''
 
         if record.__dict__.get('request_id', None):
             self._fmt = CONF.logging_context_format_string
