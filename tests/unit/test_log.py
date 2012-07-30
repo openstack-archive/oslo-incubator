@@ -1,4 +1,5 @@
 import cStringIO
+import exceptions
 import logging
 import sys
 
@@ -216,3 +217,56 @@ class LegacyFormatterTestCase(test_utils.BaseTestCase):
     def test_debugging_log(self):
         self.log.debug("baz")
         self.assertEqual("NOCTXT: baz --DBG\n", self.stream.getvalue())
+
+
+class FancyRecordTestCase(test_utils.BaseTestCase):
+    """Test how we handle fancy record keys that are not in the
+    base python logging"""
+
+    def setUp(self):
+        super(FancyRecordTestCase, self).setUp()
+        # NOTE(sdague): use the different formatters to demonstrate format
+        # string with valid fancy keys and without. Slightly hacky, but given
+        # the way log objects layer up seemed to be most concise approach
+        self.config(logging_context_format_string="%(color)s "
+                                                  "[%(request_id)s]: "
+                                                  "%(message)s",
+                    logging_default_format_string="%(missing)s: %(message)s")
+        self.stream = cStringIO.StringIO()
+
+        self.colorhandler = log.ColorHandler(self.stream)
+        self.colorhandler.setFormatter(log.LegacyFormatter())
+
+        self.colorlog = log.getLogger()
+        self.colorlog.logger.addHandler(self.colorhandler)
+        self.level = self.colorlog.logger.getEffectiveLevel()
+        self.colorlog.logger.setLevel(logging.DEBUG)
+
+    def test_unsupported_key_in_log_msg(self):
+        # NOTE(sdague): exception logging bypasses the main stream
+        # and goes to stderr. Suggests on a better way to do this are
+        # welcomed.
+        error = sys.stderr
+        sys.stderr = cStringIO.StringIO()
+
+        self.colorlog.info("foo")
+        self.assertNotEqual(sys.stderr.getvalue().find("KeyError: 'missing'"),
+                           -1)
+
+        sys.stderr = error
+
+    def test_fancy_key_in_log_msg(self):
+        ctxt = _fake_context()
+
+        # TODO(sdague): there should be a way to retrieve this from the
+        # color handler
+        infocolor = '\033[00;36m'
+        warncolor = '\033[01;33m'
+        infoexpected = "%s [%s]: info\n" % (infocolor, ctxt.request_id)
+        warnexpected = "%s [%s]: warn\n" % (warncolor, ctxt.request_id)
+
+        self.colorlog.info("info", context=ctxt)
+        self.assertEqual(infoexpected, self.stream.getvalue())
+
+        self.colorlog.warn("warn", context=ctxt)
+        self.assertEqual(infoexpected + warnexpected, self.stream.getvalue())
