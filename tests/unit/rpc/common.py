@@ -21,7 +21,6 @@ Unit Tests for remote procedure calls shared between all implementations
 
 import logging
 import time
-import unittest
 
 import eventlet
 from eventlet import greenthread
@@ -33,13 +32,14 @@ from openstack.common.gettextutils import _
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
 from openstack.common.rpc import dispatcher as rpc_dispatcher
+from tests import utils as test_utils
 
 
 FLAGS = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
-class BaseRpcTestCase(unittest.TestCase):
+class BaseRpcTestCase(test_utils.BaseTestCase):
     def setUp(self, supports_timeouts=True, topic='test',
               topic_nested='nested'):
         super(BaseRpcTestCase, self).setUp()

@@ -22,10 +22,10 @@ Unit Tests for remote procedure calls using kombu + ssl
 import eventlet
 eventlet.monkey_patch()
 
-import unittest
-
 from openstack.common import cfg
 from openstack.common import testutils
+from tests import utils as test_utils
+
 
 try:
     import kombu
@@ -44,27 +44,16 @@ SSL_KEYFILE = "/tmp/keyfile.blah.blah"
 FLAGS = cfg.CONF
 
 
-class RpcKombuSslTestCase(unittest.TestCase):
+class RpcKombuSslTestCase(test_utils.BaseTestCase):
 
     def setUp(self):
         super(RpcKombuSslTestCase, self).setUp()
-        override = {
-            'kombu_ssl_keyfile': SSL_KEYFILE,
-            'kombu_ssl_ca_certs': SSL_CA_CERT,
-            'kombu_ssl_certfile': SSL_CERT,
-            'kombu_ssl_version': SSL_VERSION,
-            'rabbit_use_ssl': True,
-            'fake_rabbit': True,
-        }
-
-        if kombu:
-            for k, v in override.iteritems():
-                FLAGS.set_override(k, v)
-
-    def tearDown(self):
-        super(RpcKombuSslTestCase, self).tearDown()
-        if kombu:
-            FLAGS.reset()
+        self.config(kombu_ssl_keyfile=SSL_KEYFILE,
+                    kombu_ssl_ca_certs=SSL_CA_CERT,
+                    kombu_ssl_certfile=SSL_CERT,
+                    kombu_ssl_version=SSL_VERSION,
+                    rabbit_use_ssl=True,
+                    fake_rabbit=True)
 
     @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_ssl_on_extended(self):

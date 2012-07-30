@@ -68,8 +68,8 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
     def setUp(self):
         self.stubs = stubout.StubOutForTesting()
         if kombu:
-            FLAGS.set_override('fake_rabbit', True)
-            FLAGS.set_override('rpc_response_timeout', 5)
+            self.config(fake_rabbit=True)
+            self.config(rpc_response_timeout=5)
             self.rpc = impl_kombu
         else:
             self.rpc = None
@@ -80,7 +80,6 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         self.stubs.SmartUnsetAll()
         if kombu:
             impl_kombu.cleanup()
-            FLAGS.reset()
         super(RpcKombuTestCase, self).tearDown()
 
     @testutils.skip_if(kombu is None, "Test requires kombu")
@@ -365,7 +364,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         exception is converted to a string.
 
         """
-        FLAGS.set_override('allowed_rpc_exception_modules', ['exceptions'])
+        self.config(allowed_rpc_exception_modules=['exceptions'])
         value = "This is the exception message"
         self.assertRaises(NotImplementedError,
                           self.rpc.call,
@@ -384,8 +383,6 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
             self.assertTrue(value in unicode(exc))
             #Traceback should be included in exception message
             self.assertTrue('raise NotImplementedError(value)' in unicode(exc))
-
-        FLAGS.reset()
 
     @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_call_converted_exception(self):
