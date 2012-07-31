@@ -157,12 +157,15 @@ class BrainTestCase(unittest.TestCase):
     def test_check_with_specific(self):
         self.spam_called = False
 
+        def check_spam(brain, kind, match, target_dict, cred_dict):
+            self.assertEqual(kind, "spam")
+            self.assertEqual(match, "check")
+            self.assertEqual(target_dict, "target")
+            self.assertEqual(cred_dict, "credentials")
+            self.spam_called = True
+
         class TestBrain(policy.Brain):
-            def _check_spam(inst, match, target_dict, cred_dict):
-                self.assertEqual(match, "check")
-                self.assertEqual(target_dict, "target")
-                self.assertEqual(cred_dict, "credentials")
-                self.spam_called = True
+            _checks = dict(spam=check_spam)
 
         brain = TestBrain()
         result = brain._check("spam:check", "target", "credentials")
@@ -172,17 +175,44 @@ class BrainTestCase(unittest.TestCase):
     def test_check_with_generic(self):
         self.generic_called = False
 
+        def check_generic(brain, kind, match, target_dict, cred_dict):
+            self.assertEqual(kind, "spam")
+            self.assertEqual(match, "check")
+            self.assertEqual(target_dict, "target")
+            self.assertEqual(cred_dict, "credentials")
+            self.generic_called = True
+
         class TestBrain(policy.Brain):
-            def _check_generic(inst, match, target_dict, cred_dict):
-                self.assertEqual(match, "spam:check")
-                self.assertEqual(target_dict, "target")
-                self.assertEqual(cred_dict, "credentials")
-                self.generic_called = True
+            _checks = {None: check_generic}
 
         brain = TestBrain()
         result = brain._check("spam:check", "target", "credentials")
 
         self.assertEqual(self.generic_called, True)
+
+    def test_check_with_inheritance(self):
+        self.inherited_called = False
+
+        class TestBrain(policy.Brain):
+            _checks = {}
+
+            def _check_inherited(inst, match, target_dict, cred_dict):
+                self.assertEqual(match, "check")
+                self.assertEqual(target_dict, "target")
+                self.assertEqual(cred_dict, "credentials")
+                self.inherited_called = True
+
+        brain = TestBrain()
+        result = brain._check("inherited:check", "target", "credentials")
+
+        self.assertEqual(self.inherited_called, True)
+
+    def test_check_no_handler(self):
+        class TestBrain(policy.Brain):
+            _checks = {}
+
+        brain = TestBrain()
+        self.assertEqual(brain._check('spam:mer', 'target', 'cred'), False)
 
     def test_check_empty(self):
         class TestBrain(policy.Brain):
@@ -274,88 +304,38 @@ class BrainTestCase(unittest.TestCase):
         self.assertEqual(self.targets, ["target", "target", "target"])
         self.assertEqual(self.creds, ["creds", "creds", "creds"])
 
-    def stub__check_rule(self, rules=None, default_rule=None):
-        self.check_called = False
 
-        class TestBrain(policy.Brain):
-            def check(inst, matchs, target_dict, cred_dict):
-                self.check_called = True
-                self.target = target_dict
-                self.cred = cred_dict
-                return matchs
+class CheckRegisterTestCase(unittest.TestCase):
+    def setUp(self):
+        self.brain_checks = policy.Brain._checks
+        policy.Brain._checks = {}
 
-        return TestBrain(rules=rules, default_rule=default_rule)
+    def tearDown(self):
+        policy.Brain._checks = self.brain_checks
 
-    def test_rule_no_rules_no_default(self):
-        brain = self.stub__check_rule()
-        result = brain._check_rule("spam", "target", "creds")
+    def test_class_register(self):
+        policy.Brain._register('spam', 'func')
+        policy.Brain._register('spammer', 'funcer')
 
-        self.assertEqual(result, False)
-        self.assertEqual(self.check_called, False)
+        self.assertEqual(policy.Brain._checks,
+                         dict(spam='func', spammer='funcer'))
 
-    def test_rule_no_rules_default(self):
-        brain = self.stub__check_rule(default_rule="spam")
-        result = brain._check_rule("spam", "target", "creds")
+    def test_register_func(self):
+        policy.register('spam', 'func')
 
-        self.assertEqual(result, False)
-        self.assertEqual(self.check_called, False)
+        self.assertEqual(policy.Brain._checks,
+                         dict(spam='func'))
 
-    def test_rule_no_rules_non_default(self):
-        brain = self.stub__check_rule(default_rule="spam")
-        result = brain._check_rule("python", "target", "creds")
+    def test_register_decorator(self):
+        @policy.register('spam')
+        def test_func():
+            pass
 
-        self.assertEqual(self.check_called, True)
-        self.assertEqual(result, ("rule:spam",))
-        self.assertEqual(self.target, "target")
-        self.assertEqual(self.cred, "creds")
-
-    def test_rule_with_rules(self):
-        brain = self.stub__check_rule(rules=dict(spam=["hiho:ni"]))
-        result = brain._check_rule("spam", "target", "creds")
-
-        self.assertEqual(self.check_called, True)
-        self.assertEqual(result, ["hiho:ni"])
-        self.assertEqual(self.target, "target")
-        self.assertEqual(self.cred, "creds")
-
-    def test_role_no_match(self):
-        brain = policy.Brain()
-        result = brain._check_role("SpAm", {}, dict(roles=["a", "b", "c"]))
-
-        self.assertEqual(result, False)
-
-    def test_role_with_match(self):
-        brain = policy.Brain()
-        result = brain._check_role("SpAm", {}, dict(roles=["a", "b", "sPaM"]))
-
-        self.assertEqual(result, True)
-
-    def test_generic_no_key(self):
-        brain = policy.Brain()
-        result = brain._check_generic("tenant:%(tenant_id)s",
-                                      dict(tenant_id="spam"),
-                                      {})
-
-        self.assertEqual(result, False)
-
-    def test_generic_with_key_mismatch(self):
-        brain = policy.Brain()
-        result = brain._check_generic("tenant:%(tenant_id)s",
-                                      dict(tenant_id="spam"),
-                                      dict(tenant="nospam"))
-
-        self.assertEqual(result, False)
-
-    def test_generic_with_key_match(self):
-        brain = policy.Brain()
-        result = brain._check_generic("tenant:%(tenant_id)s",
-                                      dict(tenant_id="spam"),
-                                      dict(tenant="spam"))
-
-        self.assertEqual(result, True)
+        self.assertEqual(policy.Brain._checks,
+                         dict(spam=test_func))
 
 
-class HttpBrainTestCase(unittest.TestCase):
+class CheckTestCase(unittest.TestCase):
     def setUp(self):
         self.urlopen_result = ""
 
@@ -370,6 +350,83 @@ class HttpBrainTestCase(unittest.TestCase):
     def tearDown(self):
         self.patcher.stop()
 
+    def stub__check_rule(self, rules=None, default_rule=None):
+        self.check_called = False
+
+        class TestBrain(policy.Brain):
+            def check(inst, matchs, target_dict, cred_dict):
+                self.check_called = True
+                self.target = target_dict
+                self.cred = cred_dict
+                return matchs
+
+        return TestBrain(rules=rules, default_rule=default_rule)
+
+    def test_rule_no_rules_no_default(self):
+        brain = self.stub__check_rule()
+        result = policy._check_rule(brain, "rule", "spam", "target", "creds")
+
+        self.assertEqual(result, False)
+        self.assertEqual(self.check_called, False)
+
+    def test_rule_no_rules_default(self):
+        brain = self.stub__check_rule(default_rule="spam")
+        result = policy._check_rule(brain, "rule", "spam", "target", "creds")
+
+        self.assertEqual(result, False)
+        self.assertEqual(self.check_called, False)
+
+    def test_rule_no_rules_non_default(self):
+        brain = self.stub__check_rule(default_rule="spam")
+        result = policy._check_rule(brain, "rule", "python", "target", "creds")
+
+        self.assertEqual(self.check_called, True)
+        self.assertEqual(result, ("rule:spam",))
+        self.assertEqual(self.target, "target")
+        self.assertEqual(self.cred, "creds")
+
+    def test_rule_with_rules(self):
+        brain = self.stub__check_rule(rules=dict(spam=["hiho:ni"]))
+        result = policy._check_rule(brain, "rule", "spam", "target", "creds")
+
+        self.assertEqual(self.check_called, True)
+        self.assertEqual(result, ["hiho:ni"])
+        self.assertEqual(self.target, "target")
+        self.assertEqual(self.cred, "creds")
+
+    def test_role_no_match(self):
+        result = policy._check_role(None, "role", "SpAm", {},
+                                    dict(roles=["a", "b", "c"]))
+
+        self.assertEqual(result, False)
+
+    def test_role_with_match(self):
+        result = policy._check_role(None, "role", "SpAm", {},
+                                    dict(roles=["a", "b", "sPaM"]))
+
+        self.assertEqual(result, True)
+
+    def test_generic_no_key(self):
+        result = policy._check_generic(None, "tenant", "%(tenant_id)s",
+                                       dict(tenant_id="spam"),
+                                       {})
+
+        self.assertEqual(result, False)
+
+    def test_generic_with_key_mismatch(self):
+        result = policy._check_generic(None, "tenant", "%(tenant_id)s",
+                                       dict(tenant_id="spam"),
+                                       dict(tenant="nospam"))
+
+        self.assertEqual(result, False)
+
+    def test_generic_with_key_match(self):
+        result = policy._check_generic(None, "tenant", "%(tenant_id)s",
+                                       dict(tenant_id="spam"),
+                                       dict(tenant="spam"))
+
+        self.assertEqual(result, True)
+
     def decode_post_data(self):
         result = {}
         for item in self.post_data.split('&'):
@@ -379,26 +436,26 @@ class HttpBrainTestCase(unittest.TestCase):
         return result
 
     def test_http_false(self):
-        brain = policy.HttpBrain()
-        result = brain._check_http("//spam.example.org/%(tenant)s",
-                                   dict(tenant="spam"),
-                                   dict(roles=["a", "b", "c"]))
+        result = policy._check_http(None, "http",
+                                    "//spam.example.org/%(tenant)s",
+                                    dict(tenant="spam"),
+                                    dict(roles=["a", "b", "c"]))
 
         self.assertEqual(result, False)
-        self.assertEqual(self.url, "//spam.example.org/spam")
+        self.assertEqual(self.url, "http://spam.example.org/spam")
         self.assertEqual(self.decode_post_data(), dict(
                          target=dict(tenant="spam"),
                          credentials=dict(roles=["a", "b", "c"])))
 
     def test_http_true(self):
         self.urlopen_result = "True"
-        brain = policy.HttpBrain()
-        result = brain._check_http("//spam.example.org/%(tenant)s",
-                                   dict(tenant="spam"),
-                                   dict(roles=["a", "b", "c"]))
+        result = policy._check_http(None, "http",
+                                    "//spam.example.org/%(tenant)s",
+                                    dict(tenant="spam"),
+                                    dict(roles=["a", "b", "c"]))
 
         self.assertEqual(result, True)
-        self.assertEqual(self.url, "//spam.example.org/spam")
+        self.assertEqual(self.url, "http://spam.example.org/spam")
         self.assertEqual(self.decode_post_data(), dict(
                          target=dict(tenant="spam"),
                          credentials=dict(roles=["a", "b", "c"])))
