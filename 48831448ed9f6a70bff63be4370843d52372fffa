@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Approved+1: Jay Pipes <jaypipes@gmail.com>
+Code-Review+2: Jay Pipes <jaypipes@gmail.com>
+Code-Review+2: andrewbogott <AndrewBogott@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 31 Jul 2012 20:04:50 +0000
+Reviewed-on: https://review.openstack.org/9806
+Project: openstack/openstack-common
+Branch: refs/heads/master
