@@ -219,6 +219,31 @@ class LegacyFormatterTestCase(test_utils.BaseTestCase):
         self.assertEqual("NOCTXT: baz --DBG\n", self.stream.getvalue())
 
 
+class ExceptHookTestCase(test_utils.BaseTestCase):
+    """Test that the created excepthook is a named logger"""
+
+    def setUp(self):
+        super(ExceptHookTestCase, self).setUp()
+        self.config(logging_default_format_string="STG: %(message)s")
+        self.log = log.getLogger("somename")
+        self.stream = cStringIO.StringIO()
+        self.handler = logging.StreamHandler(self.stream)
+        self.handler.setFormatter(log.LegacyFormatter())
+        self.log.logger.addHandler(self.handler)
+        self.level = self.log.logger.getEffectiveLevel()
+        self.log.logger.setLevel(logging.DEBUG)
+
+    def test_excepthook_has_product_name(self):
+        excepthook = log.create_exception_handler("somename")
+        excepthook(None, "value", None)
+        self.assertEquals("STG: value\n", self.stream.getvalue())
+
+    def tearDown(self):
+        self.log.logger.setLevel(self.level)
+        self.log.logger.removeHandler(self.handler)
+        super(ExceptHookTestCase, self).tearDown()
+
+
 class FancyRecordTestCase(test_utils.BaseTestCase):
     """Test how we handle fancy record keys that are not in the
     base python logging"""
