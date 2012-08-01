@@ -39,7 +39,7 @@ class RpcProxyTestCase(unittest.TestCase):
         super(RpcProxyTestCase, self).tearDown()
 
     def _test_rpc_method(self, rpc_method, has_timeout=False, has_retval=False,
-                         server_params=None, supports_topic_override=True):
+                         supports_topic_override=True):
         topic = 'fake_topic'
         timeout = 123
         rpc_proxy = proxy.RpcProxy(topic, '1.0')
@@ -62,15 +62,11 @@ class RpcProxyTestCase(unittest.TestCase):
         self.stubs.Set(rpc, rpc_method, _fake_rpc_method)
 
         args = [ctxt, msg]
-        if server_params:
-            args.insert(1, server_params)
 
         # Base method usage
         retval = getattr(rpc_proxy, rpc_method)(*args)
         self.assertEqual(retval, expected_retval)
         expected_args = [ctxt, topic, expected_msg]
-        if server_params:
-            expected_args.insert(1, server_params)
         for arg, expected_arg in zip(self.fake_args, expected_args):
             self.assertEqual(arg, expected_arg)
 
@@ -80,8 +76,6 @@ class RpcProxyTestCase(unittest.TestCase):
         new_msg = copy.deepcopy(expected_msg)
         new_msg['version'] = '1.1'
         expected_args = [ctxt, topic, new_msg]
-        if server_params:
-            expected_args.insert(1, server_params)
         for arg, expected_arg in zip(self.fake_args, expected_args):
             self.assertEqual(arg, expected_arg)
 
@@ -99,8 +93,6 @@ class RpcProxyTestCase(unittest.TestCase):
             retval = getattr(rpc_proxy, rpc_method)(*args, topic=new_topic)
             self.assertEqual(retval, expected_retval)
             expected_args = [ctxt, new_topic, expected_msg]
-            if server_params:
-                expected_args.insert(1, server_params)
             for arg, expected_arg in zip(self.fake_args, expected_args):
                 self.assertEqual(arg, expected_arg)
 
@@ -115,14 +107,6 @@ class RpcProxyTestCase(unittest.TestCase):
 
     def test_fanout_cast(self):
         self._test_rpc_method('fanout_cast', supports_topic_override=False)
-
-    def test_cast_to_server(self):
-        self._test_rpc_method('cast_to_server', server_params={'blah': 1})
-
-    def test_fanout_cast_to_server(self):
-        self._test_rpc_method(
-            'fanout_cast_to_server',
-            server_params={'blah': 1}, supports_topic_override=False)
 
     def test_make_msg(self):
         self.assertEqual(proxy.RpcProxy.make_msg('test_method', a=1, b=2),

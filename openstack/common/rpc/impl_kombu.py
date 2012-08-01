@@ -352,7 +352,7 @@ class Connection(object):
 
     pool = None
 
-    def __init__(self, conf, server_params=None):
+    def __init__(self, conf):
         self.consumers = []
         self.consumer_thread = None
         self.conf = conf
@@ -366,24 +366,11 @@ class Connection(object):
         self.interval_max = 30
         self.memory_transport = False
 
-        if server_params is None:
-            server_params = {}
-
-        # Keys to translate from server_params to kombu params
-        server_params_to_kombu_params = {'username': 'userid'}
-
-        params = {}
-        for sp_key, value in server_params.iteritems():
-            p_key = server_params_to_kombu_params.get(sp_key, sp_key)
-            params[p_key] = value
-
-        params.setdefault('hostname', self.conf.rabbit_host)
-        params.setdefault('port', self.conf.rabbit_port)
-        params.setdefault('userid', self.conf.rabbit_userid)
-        params.setdefault('password', self.conf.rabbit_password)
-        params.setdefault('virtual_host', self.conf.rabbit_virtual_host)
-
-        self.params = params
+        self.params = dict(hostname=self.conf.rabbit_host,
+                           port=self.conf.rabbit_port,
+                           userid=self.conf.rabbit_userid,
+                           password=self.conf.rabbit_password,
+                           virtual_host=self.conf.rabbit_virtual_host)
 
         if self.conf.fake_rabbit:
             self.params['transport'] = 'memory'
@@ -723,20 +710,6 @@ def fanout_cast(conf, context, topic, msg):
     """Sends a message on a fanout exchange without waiting for a response."""
     return rpc_amqp.fanout_cast(
         conf, context, topic, msg,
-        rpc_amqp.get_connection_pool(conf, Connection))
-
-
-def cast_to_server(conf, context, server_params, topic, msg):
-    """Sends a message on a topic to a specific server."""
-    return rpc_amqp.cast_to_server(
-        conf, context, server_params, topic, msg,
-        rpc_amqp.get_connection_pool(conf, Connection))
-
-
-def fanout_cast_to_server(conf, context, server_params, topic, msg):
-    """Sends a message on a fanout exchange to a specific server."""
-    return rpc_amqp.cast_to_server(
-        conf, context, server_params, topic, msg,
         rpc_amqp.get_connection_pool(conf, Connection))
 
 
