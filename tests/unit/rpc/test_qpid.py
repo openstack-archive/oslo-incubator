@@ -92,10 +92,6 @@ class RpcQpidTestCase(unittest.TestCase):
             qpid.messaging.Session = self.orig_session
             qpid.messaging.Sender = self.orig_sender
             qpid.messaging.Receiver = self.orig_receiver
-        if impl_qpid:
-            # Need to reset this in case we changed the connection_cls
-            # in self._setup_to_server_tests()
-            impl_qpid.Connection.pool.connection_cls = impl_qpid.Connection
 
         super(RpcQpidTestCase, self).tearDown()
 
@@ -188,7 +184,7 @@ class RpcQpidTestCase(unittest.TestCase):
                                  )
         connection.close()
 
-    def _test_cast(self, fanout, server_params=None):
+    def _test_cast(self, fanout):
         self.mock_connection = self.mox.CreateMock(self.orig_connection)
         self.mock_session = self.mox.CreateMock(self.orig_session)
         self.mock_sender = self.mox.CreateMock(self.orig_sender)
@@ -210,12 +206,12 @@ class RpcQpidTestCase(unittest.TestCase):
                 '"create": "always"}')
         self.mock_session.sender(expected_address).AndReturn(self.mock_sender)
         self.mock_sender.send(mox.IgnoreArg())
-        if not server_params:
-            # This is a pooled connection, so instead of closing it, it
-            # gets reset, which is just creating a new session on the
-            # connection.
-            self.mock_session.close()
-            self.mock_connection.session().AndReturn(self.mock_session)
+
+        # This is a pooled connection, so instead of closing it, it
+        # gets reset, which is just creating a new session on the
+        # connection.
+        self.mock_session.close()
+        self.mock_connection.session().AndReturn(self.mock_session)
 
         self.mox.ReplayAll()
 
@@ -225,17 +221,10 @@ class RpcQpidTestCase(unittest.TestCase):
             args = [FLAGS, ctx, "impl_qpid_test",
                     {"method": "test_method", "args": {}}]
 
-            if server_params:
-                args.insert(2, server_params)
-                if fanout:
-                    method = impl_qpid.fanout_cast_to_server
-                else:
-                    method = impl_qpid.cast_to_server
+            if fanout:
+                method = impl_qpid.fanout_cast
             else:
-                if fanout:
-                    method = impl_qpid.fanout_cast
-                else:
-                    method = impl_qpid.cast
+                method = impl_qpid.cast
 
             method(*args)
         finally:
@@ -251,39 +240,6 @@ class RpcQpidTestCase(unittest.TestCase):
     @testutils.skip_if(qpid is None, "Test requires qpid")
     def test_fanout_cast(self):
         self._test_cast(fanout=True)
-
-    def _setup_to_server_tests(self, server_params):
-        class MyConnection(impl_qpid.Connection):
-            def __init__(myself, *args, **kwargs):
-                super(MyConnection, myself).__init__(*args, **kwargs)
-                self.assertEqual(myself.connection.username,
-                                 server_params['username'])
-                self.assertEqual(myself.connection.password,
-                                 server_params['password'])
-                self.assertEqual(myself.broker,
-                                 server_params['hostname'] + ':' +
-                                 str(server_params['port']))
-
-        MyConnection.pool = rpc_amqp.Pool(FLAGS, MyConnection)
-        self.stubs.Set(impl_qpid, 'Connection', MyConnection)
-
-    @testutils.skip_if(qpid is None, "Test requires qpid")
-    def test_cast_to_server(self):
-        server_params = {'username': 'fake_username',
-                         'password': 'fake_password',
-                         'hostname': 'fake_hostname',
-                         'port': 31337}
-        self._setup_to_server_tests(server_params)
-        self._test_cast(fanout=False, server_params=server_params)
-
-    @testutils.skip_if(qpid is None, "Test requires qpid")
-    def test_fanout_cast_to_server(self):
-        server_params = {'username': 'fake_username',
-                         'password': 'fake_password',
-                         'hostname': 'fake_hostname',
-                         'port': 31337}
-        self._setup_to_server_tests(server_params)
-        self._test_cast(fanout=True, server_params=server_params)
 
     def _test_call(self, multi):
         self.mock_connection = self.mox.CreateMock(self.orig_connection)
