@@ -197,38 +197,6 @@ def cleanup():
     return _get_impl().cleanup()
 
 
-def cast_to_server(context, server_params, topic, msg):
-    """Invoke a remote method that does not return anything.
-
-    :param context: Information that identifies the user that has made this
-                    request.
-    :param server_params: Connection information
-    :param topic: The topic to send the notification to.
-    :param msg: This is a dict in the form { "method" : "method_to_invoke",
-                                             "args" : dict_of_kwargs }
-
-    :returns: None
-    """
-    return _get_impl().cast_to_server(cfg.CONF, context, server_params, topic,
-                                      msg)
-
-
-def fanout_cast_to_server(context, server_params, topic, msg):
-    """Broadcast to a remote method invocation with no return.
-
-    :param context: Information that identifies the user that has made this
-                    request.
-    :param server_params: Connection information
-    :param topic: The topic to send the notification to.
-    :param msg: This is a dict in the form { "method" : "method_to_invoke",
-                                             "args" : dict_of_kwargs }
-
-    :returns: None
-    """
-    return _get_impl().fanout_cast_to_server(cfg.CONF, context, server_params,
-                                             topic, msg)
-
-
 def queue_get_for(context, topic, host):
     """Get a queue name for a given topic + host.
 

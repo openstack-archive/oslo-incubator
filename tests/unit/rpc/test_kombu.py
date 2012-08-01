@@ -182,40 +182,6 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
 
         impl_kombu.cast(FLAGS, ctxt, 'fake_topic', {'msg': 'fake'})
 
-    @testutils.skip_if(kombu is None, "Test requires kombu")
-    def test_cast_to_server_uses_server_params(self):
-        """Test kombu rpc.cast"""
-
-        ctxt = rpc_common.CommonRpcContext(user='fake_user',
-                                           project='fake_project')
-
-        server_params = {'username': 'fake_username',
-                         'password': 'fake_password',
-                         'hostname': 'fake_hostname',
-                         'port': 31337,
-                         'virtual_host': 'fake_virtual_host'}
-
-        class MyConnection(impl_kombu.Connection):
-            def __init__(myself, *args, **kwargs):
-                super(MyConnection, myself).__init__(*args, **kwargs)
-                self.assertEqual(
-                    myself.params,
-                    {'hostname': server_params['hostname'],
-                     'userid': server_params['username'],
-                     'password': server_params['password'],
-                     'port': server_params['port'],
-                     'virtual_host': server_params['virtual_host'],
-                     'transport': 'memory'})
-
-            def topic_send(_context, topic, msg):
-                pass
-
-        MyConnection.pool = rpc_amqp.Pool(FLAGS, MyConnection)
-        self.stubs.Set(impl_kombu, 'Connection', MyConnection)
-
-        impl_kombu.cast_to_server(FLAGS, ctxt, server_params,
-                                  'fake_topic', {'msg': 'fake'})
-
     @testutils.skip_test("kombu memory transport seems buggy with "
                          "fanout queues as this test passes when "
                          "you use rabbit (fake_rabbit=False)")

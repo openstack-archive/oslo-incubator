@@ -287,23 +287,16 @@ class Connection(object):
 
     pool = None
 
-    def __init__(self, conf, server_params=None):
+    def __init__(self, conf):
         self.session = None
         self.consumers = {}
         self.consumer_thread = None
         self.conf = conf
 
-        if server_params is None:
-            server_params = {}
-
-        default_params = dict(hostname=self.conf.qpid_hostname,
-                              port=self.conf.qpid_port,
-                              username=self.conf.qpid_username,
-                              password=self.conf.qpid_password)
-
-        params = server_params
-        for key in default_params.keys():
-            params.setdefault(key, default_params[key])
+        params = dict(hostname=self.conf.qpid_hostname,
+                      port=self.conf.qpid_port,
+                      username=self.conf.qpid_username,
+                      password=self.conf.qpid_password)
 
         self.broker = params['hostname'] + ":" + str(params['port'])
         # Create the connection - this does not open the connection
@@ -572,20 +565,6 @@ def fanout_cast(conf, context, topic, msg):
     """Sends a message on a fanout exchange without waiting for a response."""
     return rpc_amqp.fanout_cast(
         conf, context, topic, msg,
-        rpc_amqp.get_connection_pool(conf, Connection))
-
-
-def cast_to_server(conf, context, server_params, topic, msg):
-    """Sends a message on a topic to a specific server."""
-    return rpc_amqp.cast_to_server(
-        conf, context, server_params, topic, msg,
-        rpc_amqp.get_connection_pool(conf, Connection))
-
-
-def fanout_cast_to_server(conf, context, server_params, topic, msg):
-    """Sends a message on a fanout exchange to a specific server."""
-    return rpc_amqp.fanout_cast_to_server(
-        conf, context, server_params, topic, msg,
         rpc_amqp.get_connection_pool(conf, Connection))
 
 
