@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Approved+1: Russell Bryant <rbryant@redhat.com>
+Code-Review+2: Russell Bryant <rbryant@redhat.com>
+Code-Review+2: andrewbogott <AndrewBogott@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 01 Aug 2012 19:13:51 +0000
+Reviewed-on: https://review.openstack.org/10652
+Project: openstack/openstack-common
+Branch: refs/heads/master
