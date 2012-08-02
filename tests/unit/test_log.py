@@ -1,7 +1,9 @@
 import cStringIO
 import exceptions
 import logging
+import subprocess
 import sys
+import textwrap
 
 from openstack.common import context
 from openstack.common import cfg
@@ -217,6 +219,31 @@ class LegacyFormatterTestCase(test_utils.BaseTestCase):
     def test_debugging_log(self):
         self.log.debug("baz")
         self.assertEqual("NOCTXT: baz --DBG\n", self.stream.getvalue())
+
+
+class ExceptionLoggingTestCase(test_utils.BaseTestCase):
+    """Test that Exceptions are logged"""
+
+    def test_excepthook_logs_exception(self):
+        code = textwrap.dedent("""
+        import sys
+        from openstack.common import log as logging
+
+        logging.setup('somename')
+        raise Exception('Some error happened')
+        """)
+
+        child = subprocess.Popen([
+            sys.executable, "-"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+
+        (out, err) = child.communicate(input=code)
+
+        self.assertTrue(
+            "CRITICAL somename [-] Some error happened",
+            msg="Exception is not logged")
 
 
 class FancyRecordTestCase(test_utils.BaseTestCase):
