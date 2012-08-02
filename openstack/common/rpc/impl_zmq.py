@@ -18,6 +18,7 @@ import pprint
 import socket
 import string
 import sys
+import time
 import types
 import uuid
 
@@ -30,6 +31,7 @@ from openstack.common.gettextutils import _
 from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common.rpc import common as rpc_common
+from openstack.common import crypto
 
 
 # for convenience, are not modified.
@@ -66,7 +68,14 @@ zmq_opts = [
 
     cfg.StrOpt('rpc_zmq_host', default=socket.gethostname(),
                help='Name of this node. Must be a valid hostname, FQDN, or '
-                    'IP address. Must match "host" option, if running Nova.')
+                    'IP address. Must match "host" option, if running Nova.'),
+
+    cfg.BoolOpt('rpc_zmq_signing', default=False,
+                help='Use message signing from OpenSSL library'),
+
+    cfg.BoolOpt('rpc_zmq_signing_key',
+                default="/etc/openstack/private_dsa_key",
+                help='Private key path for message signing.'),
 ]
 
 
@@ -75,6 +84,7 @@ zmq_opts = [
 CONF = None
 ZMQ_CTX = None  # ZeroMQ Context, must be global.
 matchmaker = None  # memoized matchmaker object
+CRYPTO = None
 
 
 def _serialize(data):
@@ -205,9 +215,16 @@ class ZmqClient(object):
     def __init__(self, addr, socket_type=zmq.PUSH, bind=False):
         self.outq = ZmqSocket(addr, socket_type, bind=bind)
 
-    def cast(self, msg_id, topic, data):
-        self.outq.send([str(msg_id), str(topic), str('cast'),
-                        _serialize(data)])
+    def cast(self, msg_id, topic, request):
+        envelope = _serialize([request, time.time()])
+
+        if CONF.rpc_zmq_signing:
+            signature = CRYPTO.sign(envelope)
+        else:
+            signature = ''
+
+        self.outq.send([str(msg_id), str(topic), str('cast'), signature,
+                        envelope])
 
     def close(self):
         self.outq.close()
@@ -416,8 +433,38 @@ class ZmqProxy(ZmqBaseReactor):
 
         #TODO(ewindisch): use zero-copy (i.e. references, not copying)
         data = sock.recv()
-        msg_id, topic, style, in_msg = data
+        msg_id, topic, style, signature, envelope = data
         topic = topic.split('.', 1)[0]
+
+        # We might not open the envelope...
+        # but if we do, don't open it more than once.
+        msg = None
+
+        if CONF.rpc_zmq_signing:
+            msg = _deserialize(envelope)
+            timestamp = msg[1]
+
+            try:
+                if not CRYPTO.verify(signature, envelope):
+                    raise RPCException("Message signature failed. Rejecting.")
+                if time.time() > timestamp + CONF.rpc_cast_timeout:
+                    raise RPCException("Received expired message. "
+                                   "Local and remote system clocks may be skewed. "
+                                   "Rejecting to prevent replay attacks.")
+            except Exception as e:
+                emsg = rpc_common.serialize_remote_exception(sys.exc_info())}
+
+                # If the sender expects a reply, return the Exception
+                # back to them.
+                if method == "-reply":
+                    # If signing messages, we've already deserialized
+                    request = msg[0]
+                    ctx = request[0]
+
+                    cast(CONF, '-process_reply', ctx, 'zmq_replies',
+                             { 'exc': emsg })
+                LOG.error(_("RPC Message verification error: %s"), emsg)
+                return
 
         LOG.debug(_("CONSUMER GOT %s"), ' '.join(map(pformat, data)))
 
@@ -426,9 +473,13 @@ class ZmqProxy(ZmqBaseReactor):
             sock_type = zmq.PUB
         elif topic.startswith('zmq_replies'):
             sock_type = zmq.PUB
-            inside = _deserialize(in_msg)
-            msg_id = inside[-1]['args']['msg_id']
-            response = inside[-1]['args']['response']
+
+            # If signing messages, we've already deserialized
+            msg = msg or _deserialize(envelope)
+            request = msg[0]
+
+            msg_id = request[-1]['args']['msg_id']
+            response = request[-1]['args']['response']
             LOG.debug(_("->response->%s"), response)
             data = [str(msg_id), _serialize(response)]
         else:
@@ -471,10 +522,11 @@ class ZmqReactor(ZmqBaseReactor):
             self.mapping[sock].send(data)
             return
 
-        msg_id, topic, style, in_msg = data
+        msg_id, topic, style, signature, envelope = data
 
-        ctx, request = _deserialize(in_msg)
-        ctx = RpcContext.unmarshal(ctx)
+        request = _deserialize(envelope)
+        msg, timestamp = request
+        ctx = RpcContext.unmarshal(msg[0])
 
         proxy = self.proxies[sock]
 
@@ -696,6 +748,7 @@ def register_opts(conf):
     global ZMQ_CTX
     global matchmaker
     global CONF
+    global CRYPTO
 
     if not CONF:
         conf.register_opts(zmq_opts)
@@ -703,6 +756,9 @@ def register_opts(conf):
     # Don't re-set, if this method is called twice.
     if not ZMQ_CTX:
         ZMQ_CTX = zmq.Context(conf.rpc_zmq_contexts)
+    if conf.rpc_zmq_signing and not CRYPTO:
+        private_key = crypto.load_key(conf.rpc_zmq_signing_key)
+        CRYPTO = crypto.Signing(private_key)
     if not matchmaker:
         # rpc_zmq_matchmaker should be set to a 'module.Class'
         mm_path = conf.rpc_zmq_matchmaker.split('.')

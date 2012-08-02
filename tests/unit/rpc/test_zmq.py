@@ -44,7 +44,7 @@ FLAGS = cfg.CONF
 
 
 class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
-#    @testutils.skip_if(zmq is None, "Test requires zmq")
+    #@testutils.skip_if(zmq is None, "Test requires zmq")
     @testutils.skip_if(True, "Zmq tests broken on jenkins")
     def setUp(self, topic='test', topic_nested='nested'):
         if not impl_zmq:
@@ -53,6 +53,7 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
         self.reactor = None
         self.rpc = impl_zmq
 
+        self.config(rpc_backend='openstack.common.rpc.impl_zmq')
         FLAGS.set_override('rpc_zmq_bind_address', '127.0.0.1')
         FLAGS.set_override('rpc_zmq_host', '127.0.0.1')
         FLAGS.set_override('rpc_response_timeout', 5)
@@ -141,3 +142,12 @@ class RpcZmqDirectTopicTestCase(_RpcZmqBaseTestCase):
         super(RpcZmqDirectTopicTestCase, self).setUp(
             topic='test.localhost',
             topic_nested='nested.localhost')
+
+
+class RpcZmqSignedTestCase(RpcZmqDirectTopicTestCase):
+    """
+    Tests ZeroMQ messaging with signing enabled.
+    """
+    def setUp(self):
+        super(RpcZmqSignedTestCase, self).setUp()
+        self.config(rpc_zmq_signing=True)
