@@ -141,3 +141,17 @@ class RpcZmqDirectTopicTestCase(_RpcZmqBaseTestCase):
         super(RpcZmqDirectTopicTestCase, self).setUp(
             topic='test.localhost',
             topic_nested='nested.localhost')
+
+
+class RpcZmqSignedTestCase(_RpcZmqBaseTestCase):
+    """
+    Tests ZeroMQ messaging with signing enabled.
+
+    Test communication directly to a host,
+    tests use 'localhost'.
+    """
+    def setUp(self):
+        self.config(rpc_zmq_signing=True)
+        super(RpcZmqDirectTopicTestCase, self).setUp(
+            topic='test.localhost',
+            topic_nested='nested.localhost')
