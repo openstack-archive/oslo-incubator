@@ -18,6 +18,7 @@ import pprint
 import socket
 import string
 import sys
+import time
 import types
 import uuid
 
@@ -30,6 +31,7 @@ from openstack.common.gettextutils import _
 from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common.rpc import common as rpc_common
+from openstack.common import ssl
 
 
 # for convenience, are not modified.
@@ -67,6 +69,9 @@ zmq_opts = [
     cfg.StrOpt('rpc_zmq_host', default=socket.gethostname(),
                help='Name of this node. Must be a valid hostname, FQDN, or '
                     'IP address. Must match "host" option, if running Nova.')
+
+    cfg.BoolOpt('rpc_zmq_signed_messages', default=False,
+               help='Use message signing from OpenSSL library'),
 ]
 
 
@@ -206,8 +211,14 @@ class ZmqClient(object):
         self.outq = ZmqSocket(addr, socket_type, bind=bind)
 
     def cast(self, msg_id, topic, data):
-        self.outq.send([str(msg_id), str(topic), str('cast'),
-                        _serialize(data)])
+        msg = _serialize([data, time.time()])
+
+        if CONF.rpc_zmq_signed_messages:
+            signature = ssl.sign(msg)
+        else:
+            signature = ''
+
+        self.outq.send([str(msg_id), str(topic), str('cast'), signature, msg])
 
     def close(self):
         self.outq.close()
@@ -417,8 +428,22 @@ class ZmqProxy(ZmqBaseReactor):
 
         #TODO(ewindisch): use zero-copy (i.e. references, not copying)
         data = sock.recv()
-        msg_id, topic, style, in_msg = data
+        msg_id, topic, style, signature, envelope = data
         topic = topic.split('.', 1)[0]
+
+        # We might not open the envelope...
+        # but if we do, don't open it more than once.
+        msg = None
+
+        if CONF.rpc_zmq_signed_messages:
+            msg = _deserialize(envelope)
+            timestamp = msg[1]
+
+            if not ssl.verify(signature, envelope):
+                raise RPCException("Message signature failed. Rejecting.")
+            if time.time() > timestamp + FLAGS.rpc_cast_timeout:
+                raise RPCException("Received expired message. "
+                                   "Rejecting to prevent relay attacks.")
 
         LOG.debug(_("CONSUMER GOT %s"), ' '.join(map(pformat, data)))
 
@@ -427,9 +452,13 @@ class ZmqProxy(ZmqBaseReactor):
             sock_type = zmq.PUB
         elif topic.startswith('zmq_replies'):
             sock_type = zmq.PUB
-            inside = _deserialize(in_msg)
-            msg_id = inside[-1]['args']['msg_id']
-            response = inside[-1]['args']['response']
+
+            # If signing messages, we've already deserialized
+            msg = msg or _deserialize(envelope)
+            call = msg[0]
+
+            msg_id = call[-1]['args']['msg_id']
+            response = call[-1]['args']['response']
             LOG.debug(_("->response->%s"), response)
             data = [str(msg_id), _serialize(response)]
         else:
