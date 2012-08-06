@@ -19,6 +19,7 @@
 
 """Generic Node base class for all workers that run on hosts."""
 
+import signal
 import sys
 
 import eventlet
@@ -27,6 +28,7 @@ import greenlet
 from openstack.common import cfg
 from openstack.common import importutils
 from openstack.common import log as logging
+from openstack.common.gettextutils import _
 
 
 LOG = logging.getLogger(__name__)
@@ -88,6 +90,32 @@ class Launcher(object):
                 pass
 
 
+class ServiceLauncher(Launcher):
+    def _handle_signal(self, signo, frame):
+        signame = {signal.SIGTERM: 'SIGTERM', signal.SIGINT: 'SIGINT'}[signo]
+        LOG.info(_('Caught %s, exiting'), signame)
+
+        # Allow the process to be killed again and die from natural causes
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+        sys.exit(1)
+
+    def wait(self):
+        signal.signal(signal.SIGTERM, self._handle_signal)
+        signal.signal(signal.SIGINT, self._handle_signal)
+
+        status = None
+        try:
+            super(ServiceLauncher, self).wait()
+        except SystemExit as exc:
+            status = exc.code
+            self.stop()
+
+        if status is not None:
+            sys.exit(status)
+
+
 class Service(object):
     """Service object for binaries running on hosts.
 
@@ -119,7 +147,7 @@ def serve(server, workers=None):
     if _launcher:
         raise RuntimeError(_('serve() can only be called once'))
 
-    _launcher = Launcher()
+    _launcher = ServiceLauncher()
     _launcher.launch_server(server)
 
 
