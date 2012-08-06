@@ -229,7 +229,7 @@ class ExceptionLoggingTestCase(test_utils.BaseTestCase):
         (out, err) = child.communicate(input=code)
 
         self.assertTrue(
-            "CRITICAL somename [-] Some error happened",
+            "CRITICAL somename [-] Some error happened" in err,
             msg="Exception is not logged")
 
 
