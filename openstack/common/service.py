@@ -30,6 +30,7 @@ import eventlet
 import greenlet
 
 from openstack.common import cfg
+from openstack.common import eventlet_backdoor
 from openstack.common import importutils
 from openstack.common import log as logging
 from openstack.common import threadgroup
@@ -69,6 +70,7 @@ class Launcher(object):
 
         """
         self._services = []
+        eventlet_backdoor.initialize_if_enabled()
 
     @staticmethod
     def run_server(server):
