@@ -28,6 +28,7 @@ import time
 
 import eventlet
 import greenlet
+import logging as os_logging
 
 from openstack.common import cfg
 from openstack.common import eventlet_backdoor
@@ -126,6 +127,9 @@ class ServiceLauncher(Launcher):
     def wait(self):
         signal.signal(signal.SIGTERM, self._handle_signal)
         signal.signal(signal.SIGINT, self._handle_signal)
+
+        LOG.debug(_('Full set of CONF:'))
+        CONF.log_opt_values(LOG, os_logging.DEBUG)
 
         status = None
         try:
