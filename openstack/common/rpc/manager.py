@@ -51,22 +51,18 @@ This module provides Manager, a base class for managers.
 
 """
 
-from openstack.common import periodic_task
-from openstack.common import log as logging
+from openstack.common import manager
+from openstack.common.rpc import dispatcher as rpc_dispatcher
 
 
-LOG = logging.getLogger(__name__)
+class Manager(manager.Manager):
+    # Set RPC API version to 1.0 by default.
+    RPC_API_VERSION = '1.0'
 
+    def create_rpc_dispatcher(self):
+        '''Get the rpc dispatcher for this manager.
 
-class Manager(periodic_task.PeriodicTasks):
-
-    def __init__(self, host):
-        self.host = host
-
-    def init_host(self):
-        """Handle initialization if this is a standalone service.
-
-        Child classes should override this method.
-
-        """
-        pass
+        If a manager would like to set an rpc API version, or support more than
+        one class as the target of rpc messages, override this method.
+        '''
+        return rpc_dispatcher.RpcDispatcher([self])
