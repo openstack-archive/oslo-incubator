@@ -46,6 +46,7 @@ FLAGS = cfg.CONF
 
 class RpcKombuSslTestCase(test_utils.BaseTestCase):
 
+    @testutils.skip_if(kombu is None, "Test requires kombu")
     def setUp(self):
         super(RpcKombuSslTestCase, self).setUp()
         self.config(kombu_ssl_keyfile=SSL_KEYFILE,
@@ -55,7 +56,6 @@ class RpcKombuSslTestCase(test_utils.BaseTestCase):
                     rabbit_use_ssl=True,
                     fake_rabbit=True)
 
-    @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_ssl_on_extended(self):
         rpc = impl_kombu
         conn = rpc.create_connection(FLAGS, True)
