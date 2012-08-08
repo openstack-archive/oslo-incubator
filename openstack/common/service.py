@@ -314,6 +314,9 @@ class Service(object):
     def wait(self):
         pass
 
+    def __getattr__(self, key):
+        manager = self.__dict__.get('manager', None)
+        return getattr(manager, key)
 
 # NOTE(vish): the global launcher is to maintain the existing
 #             functionality of calling service.serve +
