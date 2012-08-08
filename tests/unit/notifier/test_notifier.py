@@ -74,8 +74,8 @@ class NotifierTestCase(test_utils.BaseTestCase):
                             notifier_api.WARN, dict(a=3))
 
     def test_send_rabbit_notification(self):
-        self.stubs.Set(cfg.CONF, 'notification_driver',
-                       ['openstack.common.notifier.rabbit_notifier'])
+        self.config(notification_driver=
+                    ['openstack.common.notifier.rabbit_notifier'])
         self.mock_notify = False
 
         def mock_notify(cls, *args):
@@ -93,10 +93,9 @@ class NotifierTestCase(test_utils.BaseTestCase):
                           'event_type', 'not a priority', dict(a=3))
 
     def test_rabbit_priority_queue(self):
-        self.stubs.Set(cfg.CONF, 'notification_driver',
-                       ['openstack.common.notifier.rabbit_notifier'])
-        self.stubs.Set(cfg.CONF, 'notification_topics',
-                       ['testnotify', ])
+        self.config(notification_driver=
+                    ['openstack.common.notifier.rabbit_notifier'])
+        self.config(notification_topics=['testnotify', ])
 
         self.test_topic = None
 
@@ -109,9 +108,9 @@ class NotifierTestCase(test_utils.BaseTestCase):
         self.assertEqual(self.test_topic, 'testnotify.debug')
 
     def test_error_notification(self):
-        self.stubs.Set(cfg.CONF, 'notification_driver',
-                       ['openstack.common.notifier.rabbit_notifier'])
-        self.stubs.Set(cfg.CONF, 'publish_errors', True)
+        self.config(notification_driver=
+                    ['openstack.common.notifier.rabbit_notifier'])
+        self.config(publish_errors=True)
         LOG = log.getLogger('common')
         log.setup(None)
         msgs = []
