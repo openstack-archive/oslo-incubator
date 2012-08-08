@@ -31,8 +31,8 @@ from openstack.common import importutils
 
 rpc_opts = [
     cfg.StrOpt('rpc_backend',
-               default='%s.impl_kombu' % __package__,
-               help="The messaging module to use, defaults to kombu."),
+               default='%s.impl_fake' % __package__,
+               help="The messaging module to use, defaults to fake."),
     cfg.IntOpt('rpc_thread_pool_size',
                default=64,
                help='Size of RPC thread pool'),
