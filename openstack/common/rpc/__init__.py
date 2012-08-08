@@ -30,9 +30,12 @@ from openstack.common import importutils
 
 
 rpc_opts = [
+    # Note only Nova defaults to impl_kombu,
+    # projects will not have a default, or in the case of unit tests
+    # will default to impl_fake. See _get_impl() below.
     cfg.StrOpt('rpc_backend',
                default='%s.impl_kombu' % __package__,
-               help="The messaging module to use, defaults to kombu."),
+               help="The messaging module to use. REQUIRED."),
     cfg.IntOpt('rpc_thread_pool_size',
                default=64,
                help='Size of RPC thread pool'),
@@ -254,6 +257,18 @@ def _get_impl():
     """Delay import of rpc_backend until configuration is loaded."""
     global _RPCIMPL
     if _RPCIMPL is None:
+        """The rpc_backend option is now required in all projects except
+           OpenStack Nova. In Nova, the non-required form is depreciated.
+        """
+        if str(__package__).startswith("nova") and \
+                            cfg.CONF.is_default('rpc_backend'):
+            LOG.warning(_("Warning: The rpc_backend configuration option "
+                          "is not set. This will become a required option in "
+                          "a future release. Defaulting to impl_kombu."))
+        elif cfg.CONF.is_default('rpc_backend'):
+            raise cfg.RequiredOptError('rpc_backend', None)
+
+        # Load module
         try:
             _RPCIMPL = importutils.import_module(cfg.CONF.rpc_backend)
         except ImportError:
