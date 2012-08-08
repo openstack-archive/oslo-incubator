@@ -21,6 +21,13 @@ use_syslog = False
 # Path to the extensions
 api_extensions_path = tests/unit/extensions
 
+[http_notify]
+# HTTP POST notification server URL.
+url = http://localhost/notify
+
+# List of events for which HTTP notification will be sent.
+filter = all
+
 [pipeline:extensions_app_with_filter]
 pipeline = extensions extensions_test_app
 
