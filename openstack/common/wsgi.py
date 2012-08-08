@@ -23,10 +23,9 @@ import eventlet.wsgi
 
 eventlet.patcher.monkey_patch(all=False, socket=True)
 
-import logging
-import sys
 import routes
 import routes.middleware
+import sys
 import webob.dec
 import webob.exc
 from xml.dom import minidom
@@ -34,6 +33,7 @@ from xml.parsers import expat
 
 from openstack.common import exception
 from openstack.common.gettextutils import _
+from openstack.common import log as logging
 from openstack.common import jsonutils
 
 
@@ -55,6 +55,50 @@ def run_server(application, port):
     """Run a WSGI server with the given application."""
     sock = eventlet.listen(('0.0.0.0', port))
     eventlet.wsgi.server(sock, application)
+
+
+class Service(object):
+    """Provides ability to launch API from a WSGI server."""
+
+    def __init__(self, wsgi_server, manager=None):
+        """Initialize, but do not start the WSGI server.
+
+        :param wsgi_server: A wsgi.Server instance.
+        :param manager: A manager.Manager instance.
+        :returns: None
+
+        """
+        self.server = wsgi_server
+        self.manager = manager
+
+    def start(self):
+        """Start serving this service using loaded configuration.
+
+        Also, retrieve updated port number in case '0' was passed in, which
+        indicates a random port should be used.
+
+        :returns: None
+
+        """
+        if self.manager:
+            self.manager.init_host()
+        self.server.start()
+
+    def stop(self):
+        """Stop serving this API.
+
+        :returns: None
+
+        """
+        self.server.stop()
+
+    def wait(self):
+        """Wait for the service to stop serving this API.
+
+        :returns: None
+
+        """
+        self.server.wait()
 
 
 class Server(object):
