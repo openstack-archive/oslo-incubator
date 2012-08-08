@@ -13,3 +13,4 @@ pylint
 setuptools-git>=0.4
 sphinx
 webtest
+kombu==1.0.4
