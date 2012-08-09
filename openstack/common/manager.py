@@ -52,12 +52,13 @@ This module provides Manager, a base class for managers.
 """
 
 from openstack.common import log as logging
+from openstack.common import periodic_task
 
 
 LOG = logging.getLogger(__name__)
 
 
-class Manager(object):
+class Manager(periodic_task.PeriodicTasks):
 
     def __init__(self, host):
         self.host = host
