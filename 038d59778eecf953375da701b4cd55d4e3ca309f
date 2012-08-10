@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Code-Review+1: Christopher MacGown <chris@pistoncloud.com>
+Approved+1: Russell Bryant <rbryant@redhat.com>
+Code-Review+2: Russell Bryant <rbryant@redhat.com>
+Code-Review+2: andrewbogott <AndrewBogott@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 10 Aug 2012 16:55:46 +0000
+Reviewed-on: https://review.openstack.org/10598
+Project: openstack/openstack-common
+Branch: refs/heads/master
