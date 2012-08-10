@@ -29,7 +29,8 @@ from eventlet import greenthread
 from openstack.common import cfg
 from openstack.common.gettextutils import _
 from openstack.common import log as logging
-from openstack.common import manager
+from openstack.common.rpc import manager
+from openstack.common.rpc import service as rpc_service
 from openstack.common import service
 from tests import utils
 
@@ -37,17 +38,32 @@ from tests import utils
 LOG = logging.getLogger(__name__)
 
 
-class ExtendedService(service.Service):
+class FakeManager(manager.Manager):
+    """Fake manager for tests"""
+    def __init__(self, host):
+        super(FakeManager, self).__init__(host)
+        self.method_result = 'manager'
+
     def test_method(self):
-        return 'service'
+        return self.method_result
 
 
 class ServiceManagerTestCase(utils.BaseTestCase):
     """Test cases for Services"""
-    def test_override_manager_method(self):
-        serv = ExtendedService('test', None)
+    def setUp(self):
+        super(ServiceManagerTestCase, self).setUp()
+        self.config(fake_rabbit=True)
+        self.config(rpc_backend='openstack.common.rpc.impl_fake')
+        self.config(verbose=True)
+        self.config(rpc_response_timeout=5)
+        self.config(rpc_cast_timeout=5)
+
+    def test_message_default(self):
+        fm = FakeManager('test')
+        serv = rpc_service.Service('test', 'test', fm)
         serv.start()
-        self.assertEqual(serv.test_method(), 'service')
+        self.assertEqual(serv.manager.test_method(), 'manager')
+        serv.stop()
 
 
 class ServiceWithTimer(service.Service):
