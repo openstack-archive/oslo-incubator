@@ -982,6 +982,20 @@ class ReparseTestCase(BaseTestCase):
 
 class OverridesTestCase(BaseTestCase):
 
+    def test_default_none(self):
+        self.conf.register_opt(StrOpt('foo', default='bar'))
+        self.conf([])
+        self.assertEquals(self.conf.foo, 'bar')
+        self.conf.set_default('foo', NoneValue())
+        self.assertEquals(self.conf.foo, None)
+
+    def test_override_none(self):
+        self.conf.register_opt(StrOpt('foo', default='bar'))
+        self.conf([])
+        self.assertEquals(self.conf.foo, 'bar')
+        self.conf.set_override('foo', NoneValue())
+        self.assertEquals(self.conf.foo, None)
+
     def test_no_default_override(self):
         self.conf.register_opt(StrOpt('foo'))
         self.conf([])

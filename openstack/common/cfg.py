@@ -909,6 +909,10 @@ class MultiConfigParser(object):
         raise KeyError
 
 
+class NoneValue(object):
+    pass
+
+
 class ConfigOpts(collections.Mapping):
 
     """
@@ -1347,8 +1351,11 @@ class ConfigOpts(collections.Mapping):
         info = self._get_opt_info(name, group)
         default, opt, override = [info[k] for k in sorted(info.keys())]
 
+        def _convert_none(value):
+            return None if isinstance(value, NoneValue) else value
+
         if override is not None:
-            return override
+            return _convert_none(override)
 
         values = []
         if self._cparser is not None:
@@ -1377,7 +1384,7 @@ class ConfigOpts(collections.Mapping):
             return values
 
         if default is not None:
-            return default
+            return _convert_none(default)
 
         return opt.default
 
