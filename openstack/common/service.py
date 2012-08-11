@@ -19,9 +19,18 @@
 
 """Generic Node base class for all workers that run on hosts."""
 
+import signal
 import sys
+
 import eventlet
 import greenlet
+
+from openstack.common import log as logging
+from openstack.common.gettextutils import _
+
+
+LOG = logging.getLogger(__name__)
+
 
 class Launcher(object):
     """Launch one or more services and wait for them to complete."""
@@ -77,6 +86,43 @@ class Launcher(object):
                 pass
 
 
+class SignalExit(SystemExit):
+    def __init__(self, signo, exccode=1):
+        super(SignalExit, self).__init__(exccode)
+        self.signo = signo
+
+
+class ServiceLauncher(Launcher):
+    def _handle_signal(self, signo, frame):
+        # Allow the process to be killed again and die from natural causes
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+        raise SignalExit(signo)
+
+    def wait(self):
+        signal.signal(signal.SIGTERM, self._handle_signal)
+        signal.signal(signal.SIGINT, self._handle_signal)
+
+        status = None
+        try:
+            super(ServiceLauncher, self).wait()
+        except SignalExit as exc:
+            signame = {signal.SIGTERM: 'SIGTERM',
+                       signal.SIGINT: 'SIGINT'}[exc.signo]
+            LOG.info(_('Caught %s, exiting'), signame)
+            status = exc.code
+        except SystemExit as exc:
+            status = exc.code
+        finally:
+            self.stop()
+            #TODO(asalkeld) what to do about this?
+            #rpc.cleanup()
+
+        if status is not None:
+            sys.exit(status)
+
+
 class Service(object):
     """Service object for binaries running on hosts.
 
@@ -108,7 +154,7 @@ def serve(server, workers=None):
     if _launcher:
         raise RuntimeError(_('serve() can only be called once'))
 
-    _launcher = Launcher()
+    _launcher = ServiceLauncher()
     _launcher.launch_server(server)
 
 
