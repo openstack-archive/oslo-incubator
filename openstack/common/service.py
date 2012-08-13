@@ -326,7 +326,7 @@ class Service(object):
 
     def start(self):
         if self.manager:
-            self.manager.init_host()
+            self.manager.init_host(service=self)
 
         if self.periodic_interval and self.manager:
             if self.periodic_fuzzy_delay:
