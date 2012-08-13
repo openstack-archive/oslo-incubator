@@ -23,6 +23,7 @@ For more information about rpc API version numbers, see:
 
 
 from openstack.common import rpc
+from openstack.common import timeutils
 
 
 class RpcProxy(object):
@@ -163,3 +164,12 @@ class RpcProxy(object):
         self._set_version(msg, version)
         rpc.fanout_cast_to_server(context, server_params,
                                   self._get_topic(topic), msg)
+
+    def inflight(self, context):
+        """Call the common 'inflight' method.
+
+        Note(sandy): This method will be available to all openstack.common
+        methods once nova.manager moves into openstack.common. For now, this
+        method is only support in the nova services."""
+        return rpc.call(context, self.make_msg('inflight',
+                                               sent=timeutils.marshall_now()))
