@@ -23,6 +23,7 @@ import eventlet.wsgi
 
 eventlet.patcher.monkey_patch(all=False, socket=True)
 
+import greenlet
 import logging as std_logging
 import routes
 import routes.middleware
@@ -39,17 +40,6 @@ from openstack.common import jsonutils
 
 
 LOG = logging.getLogger('wsgi')
-
-
-class WritableLogger(object):
-    """A thin wrapper that responds to `write` and logs."""
-
-    def __init__(self, logger, level=std_logging.DEBUG):
-        self.logger = logger
-        self.level = level
-
-    def write(self, msg):
-        self.logger.log(self.level, msg.strip("\n"))
 
 
 def run_server(application, port):
@@ -105,28 +95,79 @@ class Service(object):
 
 
 class Server(object):
-    """Server class to manage multiple WSGI sockets and applications."""
+    """Server class to manage a WSGI server, serving a WSGI application."""
 
-    def __init__(self, threads=1000):
-        self.pool = eventlet.GreenPool(threads)
+    default_pool_size = 1000
 
-    def start(self, application, port, host='0.0.0.0', backlog=128):
-        """Run a WSGI server with the given application."""
-        socket = eventlet.listen((host, port), backlog=backlog)
-        self.pool.spawn_n(self._run, application, socket)
+    def __init__(self, name, app, host='0.0.0.0', port=0, pool_size=None,
+                       protocol=eventlet.wsgi.HttpProtocol, backlog=128):
+        """Initialize, but do not start, a WSGI server.
+
+        :param name: Pretty name for logging.
+        :param app: The WSGI application to serve.
+        :param host: IP address to serve the application.
+        :param port: Port number to server the application.
+        :param pool_size: Maximum number of eventlets to spawn concurrently.
+        :param backlog: Maximum number of queued connections.
+        :returns: None
+        :raises: nova.exception.InvalidInput
+        """
+        self.name = name
+        self.app = app
+        self._server = None
+        self._protocol = protocol
+        self._pool = eventlet.GreenPool(pool_size or self.default_pool_size)
+        self._logger = logging.getLogger("openstack.%s.wsgi" % self.name)
+        self._wsgi_logger = logging.WritableLogger(self._logger)
+
+        if backlog < 1:
+            raise exception.InvalidInput(
+                    reason='The backlog must be more than 1')
+
+        self._socket = eventlet.listen((host, port), backlog=backlog)
+        (self.host, self.port) = self._socket.getsockname()
+        LOG.info(_("%(name)s listening on %(host)s:%(port)s") % self.__dict__)
+
+    def start(self):
+        """Start serving a WSGI application.
+
+        :returns: None
+        """
+        self._server = eventlet.spawn(eventlet.wsgi.server,
+                                      self._socket,
+                                      self.app,
+                                      protocol=self._protocol,
+                                      custom_pool=self._pool,
+                                      log=self._wsgi_logger)
+
+    def stop(self):
+        """Stop this server.
+
+        This is not a very nice action, as currently the method by which a
+        server is stopped is by killing its eventlet.
+
+        :returns: None
+
+        """
+        LOG.info(_("Stopping WSGI server."))
+
+        if self._server is not None:
+            # Resize pool to stop new requests from being processed
+            self._pool.resize(0)
+            self._server.kill()
 
     def wait(self):
-        """Wait until all servers have completed running."""
-        try:
-            self.pool.waitall()
-        except KeyboardInterrupt:
-            pass
+        """Block, until the server has stopped.
 
-    def _run(self, application, socket):
-        """Start a WSGI server in a new green thread."""
-        logger = logging.getLogger('eventlet.wsgi.server')
-        eventlet.wsgi.server(socket, application, custom_pool=self.pool,
-                             log=WritableLogger(logger))
+        Waits on the server's eventlet to finish, then returns.
+
+        :returns: None
+
+        """
+        try:
+            self._server.wait()
+        except greenlet.GreenletExit:
+            LOG.info(_("WSGI server has stopped."))
 
 
 class Middleware(object):
