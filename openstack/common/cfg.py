@@ -1362,6 +1362,36 @@ class ConfigOpts(collections.Mapping):
             self.__cache[key] = value
             return value
 
+    def is_default(self, name):
+        """Check of an option is using default value
+           Does not support option groups.
+
+        :param name: the opt name (or 'dest', more precisely)
+        :returns: True if no value is set, or False.
+        :raises: NoSuchOptError, NoSuchGroupError, ConfigFileValueError,
+                 TemplateSubstitutionError
+        """
+        info = self._get_opt_info(name, None)
+
+        if 'override' in info:
+            return False
+        if self._cli_values.get(name) is not None:
+            return False
+
+        values = []
+        if self._cparser is not None:
+            try:
+                value = opt._get_from_config_parser(self._cparser, 'DEFAULT')
+            except KeyError:
+                pass
+            except ValueError as ve:
+                raise ConfigFileValueError(str(ve))
+            else:
+                if value:
+                    return False
+
+        return True
+
     def _do_get(self, name, group=None):
         """Look up an option value.
 
