@@ -29,8 +29,25 @@ import time
 import eventlet
 import greenlet
 
+from openstack.common import cfg
+from openstack.common import importutils
 from openstack.common import log as logging
+from openstack.common import threadgroup
 from openstack.common.gettextutils import _
+
+service_opts = [
+    cfg.IntOpt('periodic_interval',
+               default=60,
+               help='seconds between running periodic tasks'),
+    cfg.IntOpt('periodic_fuzzy_delay',
+               default=60,
+               help='range of seconds to randomly delay when starting the'
+                    ' periodic task scheduler to reduce stampeding.'
+                    ' (Disable by setting to 0)'),
+    ]
+
+CONF = cfg.CONF
+CONF.register_opts(service_opts)
 
 
 LOG = logging.getLogger(__name__)
@@ -290,24 +307,39 @@ class ProcessLauncher(object):
 class Service(object):
     """Service object for binaries running on hosts.
 
-    A service takes a manager."""
+    A service takes a manager and periodically runs tasks on the manager."""
 
-    def __init__(self, host, manager, *args, **kwargs):
+    def __init__(self, host, manager,
+                 periodic_interval=None,
+                 periodic_fuzzy_delay=None):
         self.host = host
         self.manager = manager
-        self.running = False
+        self.periodic_interval = periodic_interval
+        self.periodic_fuzzy_delay = periodic_fuzzy_delay
+        self.tg = threadgroup.ThreadGroup('service')
+        self.periodic_args = []
+        self.periodic_kwargs = {}
 
     def start(self):
-        self.running = True
         if self.manager:
             self.manager.init_host()
 
+        if self.periodic_interval and self.manager:
+            if self.periodic_fuzzy_delay:
+                initial_delay = random.randint(0, self.periodic_fuzzy_delay)
+            else:
+                initial_delay = 0
+            self.tg.add_timer(self.periodic_interval,
+                              self.manager.run_periodic_tasks,
+                              initial_delay,
+                              *self.periodic_args,
+                              **self.periodic_kwargs)
+
     def stop(self):
-        self.running = False
+        self.tg.stop()
 
     def wait(self):
-        while self.running:
-            time.sleep(.1)
+        self.tg.wait()
 
 
 def launch(service, workers=None):
