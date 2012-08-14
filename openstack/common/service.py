@@ -19,6 +19,64 @@
 
 """Generic Node base class for all workers that run on hosts."""
 
+import sys
+import eventlet
+import greenlet
+
+
+class Launcher(object):
+    """Launch one or more services and wait for them to complete."""
+
+    def __init__(self):
+        """Initialize the service launcher.
+
+        :returns: None
+
+        """
+        self._services = []
+
+    @staticmethod
+    def run_service(service):
+        """Start and wait for a service to finish.
+
+        :param service: service to run and wait for.
+        :returns: None
+
+        """
+        service.start()
+        service.wait()
+
+    def launch_service(self, service):
+        """Load and start the given service.
+
+        :param service: The service you would like to start.
+        :returns: None
+
+        """
+        gt = eventlet.spawn(self.run_service, service)
+        self._services.append(gt)
+
+    def stop(self):
+        """Stop all services which are currently running.
+
+        :returns: None
+
+        """
+        for service in self._services:
+            service.kill()
+
+    def wait(self):
+        """Waits until all services have been stopped, and then returns.
+
+        :returns: None
+
+        """
+        for service in self._services:
+            try:
+                service.wait()
+            except greenlet.GreenletExit:
+                pass
+
 
 class Service(object):
     """Service object for binaries running on hosts.
@@ -28,3 +86,18 @@ class Service(object):
     def __init__(self, host, manager, *args, **kwargs):
         self.host = host
         self.manager = manager
+
+    def start(self):
+        if self.manager:
+            self.manager.init_host()
+
+    def stop(self):
+        pass
+
+    def wait(self):
+        pass
+
+
+def launcher(service):
+    l = Launcher()
+    l.launch_service(service)
