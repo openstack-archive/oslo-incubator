@@ -411,6 +411,12 @@ class ZmqProxy(ZmqBaseReactor):
                       zmq.PUB, bind=True)
         self.sockets.append(self.topic_proxy['zmq_replies'])
 
+        self.topic_proxy['fanout~'] = \
+            ZmqSocket("tcp://%s:%s" % (CONF.rpc_zmq_bind_address,
+                                       CONF.rpc_zmq_port_pub)
+                      zmq.PUB, bind=True)
+        self.sockets.append(self.topic_proxy['fanout~'])
+
     def consume(self, sock):
         ipc_dir = CONF.rpc_zmq_ipc_dir
 
@@ -424,6 +430,11 @@ class ZmqProxy(ZmqBaseReactor):
         # Handle zmq_replies magic
         if topic.startswith('fanout~'):
             sock_type = zmq.PUB
+
+            # This doesn't change what is in the message,
+            # it only specifies that these messages go to
+            # the generic fanout topic.
+            topic = 'fanout~'
         elif topic.startswith('zmq_replies'):
             sock_type = zmq.PUB
             inside = _deserialize(in_msg)
@@ -434,17 +445,12 @@ class ZmqProxy(ZmqBaseReactor):
         else:
             sock_type = zmq.PUSH
 
-        if not topic in self.topic_proxy:
-            outq = ZmqSocket("ipc://%s/zmq_topic_%s" % (ipc_dir, topic),
-                             sock_type, bind=True)
-            self.topic_proxy[topic] = outq
-            self.sockets.append(outq)
-            LOG.info(_("Created topic proxy: %s"), topic)
-
-            # It takes some time for a pub socket to open,
-            # before we can have any faith in doing a send() to it.
-            if sock_type == zmq.PUB:
-                eventlet.sleep(.5)
+            if not topic in self.topic_proxy:
+                outq = ZmqSocket("ipc://%s/zmq_topic_%s" % (ipc_dir, topic),
+                                 sock_type, bind=True)
+                self.topic_proxy[topic] = outq
+                self.sockets.append(outq)
+                LOG.info(_("Created topic proxy: %s"), topic)
 
         LOG.debug(_("ROUTER RELAY-OUT START %(data)s") % {'data': data})
         self.topic_proxy[topic].send(data)
@@ -500,13 +506,15 @@ class Connection(rpc_common.Connection):
             subscribe = ('', fanout)[type(fanout) == str]
             sock_type = zmq.SUB
             topic = 'fanout~' + topic
+
+            inaddr = "tcp://127.0.0.1:%s" % (CONF.rpc_zmq_port_pub, )
         else:
             sock_type = zmq.PULL
             subscribe = None
 
-        # Receive messages from (local) proxy
-        inaddr = "ipc://%s/zmq_topic_%s" % \
-            (CONF.rpc_zmq_ipc_dir, topic)
+            # Receive messages from (local) proxy
+            inaddr = "ipc://%s/zmq_topic_%s" % \
+                (CONF.rpc_zmq_ipc_dir, topic)
 
         LOG.debug(_("Consumer is a zmq.%s"),
                   ['PULL', 'SUB'][sock_type == zmq.SUB])
