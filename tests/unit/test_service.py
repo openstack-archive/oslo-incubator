@@ -50,6 +50,16 @@ class ServiceManagerTestCase(utils.BaseTestCase):
         self.assertEqual(serv.test_method(), 'service')
 
 
+class ServiceWithTimer(service.Service):
+    def start(self):
+        super(ServiceWithTimer, self).start()
+        self.timer_fired = 0
+        self.tg.add_timer(1, self.timer_expired)
+
+    def timer_expired(self):
+        self.timer_fired = self.timer_fired + 1
+
+
 class ServiceLauncherTest(utils.BaseTestCase):
     """
     Originally from nova/tests/integrated/test_multiprocess_api.py
@@ -69,7 +79,7 @@ class ServiceLauncherTest(utils.BaseTestCase):
             status = 0
             try:
                 launcher = service.ProcessLauncher()
-                serv = ExtendedService('test', None)
+                serv = ServiceWithTimer('test', None)
                 launcher.launch_service(serv, workers=self.workers)
                 launcher.wait()
             except SystemExit as exc:
