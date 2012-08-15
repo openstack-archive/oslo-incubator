@@ -34,6 +34,11 @@ from openstack.common import importutils
 from openstack.common import log as logging
 from openstack.common import threadgroup
 from openstack.common.gettextutils import _
+try:
+    from openstack.common import rpc
+    have_rpc = True
+except:
+    have_rpc = False
 
 service_opts = [
     cfg.IntOpt('periodic_interval',
@@ -137,6 +142,8 @@ class ServiceLauncher(Launcher):
             status = exc.code
         finally:
             self.stop()
+            if have_rpc:
+                rpc.cleanup()
         return status
 
 
@@ -322,7 +329,7 @@ class Service(object):
 
     def start(self):
         if self.manager:
-            self.manager.init_host()
+            self.manager.init_host(service=self)
 
         if self.periodic_interval and self.manager:
             if self.periodic_fuzzy_delay:
