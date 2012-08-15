@@ -19,9 +19,17 @@
 
 """Generic Node base class for all workers that run on hosts."""
 
+import signal
 import sys
+
 import eventlet
 import greenlet
+
+from openstack.common import log as logging
+from openstack.common.gettextutils import _
+
+
+LOG = logging.getLogger(__name__)
 
 
 class Launcher(object):
@@ -76,6 +84,39 @@ class Launcher(object):
                 service.wait()
             except greenlet.GreenletExit:
                 pass
+
+
+class SignalExit(SystemExit):
+    def __init__(self, signo, exccode=1):
+        super(SignalExit, self).__init__(exccode)
+        self.signo = signo
+
+
+class ServiceLauncher(Launcher):
+    def _handle_signal(self, signo, frame):
+        # Allow the process to be killed again and die from natural causes
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+        raise SignalExit(signo)
+
+    def wait(self):
+        signal.signal(signal.SIGTERM, self._handle_signal)
+        signal.signal(signal.SIGINT, self._handle_signal)
+
+        status = None
+        try:
+            super(ServiceLauncher, self).wait()
+        except SignalExit as exc:
+            signame = {signal.SIGTERM: 'SIGTERM',
+                       signal.SIGINT: 'SIGINT'}[exc.signo]
+            LOG.info(_('Caught %s, exiting'), signame)
+            status = exc.code
+        except SystemExit as exc:
+            status = exc.code
+        finally:
+            self.stop()
+        return status
 
 
 class Service(object):
