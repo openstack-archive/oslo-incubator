@@ -19,8 +19,13 @@
 Import related utilities and helper functions.
 """
 
+import pkg_resources
 import sys
 import traceback
+
+from openstack.common import log as logging
+
+LOG = logging.getLogger(__name__)
 
 
 def import_class(import_str):
@@ -51,6 +56,38 @@ def import_object_ns(name_space, import_str, *args, **kwargs):
         return import_class(import_value)(*args, **kwargs)
     except ImportError:
         return import_class(import_str)(*args, **kwargs)
+
+
+def check_isinstance(obj, cls):
+    """Checks that obj is of type cls, and lets PyLint infer types."""
+    if isinstance(obj, cls):
+        return obj
+    raise Exception(_('Expected object of type: %s') % (str(cls)))
+
+
+def import_entrypoint(name_space, ep_name, *args, **kwargs):
+    """
+    Import a driver via pkg_resources entrypoints.
+    """
+    for ep in pkg_resources.iter_entry_points(name_space, ep_name):
+        return ep.load()(*args, **kwargs)
+    return None
+
+
+def import_driver(name_space, driver_name, cls, *args, **kwargs):
+    """
+    Try to load the compute driver from entrypoints. Fall back
+    to old-style importutils.
+    """
+
+    LOG.info(_("Loading driver '%s:%s'") % (name_space, driver_name))
+    driver_obj = import_entrypoint(name_space, driver_name, *args, **kwargs)
+    if driver_obj is None:
+        driver_obj = import_object_ns(name_space, driver_name, *args, **kwargs)
+        LOG.warn(_('Library import of drivers is deprecated. Entry points '
+                   'should be used instead'))
+
+    return check_isinstance(driver_obj, cls)
 
 
 def import_module(import_str):
