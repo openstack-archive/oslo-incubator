@@ -13,8 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import imp
-import os
 import pkg_resources
 
 from openstack.common import cfg
