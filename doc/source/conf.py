@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
-#
 
 import os
 import sys
-
-project = 'openstack-common'
 
 # -- General configuration ----------------------------------------------------
 
@@ -26,6 +23,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
+project = u'openstack-common'
 copyright = u'OpenStack LLC'
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
@@ -49,13 +47,13 @@ htmlhelp_basename = '%sdoc' % project
 
 
 # Grouping the document tree into LaTeX files. List of tuples
-# (source start file, target name, title, author, documentclass [howto/manual])
-# .
+# (source start file, target name, title, author, documentclass
+# [howto/manual]).
 latex_documents = [
-    ('index',
-     '%s.tex' % project,
-    u'%s Documentation' % project,
-    u'OpenStack LLC', 'manual'),
+        ('index',
+         '%s.tex' % project,
+         u'%s Documentation' % project,
+         u'OpenStack LLC', 'manual'),
 ]
 
 # Example configuration for intersphinx: refer to the Python standard library.
