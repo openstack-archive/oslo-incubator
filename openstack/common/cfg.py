@@ -492,7 +492,7 @@ class Opt(object):
       metavar:
         the name shown as the argument to a CLI option in --help output
       help:
-        an string explaining how the options value is used
+        a string explaining how the options value is used
     """
     multi = False
 
@@ -693,7 +693,7 @@ class IntOpt(Opt):
     """Int opt values are converted to integers using the int() builtin."""
 
     def _get_from_config_parser(self, cparser, section):
-        """Retrieve the opt value as a integer from ConfigParser."""
+        """Retrieve the opt value as an integer from ConfigParser."""
         return [int(v) for v in self._cparser_get_with_deprecated(cparser,
                 section)]
 
@@ -1429,7 +1429,7 @@ class ConfigOpts(collections.Mapping):
             return value
 
     def _get_group(self, group_or_name, autocreate=False):
-        """Looks up a OptGroup object.
+        """Looks up an OptGroup object.
 
         Helper function to return an OptGroup given a parameter which can
         either be the group's name or an OptGroup object.

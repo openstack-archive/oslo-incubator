@@ -242,16 +242,3 @@ submitted bug fix does have a unit test, be sure to add a new one that fails
 without the patch and passes with the patch.
 
 
-openstack-common
-----------------
-
-A number of modules from openstack-common are imported into this project.
-
-These modules are "incubating" in openstack-common and are kept in sync
-with the help of openstack-common's update.py script. See:
-
-  http://wiki.openstack.org/CommonLibrary#Incubation
-
-The copy of the code should never be directly modified here. Please
-always update openstack-common first and then run the script to copy
-the changes across.
