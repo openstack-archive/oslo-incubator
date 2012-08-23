@@ -70,7 +70,7 @@ class ProcessExecutionErrorTest(unittest.TestCase):
         self.assertTrue('code: -\n' in err.message)
 
     def test_with_description(self):
-        description = 'The Narwal Bacons at Midnight'
+        description = 'The Narwhal Bacons at Midnight'
         err = exception.ProcessExecutionError(description=description)
         self.assertTrue(description in err.message)
 
