@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 #
 
-import sys, os
+import os
+import sys
 
 project = 'openstack-common'
 
