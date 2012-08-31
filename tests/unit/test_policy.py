@@ -406,6 +406,13 @@ class CheckTestCase(unittest.TestCase):
 
         self.assertEqual(result, True)
 
+    def test_generic_boolean(self):
+        result = policy._check_generic(None, "is_admin", "True",
+                                       {},
+                                       dict(is_admin=True))
+
+        self.assertEqual(result, True)
+
     def test_generic_no_key(self):
         result = policy._check_generic(None, "tenant", "%(tenant_id)s",
                                        dict(tenant_id="spam"),
