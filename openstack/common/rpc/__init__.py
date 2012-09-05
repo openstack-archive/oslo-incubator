@@ -49,6 +49,7 @@ rpc_opts = [
     cfg.ListOpt('allowed_rpc_exception_modules',
                 default=['openstack.common.exception',
                          'nova.exception',
+                         'cinder.exception',
                          ],
                 help='Modules of exceptions that are permitted to be recreated'
                      'upon receiving exception data from an rpc call.'),
