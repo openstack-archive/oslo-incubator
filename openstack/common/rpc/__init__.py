@@ -53,12 +53,18 @@ rpc_opts = [
                          ],
                 help='Modules of exceptions that are permitted to be recreated'
                      'upon receiving exception data from an rpc call.'),
-    cfg.StrOpt('control_exchange',
-               default='nova',
-               help='AMQP exchange to connect to if using RabbitMQ or Qpid'),
     cfg.BoolOpt('fake_rabbit',
                 default=False,
                 help='If passed, use a fake RabbitMQ provider'),
+    #
+    # The following options are not registered here, but are expected to be
+    # present. The project using this library must register these options with
+    # the configuration so that project-specific defaults may be defined.
+    #
+    #cfg.StrOpt('rpc_control_exchange',
+    #           deprecated_name='control_exchange',
+    #           default='nova',
+    #           help='AMQP exchange to connect to if using RabbitMQ or Qpid'),
 ]
 
 cfg.CONF.register_opts(rpc_opts)
