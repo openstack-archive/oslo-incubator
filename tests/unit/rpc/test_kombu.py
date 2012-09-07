@@ -105,9 +105,9 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         def _callback(message):
             self.received_message = message
 
-        conn.declare_topic_consumer('a_topic', _callback)
-        conn.topic_send('a_topic', message)
-        conn.consume(limit=1)
+        conn._declare_topic_consumer('a_topic', _callback)
+        conn._topic_send('a_topic', message)
+        conn._consume(limit=1)
         conn.close()
 
         self.assertEqual(self.received_message, message)
@@ -128,10 +128,12 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         def _callback2(message):
             self.received_message_2 = message
 
-        conn.declare_topic_consumer('a_topic', _callback1, queue_name='queue1')
-        conn.declare_topic_consumer('a_topic', _callback2, queue_name='queue2')
-        conn.topic_send('a_topic', message)
-        conn.consume(limit=2)
+        conn._declare_topic_consumer('a_topic', _callback1,
+                                     queue_name='queue1')
+        conn._declare_topic_consumer('a_topic', _callback2,
+                                     queue_name='queue2')
+        conn._topic_send('a_topic', message)
+        conn._consume(limit=2)
         conn.close()
 
         self.assertEqual(self.received_message_1, message)
@@ -148,9 +150,9 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         def _callback(message):
             self.received_message = message
 
-        conn.declare_direct_consumer('a_direct', _callback)
-        conn.direct_send('a_direct', message)
-        conn.consume(limit=1)
+        conn._declare_direct_consumer('a_direct', _callback)
+        conn._direct_send('a_direct', message)
+        conn._consume(limit=1)
         conn.close()
 
         self.assertEqual(self.received_message, message)
@@ -231,16 +233,16 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         def _callback(message):
             self.received_message = message
 
-        conn.declare_fanout_consumer('a_fanout', _callback)
-        conn2.declare_fanout_consumer('a_fanout', _callback)
-        conn.fanout_send('a_fanout', message)
+        conn._declare_fanout_consumer('a_fanout', _callback)
+        conn2._declare_fanout_consumer('a_fanout', _callback)
+        conn._fanout_send('a_fanout', message)
 
-        conn.consume(limit=1)
+        conn._consume(limit=1)
         conn.close()
         self.assertEqual(self.received_message, message)
 
         self.received_message = None
-        conn2.consume(limit=1)
+        conn2._consume(limit=1)
         conn2.close()
         self.assertEqual(self.received_message, message)
 
@@ -252,7 +254,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
                                '__init__', 'foo timeout foo')
 
         conn = self.rpc.Connection(FLAGS)
-        result = conn.declare_consumer(self.rpc.DirectConsumer,
+        result = conn._declare_consumer(self.rpc.DirectConsumer,
                                        'test_topic', None)
 
         self.assertEqual(info['called'], 3)
@@ -268,7 +270,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         conn = self.rpc.Connection(FLAGS)
         conn.connection_errors = (MyException, )
 
-        result = conn.declare_consumer(self.rpc.DirectConsumer,
+        result = conn._declare_consumer(self.rpc.DirectConsumer,
                                        'test_topic', None)
 
         self.assertEqual(info['called'], 2)
@@ -281,7 +283,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
                                '__init__', 'Socket closed', exc_class=IOError)
 
         conn = self.rpc.Connection(FLAGS)
-        result = conn.declare_consumer(self.rpc.DirectConsumer,
+        result = conn._declare_consumer(self.rpc.DirectConsumer,
                                        'test_topic', None)
 
         self.assertEqual(info['called'], 3)
@@ -296,7 +298,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
                                '__init__', 'foo timeout foo')
 
         conn = self.rpc.Connection(FLAGS)
-        conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', 'msg')
+        conn._publisher_send(self.rpc.DirectPublisher, 'test_topic', 'msg')
 
         self.assertEqual(info['called'], 3)
         self.stubs.UnsetAll()
@@ -305,7 +307,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
                                'send', 'foo timeout foo')
 
         conn = self.rpc.Connection(FLAGS)
-        conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', 'msg')
+        conn._publisher_send(self.rpc.DirectPublisher, 'test_topic', 'msg')
 
         self.assertEqual(info['called'], 3)
 
@@ -320,7 +322,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         conn = self.rpc.Connection(FLAGS)
         conn.connection_errors = (MyException, )
 
-        conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', 'msg')
+        conn._publisher_send(self.rpc.DirectPublisher, 'test_topic', 'msg')
 
         self.assertEqual(info['called'], 2)
         self.stubs.UnsetAll()
@@ -331,7 +333,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         conn = self.rpc.Connection(FLAGS)
         conn.connection_errors = (MyException, )
 
-        conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', 'msg')
+        conn._publisher_send(self.rpc.DirectPublisher, 'test_topic', 'msg')
 
         self.assertEqual(info['called'], 2)
 
@@ -345,12 +347,12 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         def _callback(message):
             self.received_message = message
 
-        conn.declare_direct_consumer('a_direct', _callback)
-        conn.direct_send('a_direct', message)
+        conn._declare_direct_consumer('a_direct', _callback)
+        conn._direct_send('a_direct', message)
 
         info = _raise_exc_stub(self.stubs, 1, conn.connection,
                                'drain_events', 'foo timeout foo')
-        conn.consume(limit=1)
+        conn._consume(limit=1)
         conn.close()
 
         self.assertEqual(self.received_message, message)
