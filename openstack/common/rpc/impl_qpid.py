@@ -370,7 +370,7 @@ class Connection(object):
         if self.consumers:
             LOG.debug(_("Re-established AMQP queues"))
 
-    def ensure(self, error_callback, method, *args, **kwargs):
+    def _ensure(self, error_callback, method, *args, **kwargs):
         while True:
             try:
                 return method(*args, **kwargs)
@@ -380,20 +380,14 @@ class Connection(object):
                     error_callback(e)
                 self.reconnect()
 
-    def close(self):
-        """Close/release this connection"""
-        self.cancel_consumer_thread()
-        self.connection.close()
-        self.connection = None
-
-    def reset(self):
+    def _reset(self):
         """Reset a connection so it can be used again"""
-        self.cancel_consumer_thread()
+        self._cancel_consumer_thread()
         self.session.close()
         self.session = self.connection.session()
         self.consumers = {}
 
-    def declare_consumer(self, consumer_cls, topic, callback):
+    def _declare_consumer(self, consumer_cls, topic, callback):
         """Create a Consumer using the class that was passed in and
         add it to our list of consumers
         """
@@ -402,14 +396,14 @@ class Connection(object):
             LOG.error(_("Failed to declare consumer for topic '%(topic)s': "
                       "%(err_str)s") % log_info)
 
-        def _declare_consumer():
+        def __declare_consumer():
             consumer = consumer_cls(self.conf, self.session, topic, callback)
             self._register_consumer(consumer)
             return consumer
 
-        return self.ensure(_connect_error, _declare_consumer)
+        return self._ensure(_connect_error, __declare_consumer)
 
-    def iterconsume(self, limit=None, timeout=None):
+    def _iterconsume(self, limit=None, timeout=None):
         """Return an iterator that will consume from all queues/consumers"""
 
         def _error_callback(exc):
@@ -424,16 +418,16 @@ class Connection(object):
         def _consume():
             nxt_receiver = self.session.next_receiver(timeout=timeout)
             try:
-                self._lookup_consumer(nxt_receiver).consume()
+                self._lookup_consumer(nxt_receiver)._consume()
             except Exception:
                 LOG.exception(_("Error processing message.  Skipping it."))
 
         for iteration in itertools.count(0):
             if limit and iteration >= limit:
                 raise StopIteration
-            yield self.ensure(_error_callback, _consume)
+            yield self._ensure(_error_callback, _consume)
 
-    def cancel_consumer_thread(self):
+    def _cancel_consumer_thread(self):
         """Cancel a consumer thread"""
         if self.consumer_thread is not None:
             self.consumer_thread.kill()
@@ -443,7 +437,7 @@ class Connection(object):
                 pass
             self.consumer_thread = None
 
-    def publisher_send(self, cls, topic, msg):
+    def _publisher_send(self, cls, topic, msg):
         """Send to a publisher based on the publisher class"""
 
         def _connect_error(exc):
@@ -451,60 +445,66 @@ class Connection(object):
             LOG.exception(_("Failed to publish message to topic "
                           "'%(topic)s': %(err_str)s") % log_info)
 
-        def _publisher_send():
+        def __publisher_send():
             publisher = cls(self.conf, self.session, topic)
             publisher.send(msg)
 
-        return self.ensure(_connect_error, _publisher_send)
+        return self._ensure(_connect_error, __publisher_send)
 
-    def declare_direct_consumer(self, topic, callback):
+    def _declare_direct_consumer(self, topic, callback):
         """Create a 'direct' queue.
         In nova's use, this is generally a msg_id queue used for
         responses for call/multicall
         """
-        self.declare_consumer(DirectConsumer, topic, callback)
+        self._declare_consumer(DirectConsumer, topic, callback)
 
-    def declare_topic_consumer(self, topic, callback=None, queue_name=None):
+    def _declare_topic_consumer(self, topic, callback=None, queue_name=None):
         """Create a 'topic' consumer."""
-        self.declare_consumer(functools.partial(TopicConsumer,
+        self._declare_consumer(functools.partial(TopicConsumer,
                                                 name=queue_name,
                                                 ),
                               topic, callback)
 
-    def declare_fanout_consumer(self, topic, callback):
+    def _declare_fanout_consumer(self, topic, callback):
         """Create a 'fanout' consumer"""
-        self.declare_consumer(FanoutConsumer, topic, callback)
+        self._declare_consumer(FanoutConsumer, topic, callback)
 
-    def direct_send(self, msg_id, msg):
+    def _direct_send(self, msg_id, msg):
         """Send a 'direct' message"""
-        self.publisher_send(DirectPublisher, msg_id, msg)
+        self._publisher_send(DirectPublisher, msg_id, msg)
 
-    def topic_send(self, topic, msg):
+    def _topic_send(self, topic, msg):
         """Send a 'topic' message"""
-        self.publisher_send(TopicPublisher, topic, msg)
+        self._publisher_send(TopicPublisher, topic, msg)
 
-    def fanout_send(self, topic, msg):
+    def _fanout_send(self, topic, msg):
         """Send a 'fanout' message"""
-        self.publisher_send(FanoutPublisher, topic, msg)
+        self._publisher_send(FanoutPublisher, topic, msg)
 
-    def notify_send(self, topic, msg, **kwargs):
+    def _notify_send(self, topic, msg, **kwargs):
         """Send a notify message on a topic"""
-        self.publisher_send(NotifyPublisher, topic, msg)
+        self._publisher_send(NotifyPublisher, topic, msg)
 
-    def consume(self, limit=None):
+    def _consume(self, limit=None):
         """Consume from all queues/consumers"""
-        it = self.iterconsume(limit=limit)
+        it = self._iterconsume(limit=limit)
         while True:
             try:
                 it.next()
             except StopIteration:
                 return
 
+    def close(self):
+        """Close/release this connection"""
+        self._cancel_consumer_thread()
+        self.connection.close()
+        self.connection = None
+
     def consume_in_thread(self):
         """Consumer from all queues/consumers in a greenthread"""
         def _consumer_thread():
             try:
-                self.consume()
+                self._consume()
             except greenlet.GreenletExit:
                 return
         if self.consumer_thread is None:

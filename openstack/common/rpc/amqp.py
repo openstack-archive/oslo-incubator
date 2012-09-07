@@ -110,7 +110,7 @@ class ConnectionContext(rpc_common.Connection):
             if self.pooled:
                 # Reset the connection so it's ready for the next caller
                 # to grab from the pool
-                self.connection.reset()
+                self.connection._reset()
                 self.connection_pool.put(self.connection)
             else:
                 try:
@@ -167,7 +167,7 @@ def msg_reply(conf, msg_id, connection_pool, reply=None, failure=None,
                    'failure': failure}
         if ending:
             msg['ending'] = True
-        conn.direct_send(msg_id, msg)
+        conn._direct_send(msg_id, msg)
 
 
 class RpcContext(rpc_common.CommonRpcContext):
@@ -290,7 +290,7 @@ class ProxyCallback(object):
 class MulticallWaiter(object):
     def __init__(self, conf, connection, timeout):
         self._connection = connection
-        self._iterator = connection.iterconsume(timeout=timeout or
+        self._iterator = connection._iterconsume(timeout=timeout or
                                                 conf.rpc_response_timeout)
         self._result = None
         self._done = False
@@ -356,8 +356,8 @@ def multicall(conf, context, topic, msg, timeout, connection_pool):
 
     conn = ConnectionContext(conf, connection_pool)
     wait_msg = MulticallWaiter(conf, conn, timeout)
-    conn.declare_direct_consumer(msg_id, wait_msg)
-    conn.topic_send(topic, msg)
+    conn._declare_direct_consumer(msg_id, wait_msg)
+    conn._topic_send(topic, msg)
     return wait_msg
 
 
@@ -376,7 +376,7 @@ def cast(conf, context, topic, msg, connection_pool):
     LOG.debug(_('Making asynchronous cast on %s...'), topic)
     pack_context(msg, context)
     with ConnectionContext(conf, connection_pool) as conn:
-        conn.topic_send(topic, msg)
+        conn._topic_send(topic, msg)
 
 
 def fanout_cast(conf, context, topic, msg, connection_pool):
@@ -384,7 +384,7 @@ def fanout_cast(conf, context, topic, msg, connection_pool):
     LOG.debug(_('Making asynchronous fanout cast...'))
     pack_context(msg, context)
     with ConnectionContext(conf, connection_pool) as conn:
-        conn.fanout_send(topic, msg)
+        conn._fanout_send(topic, msg)
 
 
 def cast_to_server(conf, context, server_params, topic, msg, connection_pool):
@@ -392,7 +392,7 @@ def cast_to_server(conf, context, server_params, topic, msg, connection_pool):
     pack_context(msg, context)
     with ConnectionContext(conf, connection_pool, pooled=False,
                            server_params=server_params) as conn:
-        conn.topic_send(topic, msg)
+        conn._topic_send(topic, msg)
 
 
 def fanout_cast_to_server(conf, context, server_params, topic, msg,
@@ -401,7 +401,7 @@ def fanout_cast_to_server(conf, context, server_params, topic, msg,
     pack_context(msg, context)
     with ConnectionContext(conf, connection_pool, pooled=False,
                            server_params=server_params) as conn:
-        conn.fanout_send(topic, msg)
+        conn._fanout_send(topic, msg)
 
 
 def notify(conf, context, topic, msg, connection_pool):
@@ -410,7 +410,7 @@ def notify(conf, context, topic, msg, connection_pool):
     LOG.debug(_('Sending %(event_type)s on %(topic)s'), locals())
     pack_context(msg, context)
     with ConnectionContext(conf, connection_pool) as conn:
-        conn.notify_send(topic, msg)
+        conn._notify_send(topic, msg)
 
 
 def cleanup(connection_pool):
