@@ -64,6 +64,41 @@ def bool_from_string(subject):
     return False
 
 
+def parse_host_port(address, default_port=None):
+    """
+    Interpret a string as a host:port pair.
+
+    >>> parse_host_port('server01:80')
+    ('server01', 80)
+    >>> parse_host_port('server01')
+    ('server01', None)
+    >>> parse_host_port('server01', default_port=1234)
+    ('server01', 1234)
+    >>> parse_host_port('[::1]:80')
+    ('[::1]', 80)
+    >>> parse_host_port('[::1]')
+    ('[::1]', None)
+    >>> parse_host_port('[::1]', default_port=1234)
+    ('[::1]', 1234)
+
+    """
+    if address[0] == '[':
+        _host, _port = address[1:].split(']')
+        host = '[' + _host + ']'
+        if ':' in _port:
+            port = _port.split(':')[1]
+        else:
+            port = default_port
+    else:
+        if ':' in address:
+            host, port = address.split(':')
+        else:
+            host = address
+            port = default_port
+
+    return (host, None if port is None else int(port))
+
+
 def execute(*cmd, **kwargs):
     """
     Helper method to execute command with optional retry.
