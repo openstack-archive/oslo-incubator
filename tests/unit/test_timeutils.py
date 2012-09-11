@@ -214,3 +214,23 @@ class TestIso8601Time(unittest.TestCase):
         west = timeutils.parse_isotime(str)
         normed = timeutils.normalize_time(west)
         self._instaneous(normed, 2012, 2, 13, 23, 53, 07, 0)
+
+    def test_normalize_aware_to_naive(self):
+        dt = datetime.datetime(2011, 2, 14, 20, 53, 07)
+        str = '2011-02-14T20:53:07+21:00'
+        aware = timeutils.parse_isotime(str)
+        naive = timeutils.normalize_time(aware)
+        self.assertTrue(naive < dt)
+
+    def test_normalize_zulu_aware_to_naive(self):
+        dt = datetime.datetime(2011, 2, 14, 20, 53, 07)
+        str = '2011-02-14T19:53:07Z'
+        aware = timeutils.parse_isotime(str)
+        naive = timeutils.normalize_time(aware)
+        self.assertTrue(naive < dt)
+
+    def test_normalize_naive(self):
+        dt = datetime.datetime(2011, 2, 14, 20, 53, 07)
+        dtn = datetime.datetime(2011, 2, 14, 19, 53, 07)
+        naive = timeutils.normalize_time(dtn)
+        self.assertTrue(naive < dt)
