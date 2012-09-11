@@ -257,6 +257,9 @@ class ProcessLauncher(object):
                 raise
             return None
 
+        if pid is 0:
+            return None
+
         if os.WIFSIGNALED(status):
             sig = os.WTERMSIG(status)
             LOG.info(_('Child %(pid)d killed by signal %(sig)d'), locals())
