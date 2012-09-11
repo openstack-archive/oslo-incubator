@@ -62,9 +62,10 @@ def parse_strtime(timestr, fmt=PERFECT_TIME_FORMAT):
 
 
 def normalize_time(timestamp):
-    """Normalize time in arbitrary timezone to UTC"""
+    """Normalize time in arbitrary timezone to UTC naive object"""
     offset = timestamp.utcoffset()
-    return timestamp.replace(tzinfo=None) - offset if offset else timestamp
+    return (timestamp.replace(tzinfo=None) - offset
+            if offset is not None else timestamp)
 
 
 def is_older_than(before, seconds):
