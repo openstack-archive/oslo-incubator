@@ -23,10 +23,9 @@ import eventlet.wsgi
 
 eventlet.patcher.monkey_patch(all=False, socket=True)
 
-import logging
-import sys
 import routes
 import routes.middleware
+import sys
 import webob.dec
 import webob.exc
 from xml.dom import minidom
@@ -34,42 +33,51 @@ from xml.parsers import expat
 
 from openstack.common import exception
 from openstack.common.gettextutils import _
+from openstack.common import log as logging
 from openstack.common import jsonutils
+from openstack.common import service
 
 
-LOG = logging.getLogger('wsgi')
-
-
-class WritableLogger(object):
-    """A thin wrapper that responds to `write` and logs."""
-
-    def __init__(self, logger, level=logging.DEBUG):
-        self.logger = logger
-        self.level = level
-
-    def write(self, msg):
-        self.logger.log(self.level, msg.strip("\n"))
-
+LOG = logging.getLogger(__name__)
 
 def run_server(application, port):
     """Run a WSGI server with the given application."""
     sock = eventlet.listen(('0.0.0.0', port))
     eventlet.wsgi.server(sock, application)
 
+class Service(service.Service):
+    """
+    Provides a Service API for wsgi servers.
 
-class Server(object):
-    """Server class to manage multiple WSGI sockets and applications."""
+    This gives us the ability to launch wsgi servers with the
+    Launcher classes in service.py.
+    """
 
     def __init__(self, threads=1000):
+        super(Service, self).start()
         self.pool = eventlet.GreenPool(threads)
 
     def start(self, application, port, host='0.0.0.0', backlog=128):
-        """Run a WSGI server with the given application."""
+        """Start serving this service using the provided server instance.
+
+        :returns: None
+
+        """
+        super(Service, self).start()
         socket = eventlet.listen((host, port), backlog=backlog)
         self.pool.spawn_n(self._run, application, socket)
 
+    def stop(self):
+        """Stop serving this API.
+
+        :returns: None
+
+        """
+        super(Service, self).stop()
+
     def wait(self):
         """Wait until all servers have completed running."""
+        super(Service, self).wait()
         try:
             self.pool.waitall()
         except KeyboardInterrupt:
@@ -79,7 +87,7 @@ class Server(object):
         """Start a WSGI server in a new green thread."""
         logger = logging.getLogger('eventlet.wsgi.server')
         eventlet.wsgi.server(socket, application, custom_pool=self.pool,
-                             log=WritableLogger(logger))
+                             log=logging.WritableLogger(logger))
 
 
 class Middleware(object):
