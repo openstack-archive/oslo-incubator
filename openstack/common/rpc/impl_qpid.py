@@ -180,9 +180,10 @@ class TopicConsumer(ConsumerBase):
         :param name: optional queue name, defaults to topic
         """
 
+        exchange_name = rpc_amqp.get_control_exchange(conf)
         super(TopicConsumer, self).__init__(session, callback,
-                "%s/%s" % (rpc_amqp.get_control_exchange(conf), topic),
-                {}, name or topic, {})
+                                            "%s/%s" % (exchange_name, topic),
+                                            {}, name or topic, {})
 
 
 class FanoutConsumer(ConsumerBase):
@@ -255,8 +256,9 @@ class TopicPublisher(Publisher):
     def __init__(self, conf, session, topic):
         """init a 'topic' publisher.
         """
+        exchange_name = rpc_amqp.get_control_exchange(conf)
         super(TopicPublisher, self).__init__(session,
-                "%s/%s" % (rpc_amqp.get_control_exchange(conf), topic))
+                                             "%s/%s" % (exchange_name, topic))
 
 
 class FanoutPublisher(Publisher):
@@ -274,9 +276,10 @@ class NotifyPublisher(Publisher):
     def __init__(self, conf, session, topic):
         """init a 'topic' publisher.
         """
+        exchange_name = rpc_amqp.get_control_exchange(conf)
         super(NotifyPublisher, self).__init__(session,
-                "%s/%s" % (rpc_amqp.get_control_exchange(conf), topic),
-                {"durable": True})
+                                              "%s/%s" % (exchange_name, topic),
+                                              {"durable": True})
 
 
 class Connection(object):

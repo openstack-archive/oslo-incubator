@@ -210,10 +210,11 @@ class TopicConsumer(ConsumerBase):
                    'auto_delete': False,
                    'exclusive': False}
         options.update(kwargs)
-        exchange = kombu.entity.Exchange(
-                name=rpc_amqp.get_control_exchange(conf),
-                type='topic', durable=options['durable'],
-                auto_delete=options['auto_delete'])
+        exchange_name = rpc_amqp.get_control_exchange(conf)
+        exchange = kombu.entity.Exchange(name=exchange_name,
+                                         type='topic',
+                                         durable=options['durable'],
+                                         auto_delete=options['auto_delete'])
         super(TopicConsumer, self).__init__(channel,
                                             callback,
                                             tag,
@@ -307,9 +308,12 @@ class TopicPublisher(Publisher):
                    'auto_delete': False,
                    'exclusive': False}
         options.update(kwargs)
+        exchange_name = rpc_amqp.get_control_exchange(conf)
         super(TopicPublisher, self).__init__(channel,
-                rpc_amqp.get_control_exchange(conf), topic,
-                type='topic', **options)
+                                             exchange_name,
+                                             topic,
+                                             type='topic',
+                                             **options)
 
 
 class FanoutPublisher(Publisher):
