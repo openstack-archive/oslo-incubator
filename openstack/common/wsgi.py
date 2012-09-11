@@ -455,7 +455,7 @@ class Request(webob.Request):
 
         """
         if not "Content-Type" in self.headers:
-            return None
+            raise exception.InvalidContentType(content_type=None)
 
         content_type = self.content_type
         allowed_content_types = (allowed_content_types or
