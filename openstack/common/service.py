@@ -33,6 +33,10 @@ from openstack.common import log as logging
 from openstack.common import threadgroup
 from openstack.common.gettextutils import _
 
+try:
+    from openstack.common import rpc
+except ImportError:
+    rpc = None
 
 LOG = logging.getLogger(__name__)
 
@@ -121,6 +125,8 @@ class ServiceLauncher(Launcher):
             status = exc.code
         finally:
             self.stop()
+            if rpc:
+                rpc.cleanup()
         return status
 
 
@@ -289,35 +295,13 @@ class ProcessLauncher(object):
 
 
 class Service(object):
-    """Service object for binaries running on hosts.
+    """Service object for binaries running on hosts."""
 
-    A service takes a manager and periodically runs tasks on the manager."""
-
-    def __init__(self, host, manager,
-                 periodic_interval=None,
-                 periodic_fuzzy_delay=None):
-        self.host = host
-        self.manager = manager
-        self.periodic_interval = periodic_interval
-        self.periodic_fuzzy_delay = periodic_fuzzy_delay
+    def __init__(self):
         self.tg = threadgroup.ThreadGroup('service')
-        self.periodic_args = []
-        self.periodic_kwargs = {}
 
     def start(self):
-        if self.manager:
-            self.manager.init_host()
-
-        if self.periodic_interval and self.manager:
-            if self.periodic_fuzzy_delay:
-                initial_delay = random.randint(0, self.periodic_fuzzy_delay)
-            else:
-                initial_delay = 0
-            self.tg.add_timer(self.periodic_interval,
-                              self.manager.run_periodic_tasks,
-                              initial_delay,
-                              *self.periodic_args,
-                              **self.periodic_kwargs)
+        pass
 
     def stop(self):
         self.tg.stop()
