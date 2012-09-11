@@ -24,10 +24,6 @@ import signal
 import time
 import traceback
 
-from eventlet import greenthread
-
-from openstack.common import cfg
-from openstack.common.gettextutils import _
 from openstack.common import log as logging
 from openstack.common.rpc import service as rpc_service
 from openstack.common import service
@@ -91,7 +87,6 @@ class ServiceLauncherTest(utils.BaseTestCase):
     """
     Originally from nova/tests/integrated/test_multiprocess_api.py
     """
-
     def _spawn(self):
         self.workers = 2
         pid = os.fork()
@@ -135,6 +130,10 @@ class ServiceLauncherTest(utils.BaseTestCase):
 
         self.assertEqual(len(workers), self.workers)
         return workers
+
+    def setUp(self):
+        super(ServiceLauncherTest, self).setUp()
+        self.config(verbose=True)
 
     def tearDown(self):
         if self.pid:
