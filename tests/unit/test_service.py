@@ -29,7 +29,7 @@ from eventlet import greenthread
 from openstack.common import cfg
 from openstack.common.gettextutils import _
 from openstack.common import log as logging
-from openstack.common import manager
+from openstack.common.rpc import service as rpc_service
 from openstack.common import service
 from tests import utils
 
@@ -45,9 +45,36 @@ class ExtendedService(service.Service):
 class ServiceManagerTestCase(utils.BaseTestCase):
     """Test cases for Services"""
     def test_override_manager_method(self):
-        serv = ExtendedService('test', None)
+        serv = ExtendedService()
         serv.start()
         self.assertEqual(serv.test_method(), 'service')
+
+
+class FakeService(rpc_service.Service):
+    """Fake manager for tests"""
+    def __init__(self, host, topic):
+        super(FakeService, self).__init__(host, topic, None)
+        self.method_result = 'manager'
+
+    def test_method(self):
+        return self.method_result
+
+
+class RpcServiceManagerTestCase(utils.BaseTestCase):
+    """Test cases for Services"""
+    def setUp(self):
+        super(RpcServiceManagerTestCase, self).setUp()
+        self.config(fake_rabbit=True)
+        self.config(rpc_backend='openstack.common.rpc.impl_fake')
+        self.config(verbose=True)
+        self.config(rpc_response_timeout=5)
+        self.config(rpc_cast_timeout=5)
+
+    def test_message_default(self):
+        serv = FakeService('test-host', 'test-topic')
+        serv.start()
+        self.assertEqual(serv.test_method(), 'manager')
+        serv.stop()
 
 
 class ServiceWithTimer(service.Service):
@@ -79,7 +106,7 @@ class ServiceLauncherTest(utils.BaseTestCase):
             status = 0
             try:
                 launcher = service.ProcessLauncher()
-                serv = ServiceWithTimer('test', None)
+                serv = ServiceWithTimer()
                 launcher.launch_service(serv, workers=self.workers)
                 launcher.wait()
             except SystemExit as exc:
