@@ -295,6 +295,12 @@ class Middleware(Application):
     def __init__(self, application):
         self.application = application
 
+    @classmethod
+    def factory(cls, global_conf, **local_conf):
+        def filter(app):
+            return cls(app)
+        return filter
+
     def process_request(self, req):
         """
         Called on each request.
@@ -302,6 +308,7 @@ class Middleware(Application):
         If this returns None, the next application down the stack will be
         executed. If it returns a response then that response will be returned
         and execution will stop here.
+
         """
         return None
 
@@ -356,7 +363,6 @@ class Debug(Middleware):
 
 
 class Router(object):
-
     """
     WSGI middleware that maps incoming requests to WSGI apps.
     """
@@ -388,6 +394,10 @@ class Router(object):
         self.map = mapper
         self._router = routes.middleware.RoutesMiddleware(self._dispatch,
                                                           self.map)
+
+    @classmethod
+    def factory(cls, global_conf, **local_conf):
+        return cls(routes.Mapper())
 
     @webob.dec.wsgify
     def __call__(self, req):
