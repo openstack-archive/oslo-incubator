@@ -31,7 +31,7 @@ eventlet_backdoor_opts = [
     cfg.IntOpt('backdoor_port',
                default=None,
                help='port for eventlet backdoor to listen')
-    ]
+]
 
 CONF = cfg.CONF
 CONF.register_opts(eventlet_backdoor_opts)

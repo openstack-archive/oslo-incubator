@@ -265,7 +265,7 @@ class FancyRecordTestCase(test_utils.BaseTestCase):
 
         self.colorlog.info("foo")
         self.assertNotEqual(sys.stderr.getvalue().find("KeyError: 'missing'"),
-                           -1)
+                            -1)
 
         sys.stderr = error
 

@@ -107,7 +107,7 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
             self.reactor.consume_in_thread()
         except zmq.ZMQError:
             LOG.error(_("Could not create ZeroMQ receiver daemon. "
-                            "Socket may already be in use."))
+                        "Socket may already be in use."))
             raise
 
     def tearDown(self):
