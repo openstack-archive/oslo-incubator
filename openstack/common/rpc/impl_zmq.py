@@ -463,6 +463,20 @@ class ZmqProxy(ZmqBaseReactor):
         LOG.debug(_("ROUTER RELAY-OUT SUCCEEDED %(data)s") % {'data': data})
 
 
+class CallbackReactor(ZmqBaseReactor):
+    """
+    A consumer class passing messages to a callback
+    """
+
+    def __init__(self, conf, callback):
+        self._cb = callback
+        super(CallbackReactor, self).__init__(conf)
+
+    def consume(self, sock):
+        data = sock.recv()
+        self._cb(data)
+
+
 class ZmqReactor(ZmqBaseReactor):
     """
     A consumer class implementing a
@@ -504,6 +518,22 @@ class Connection(rpc_common.Connection):
         for topic, host in matchmaker.queues("publishers~%s" % (topic, )):
             inaddr = "tcp://%s:%s" % (host, CONF.rpc_zmq_port)
             reactor.register(proxy, inaddr, zmq.SUB, in_bind=bind)
+
+    def declare_topic_consumer(self, topic, callback=None,
+            queue_name=None):
+        """declare_topic_consumer is a private method, but
+           it is being used by Quantum (Folsom).
+           This has been added compatibility.
+        """
+        # Only consume on the base topic name.
+        topic = topic.split('.', 1)[0]
+
+        if CONF.rpc_zmq_host in matchmaker.queues("fanout~%s" % (topic, )):
+            return
+
+        reactor = CallbackReactor(CONF, callback)
+        self._consume_fanout(reactor, "publishers~%s" % (topic, ), None,
+                             bind=False)
 
     def create_consumer(self, topic, proxy, fanout=False):
         # Only consume on the base topic name.
