@@ -133,7 +133,7 @@ class RpcQpidTestCase(unittest.TestCase):
                 '"name": "impl_qpid_test_fanout_.*"}}$')
         else:
             expected_address = (
-                'nova/impl_qpid_test ; {"node": {"x-declare": '
+                'openstack/impl_qpid_test ; {"node": {"x-declare": '
                 '{"auto-delete": true, "durable": true}, "type": "topic"}, '
                 '"create": "always", "link": {"x-declare": {"auto-delete": '
                 'true, "exclusive": false, "durable": false}, "durable": '
@@ -169,7 +169,7 @@ class RpcQpidTestCase(unittest.TestCase):
         self.mock_connection.open()
         self.mock_connection.session().AndReturn(self.mock_session)
         expected_address = (
-            'nova/impl_qpid_test ; {"node": {"x-declare": '
+            'openstack/impl_qpid_test ; {"node": {"x-declare": '
             '{"auto-delete": true, "durable": true}, "type": "topic"}, '
             '"create": "always", "link": {"x-declare": {"auto-delete": '
             'true, "exclusive": false, "durable": false}, "durable": '
@@ -205,7 +205,7 @@ class RpcQpidTestCase(unittest.TestCase):
                 '"type": "topic"}, "create": "always"}')
         else:
             expected_address = (
-                'nova/impl_qpid_test ; {"node": {"x-declare": '
+                'openstack/impl_qpid_test ; {"node": {"x-declare": '
                 '{"auto-delete": true, "durable": false}, "type": "topic"}, '
                 '"create": "always"}')
         self.mock_session.sender(expected_address).AndReturn(self.mock_sender)
@@ -303,7 +303,7 @@ class RpcQpidTestCase(unittest.TestCase):
         self.mock_session.receiver(rcv_addr).AndReturn(self.mock_receiver)
         self.mock_receiver.capacity = 1
         send_addr = (
-            'nova/impl_qpid_test ; {"node": {"x-declare": '
+            'openstack/impl_qpid_test ; {"node": {"x-declare": '
             '{"auto-delete": true, "durable": false}, "type": "topic"}, '
             '"create": "always"}')
         self.mock_session.sender(send_addr).AndReturn(self.mock_sender)
