@@ -15,18 +15,24 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""Utility methods for working with WSGI servers."""
+"""
+Utility methods for working with WSGI servers
+"""
 
 import datetime
+import errno
 import eventlet
 import eventlet.wsgi
+from eventlet.green import socket, ssl
 
 eventlet.patcher.monkey_patch(all=False, socket=True)
 
 import greenlet
+import os
 import routes
 import routes.middleware
 import sys
+import time
 import webob.dec
 import webob.exc
 from xml.dom import minidom
@@ -48,6 +54,82 @@ def run_server(application, port):
     eventlet.wsgi.server(sock, application)
 
 
+def _get_socket(bind_addr, backlog, cert_file, key_file,
+                ca_file, tcp_keepidle):
+    """
+    Bind socket to bind ip:port
+
+    note: Mostly comes from Swift with a few small changes...
+
+    :param bind_addr: address to bind to
+    :param backlog: Number of backlog requests to configure the socket with.
+    :param cert_file: Path to the certificate file the server should use when
+                      binding to an SSL-wrapped socket.
+    :param key_file: Path to the private key file the server should use when
+                     binding to an SSL-wrapped socket.
+    :param ca_file: Path to the CA certificate file the server should use to
+                    validate client certificates provided during an SSL
+                    handshake.
+    :param tcp_keepidle: TCP_KEEPIDLE value in seconds when creating socket.
+
+    :returns : a socket object as returned from socket.listen or
+               ssl.wrap_socket if conf specifies cert_file
+    """
+    # TODO(jaypipes): eventlet's greened socket module does not actually
+    # support IPv6 in getaddrinfo(). We need to get around this in the
+    # future or monitor upstream for a fix
+    address_family = [addr[0] for addr in socket.getaddrinfo(bind_addr[0],
+            bind_addr[1], socket.AF_UNSPEC, socket.SOCK_STREAM)
+            if addr[0] in (socket.AF_INET, socket.AF_INET6)][0]
+
+    use_ssl = cert_file or key_file
+    if use_ssl and (not cert_file or not key_file):
+        raise RuntimeError(_("When running server in SSL mode, you must "
+                             "specify both a cert_file and key_file "
+                             "option value in your configuration file"))
+
+    def wrap_ssl(sock):
+        ssl_kwargs = {
+            'server_side': True,
+            'certfile': cert_file,
+            'keyfile': key_file,
+            'cert_reqs': ssl.CERT_NONE,
+        }
+
+        if ca_file:
+            ssl_kwargs['ca_certs'] = ca_file
+            ssl_kwargs['cert_reqs'] = ssl.CERT_REQUIRED
+
+        return ssl.wrap_socket(sock, **ssl_kwargs)
+
+    sock = None
+    retry_until = time.time() + 30
+    while not sock and time.time() < retry_until:
+        try:
+            sock = eventlet.listen(bind_addr, backlog=backlog,
+                                   family=address_family)
+            if use_ssl:
+                sock = wrap_ssl(sock)
+
+        except socket.error, err:
+            if err.args[0] != errno.EADDRINUSE:
+                raise
+            eventlet.sleep(0.1)
+    if not sock:
+        raise RuntimeError(_("Could not bind to %s:%s after trying for 30 "
+                             "seconds") % bind_addr)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    # in my experience, sockets can hang around forever without keepalive
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+
+    # This option isn't available in the OS X version of eventlet
+    if hasattr(socket, 'TCP_KEEPIDLE'):
+        sock.setsockopt(socket.IPPROTO_TCP,
+                        socket.TCP_KEEPIDLE, tcp_keepidle)
+
+    return sock
+
+
 class Service(service.Service):
     """
     Provides a Service API for wsgi servers.
@@ -58,7 +140,9 @@ class Service(service.Service):
     default_pool_size = 1000
 
     def __init__(self, name, app, host='0.0.0.0', port=0, pool_size=None,
-                       protocol=eventlet.wsgi.HttpProtocol, backlog=128):
+                       protocol=eventlet.wsgi.HttpProtocol, backlog=128,
+                       cert_file=None, key_file=None, ca_file=None,
+                       tcp_keepidle=None):
         """Initialize, but do not start, a WSGI server.
 
         :param name: Pretty name for logging.
@@ -67,6 +151,10 @@ class Service(service.Service):
         :param port: Port number to server the application.
         :param pool_size: Maximum number of eventlets to spawn concurrently.
         :param backlog: Maximum number of queued connections.
+        :param cert_file: Certificate used in SSL mode.
+        :param key_file: Key file used in SSL mode.
+        :param ca_file: CA file used in SSL mode.
+        :param tcp_keepidle: TCP_KEEPIDLE interval.
         :returns: None
         :raises: nova.exception.InvalidInput
         """
@@ -82,7 +170,9 @@ class Service(service.Service):
             raise exception.InvalidInput(
                     reason='The backlog must be more than 1')
 
-        self._socket = eventlet.listen((host, port), backlog=backlog)
+        self._socket = _get_socket((host, port), backlog,
+                                   cert_file, key_file, ca_file,
+                                   tcp_keepidle)
         (self.host, self.port) = self._socket.getsockname()
         LOG.info(_("%(name)s listening on %(host)s:%(port)s") % self.__dict__)
 
@@ -92,6 +182,7 @@ class Service(service.Service):
         :returns: None
         """
         super(Service, self).start()
+        os.umask(027)  # ensure files are created with the correct privileges
         self._server = eventlet.spawn(eventlet.wsgi.server,
                                       self._socket,
                                       self.app,
