@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Approved+1: Mark McLoughlin <markmc@redhat.com>
+Code-Review+2: Mark McLoughlin <markmc@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Thu, 13 Sep 2012 10:47:51 +0000
+Reviewed-on: https://review.openstack.org/12935
+Project: openstack/openstack-common
+Branch: refs/heads/stable/folsom
