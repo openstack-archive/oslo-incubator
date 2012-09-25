@@ -511,12 +511,15 @@ class Connection(rpc_common.Connection):
     """Manages connections and threads."""
 
     def __init__(self, conf):
+        self.reactors = []
         self.reactor = ZmqReactor(conf)
+        self.reactors.append(self.reactor)
 
     def _consume_fanout(self, reactor, topic, proxy, bind=False):
         for topic, host in matchmaker.queues("publishers~%s" % (topic, )):
             inaddr = "tcp://%s:%s" % (host, CONF.rpc_zmq_port)
             reactor.register(proxy, inaddr, zmq.SUB, in_bind=bind)
+            self.reactors.append(reactor)
 
     def declare_topic_consumer(self, topic, callback=None,
                                queue_name=None):
@@ -573,13 +576,16 @@ class Connection(rpc_common.Connection):
                               subscribe=subscribe, in_bind=False)
 
     def close(self):
-        self.reactor.close()
+        for reactor in self.reactors:
+            reactor.close()
 
     def wait(self):
-        self.reactor.wait()
+        for reactor in self.reactors:
+            reactor.wait()
 
     def consume_in_thread(self):
-        self.reactor.consume_in_thread()
+        for reactor in self.reactors:
+            reactor.consume_in_thread()
 
 
 def _cast(addr, context, msg_id, topic, msg, timeout=None):
