@@ -527,7 +527,7 @@ class Connection(rpc_common.Connection):
         # Only consume on the base topic name.
         topic = topic.split('.', 1)[0]
 
-        if CONF.rpc_zmq_host in matchmaker.queues("fanout~%s" % (topic, )):
+        if CONF.rpc_zmq_host in matchmaker.queues(topic):
             return
 
         reactor = CallbackReactor(CONF, callback)
