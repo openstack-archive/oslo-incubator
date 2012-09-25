@@ -97,6 +97,20 @@ cfg.CONF.register_opts(kombu_opts)
 LOG = rpc_common.LOG
 
 
+def _get_queue_arguments(conf):
+    """Construct the arguments for declaring a queue.
+
+    If the rabbit_ha_queues option is set, we declare a mirrored queue
+    as described here:
+
+      http://www.rabbitmq.com/ha.html
+
+    Setting x-ha-policy to all means that the queue will be mirrored
+    to all nodes in the cluster.
+    """
+    return {'x-ha-policy': 'all'} if conf.rabbit_ha_queues else {}
+
+
 class ConsumerBase(object):
     """Consumer base class."""
 
@@ -216,8 +230,7 @@ class TopicConsumer(ConsumerBase):
         """
         # Default options
         options = {'durable': conf.rabbit_durable_queues,
-                   'queue_arguments':
-                      {'x-ha-policy': 'all'} if conf.rabbit_ha_queues else {},
+                   'queue_arguments': _get_queue_arguments(conf),
                    'auto_delete': False,
                    'exclusive': False}
         options.update(kwargs)
@@ -342,7 +355,7 @@ class NotifyPublisher(TopicPublisher):
 
     def __init__(self, conf, channel, topic, **kwargs):
         self.durable = kwargs.pop('durable', conf.rabbit_durable_queues)
-        self.rabbit_ha_queues = conf.rabbit_ha_queues
+        self.queue_arguments = _get_queue_arguments(conf)
         super(NotifyPublisher, self).__init__(conf, channel, topic, **kwargs)
 
     def reconnect(self, channel):
@@ -351,13 +364,12 @@ class NotifyPublisher(TopicPublisher):
         # NOTE(jerdfelt): Normally the consumer would create the queue, but
         # we do this to ensure that messages don't get dropped if the
         # consumer is started after we do
-        args = {'x-ha-policy': 'all'} if self.rabbit_ha_queues else {}
         queue = kombu.entity.Queue(channel=channel,
                                    exchange=self.exchange,
                                    durable=self.durable,
                                    name=self.routing_key,
                                    routing_key=self.routing_key,
-                                   queue_arguments=args)
+                                   queue_arguments=self.queue_arguments)
         queue.declare()
 
 
