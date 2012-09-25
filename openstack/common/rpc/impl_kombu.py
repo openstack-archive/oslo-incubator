@@ -51,10 +51,10 @@ kombu_opts = [
                      '(valid only if SSL enabled)')),
     cfg.StrOpt('rabbit_host',
                default='localhost',
-               help='Deprecated: Use rabbit_hosts instead. The RabbitMQ host'),
+               help='The RabbitMQ broker address where a single node is used'),
     cfg.IntOpt('rabbit_port',
                default=5672,
-               help='Deprecated: Use rabbit_hosts instead. The RabbitMQ port'),
+               help='The RabbitMQ broker port where a single node is used'),
     cfg.ListOpt('rabbit_hosts',
                 default=['$rabbit_host:$rabbit_port'],
                 help='RabbitMQ HA cluster host:port pairs'),
@@ -405,7 +405,8 @@ class Connection(object):
         ssl_params = self._fetch_ssl_params()
         params_list = []
         for adr in self.conf.rabbit_hosts:
-            hostname, port = utils.parse_host_port(adr, default_port=5672)
+            hostname, port = utils.parse_host_port(
+                adr, default_port=self.conf.rabbit_port)
 
             params = {}
 
