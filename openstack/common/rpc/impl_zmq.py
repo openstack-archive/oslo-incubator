@@ -511,7 +511,9 @@ class Connection(rpc_common.Connection):
     """Manages connections and threads."""
 
     def __init__(self, conf):
+        self.reactors = []
         self.reactor = ZmqReactor(conf)
+        self.reactors.append(self.reactor)
 
     def _consume_fanout(self, reactor, topic, proxy, bind=False):
         for topic, host in matchmaker.queues("publishers~%s" % (topic, )):
@@ -532,6 +534,7 @@ class Connection(rpc_common.Connection):
 
         reactor = CallbackReactor(CONF, callback)
         self._consume_fanout(reactor, topic, None, bind=False)
+        self.reactors.append(reactor)
 
     def create_consumer(self, topic, proxy, fanout=False):
         # Only consume on the base topic name.
@@ -573,13 +576,16 @@ class Connection(rpc_common.Connection):
                               subscribe=subscribe, in_bind=False)
 
     def close(self):
-        self.reactor.close()
+        for reactor in self.reactors:
+            reactor.close()
 
     def wait(self):
-        self.reactor.wait()
+        for reactor in self.reactors:
+            reactor.wait()
 
     def consume_in_thread(self):
-        self.reactor.consume_in_thread()
+        for reactor in self.reactors:
+            reactor.consume_in_thread()
 
 
 def _cast(addr, context, msg_id, topic, msg, timeout=None):
