@@ -125,6 +125,26 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         self.assertEqual(self.received_message, message)
 
     @testutils.skip_if(kombu is None, "Test requires kombu")
+    def test_topic_send_receive_exchange_name(self):
+        """Test sending to a topic exchange/queue with an exchange name"""
+
+        conn = self.rpc.create_connection(FLAGS)
+        message = 'topic test message'
+
+        self.received_message = None
+
+        def _callback(message):
+            self.received_message = message
+
+        conn.declare_topic_consumer('a_topic', _callback,
+                                    exchange_name="foorbar")
+        conn.topic_send('a_topic', message)
+        conn.consume(limit=1)
+        conn.close()
+
+        self.assertEqual(self.received_message, message)
+
+    @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_topic_multiple_queues(self):
         """Test sending to a topic exchange with multiple queues"""
 
@@ -142,6 +162,66 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
 
         conn.declare_topic_consumer('a_topic', _callback1, queue_name='queue1')
         conn.declare_topic_consumer('a_topic', _callback2, queue_name='queue2')
+        conn.topic_send('a_topic', message)
+        conn.consume(limit=2)
+        conn.close()
+
+        self.assertEqual(self.received_message_1, message)
+        self.assertEqual(self.received_message_2, message)
+
+    @testutils.skip_if(kombu is None, "Test requires kombu")
+    def test_topic_multiple_queues_specify_exchange(self):
+        """Test sending to a topic exchange with multiple queues and one
+        exchange
+
+        """
+
+        conn = self.rpc.create_connection(FLAGS)
+        message = 'topic test message'
+
+        self.received_message_1 = None
+        self.received_message_2 = None
+
+        def _callback1(message):
+            self.received_message_1 = message
+
+        def _callback2(message):
+            self.received_message_2 = message
+
+        conn.declare_topic_consumer('a_topic', _callback1, queue_name='queue1',
+                                    exchange_name="abc")
+        conn.declare_topic_consumer('a_topic', _callback2, queue_name='queue2',
+                                    exchange_name="abc")
+        conn.topic_send('a_topic', message)
+        conn.consume(limit=2)
+        conn.close()
+
+        self.assertEqual(self.received_message_1, message)
+        self.assertEqual(self.received_message_2, message)
+
+    @testutils.skip_if(kombu is None, "Test requires kombu")
+    def test_topic_one_queues_multiple_exchange(self):
+        """Test sending to a topic exchange with one queues and several
+        exchanges
+
+        """
+
+        conn = self.rpc.create_connection(FLAGS)
+        message = 'topic test message'
+
+        self.received_message_1 = None
+        self.received_message_2 = None
+
+        def _callback1(message):
+            self.received_message_1 = message
+
+        def _callback2(message):
+            self.received_message_2 = message
+
+        conn.declare_topic_consumer('a_topic', _callback1, queue_name='queue1',
+                                    exchange_name="abc")
+        conn.declare_topic_consumer('a_topic', _callback2, queue_name='queue2',
+                                    exchange_name="def")
         conn.topic_send('a_topic', message)
         conn.consume(limit=2)
         conn.close()
