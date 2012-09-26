@@ -33,7 +33,7 @@ from openstack.common import cfg
 from openstack.common.gettextutils import _
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
-from openstack.common import utils
+from openstack.common import network_utils
 
 kombu_opts = [
     cfg.StrOpt('kombu_ssl_version',
@@ -405,7 +405,7 @@ class Connection(object):
         ssl_params = self._fetch_ssl_params()
         params_list = []
         for adr in self.conf.rabbit_hosts:
-            hostname, port = utils.parse_host_port(
+            hostname, port = network_utils.parse_host_port(
                 adr, default_port=self.conf.rabbit_port)
 
             params = {}
