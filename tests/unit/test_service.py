@@ -29,7 +29,6 @@ from eventlet import greenthread
 from openstack.common import cfg
 from openstack.common.gettextutils import _
 from openstack.common import log as logging
-from openstack.common import manager
 from openstack.common import service
 from tests import utils
 
@@ -45,7 +44,7 @@ class ExtendedService(service.Service):
 class ServiceManagerTestCase(utils.BaseTestCase):
     """Test cases for Services"""
     def test_override_manager_method(self):
-        serv = ExtendedService('test', None)
+        serv = ExtendedService()
         serv.start()
         self.assertEqual(serv.test_method(), 'service')
 
@@ -79,7 +78,7 @@ class ServiceLauncherTest(utils.BaseTestCase):
             status = 0
             try:
                 launcher = service.ProcessLauncher()
-                serv = ServiceWithTimer('test', None)
+                serv = ServiceWithTimer()
                 launcher.launch_service(serv, workers=self.workers)
                 launcher.wait()
             except SystemExit as exc:
