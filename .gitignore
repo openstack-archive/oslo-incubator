@@ -11,4 +11,8 @@ openstack.common.egg-info/
 skeleton.egg-info/
 build/
 dist/
-
+AUTHORS
+.update-venv/
+ChangeLog
+openstack/versioninfo
+*.egg
