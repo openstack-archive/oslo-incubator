@@ -32,6 +32,7 @@ import logging as std_logging
 
 from openstack.common import eventlet_backdoor
 from openstack.common import log as logging
+from openstack.common import cfg
 from openstack.common import threadgroup
 from openstack.common.gettextutils import _
 
@@ -117,7 +118,7 @@ class ServiceLauncher(Launcher):
         signal.signal(signal.SIGINT, self._handle_signal)
 
         LOG.debug(_('Full set of CONF:'))
-        CONF.log_opt_values(LOG, std_logging.DEBUG)
+        cfg.CONF.log_opt_values(LOG, std_logging.DEBUG)
 
         status = None
         try:
