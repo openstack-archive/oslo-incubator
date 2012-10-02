@@ -30,6 +30,7 @@ import eventlet
 import greenlet
 import logging as std_logging
 
+from openstack.common import cfg
 from openstack.common import eventlet_backdoor
 from openstack.common import log as logging
 from openstack.common import threadgroup
@@ -40,6 +41,7 @@ try:
 except ImportError:
     rpc = None
 
+CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
