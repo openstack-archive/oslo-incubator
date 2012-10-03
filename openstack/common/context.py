@@ -38,11 +38,13 @@ class RequestContext(object):
     """
 
     def __init__(self, auth_tok=None, user=None, tenant=None, is_admin=False,
-                 read_only=False, show_deleted=False, request_id=None):
+                 project_id=None, read_only=False, show_deleted=False,
+                 request_id=None):
         self.auth_tok = auth_tok
         self.user = user
         self.tenant = tenant
         self.is_admin = is_admin
+        self.project_id = project_id
         self.read_only = read_only
         self.show_deleted = show_deleted
         if not request_id:
@@ -51,9 +53,13 @@ class RequestContext(object):
 
     def to_dict(self):
         return {'user': self.user,
+                'user_id': getattr(self.user, "id", None),  # nova-c
+                'user_name': self.user,  # nova-n
                 'tenant': self.tenant,
                 'is_admin': self.is_admin,
-                'read_only': self.read_only,
+                'project_id': self.project_id,
+                'read_only': self.read_only,  # nova-c
+                'read_deleted': self.show_deleted,  # nova-c
                 'show_deleted': self.show_deleted,
                 'auth_token': self.auth_tok,
                 'request_id': self.request_id}
