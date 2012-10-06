@@ -246,8 +246,8 @@ class JSONFormatter(logging.Formatter):
 
 class PublishErrorsHandler(logging.Handler):
     def emit(self, record):
-        if ('openstack.common.notifier.log_notifier' in
-            CONF.notification_driver):
+        s = 'openstack.common.notifier.log_notifier'
+        if (s in CONF.notification_driver):
             return
         notifier.api.notify(None, 'error.publisher',
                             'error_notification',
@@ -406,9 +406,9 @@ class LegacyFormatter(logging.Formatter):
         else:
             self._fmt = CONF.logging_default_format_string
 
-        if (record.levelno == logging.DEBUG and
-            CONF.logging_debug_format_suffix):
-            self._fmt += " " + CONF.logging_debug_format_suffix
+        if record.levelno == logging.DEBUG:
+            if CONF.logging_debug_format_suffix:
+                self._fmt += " " + CONF.logging_debug_format_suffix
 
         # Cache this on the record, Logger will respect our formated copy
         if record.exc_info:
