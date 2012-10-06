@@ -255,10 +255,20 @@ import collections
 import copy
 import functools
 import glob
-import optparse
 import os
 import string
 import sys
+
+if sys.version_info >= (2, 7):
+    __USE_ARGPARSE__ = True
+else:
+    __USE_ARGPARSE__ = False
+
+#__USE_ARGPARSE__ = False
+if __USE_ARGPARSE__:
+    import argparse
+else:
+    import optparse
 
 from openstack.common import iniparser
 
@@ -581,12 +591,21 @@ class Opt(object):
         args = ['--' + prefix + name]
         if short:
             args += ['-' + short]
+
         if deprecated_name:
             args += ['--' + prefix + deprecated_name]
-        for a in args:
-            if container.has_option(a):
-                raise DuplicateOptError(a)
-        container.add_option(*args, **kwargs)
+
+        if __USE_ARGPARSE__:
+            try:
+                container.add_argument(*args, **kwargs)
+            except(argparse.ArgumentError) as e:
+                raise DuplicateOptError(e)
+        else:
+            for a in args:
+                if container.has_option(a):
+                    raise DuplicateOptError(a)
+
+            container.add_option(*args, **kwargs)
 
     def _get_optparse_container(self, parser, group):
         """Returns an optparse.OptionContainer.
@@ -598,7 +617,7 @@ class Opt(object):
         if group is not None:
             return group._get_optparse_group(parser)
         else:
-            return parser
+            return parser._get_parser()
 
     def _get_optparse_kwargs(self, group, **kwargs):
         """Build a dict of keyword arguments for optparse's add_option().
@@ -653,6 +672,53 @@ class BoolOpt(Opt):
     1/0, yes/no, true/false or on/off.
     """
 
+    class _StoreConstAction(argparse.Action):
+
+        def __init__(self, option_strings, dest, const, default=None,
+                     required=False, help=None, metavar=None):
+            argparse.Action.__init__(self, option_strings=option_strings,
+                                     dest=dest, nargs=0, const=const,
+                                     default=default, required=required,
+                                     help=help)
+
+        def __call__(self, parser, namespace, values, option_string=None):
+            setattr(namespace, self.dest, self.const)
+
+    class _StoreTrueAction(_StoreConstAction):
+
+        def __init__(self,
+                     option_strings,
+                     dest,
+                     default=False,
+                     required=False,
+                     help=None,
+                     metavar=None):
+            BoolOpt._StoreConstAction.__init__(self,
+                                               option_strings=option_strings,
+                                               dest=dest, const=True,
+                                               default=default,
+                                               required=required,
+                                               help=help,
+                                               metavar=metavar)
+
+    class _StoreFalseAction(_StoreConstAction):
+
+        def __init__(self,
+                     option_strings,
+                     dest,
+                     default=True,
+                     required=False,
+                     help=None,
+                     metavar=None):
+            BoolOpt._StoreConstAction.__init__(self,
+                                               option_strings=option_strings,
+                                               dest=dest,
+                                               const=False,
+                                               default=default,
+                                               required=required,
+                                               help=help,
+                                               metavar=metavar)
+
     _boolean_states = {'1': True, 'yes': True, 'true': True, 'on': True,
                        '0': False, 'no': False, 'false': False, 'off': False}
 
@@ -684,8 +750,20 @@ class BoolOpt(Opt):
 
     def _get_optparse_kwargs(self, group, action='store_true', **kwargs):
         """Extends the base optparse keyword dict for boolean options."""
-        return super(BoolOpt,
-                     self)._get_optparse_kwargs(group, action=action, **kwargs)
+        if __USE_ARGPARSE__:
+            if action == 'store_true':
+                action = BoolOpt._StoreTrueAction
+            else:
+                action = BoolOpt._StoreFalseAction
+            return Opt._get_optparse_kwargs(self,
+                                            group,
+                                            action=action,
+                                            **kwargs)
+        else:
+            return super(BoolOpt,
+                         self)._get_optparse_kwargs(group,
+                                                    action=action,
+                                                    **kwargs)
 
 
 class IntOpt(Opt):
@@ -699,8 +777,14 @@ class IntOpt(Opt):
 
     def _get_optparse_kwargs(self, group, **kwargs):
         """Extends the base optparse keyword dict for integer options."""
-        return super(IntOpt,
-                     self)._get_optparse_kwargs(group, type='int', **kwargs)
+        if __USE_ARGPARSE__:
+            return super(IntOpt,
+                         self)._get_optparse_kwargs(group, type=int,
+                                                    **kwargs)
+        else:
+            return super(IntOpt,
+                         self)._get_optparse_kwargs(group, type='int',
+                                                    **kwargs)
 
 
 class FloatOpt(Opt):
@@ -714,8 +798,14 @@ class FloatOpt(Opt):
 
     def _get_optparse_kwargs(self, group, **kwargs):
         """Extends the base optparse keyword dict for float options."""
-        return super(FloatOpt,
-                     self)._get_optparse_kwargs(group, type='float', **kwargs)
+        if __USE_ARGPARSE__:
+            return super(FloatOpt,
+                         self)._get_optparse_kwargs(group, type=float,
+                                                    **kwargs)
+        else:
+            return super(FloatOpt,
+                         self)._get_optparse_kwargs(group, type='float',
+                                                    **kwargs)
 
 
 class ListOpt(Opt):
@@ -724,6 +814,29 @@ class ListOpt(Opt):
     List opt values are simple string values separated by commas. The opt value
     is a list containing these strings.
     """
+    if __USE_ARGPARSE__:
+
+        class _StoreListAction(argparse._StoreAction):
+            """
+            An argparse action for parsing an option value into a list.
+            """
+
+            def __init__(self,
+                         option_strings,
+                         dest,
+                         default=None,
+                         required=False,
+                         help=None,
+                         metavar=None):
+                argparse._StoreAction.__init__(self,
+                                               option_strings=option_strings,
+                                               dest=dest,
+                                               default=default,
+                                               required=required,
+                                               help=help)
+
+            def __call__(self, parser, namespace, values, option_string=None):
+                setattr(namespace, self.dest, values.split(','))
 
     def _get_from_config_parser(self, cparser, section):
         """Retrieve the opt value as a list from ConfigParser."""
@@ -732,12 +845,18 @@ class ListOpt(Opt):
 
     def _get_optparse_kwargs(self, group, **kwargs):
         """Extends the base optparse keyword dict for list options."""
-        return super(ListOpt,
-                     self)._get_optparse_kwargs(group,
-                                                type='string',
-                                                action='callback',
-                                                callback=self._parse_list,
-                                                **kwargs)
+        if __USE_ARGPARSE__:
+            return Opt._get_optparse_kwargs(self,
+                                            group,
+                                            action=ListOpt._StoreListAction,
+                                            **kwargs)
+        else:
+            return super(ListOpt,
+                         self)._get_optparse_kwargs(group,
+                                                    type='string',
+                                                    action='callback',
+                                                    callback=self._parse_list,
+                                                    **kwargs)
 
     def _parse_list(self, option, opt, value, parser):
         """An optparse callback for parsing an option value into a list."""
@@ -785,6 +904,29 @@ class OptGroup(object):
         the group description as displayed in --help
     """
 
+    if __USE_ARGPARSE__:
+        class _OptionGroup(argparse._ArgumentGroup):
+
+            def __init__(self, container, title=None, description=None,
+                         **kwargs):
+                argparse._ArgumentGroup.__init__(self, container, title,
+                                                 description, **kwargs)
+
+            def add_option(self, *args, **kwargs):
+                try:
+                    argparse.ArgumentParser.add_argument(self, *args, **kwargs)
+                except(argparse.ArgumentError) as e:
+                    raise DuplicateOptError(e)
+
+    else:
+        class _OptionGroup(optparse.OptionGroup):
+
+            def add_option(self, *args, **kwargs):
+                try:
+                    optparse.OptionParser.add_option(self, *args, **kwargs)
+                except(optparse.OptionConflictError) as e:
+                    raise DuplicateOptError(e)
+
     def __init__(self, name, title=None, help=None):
         """Constructs an OptGroup object.
 
@@ -825,10 +967,17 @@ class OptGroup(object):
             del self._opts[opt.dest]
 
     def _get_optparse_group(self, parser):
-        """Build an optparse.OptionGroup for this group."""
         if self._optparse_group is None:
-            self._optparse_group = optparse.OptionGroup(parser, self.title,
-                                                        self.help)
+            if __USE_ARGPARSE__:
+                _parser = parser._parser
+                """Build an argparse._ArgumentGroup for this group."""
+                self._optparse_group = _parser.add_argument_group(self.title,
+                                                                  self.help)
+            else:
+                """Build an optparse.OptionGroup for this group."""
+                self._optparse_group = optparse.OptionGroup(parser._parser,
+                                                            self.title,
+                                                            self.help)
         return self._optparse_group
 
     def _clear(self):
@@ -911,6 +1060,145 @@ class MultiConfigParser(object):
             return rvalue
         raise KeyError
 
+    def __call__(self, parser, namespace, values, option_string=None):
+        version = self.version
+        if version is None:
+            version = parser.version
+        formatter = parser._get_formatter()
+        formatter.add_text(version)
+        parser.exit(message=formatter.format_help())
+
+
+class ConfigParserCli(object):
+
+    if __USE_ARGPARSE__:
+
+        class _VersionAction(argparse.Action):
+
+            def __init__(self,
+                         option_strings,
+                         version=None,
+                         dest=argparse.SUPPRESS,
+                         default=argparse.SUPPRESS,
+                         help="show program's version number and exit"):
+                argparse.Action.__init__(self,
+                                         option_strings=option_strings,
+                                         dest=dest,
+                                         default=default,
+                                         nargs=0,
+                                         help=help)
+                self.version = version
+
+            def __call__(self, parser, namespace, values, option_string=None):
+                version = self.version
+                if version is None:
+                    version = parser.version
+                formatter = parser._get_formatter()
+                formatter.add_text(version)
+                message = formatter.format_help()
+                if message:
+                    parser._print_message(message, sys.stdout)
+                sys.exit(0)
+
+        class _OptionParser(argparse.ArgumentParser):
+
+            def __init__(self, prog=None, usage=None, version=None, *args,
+                         **kwargs):
+                argparse.ArgumentParser.__init__(self, usage=usage, prog=prog,
+                                                 *args, **kwargs)
+                if usage is not None:
+                    self.usage = usage.replace("%prog", self.prog)
+                self.add_option('--version',
+                                action=ConfigParserCli._VersionAction,
+                                version=version)
+                self._optionals.title = 'Options'
+
+            def parse_args(self, *args, **kwargs):
+                opts, args = argparse.ArgumentParser.parse_known_args(self,
+                                                                      *args,
+                                                                      **kwargs)
+                unknown_args = []
+                for arg in args:
+                    if 0 == arg.find("-"):
+                        unknown_args.append(arg)
+
+                if unknown_args:
+                    msg = 'unrecognized arguments: %s'
+                    self.error(msg % ' '.join(unknown_args))
+                    return opts, args
+
+                return opts, args
+
+            def add_option(self, *args, **kwargs):
+                try:
+                    argparse.ArgumentParser.add_argument(self, *args, **kwargs)
+                except(argparse.ArgumentError) as e:
+                    raise DuplicateOptError(e)
+
+            def has_option(self, opt):
+                return false
+
+            def disable_interspersed_args(self):
+                pass
+
+            def enable_interspersed_args(self):
+                pass
+
+            def print_help(self, file=None):
+                '''
+                overriding original print_usage method, only for
+                compatibility with optparse and happiness of unittest
+                unittest: HelpTestCase:test_print_help
+                '''
+                msg = self.format_help()
+                if 0 == msg.find("usage:"):
+                    msg = msg.replace("usage:", "Usage:")
+                print >>file, msg
+
+            def print_usage(self, file=None):
+                '''
+                overriding original print_usage method, only for
+                compatibility with optparse and happiness of unittest
+                '''
+                print >>file, "Usage: " + self.usage
+
+            def print_version(self, file=None):
+                argparse.ArgumentParser._print_message(self.format_version(),
+                                                       file)
+
+    else:
+        class _OptionParser(optparse.OptionParser):
+
+            def add_option(self, *args, **kwargs):
+                try:
+                    optparse.OptionParser.add_option(self, *args, **kwargs)
+                except(optparse.OptionConflictError) as e:
+                    raise DuplicateOptError(e)
+
+    def __init__(self, prog, version, usage):
+        if __USE_ARGPARSE__:
+            self._parser = self._OptionParser(prog=prog,
+                                              version=version,
+                                              usage=usage)
+        else:
+            self._parser = self._OptionParser(prog=prog,
+                                              version=version,
+                                              usage=usage)
+
+    def parse_args(self, args):
+        opts, args = self._parser.parse_args(args)
+
+        return opts, args
+
+    def print_usage(self, file=None):
+        self._parser.print_usage(file)
+
+    def print_help(self, file=None):
+        self._parser.print_help(file)
+
+    def _get_parser(self):
+        return self._parser
+
 
 class ConfigOpts(collections.Mapping):
 
@@ -943,11 +1231,11 @@ class ConfigOpts(collections.Mapping):
         if default_config_files is None:
             default_config_files = find_config_files(project, prog)
 
-        self._oparser = optparse.OptionParser(prog=prog,
-                                              version=version,
-                                              usage=usage)
+        self._oparser = ConfigParserCli(prog=prog,
+                                        version=version,
+                                        usage=usage)
         if self._disable_interspersed_args:
-            self._oparser.disable_interspersed_args()
+            self._oparser._get_parser().disable_interspersed_args()
 
         self._config_opts = [
             MultiStrOpt('config-file',
@@ -1272,12 +1560,14 @@ class ConfigOpts(collections.Mapping):
         i.e. argument parsing is stopped at the first non-option argument.
         """
         self._disable_interspersed_args = True
+        self._oparser._get_parser().disable_interspersed_args()
 
     def enable_interspersed_args(self):
         """Set parsing to not stop on the first non-option.
 
         This it the default behaviour."""
         self._disable_interspersed_args = False
+        self._oparser._get_parser().enable_interspersed_args()
 
     def find_file(self, name):
         """Locate a file located alongside the config files.
