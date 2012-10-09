@@ -1,6 +1,6 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
-# Copyright (c) 2011 OpenStack, LLC.
+# Copyright (c) 2012 OpenStack, LLC.
 # All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -15,10 +15,24 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""Common Policy Engine Implementation"""
+"""
+Common Policy Engine Implementation
 
+Policies are be expressed as a list-of-lists where each check inside the
+innermost list is combined as with an "and" conjunction--for that check to
+pass, all the specified checks must pass.  These innermost lists are then
+combined as with an "or" conjunction.
+
+As an example, take the following rule, expressed in the list-of-lists
+representation::
+
+    [["role:admin"], ["project_id:%(project_id)s", "role:projectadmin"]]
+"""
+
+import abc
 import logging
 import urllib
+
 import urllib2
 
 from openstack.common.gettextutils import _
@@ -28,218 +42,522 @@ from openstack.common import jsonutils
 LOG = logging.getLogger(__name__)
 
 
-_BRAIN = None
+_rules = None
+_functions = {}
+_checks = {}
 
 
-def set_brain(brain):
-    """Set the brain used by enforce().
-
-    Defaults use Brain() if not set.
-
+class Rules(dict):
     """
-    global _BRAIN
-    _BRAIN = brain
-
-
-def reset():
-    """Clear the brain used by enforce()."""
-    global _BRAIN
-    _BRAIN = None
-
-
-def enforce(match_list, target_dict, credentials_dict, exc=None,
-            *args, **kwargs):
-    """Enforces authorization of some rules against credentials.
-
-    :param match_list: nested tuples of data to match against
-
-        The basic brain supports three types of match lists:
-
-            1) rules
-
-                looks like: ``('rule:compute:get_instance',)``
-
-                Retrieves the named rule from the rules dict and recursively
-                checks against the contents of the rule.
-
-            2) roles
-
-                looks like: ``('role:compute:admin',)``
-
-                Matches if the specified role is in credentials_dict['roles'].
-
-            3) generic
-
-                looks like: ``('tenant_id:%(tenant_id)s',)``
-
-                Substitutes values from the target dict into the match using
-                the % operator and matches them against the creds dict.
-
-        Combining rules:
-
-            The brain returns True if any of the outer tuple of rules
-            match and also True if all of the inner tuples match. You
-            can use this to perform simple boolean logic.  For
-            example, the following rule would return True if the creds
-            contain the role 'admin' OR the if the tenant_id matches
-            the target dict AND the the creds contains the role
-            'compute_sysadmin':
-
-            ::
-
-                {
-                    "rule:combined": (
-                        'role:admin',
-                        ('tenant_id:%(tenant_id)s', 'role:compute_sysadmin')
-                    )
-                }
-
-        Note that rule and role are reserved words in the credentials match, so
-        you can't match against properties with those names. Custom brains may
-        also add new reserved words. For example, the HttpBrain adds http as a
-        reserved word.
-
-    :param target_dict: dict of object properties
-
-      Target dicts contain as much information as we can about the object being
-      operated on.
-
-    :param credentials_dict: dict of actor properties
-
-      Credentials dicts contain as much information as we can about the user
-      performing the action.
-
-    :param exc: exception to raise
-
-      Class of the exception to raise if the check fails.  Any remaining
-      arguments passed to enforce() (both positional and keyword arguments)
-      will be passed to the exception class.  If exc is not provided, returns
-      False.
-
-    :return: True if the policy allows the action
-    :return: False if the policy does not allow the action and exc is not set
+    A store for rules.  Handles the default_rule setting directly.
     """
-    global _BRAIN
-    if not _BRAIN:
-        _BRAIN = Brain()
-    if not _BRAIN.check(match_list, target_dict, credentials_dict):
-        if exc:
-            raise exc(*args, **kwargs)
-        return False
-    return True
-
-
-class Brain(object):
-    """Implements policy checking."""
-
-    _checks = {}
-
-    @classmethod
-    def _register(cls, name, func):
-        cls._checks[name] = func
 
     @classmethod
     def load_json(cls, data, default_rule=None):
-        """Init a brain using json instead of a rules dictionary."""
-        rules_dict = jsonutils.loads(data)
-        return cls(rules=rules_dict, default_rule=default_rule)
+        """
+        Allow loading of JSON rule data.
+        """
+
+        # Suck in the JSON data and parse the rules
+        rules = dict((k, parse_rule(v)) for k, v in
+                     jsonutils.loads(data).items())
+
+        return cls(rules, default_rule)
 
     def __init__(self, rules=None, default_rule=None):
-        if self.__class__ != Brain:
-            LOG.warning(_("Inheritance-based rules are deprecated; use "
-                          "the default brain instead of %s.") %
-                        self.__class__.__name__)
+        """Initialize the Rules store."""
 
-        self.rules = rules or {}
+        super(Rules, self).__init__(rules or {})
         self.default_rule = default_rule
 
-    def add_rule(self, key, match):
-        self.rules[key] = match
+    def __missing__(self, key):
+        """Implements the default rule handling."""
 
-    def _check(self, match, target_dict, cred_dict):
+        # If the default rule isn't actually defined, do something
+        # reasonably intelligent
+        if not self.default_rule or self.default_rule not in self:
+            raise KeyError(key)
+
+        return self[self.default_rule]
+
+    def __str__(self):
+        """Dumps a string representation of the rules."""
+
+        # Start by building the canonical strings for the rules
+        out_rules = {}
+        for key, value in self.items():
+            # Use empty string for singleton TrueCheck instances
+            if isinstance(value, TrueCheck):
+                out_rules[key] = ''
+            else:
+                out_rules[key] = str(value)
+
+        # Dump a pretty-printed JSON representation
+        return jsonutils.dumps(out_rules, indent=4)
+
+
+# Really have to figure out a way to deprecate this
+def set_rules(rules):
+    """Set the rules in use for policy checks."""
+
+    global _rules
+
+    _rules = rules
+
+
+# Ditto
+def reset():
+    """Clear the rules used for policy checks."""
+
+    global _rules
+
+    _rules = None
+
+
+def check(rule, target, creds, exc=None, *args, **kwargs):
+    """
+    Checks authorization of a rule against the target and credentials.
+
+    :param rule: The rule to evaluate.
+    :param target: As much information about the object being operated
+                   on as possible, as a dictionary.
+    :param creds: As much information about the user performing the
+                  action as possible, as a dictionary.
+    :param exc: Class of the exception to raise if the check fails.
+                Any remaining arguments passed to check() (both
+                positional and keyword arguments) will be passed to
+                the exception class.  If exc is not provided, returns
+                False.
+
+    :return: Returns False if the policy does not allow the action and
+             exc is not provided; otherwise, returns a value that
+             evaluates to True.  Note: for rules using the "case"
+             expression, this True value will be the specified string
+             from the expression.
+    """
+
+    # Allow the rule to be a Check tree
+    if isinstance(rule, BaseCheck):
+        result = rule(target, creds)
+    elif not _rules:
+        # No rules to reference means we're going to fail closed
+        result = False
+    else:
         try:
-            match_kind, match_value = match.split(':', 1)
-        except Exception:
-            LOG.exception(_("Failed to understand rule %(match)r") % locals())
-            # If the rule is invalid, fail closed
-            return False
+            # Evaluate the rule
+            result = _rules[rule](target, creds)
+        except KeyError:
+            # If the rule doesn't exist, fail closed
+            result = False
 
-        func = None
-        try:
-            old_func = getattr(self, '_check_%s' % match_kind)
-        except AttributeError:
-            func = self._checks.get(match_kind, self._checks.get(None, None))
-        else:
-            LOG.warning(_("Inheritance-based rules are deprecated; update "
-                          "_check_%s") % match_kind)
-            func = lambda brain, kind, value, target, cred: old_func(value,
-                                                                     target,
-                                                                     cred)
+    # If it is False, raise the exception if requested
+    if exc and result is False:
+        raise exc(*args, **kwargs)
 
-        if not func:
-            LOG.error(_("No handler for matches of kind %s") % match_kind)
-            # Fail closed
-            return False
+    return result
 
-        return func(self, match_kind, match_value, target_dict, cred_dict)
 
-    def check(self, match_list, target_dict, cred_dict):
-        """Checks authorization of some rules against credentials.
+class Brain(Rules):
+    """
+    Provided for backwards compatibility.  Implements the functions of
+    a classic Brain.  Deprecated; use Rules instead.
+    """
 
-        Detailed description of the check with examples in policy.enforce().
-
-        :param match_list: nested tuples of data to match against
-        :param target_dict: dict of object properties
-        :param credentials_dict: dict of actor properties
-
-        :returns: True if the check passes
-
+    def __init__(self, rules=None, default_rule=None):
         """
-        if not match_list:
-            return True
-        for and_list in match_list:
-            if isinstance(and_list, basestring):
-                and_list = (and_list,)
-            if all([self._check(item, target_dict, cred_dict)
-                    for item in and_list]):
-                return True
+        Initialize the Brain.  Logs a warning about the deprecation.
+        """
+
+        module = self.__class__.__module__
+        name = self.__class__.__name__
+        LOG.warning(_("%(module)s.%(name)s is deprecated.  "
+                      "Use %(module)s.Rules instead.") % locals())
+
+        if not rules:
+            rules = {}
+
+        # May need to transform the rules
+        new_rules = {}
+        for key, rule in rules.items():
+            if not isinstance(rule, BaseCheck):
+                # Turn it into a Check tree
+                rule = parse_rule(rule)
+            new_rules[key] = rule
+
+        super(Brain, self).__init__(new_rules, default_rule)
+
+    def add_rule(self, key, match):
+        """
+        Adds a rule to the Brain.  Logs a warning about the
+        deprecation.  Callers should use dictionary access syntax
+        instead.
+        """
+
+        module = self.__class__.__module__
+        name = self.__class__.__name__
+        LOG.warning(_("%(module)s.%(name)s.add_rule() is deprecated.  "
+                      "Use dictionary set syntax instead.") % locals())
+
+        # Turn the rule into a Check tree
+        self[key] = parse_rule(match)
+
+    def check(self, match_list, target, creds):
+        """
+        Performs a check.  Logs a warning about the deprecation.
+        Callers should use the check() function instead.
+        """
+
+        module = self.__class__.__module__
+        name = self.__class__.__name__
+        LOG.warning(_("%(module)s.%(name)s.check() is deprecated.  "
+                      "Use %(module)s.check() instead.") % locals())
+
+        # Turn the rule into a check tree and evaluate it
+        check = parse_rule(match_list)
+        return check(target, creds)
+
+    @property
+    def rules(self):
+        """
+        Returns the dictionary of rules.  Logs a warning about the
+        deprecation.  Callers should use dictionary access instead.
+        """
+
+        module = self.__class__.__module__
+        name = self.__class__.__name__
+        LOG.warning(_("%(module)s.%(name)s.rules is deprecated.  "
+                      "Use dictionary access instead.") % locals())
+
+        return self
+
+
+def set_brain(brain):
+    """
+    Set the rules to use for policy checks.  Deprecated; use the
+    set_rules() function instead.  Logs a warning about the
+    deprecation.
+    """
+
+    module = __name__
+    LOG.warning(_("%(module)s.set_brain() is deprecated.  "
+                  "Use %(module)s.set_rules() instead.") % locals())
+
+    # Brain descends from Rules
+    return set_rules(brain)
+
+
+def enforce(match_list, target, creds, exc=None, *args, **kwargs):
+    """
+    Enforces authorization of some rules against credentials.
+    Deprecated; use the check() function instead.  Logs a warning
+    about the deprecation.
+    """
+
+    module = __name__
+    LOG.warning(_("%(module)s.enforce() is deprecated.  "
+                  "Use %(module)s.check() instead.") % locals())
+
+    # Compile the match_list and evaluate it
+    rule = parse_rule(match_list)
+    return check(rule, target, creds, exc, *args, **kwargs)
+
+
+class BaseCheck(object):
+    """
+    Abstract base class for Check classes.
+    """
+
+    __metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def __str__(self):
+        """
+        Retrieve a string representation of the Check tree rooted at
+        this node.
+        """
+
+        pass
+
+    @abc.abstractmethod
+    def __call__(self, target, cred):
+        """
+        Perform the check.  Returns False to reject the access or a
+        true value (not necessary True) to accept the access.
+        """
+
+        pass
+
+
+class FalseCheck(BaseCheck):
+    """
+    A policy check that always returns False (disallow).
+    """
+
+    def __str__(self):
+        """Return a string representation of this check."""
+
+        return "!"
+
+    def __call__(self, target, cred):
+        """Check the policy."""
+
         return False
 
 
-class HttpBrain(Brain):
-    """A brain that can check external urls for policy.
-
-    Posts json blobs for target and credentials.
-
-    Note that this brain is deprecated; the http check is registered
-    by default.
+class TrueCheck(BaseCheck):
+    """
+    A policy check that always returns True (allow).
     """
 
-    pass
+    def __str__(self):
+        """Return a string representation of this check."""
+
+        return "@"
+
+    def __call__(self, target, cred):
+        """Check the policy."""
+
+        return True
+
+
+class Check(BaseCheck):
+    """
+    A base class to allow for user-defined policy checks.
+    """
+
+    def __init__(self, kind, match):
+        """
+        :param kind: The kind of the check, i.e., the field before the
+                     ':'.
+        :param match: The match of the check, i.e., the field after
+                      the ':'.
+        """
+
+        self.kind = kind
+        self.match = match
+
+    def __str__(self):
+        """Return a string representation of this check."""
+
+        return "%s:%s" % (self.kind, self.match)
+
+
+class FuncCheck(Check):
+    """
+    A policy check that calls a function.
+    """
+
+    def __init__(self, func, kind, match):
+        """
+        Initialize the FuncCheck.  Used for wrapping policy checking
+        functions.
+
+        :param func: The function that implements the actual policy
+                     check.
+        :param kind: The kind of the check, i.e., the field before the
+                     ':'.
+        :param match: The match of the check, i.e., the field after
+                      the ':'.
+        """
+
+        super(FuncCheck, self).__init__(kind, match)
+        self.func = func
+
+    def __call__(self, target, cred):
+        """
+        Check the policy.  Calls the function with a deprecated
+        leading argument.
+        """
+
+        # None argument for the deprecated "brain" argument
+        return self.func(None, self.kind, self.match, target, cred)
+
+
+class AndCheck(BaseCheck):
+    """
+    A policy check that requires that a list of other checks all
+    return True.  Implements the "and" operator.
+    """
+
+    def __init__(self, rules):
+        """
+        Initialize the 'and' check.
+
+        :param rules: A list of rules that will be tested.
+        """
+
+        self.rules = rules
+
+    def __str__(self):
+        """Return a string representation of this check."""
+
+        return "(%s)" % ' and '.join(str(r) for r in self.rules)
+
+    def __call__(self, target, cred):
+        """
+        Check the policy.  Requires that all rules accept in order to
+        return True.
+        """
+
+        for rule in self.rules:
+            if not rule(target, cred):
+                return False
+
+        return True
+
+    def add_check(self, rule):
+        """
+        Allows addition of another rule to the list of rules that will
+        be tested.  Returns the AndCheck object for convenience.
+        """
+
+        self.rules.append(rule)
+        return self
+
+
+class OrCheck(BaseCheck):
+    """
+    A policy check that requires that at least one of a list of other
+    checks returns True.  Implements the "or" operator.
+    """
+
+    def __init__(self, rules):
+        """
+        Initialize the 'or' check.
+
+        :param rules: A list of rules that will be tested.
+        """
+
+        self.rules = rules
+
+    def __str__(self):
+        """Return a string representation of this check."""
+
+        return "(%s)" % ' or '.join(str(r) for r in self.rules)
+
+    def __call__(self, target, cred):
+        """
+        Check the policy.  Requires that at least one rule accept in
+        order to return True.
+        """
+
+        for rule in self.rules:
+            if rule(target, cred):
+                return True
+
+        return False
+
+    def add_check(self, rule):
+        """
+        Allows addition of another rule to the list of rules that will
+        be tested.  Returns the OrCheck object for convenience.
+        """
+
+        self.rules.append(rule)
+        return self
+
+
+def _parse_check(rule):
+    """
+    Parse a single base check rule into an appropriate Check object.
+    """
+    try:
+        kind, match = rule.split(':', 1)
+    except Exception:
+        LOG.exception(_("Failed to understand rule %(rule)s") % locals())
+        # If the rule is invalid, we'll fail closed
+        return FalseCheck()
+
+    # Find what implements the check
+    if kind in _checks:
+        return _checks[kind](kind, match)
+    elif kind in _functions:
+        return FuncCheck(_functions[kind], kind, match)
+    elif None in _checks:
+        return _checks[None](kind, match)
+    elif None in _functions:
+        return FuncCheck(_functions[None], kind, match)
+    else:
+        LOG.error(_("No handler for matches of kind %s") % kind)
+        return FalseCheck()
+
+
+def _parse_list_rule(rule):
+    """
+    Provided for backwards compatibility.  Translates the old
+    list-of-lists syntax into a tree of Check objects.
+    """
+
+    # Empty rule defaults to True
+    if not rule:
+        return TrueCheck()
+
+    # Outer list is joined by "or"; inner list by "and"
+    or_list = []
+    for inner_rule in rule:
+        # Elide empty inner lists
+        if not inner_rule:
+            continue
+
+        # Handle bare strings
+        if isinstance(inner_rule, basestring):
+            inner_rule = [inner_rule]
+
+        # Parse the inner rules into Check objects
+        and_list = [_parse_check(r) for r in inner_rule]
+
+        # Append the appropriate check to the or_list
+        if len(and_list) == 1:
+            or_list.append(and_list[0])
+        else:
+            or_list.append(AndCheck(and_list))
+
+    # If we have only one check, omit the "or"
+    if len(or_list) == 0:
+        return FalseCheck()
+    elif len(or_list) == 1:
+        return or_list[0]
+
+    return OrCheck(or_list)
+
+
+def parse_rule(rule):
+    """
+    Parses a policy rule into a tree of Check objects.
+    """
+    return _parse_list_rule(rule)
 
 
 def register(name, func=None):
     """
-    Register a function as a policy check.
+    Register a function or Check class as a policy check.
 
     :param name: Gives the name of the check type, e.g., 'rule',
-                 'role', etc.  If name is None, a default function
+                 'role', etc.  If name is None, a default check type
                  will be registered.
-    :param func: If given, provides the function to register.  If not
-                 given, returns a function taking one argument to
-                 specify the function to register, allowing use as a
-                 decorator.
+    :param func: If given, provides the function or class to register.
+                 If not given, returns a function taking one argument
+                 to specify the function or class to register,
+                 allowing use as a decorator.
     """
 
-    # Perform the actual decoration by registering the function.
-    # Returns the function for compliance with the decorator
-    # interface.
+    # Perform the actual decoration by registering the function or
+    # class.  Returns the function or class for compliance with the
+    # decorator interface.
     def decorator(func):
-        # Register the function
-        Brain._register(name, func)
+        global _functions
+        global _checks
+
+        if issubclass(func, Check):
+            # Register the check
+            _checks[name] = func
+        else:
+            # Register the function
+            _functions[name] = func
+
         return func
 
-    # If the function is given, do the registration
+    # If the function or class is given, do the registration
     if func:
         return decorator(func)
 
@@ -247,55 +565,59 @@ def register(name, func=None):
 
 
 @register("rule")
-def _check_rule(brain, match_kind, match, target_dict, cred_dict):
-    """Recursively checks credentials based on the brains rules."""
-    try:
-        new_match_list = brain.rules[match]
-    except KeyError:
-        if brain.default_rule and match != brain.default_rule:
-            new_match_list = ('rule:%s' % brain.default_rule,)
-        else:
-            return False
+class RuleCheck(Check):
+    def __call__(self, target, creds):
+        """
+        Recursively checks credentials based on the defined rules.
+        """
 
-    return brain.check(new_match_list, target_dict, cred_dict)
+        try:
+            return _rules[self.match](target, creds)
+        except KeyError:
+            # We don't have any matching rule; fail closed
+            return False
 
 
 @register("role")
-def _check_role(brain, match_kind, match, target_dict, cred_dict):
-    """Check that there is a matching role in the cred dict."""
-    return match.lower() in [x.lower() for x in cred_dict['roles']]
+class RoleCheck(Check):
+    def __call__(self, target, creds):
+        """Check that there is a matching role in the cred dict."""
+
+        return self.match.lower() in [x.lower() for x in creds['roles']]
 
 
 @register('http')
-def _check_http(brain, match_kind, match, target_dict, cred_dict):
-    """Check http: rules by calling to a remote server.
+class HttpCheck(Check):
+    def __call__(self, target, creds):
+        """
+        Check http: rules by calling to a remote server.
 
-    This example implementation simply verifies that the response is
-    exactly 'True'. A custom brain using response codes could easily
-    be implemented.
+        This example implementation simply verifies that the response
+        is exactly 'True'.
+        """
 
-    """
-    url = 'http:' + (match % target_dict)
-    data = {'target': jsonutils.dumps(target_dict),
-            'credentials': jsonutils.dumps(cred_dict)}
-    post_data = urllib.urlencode(data)
-    f = urllib2.urlopen(url, post_data)
-    return f.read() == "True"
+        url = ('http:' + self.match) % target
+        data = {'target': jsonutils.dumps(target),
+                'credentials': jsonutils.dumps(creds)}
+        post_data = urllib.urlencode(data)
+        f = urllib2.urlopen(url, post_data)
+        return f.read() == "True"
 
 
 @register(None)
-def _check_generic(brain, match_kind, match, target_dict, cred_dict):
-    """Check an individual match.
+class GenericCheck(Check):
+    def __call__(self, target, creds):
+        """
+        Check an individual match.
 
-    Matches look like:
+        Matches look like:
 
-        tenant:%(tenant_id)s
-        role:compute:admin
+            tenant:%(tenant_id)s
+            role:compute:admin
+        """
 
-    """
-
-    # TODO(termie): do dict inspection via dot syntax
-    match = match % target_dict
-    if match_kind in cred_dict:
-        return match == unicode(cred_dict[match_kind])
-    return False
+        # TODO(termie): do dict inspection via dot syntax
+        match = self.match % target
+        if self.kind in creds:
+            return match == unicode(creds[self.kind])
+        return False
