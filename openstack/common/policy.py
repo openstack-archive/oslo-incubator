@@ -858,7 +858,6 @@ def register(name, func=None):
     # class.  Returns the function or class for compliance with the
     # decorator interface.
     def decorator(func):
-        global _checks
         _checks[name] = func
         return func
 
