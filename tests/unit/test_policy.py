@@ -223,6 +223,32 @@ class CheckTestCase(unittest.TestCase):
         self.assertEqual(str(check), 'kind:match')
 
 
+class NotCheckTestCase(unittest.TestCase):
+    def test_init(self):
+        check = policy.NotCheck('rule')
+
+        self.assertEqual(check.rule, 'rule')
+
+    def test_str(self):
+        check = policy.NotCheck('rule')
+
+        self.assertEqual(str(check), 'not rule')
+
+    def test_call_true(self):
+        rule = mock.Mock(return_value=True)
+        check = policy.NotCheck(rule)
+
+        self.assertEqual(check('target', 'cred'), False)
+        rule.assert_called_once_with('target', 'cred')
+
+    def test_call_false(self):
+        rule = mock.Mock(return_value=False)
+        check = policy.NotCheck(rule)
+
+        self.assertEqual(check('target', 'cred'), True)
+        rule.assert_called_once_with('target', 'cred')
+
+
 class OrCheckTestCase(unittest.TestCase):
     def test_init(self):
         check = policy.OrCheck(['rule1', 'rule2'])
@@ -381,13 +407,13 @@ class ParseListRuleTestCase(unittest.TestCase):
 class ParseTokenizeTestCase(unittest.TestCase):
     @mock.patch.object(policy, '_parse_check', lambda x: x)
     def test_tokenize(self):
-        exemplar = ("(( ( ((() And)) or ) (check:%(miss)s))) "
+        exemplar = ("(( ( ((() And)) or ) (check:%(miss)s) not)) "
                     "'a-string' \"another-string\"")
         expected = [
             ('(', '('), ('(', '('), ('(', '('), ('(', '('), ('(', '('),
             ('(', '('), (')', ')'), ('and', 'And'),
             (')', ')'), (')', ')'), ('or', 'or'), (')', ')'), ('(', '('),
-            ('check', 'check:%(miss)s'), (')', ')'),
+            ('check', 'check:%(miss)s'), (')', ')'), ('not', 'not'),
             (')', ')'), (')', ')'),
             ('string', 'a-string'),
             ('string', 'another-string'),
@@ -587,6 +613,14 @@ class ParseStateTestCase(unittest.TestCase):
 
         self.assertEqual(result, [('or_expr', 'newcheck')])
         mock_expr.add_check.assert_called_once_with('check')
+
+    @mock.patch.object(policy, 'NotCheck', lambda x: 'not %s' % x)
+    def test_make_not_expr(self):
+        state = policy.ParseState()
+
+        result = state._make_not_expr('not', 'check')
+
+        self.assertEqual(result, [('check', 'not check')])
 
 
 class ParseTextRuleTestCase(unittest.TestCase):
