@@ -43,7 +43,6 @@ LOG = logging.getLogger(__name__)
 
 
 _rules = None
-_functions = {}
 _checks = {}
 
 
@@ -157,111 +156,6 @@ def check(rule, target, creds, exc=None, *args, **kwargs):
     return result
 
 
-class Brain(Rules):
-    """
-    Provided for backwards compatibility.  Implements the functions of
-    a classic Brain.  Deprecated; use Rules instead.
-    """
-
-    def __init__(self, rules=None, default_rule=None):
-        """
-        Initialize the Brain.  Logs a warning about the deprecation.
-        """
-
-        module = self.__class__.__module__
-        name = self.__class__.__name__
-        LOG.warning(_("%(module)s.%(name)s is deprecated.  "
-                      "Use %(module)s.Rules instead.") % locals())
-
-        if not rules:
-            rules = {}
-
-        # May need to transform the rules
-        new_rules = {}
-        for key, rule in rules.items():
-            if not isinstance(rule, BaseCheck):
-                # Turn it into a Check tree
-                rule = parse_rule(rule)
-            new_rules[key] = rule
-
-        super(Brain, self).__init__(new_rules, default_rule)
-
-    def add_rule(self, key, match):
-        """
-        Adds a rule to the Brain.  Logs a warning about the
-        deprecation.  Callers should use dictionary access syntax
-        instead.
-        """
-
-        module = self.__class__.__module__
-        name = self.__class__.__name__
-        LOG.warning(_("%(module)s.%(name)s.add_rule() is deprecated.  "
-                      "Use dictionary set syntax instead.") % locals())
-
-        # Turn the rule into a Check tree
-        self[key] = parse_rule(match)
-
-    def check(self, match_list, target, creds):
-        """
-        Performs a check.  Logs a warning about the deprecation.
-        Callers should use the check() function instead.
-        """
-
-        module = self.__class__.__module__
-        name = self.__class__.__name__
-        LOG.warning(_("%(module)s.%(name)s.check() is deprecated.  "
-                      "Use %(module)s.check() instead.") % locals())
-
-        # Turn the rule into a check tree and evaluate it
-        check = parse_rule(match_list)
-        return check(target, creds)
-
-    @property
-    def rules(self):
-        """
-        Returns the dictionary of rules.  Logs a warning about the
-        deprecation.  Callers should use dictionary access instead.
-        """
-
-        module = self.__class__.__module__
-        name = self.__class__.__name__
-        LOG.warning(_("%(module)s.%(name)s.rules is deprecated.  "
-                      "Use dictionary access instead.") % locals())
-
-        return self
-
-
-def set_brain(brain):
-    """
-    Set the rules to use for policy checks.  Deprecated; use the
-    set_rules() function instead.  Logs a warning about the
-    deprecation.
-    """
-
-    module = __name__
-    LOG.warning(_("%(module)s.set_brain() is deprecated.  "
-                  "Use %(module)s.set_rules() instead.") % locals())
-
-    # Brain descends from Rules
-    return set_rules(brain)
-
-
-def enforce(match_list, target, creds, exc=None, *args, **kwargs):
-    """
-    Enforces authorization of some rules against credentials.
-    Deprecated; use the check() function instead.  Logs a warning
-    about the deprecation.
-    """
-
-    module = __name__
-    LOG.warning(_("%(module)s.enforce() is deprecated.  "
-                  "Use %(module)s.check() instead.") % locals())
-
-    # Compile the match_list and evaluate it
-    rule = parse_rule(match_list)
-    return check(rule, target, creds, exc, *args, **kwargs)
-
-
 class BaseCheck(object):
     """
     Abstract base class for Check classes.
@@ -340,37 +234,6 @@ class Check(BaseCheck):
         """Return a string representation of this check."""
 
         return "%s:%s" % (self.kind, self.match)
-
-
-class FuncCheck(Check):
-    """
-    A policy check that calls a function.
-    """
-
-    def __init__(self, func, kind, match):
-        """
-        Initialize the FuncCheck.  Used for wrapping policy checking
-        functions.
-
-        :param func: The function that implements the actual policy
-                     check.
-        :param kind: The kind of the check, i.e., the field before the
-                     ':'.
-        :param match: The match of the check, i.e., the field after
-                      the ':'.
-        """
-
-        super(FuncCheck, self).__init__(kind, match)
-        self.func = func
-
-    def __call__(self, target, cred):
-        """
-        Check the policy.  Calls the function with a deprecated
-        leading argument.
-        """
-
-        # None argument for the deprecated "brain" argument
-        return self.func(None, self.kind, self.match, target, cred)
 
 
 class AndCheck(BaseCheck):
@@ -471,12 +334,8 @@ def _parse_check(rule):
     # Find what implements the check
     if kind in _checks:
         return _checks[kind](kind, match)
-    elif kind in _functions:
-        return FuncCheck(_functions[kind], kind, match)
     elif None in _checks:
         return _checks[None](kind, match)
-    elif None in _functions:
-        return FuncCheck(_functions[None], kind, match)
     else:
         LOG.error(_("No handler for matches of kind %s") % kind)
         return FalseCheck()
@@ -545,16 +404,8 @@ def register(name, func=None):
     # class.  Returns the function or class for compliance with the
     # decorator interface.
     def decorator(func):
-        global _functions
         global _checks
-
-        if issubclass(func, Check):
-            # Register the check
-            _checks[name] = func
-        else:
-            # Register the function
-            _functions[name] = func
-
+        _checks[name] = func
         return func
 
     # If the function or class is given, do the registration

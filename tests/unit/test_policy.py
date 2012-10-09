@@ -106,12 +106,6 @@ class PolicySetAndResetTestCase(unittest.TestCase):
         policy.set_rules('spam')
         self.assertEqual(policy._rules, 'spam')
 
-    def test_set_brain(self):
-        # Make sure the brain is set properly
-        policy._rules = None
-        policy.set_brain('spam')
-        self.assertEqual(policy._rules, 'spam')
-
     def test_reset(self):
         # Make sure the rules are reset
         policy._rules = 'spam'
@@ -177,65 +171,6 @@ class CheckFunctionTestCase(unittest.TestCase):
             self.fail("policy.check() failed to raise requested exception")
 
 
-class BrainTestCase(unittest.TestCase):
-    def test_basic_init(self):
-        brain = policy.Brain()
-
-        self.assertEqual(brain, {})
-        self.assertEqual(brain.rules, {})
-        self.assertEqual(brain.default_rule, None)
-
-    @mock.patch.object(policy, 'parse_rule', lambda x: x)
-    def test_init_with_args(self):
-        brain = policy.Brain(rules=dict(a="foo", b="bar"), default_rule="a")
-
-        self.assertEqual(brain, dict(a="foo", b="bar"))
-        self.assertEqual(brain.rules, dict(a="foo", b="bar"))
-        self.assertEqual(brain.default_rule, "a")
-
-    @mock.patch.object(policy, 'parse_rule', lambda x: x)
-    def test_init_with_checks(self):
-        exemplar = dict(a=FakeCheck("a"), b=FakeCheck("b"))
-        brain = policy.Brain(rules=exemplar, default_rule="a")
-
-        self.assertEqual(brain, exemplar)
-        self.assertEqual(brain.rules, exemplar)
-        self.assertEqual(brain.default_rule, "a")
-
-    @mock.patch.object(policy, 'parse_rule', lambda x: x)
-    def test_add_rule(self):
-        brain = policy.Brain()
-        brain.add_rule("rule1",
-                       [["role:admin"], ["project_id:%(project_id)s"]])
-
-        self.assertEqual(
-            brain.rules, dict(
-                rule1=[["role:admin"], ["project_id:%(project_id)s"]]))
-
-    @mock.patch.object(policy, 'parse_rule', lambda x: x)
-    def test_check(self):
-        brain = policy.Brain()
-        result = brain.check(FakeCheck(), 'target', 'creds')
-
-        self.assertEqual(result, ('target', 'creds'))
-
-
-class PolicyEnforceTestCase(unittest.TestCase):
-    @mock.patch.object(policy, 'parse_rule', lambda x: 'spam')
-    def test_enforce(self):
-        with mock.patch.object(policy, 'check') as mock_check:
-            mock_check.return_value = "result"
-
-            result = policy.enforce("fake_check", 'target', 'creds',
-                                    'exception', 'arg1', 'arg2',
-                                    kw1='kwarg1', kw2='kwarg2')
-
-            self.assertEqual(result, 'result')
-            mock_check.assert_called_once_with('spam', 'target', 'creds',
-                                               'exception', 'arg1', 'arg2',
-                                               kw1='kwarg1', kw2='kwarg2')
-
-
 class FalseCheckTestCase(unittest.TestCase):
     def test_str(self):
         check = policy.FalseCheck()
@@ -276,27 +211,6 @@ class CheckTestCase(unittest.TestCase):
         check = CheckForTest('kind', 'match')
 
         self.assertEqual(str(check), 'kind:match')
-
-
-class FuncCheckTestCase(unittest.TestCase):
-    def test_init(self):
-        check = policy.FuncCheck('func', 'kind', 'match')
-
-        self.assertEqual(check.func, 'func')
-        self.assertEqual(check.kind, 'kind')
-        self.assertEqual(check.match, 'match')
-
-    def test_str(self):
-        check = policy.FuncCheck('func', 'kind', 'match')
-
-        self.assertEqual(str(check), 'kind:match')
-
-    def test_call(self):
-        check = policy.FuncCheck(lambda a, b, c, d, e: (a, b, c, d, e),
-                                 'kind', 'match')
-
-        self.assertEqual(check('target', 'creds'),
-                         (None, 'kind', 'match', 'target', 'creds'))
 
 
 class OrCheckTestCase(unittest.TestCase):
@@ -348,7 +262,6 @@ class ParseCheckTestCase(unittest.TestCase):
         self.assertTrue(isinstance(result, policy.FalseCheck))
 
     @mock.patch.object(policy, '_checks', {})
-    @mock.patch.object(policy, '_functions', {})
     def test_no_handler(self):
         result = policy._parse_check('no:handler')
 
@@ -357,10 +270,6 @@ class ParseCheckTestCase(unittest.TestCase):
     @mock.patch.object(policy, '_checks', {
         'spam': mock.Mock(return_value="spam_check"),
         None: mock.Mock(return_value="none_check"),
-    })
-    @mock.patch.object(policy, '_functions', {
-        'spam': "spam_func",
-        None: "none_func",
     })
     def test_check(self):
         result = policy._parse_check('spam:handler')
@@ -372,42 +281,11 @@ class ParseCheckTestCase(unittest.TestCase):
     @mock.patch.object(policy, '_checks', {
         None: mock.Mock(return_value="none_check"),
     })
-    @mock.patch.object(policy, '_functions', {
-        'spam': "spam_func",
-        None: "none_func",
-    })
-    def test_func(self):
-        result = policy._parse_check('spam:handler')
-
-        self.assertTrue(isinstance(result, policy.FuncCheck))
-        self.assertEqual(result.func, 'spam_func')
-        self.assertEqual(result.kind, 'spam')
-        self.assertEqual(result.match, 'handler')
-        self.assertFalse(policy._checks[None].called)
-
-    @mock.patch.object(policy, '_checks', {
-        None: mock.Mock(return_value="none_check"),
-    })
-    @mock.patch.object(policy, '_functions', {
-        None: "none_func",
-    })
     def test_check_default(self):
         result = policy._parse_check('spam:handler')
 
         self.assertEqual(result, 'none_check')
         policy._checks[None].assert_called_once_with('spam', 'handler')
-
-    @mock.patch.object(policy, '_checks', {})
-    @mock.patch.object(policy, '_functions', {
-        None: "none_func",
-    })
-    def test_func_default(self):
-        result = policy._parse_check('spam:handler')
-
-        self.assertTrue(isinstance(result, policy.FuncCheck))
-        self.assertEqual(result.func, 'none_func')
-        self.assertEqual(result.kind, 'spam')
-        self.assertEqual(result.match, 'handler')
 
 
 class ParseListRuleTestCase(unittest.TestCase):
@@ -481,23 +359,6 @@ class ParseListRuleTestCase(unittest.TestCase):
 
 
 class CheckRegisterTestCase(unittest.TestCase):
-    @mock.patch.object(policy, '_functions', {})
-    def test_register_func(self):
-        def test_func():
-            pass
-
-        policy.register('spam', test_func)
-
-        self.assertEqual(policy._functions, dict(spam=test_func))
-
-    @mock.patch.object(policy, '_functions', {})
-    def test_register_func_decorator(self):
-        @policy.register('spam')
-        def test_func():
-            pass
-
-        self.assertEqual(policy._functions, dict(spam=test_func))
-
     @mock.patch.object(policy, '_checks', {})
     def test_register_check(self):
         class TestCheck(policy.Check):
