@@ -318,6 +318,16 @@ class DuplicateOptError(Error):
         return "duplicate option: %s" % self.opt_name
 
 
+class ConflictOptError(Error):
+    """Raised if conflict happens"""
+
+    def __init__(self, opt_name):
+        self.opt_name = opt_name
+
+    def __str__(self):
+        return "conflict option: %s" % self.opt_name
+
+
 class RequiredOptError(Error):
     """Raised if an option is required but no value is supplied by the user."""
 
@@ -499,7 +509,7 @@ class Opt(object):
 
     def __init__(self, name, dest=None, short=None, default=None,
                  metavar=None, help=None, secret=False, required=False,
-                 deprecated_name=None):
+                 deprecated_name=None, positional=False):
         """Construct an Opt object.
 
         The only required parameter is the option's name. However, it is
@@ -514,6 +524,7 @@ class Opt(object):
         :param secret: true iff the value should be obfuscated in log output
         :param required: true iff a value must be supplied for this option
         :param deprecated_name: deprecated name option.  Acts like an alias
+        :param positional: positional argument.
         """
         self.name = name
         if dest is None:
@@ -530,6 +541,7 @@ class Opt(object):
             self.deprecated_name = deprecated_name.replace('-', '_')
         else:
             self.deprecated_name = None
+        self.positional = positional
 
     def __ne__(self, another):
         return vars(self) != vars(another)
@@ -580,14 +592,20 @@ class Opt(object):
         :raises: DuplicateOptError if a naming confict is detected
         """
         args = ['--' + prefix + name]
-        if short:
-            args += ['-' + short]
-        if deprecated_name:
-            args += ['--' + prefix + deprecated_name]
+        if not self.positional:
+            if short:
+                args += ['-' + short]
+            if deprecated_name:
+                args += ['--' + prefix + deprecated_name]
+        else:
+            del kwargs['dest']
+            args = [name]
+
         for a in args:
             if container.has_option(a):
                 raise DuplicateOptError(a)
-        container.add_option(*args, **kwargs)
+        if not self.positional:
+            container.add_option(*args, **kwargs)
 
     def _get_optparse_container(self, parser, group):
         """Returns an optparse.OptionContainer.
@@ -930,7 +948,9 @@ class ConfigOpts(collections.Mapping):
 
     def __init__(self):
         """Construct a ConfigOpts object."""
-        self._opts = {}  # dict of dict of lists of (opt:, override:, default:)
+        # dict of dict of lists of (opt:, override:, default:)
+        # '-' means positional arguments
+        self._opts = {}
         self._groups = {}
 
         self._args = None
@@ -1091,14 +1111,25 @@ class ConfigOpts(collections.Mapping):
         :raises: DuplicateOptError
         """
         if group is not None:
+            if opt.positional:
+                raise ConflictOptError("conflict option: '{0}', "
+                                       "positional argument does"
+                                       " not support group".format(opt_name))
             return self._get_group(group, autocreate=True)._register_opt(opt)
 
         if _is_opt_registered(self._opts, opt):
             return False
 
-        if opt.dest not in self._opts:
-            self._opts[opt.dest] = {}
-        self._opts[opt.dest][opt.name] = {'opt': opt}
+        if opt.positional:
+            dest = '-'
+            if dest not in self._opts:
+                self._opts[dest] = []
+            self._opts[dest].append({'opt': opt})
+        else:
+            dest = opt.dest
+            if dest not in self._opts:
+                self._opts[dest] = {}
+            self._opts[dest][opt.name] = {'opt': opt}
 
         return True
 
@@ -1248,7 +1279,13 @@ class ConfigOpts(collections.Mapping):
 
     def _all_opt_infos(self):
         """A generator function for iteration opt infos."""
+        if '-' in self._opts:
+            positional_opts = self._opts['-']
+            for info in positional_opts:
+                yield info, None
         for opts in self._opts.values():
+            if isinstance(opts, list):
+                continue
             for info in opts.values():
                 yield info, None
         for group in self._groups.values():
@@ -1484,6 +1521,7 @@ class ConfigOpts(collections.Mapping):
         """
         opts = self._get_opts_info(opt_name_dest, group)
 
+        opt = None
         if not opts:
             raise NoSuchOptError(opt_name_dest, group)
         else:
@@ -1492,8 +1530,9 @@ class ConfigOpts(collections.Mapping):
             # and nicer solution fot this later.
             if opt_name_dest not in opts:
                 for name in opts:
-                    opt = opts[name]
-                    break
+                    if opts[name]['opt'].dest == opt_name_dest:
+                        opt = opts[name]
+                        break
             else:
                 opt = opts[opt_name_dest]
 
@@ -1517,9 +1556,22 @@ class ConfigOpts(collections.Mapping):
         dest = None
         if opt_name_dest not in opts:
             name = opt_name_dest
-            for dest in opts:
-                if name in opts[dest]:
-                    name_opts = opts[dest]
+            found = False
+            if '-' in self._opts:
+                positional_opts = self._opts['-']
+                cnt = 0
+                for i in positional_opts:
+                    name_opts[cnt] = i
+                    cnt += 1
+                    if name == i or name == i['opt'].name:
+                        found = True
+            if not found:
+                name_opts = {}
+                for dest in opts:
+                    if isinstance(opts[dest], list):
+                        continue
+                    if name in opts[dest]:
+                        name_opts = opts[dest]
         else:
             dest = opt_name_dest
             name_opts = opts[dest]
@@ -1591,6 +1643,13 @@ class ConfigOpts(collections.Mapping):
             opt._add_to_cli(self._oparser, group)
 
         values, leftovers = self._oparser.parse_args(args)
+        if '-' in self._opts:
+            positional_opts = self._opts['-']
+            for info in self._opts['-']:
+                if 0 < len(leftovers):
+                    setattr(values, info['opt'].name, leftovers.pop(0))
+                else:
+                    break
 
         return vars(values), leftovers
 

@@ -290,6 +290,15 @@ class CliOptsTestCase(BaseTestCase):
         self.assertEquals(self.conf['foo-bar'], 'blaa')
         self.assertEquals(self.conf.foo_bar, 'blaa')
 
+    def test_positional_arg(self):
+        self.conf.register_cli_opt(StrOpt('foo', positional=True))
+        self.conf.register_cli_opt(StrOpt('bar', positional=True))
+
+        self.conf(['FOO', 'BAR'])
+
+        self.assertEquals(self.conf.foo, 'FOO')
+        self.assertEquals(self.conf.bar, 'BAR')
+
 
 class ConfigFileOptsTestCase(BaseTestCase):
 
