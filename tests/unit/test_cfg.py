@@ -278,6 +278,18 @@ class CliOptsTestCase(BaseTestCase):
         self.conf.enable_interspersed_args()
         self.assertEquals(self.conf(args), args[1:2])
 
+    def test_multi_name_option(self):
+        self.conf.register_cli_opt(StrOpt('foo'))
+        self.conf.register_cli_opt(StrOpt('foo-bar'))
+        self.conf.register_cli_opt(StrOpt('foo_bar'))
+        args = ['--foo', 'blaa', '--foo-bar', 'blaa', '--foo_bar', 'blaa']
+
+        self.conf(args)
+
+        self.assertEquals(self.conf.foo, 'blaa')
+        self.assertEquals(self.conf['foo-bar'], 'blaa')
+        self.assertEquals(self.conf.foo_bar, 'blaa')
+
 
 class ConfigFileOptsTestCase(BaseTestCase):
 

@@ -467,9 +467,10 @@ def _is_opt_registered(opts, opt):
     :raises: DuplicateOptError if a naming conflict is detected
     """
     if opt.dest in opts:
-        if opts[opt.dest]['opt'] != opt:
-            raise DuplicateOptError(opt.name)
-        return True
+        if opt.name in opts[opt.dest]:
+            if opts[opt.dest][opt.name]['opt'] != opt:
+                raise DuplicateOptError("{0}({1})".format(opt.dest, opt.name))
+            return True
     else:
         return False
 
@@ -812,7 +813,9 @@ class OptGroup(object):
         if _is_opt_registered(self._opts, opt):
             return False
 
-        self._opts[opt.dest] = {'opt': opt}
+        if opt.dest not in self._opts:
+            self._opts[opt.dest] = {}
+        self._opts[opt.dest][opt.name] = {'opt': opt}
 
         return True
 
@@ -822,7 +825,10 @@ class OptGroup(object):
         :param opt: an Opt object
         """
         if opt.dest in self._opts:
-            del self._opts[opt.dest]
+            if opt.name in self._opts[opt.dest]:
+                del self._opts[opt.dest][opt.name]
+            if 0 == len(self._opts[opt.dest]):
+                del self._opts[opt.dest]
 
     def _get_optparse_group(self, parser):
         """Build an optparse.OptionGroup for this group."""
@@ -924,7 +930,7 @@ class ConfigOpts(collections.Mapping):
 
     def __init__(self):
         """Construct a ConfigOpts object."""
-        self._opts = {}  # dict of dicts of (opt:, override:, default:)
+        self._opts = {}  # dict of dict of lists of (opt:, override:, default:)
         self._groups = {}
 
         self._args = None
@@ -1090,7 +1096,9 @@ class ConfigOpts(collections.Mapping):
         if _is_opt_registered(self._opts, opt):
             return False
 
-        self._opts[opt.dest] = {'opt': opt}
+        if opt.dest not in self._opts:
+            self._opts[opt.dest] = {}
+        self._opts[opt.dest][opt.name] = {'opt': opt}
 
         return True
 
@@ -1151,7 +1159,10 @@ class ConfigOpts(collections.Mapping):
         if group is not None:
             self._get_group(group)._unregister_opt(opt)
         elif opt.dest in self._opts:
-            del self._opts[opt.dest]
+            if opt.name in self._opts[opt.dest]:
+                del self._opts[opt.dest][opt.name]
+            if 0 == len(self._opts[opt.dest]):
+                del self._opts[opt.dest]
 
     @__clear_cache
     def unregister_opts(self, opts, group=None):
@@ -1237,11 +1248,13 @@ class ConfigOpts(collections.Mapping):
 
     def _all_opt_infos(self):
         """A generator function for iteration opt infos."""
-        for info in self._opts.values():
-            yield info, None
+        for opts in self._opts.values():
+            for info in opts.values():
+                yield info, None
         for group in self._groups.values():
-            for info in group._opts.values():
-                yield info, group
+            for opts in group._opts.values():
+                for info in opts.values():
+                    yield info, group
 
     def _all_opts(self):
         """A generator function for iteration opts."""
@@ -1327,18 +1340,22 @@ class ConfigOpts(collections.Mapping):
             """Obfuscate values of options declared secret"""
             return value if not opt.secret else '*' * len(str(value))
 
-        for opt_name in sorted(self._opts):
-            opt = self._get_opt_info(opt_name)['opt']
-            logger.log(lvl, "%-30s = %s", opt_name,
-                       _sanitize(opt, getattr(self, opt_name)))
+        for opt_dest in sorted(self._opts):
+            opts = self._get_opts_info(opt_dest)
+            for name in opts:
+                opt = opts[name]['opt']
+                logger.log(lvl, "%-30s = %s", opt_dest,
+                           _sanitize(opt, getattr(self, opt_dest)))
 
         for group_name in self._groups:
             group_attr = self.GroupAttr(self, self._get_group(group_name))
-            for opt_name in sorted(self._groups[group_name]._opts):
-                opt = self._get_opt_info(opt_name, group_name)['opt']
-                logger.log(lvl, "%-30s = %s",
-                           "%s.%s" % (group_name, opt_name),
-                           _sanitize(opt, getattr(group_attr, opt_name)))
+            for opt_dest in sorted(self._groups[group_name]._opts):
+                opts = self._get_opts_info(opt_dest, group_name)
+                for name in opts:
+                    opt = opts[name]['opt']
+                    logger.log(lvl, "%-30s = %s",
+                               "%s.%s" % (group_name, opt_dest),
+                               _sanitize(opt, getattr(group_attr, opt_dest)))
 
         logger.log(lvl, "*" * 80)
 
@@ -1350,19 +1367,19 @@ class ConfigOpts(collections.Mapping):
         """Print the help message for the current program."""
         self._oparser.print_help(file)
 
-    def _get(self, name, group=None):
+    def _get(self, name_dest, group=None):
         if isinstance(group, OptGroup):
-            key = (group.name, name)
+            key = (group.name, name_dest)
         else:
-            key = (group, name)
+            key = (group, name_dest)
         try:
             return self.__cache[key]
         except KeyError:
-            value = self._substitute(self._do_get(name, group))
+            value = self._substitute(self._do_get(name_dest, group))
             self.__cache[key] = value
             return value
 
-    def _do_get(self, name, group=None):
+    def _do_get(self, name_dest, group=None):
         """Look up an option value.
 
         :param name: the opt name (or 'dest', more precisely)
@@ -1371,11 +1388,12 @@ class ConfigOpts(collections.Mapping):
         :raises: NoSuchOptError, NoSuchGroupError, ConfigFileValueError,
                  TemplateSubstitutionError
         """
-        if group is None and name in self._groups:
-            return self.GroupAttr(self, self._get_group(name))
+        if group is None and name_dest in self._groups:
+            return self.GroupAttr(self, self._get_group(name_dest))
 
-        info = self._get_opt_info(name, group)
+        info = self._get_opt_info(name_dest, group)
         opt = info['opt']
+        dest = opt.dest
 
         if 'override' in info:
             return info['override']
@@ -1395,8 +1413,12 @@ class ConfigOpts(collections.Mapping):
                     return value[-1]
                 values.extend(value)
 
-        name = name if group is None else group.name + '_' + name
-        value = self._cli_values.get(name)
+        name = name_dest if group is None else group.name + '_' + name_dest
+        dest = dest if group is None else group.name + '_' + dest
+        """
+        get value from object returned by parser, by dest other than name
+        """
+        value = self._cli_values.get(dest)
         if value is not None:
             if not opt.multi:
                 return value
@@ -1453,10 +1475,34 @@ class ConfigOpts(collections.Mapping):
 
         return self._groups[group_name]
 
-    def _get_opt_info(self, opt_name, group=None):
+    def _get_opt_info(self, opt_name_dest, group=None):
         """Return the (opt, override, default) dict for an opt.
 
-        :param opt_name: an opt name/dest
+        :param opt_name_dest: an opt name/dest
+        :param group: an optional group name or OptGroup object
+        :raises: NoSuchOptError, NoSuchGroupError
+        """
+        opts = self._get_opts_info(opt_name_dest, group)
+
+        if not opts:
+            raise NoSuchOptError(opt_name_dest, group)
+        else:
+            # FIXME: if we found a option by dest, presently just return the
+            # 1st. option in the dict, whatever the name is. We need a better
+            # and nicer solution fot this later.
+            if opt_name_dest not in opts:
+                for name in opts:
+                    opt = opts[name]
+                    break
+            else:
+                opt = opts[opt_name_dest]
+
+        return opt
+
+    def _get_opts_info(self, opt_name_dest, group=None):
+        """Return all opts related to a given name or dest.
+
+        :param opt_name_dest: an opt name/dest
         :param group: an optional group name or OptGroup object
         :raises: NoSuchOptError, NoSuchGroupError
         """
@@ -1466,15 +1512,33 @@ class ConfigOpts(collections.Mapping):
             group = self._get_group(group)
             opts = group._opts
 
-        if not opt_name in opts:
-            raise NoSuchOptError(opt_name, group)
+        name_opts = {}
+        name = None
+        dest = None
+        if opt_name_dest not in opts:
+            name = opt_name_dest
+            for dest in opts:
+                if name in opts[dest]:
+                    name_opts = opts[dest]
+        else:
+            dest = opt_name_dest
+            name_opts = opts[dest]
 
-        return opts[opt_name]
+        if not name_opts:
+            raise NoSuchOptError(opt_name_dest, group)
+
+        return name_opts
 
     def _parse_config_files(self):
         """Parse the config files from --config-file and --config-dir.
 
         :raises: ConfigFilesNotFoundError, ConfigFileParseError
+        """
+        """
+        '-' in option name is not replaced from now on, so recommend
+        access option value by name in dict style, while by dest in
+        object style:
+            cfg['foo-bar'], cfg.foo_bar
         """
         config_files = list(self.config_file)
 
