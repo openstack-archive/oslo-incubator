@@ -33,6 +33,8 @@ class TimeUtilsTest(unittest.TestCase):
                                                         tzinfo=utc_timezone)
         self.one_minute_before = datetime.datetime(1997, 8, 29, 6, 13, 0,
                                                    tzinfo=iso8601.iso8601.UTC)
+        self.one_minute_after = datetime.datetime(1997, 8, 29, 6, 15, 0,
+                                                   tzinfo=iso8601.iso8601.UTC)
         self.skynet_self_aware_time_perfect_str = '1997-08-29T06:14:00.000000'
         self.skynet_self_aware_time_perfect = datetime.datetime(1997, 8, 29,
                                                                 6, 14, 0)
@@ -73,6 +75,16 @@ class TimeUtilsTest(unittest.TestCase):
             expect_false = timeutils.is_older_than(self.one_minute_before, 60)
             self.assertFalse(expect_false)
             expect_false = timeutils.is_older_than(self.one_minute_before, 61)
+            self.assertFalse(expect_false)
+
+    def test_is_newer_than(self):
+        with mock.patch('datetime.datetime') as datetime_mock:
+            datetime_mock.utcnow.return_value = self.skynet_self_aware_time
+            expect_true = timeutils.is_newer_than(self.one_minute_after, 59)
+            self.assertTrue(expect_true)
+            expect_false = timeutils.is_newer_than(self.one_minute_after, 60)
+            self.assertFalse(expect_false)
+            expect_false = timeutils.is_newer_than(self.one_minute_after, 61)
             self.assertFalse(expect_false)
 
     def test_utcnow_ts(self):
