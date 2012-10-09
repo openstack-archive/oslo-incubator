@@ -43,6 +43,11 @@ In the policy language, this becomes::
 
     role:admin or (project_id:%(project_id)s and role:projectadmin)
 
+The policy language also has the "not" operator, allowing a richer
+policy rule::
+
+    project_id:%(project_id)s and not role:dunce
+
 Finally, two special policy checks should be mentioned; the policy
 check "@" will always accept an access, and the policy check "!" will
 always reject an access.  (Note that if a rule is either the empty
@@ -259,6 +264,35 @@ class Check(BaseCheck):
         return "%s:%s" % (self.kind, self.match)
 
 
+class NotCheck(BaseCheck):
+    """
+    A policy check that inverts the result of another policy check.
+    Implements the "not" operator.
+    """
+
+    def __init__(self, rule):
+        """
+        Initialize the 'not' check.
+
+        :param rule: The rule to negate.  Must be a Check.
+        """
+
+        self.rule = rule
+
+    def __str__(self):
+        """Return a string representation of this check."""
+
+        return "not %s" % self.rule
+
+    def __call__(self, target, cred):
+        """
+        Check the policy.  Returns the logical inverse of the wrapped
+        check.
+        """
+
+        return not self.rule(target, cred)
+
+
 class AndCheck(BaseCheck):
     """
     A policy check that requires that a list of other checks all
@@ -447,7 +481,7 @@ def _parse_tokenize(rule):
 
         # Yield the cleaned token
         lowered = clean.lower()
-        if lowered in ('and', 'or'):
+        if lowered in ('and', 'or', 'not'):
             # Special tokens
             yield lowered, clean
         elif clean:
@@ -615,6 +649,12 @@ class ParseState(object):
         """
 
         return [('or_expr', or_expr.add_check(check))]
+
+    @reducer('not', 'check')
+    def _make_not_expr(self, _not, check):
+        """Invert the result of another check."""
+
+        return [('check', NotCheck(check))]
 
 
 def _parse_text_rule(rule):
