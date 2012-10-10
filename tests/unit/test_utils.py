@@ -17,6 +17,9 @@
 
 import unittest
 
+import os
+import shutil
+import tempfile
 import mock
 
 from openstack.common import exception
@@ -80,3 +83,16 @@ class UtilsTest(unittest.TestCase):
     #                running code.
     def test_execute_unknown_kwargs(self):
         self.assertRaises(exception.Error, utils.execute, hozer=True)
+
+
+class EnsureTree(unittest.TestCase):
+    def test_ensure_tree(self):
+        tmpdir = tempfile.mkdtemp()
+        try:
+            testdir = '%s/foo/bar/baz' % (tmpdir,)
+            utils.ensure_tree(testdir)
+            self.assertTrue(os.path.isdir(testdir))
+
+        finally:
+            if os.path.exists(tmpdir):
+                shutil.rmtree(tmpdir)
