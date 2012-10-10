@@ -28,6 +28,14 @@ ctxt = context.get_admin_context()
 ctxt2 = context.get_admin_context()
 
 
+class decoratorTestClass():
+    def decorateme(self, context, arg2):
+        pass
+
+    def undecorated(self):
+        pass
+
+
 class NotifierTestCase(test_utils.BaseTestCase):
     """Test case for notifications"""
     def setUp(self):
@@ -147,6 +155,40 @@ class NotifierTestCase(test_utils.BaseTestCase):
 
         self.assertEqual(3, example_api(1, 2))
         self.assertEqual(self.notify_called, True)
+
+    def test_runtime_decorating(self):
+        self.notify_called = False
+        self.context_arg = None
+
+        def mock_notify(context, cls, typ, priority, payload):
+            self.notify_called = True
+            self.context_arg = context
+            self.cls_arg = cls
+            self.type_arg = typ
+            self.payload_arg = payload
+
+        self.stubs.Set(notifier_api, 'notify',
+                       mock_notify)
+
+        testObj1 = decoratorTestClass()
+        testObj1.decorateme(ctxt2, "foo")
+        self.assertEqual(self.notify_called, False)
+
+        notifier_api.add_notification_to_method(__name__ +
+                                                '.decoratorTestClass',
+                                                'decorateme')
+
+        # validate that we aren't hitting the whole class
+        testObj1.undecorated()
+        self.assertEqual(self.notify_called, False)
+
+        # verify that decorateme now triggers a notification
+        testObj1.decorateme(ctxt, "second arg")
+        self.assertEqual(self.notify_called, True)
+
+        # verify that our args are getting picked up properly
+        self.assertEqual(self.context_arg, ctxt)
+        self.assertEqual(self.payload_arg['args'][2], "second arg")
 
     def test_decorator_context(self):
         """Verify that the notify decorator can extract the 'context' arg."""
