@@ -14,3 +14,4 @@ pylint
 setuptools-git>=0.4
 sphinx
 webtest
+anyjson>=0.3.3
