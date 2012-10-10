@@ -17,6 +17,9 @@
 
 import unittest
 
+import os
+import shutil
+import tempfile
 import mock
 
 from openstack.common import exception
