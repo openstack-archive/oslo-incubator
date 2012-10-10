@@ -82,6 +82,25 @@ def notify_decorator(name, fn):
     return wrapped_func
 
 
+def add_notification_to_method(cls, method):
+    """ Add the notify_decorator to a function at runtime.
+
+    For example, this will cause any call to change_instance_metadata to send a notificaton
+    of type 'nova.compute.manager.ComputeManager.change_instance_metadata':
+
+        api.add_notification_to_method("nova.compute.manager.ComputeManager",
+                                       "change_instance_metadata")
+
+    This is useful for third party code (e.g. plugins) that need to be alerted
+    as to specific internal calls.
+    """
+    decorator = notify_decorator
+    clsobj = importutils.import_class(cls)
+    func = getattr(clsobj, method)
+    setattr(clsobj, method,
+            decorator("%s.%s" % (cls, method), func))
+
+
 def publisher_id(service, host=None):
     if not host:
         host = CONF.host
