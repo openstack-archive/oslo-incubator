@@ -422,6 +422,11 @@ class Connection(object):
 
             if self.conf.fake_rabbit:
                 params['transport'] = 'memory'
+            else:
+                # Must use the pyamqp transport to take advantage of kombu 2.3's
+                # consumer cancellation notifications that happen when a consumer
+                # is consuming a replica of an H/A queue and the queue's master dies.
+                params['transport'] = 'pyamqp'
             if self.conf.rabbit_use_ssl:
                 params['ssl'] = ssl_params
 
