@@ -168,7 +168,8 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
             # failure.
             result = QUEUE.get(True, 2)
         except Exception:
-            self.assertEqual(value, None)
+            import traceback
+            self.assertEqual(value, None, msg=traceback.format_exc())
 
         conn.close()
         self.assertEqual(value, result)
