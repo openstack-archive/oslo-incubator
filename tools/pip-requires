@@ -5,5 +5,6 @@ greenlet>=0.3.1
 lxml
 routes==1.12.3
 iso8601>=0.1.4
+amqp
+kombu<2.0
 anyjson==0.2.4
-kombu==1.0.4
