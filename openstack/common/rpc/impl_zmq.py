@@ -411,6 +411,11 @@ class ZmqProxy(ZmqBaseReactor):
                       zmq.PUB, bind=True)
         self.sockets.append(self.topic_proxy['zmq_replies'])
 
+        # It is necessary to send an empty message, otherwise
+        # the socket will keep returning READY to select() / epoll()
+        # NOTE(ewindisch): This may be a ZeroMQ or Eventlet bug.
+        self.topic_proxy['zmq_replies'].send([""])
+
     def consume(self, sock):
         ipc_dir = CONF.rpc_zmq_ipc_dir
 
@@ -445,6 +450,17 @@ class ZmqProxy(ZmqBaseReactor):
             # before we can have any faith in doing a send() to it.
             if sock_type == zmq.PUB:
                 eventlet.sleep(.5)
+
+                # NOTE(ewindisch):
+                # This works around a bug/quirk in ZMQ and
+                # the eventlet hub whereby this process
+                # would consume 100% cpu through a tight polling loop
+                # via a false-positive on EPOLLIN.
+                #
+                # I'm not 100% sure why this works,
+                # but it seems to reset EPOLLIN.
+                # - Confirmed with ZMQ 2.1.11
+                self.topic_proxy[topic].send([""])
 
         LOG.debug(_("ROUTER RELAY-OUT START %(data)s") % {'data': data})
         self.topic_proxy[topic].send(data)
