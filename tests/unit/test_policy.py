@@ -291,78 +291,6 @@ class OrCheckTestCase(unittest.TestCase):
         rules[1].assert_called_once_with('target', 'cred')
 
 
-class ResultCheckTestCase(unittest.TestCase):
-    def test_init(self):
-        check = policy.ResultCheck('rule', 'result')
-
-        self.assertEqual(check.rule, 'rule')
-        self.assertEqual(check.result, 'result')
-
-    def test_str(self):
-        check = policy.ResultCheck('rule', 'result')
-
-        self.assertEqual(str(check), "'result'=rule")
-
-    def test_call_true(self):
-        rule = mock.Mock(return_value=True)
-        check = policy.ResultCheck(rule, 'result')
-
-        self.assertEqual(check('target', 'cred'), 'result')
-        rule.assert_called_once_with('target', 'cred')
-
-    def test_call_false(self):
-        rule = mock.Mock(return_value=False)
-        check = policy.ResultCheck(rule, 'result')
-
-        self.assertEqual(check('target', 'cred'), False)
-        rule.assert_called_once_with('target', 'cred')
-
-
-class CaseCheckTestCase(unittest.TestCase):
-    def test_init(self):
-        check = policy.CaseCheck(['case1', 'case2'])
-
-        self.assertEqual(check.cases, ['case1', 'case2'])
-
-    def test_str(self):
-        check = policy.CaseCheck(["'case1'=check1", "'case2'=check2"])
-
-        self.assertEqual(str(check), "case { 'case1'=check1; 'case2'=check2 }")
-
-    def test_call_first(self):
-        cases = [
-            mock.Mock(return_value='case1'),
-            mock.Mock(return_value='case2'),
-        ]
-        check = policy.CaseCheck(cases)
-
-        self.assertEqual(check('target', 'cred'), 'case1')
-        cases[0].assert_called_once_with('target', 'cred')
-        self.assertFalse(cases[1].called)
-
-    def test_call_second(self):
-        cases = [
-            mock.Mock(return_value=False),
-            mock.Mock(return_value='case2'),
-        ]
-        check = policy.CaseCheck(cases)
-
-        self.assertEqual(check('target', 'cred'), 'case2')
-        cases[0].assert_called_once_with('target', 'cred')
-        cases[1].assert_called_once_with('target', 'cred')
-
-    def test_call_none(self):
-        cases = [
-            mock.Mock(return_value=False),
-            mock.Mock(return_value=False),
-        ]
-        check = policy.CaseCheck(cases)
-
-        self.assertEqual(check('target', 'cred'), False)
-        cases[0].assert_called_once_with('target', 'cred')
-        cases[1].assert_called_once_with('target', 'cred')
-
-
 class ParseCheckTestCase(unittest.TestCase):
     def test_false(self):
         result = policy._parse_check('!')
@@ -479,16 +407,15 @@ class ParseListRuleTestCase(unittest.TestCase):
 class ParseTokenizeTestCase(unittest.TestCase):
     @mock.patch.object(policy, '_parse_check', lambda x: x)
     def test_tokenize(self):
-        exemplar = ("(( ( (((caSe) And)) or ) (check:%(miss)s) not))"
-                    "{}{}=;=;=;'a-string';\"another-string\"")
+        exemplar = ("(( ( ((() And)) or ) (check:%(miss)s) not)) "
+                    "'a-string' \"another-string\"")
         expected = [
             ('(', '('), ('(', '('), ('(', '('), ('(', '('), ('(', '('),
-            ('(', '('), ('case', 'caSe'), (')', ')'), ('and', 'And'),
+            ('(', '('), (')', ')'), ('and', 'And'),
             (')', ')'), (')', ')'), ('or', 'or'), (')', ')'), ('(', '('),
             ('check', 'check:%(miss)s'), (')', ')'), ('not', 'not'),
-            (')', ')'), (')', ')'), ('{', '{'), ('}', '}'), ('{', '{'),
-            ('}', '}'), ('=', '='), (';', ';'), ('=', '='), (';', ';'),
-            ('=', '='), (';', ';'), ('string', 'a-string'), (';', ';'),
+            (')', ')'), (')', ')'),
+            ('string', 'a-string'),
             ('string', 'another-string'),
         ]
 
@@ -694,55 +621,6 @@ class ParseStateTestCase(unittest.TestCase):
         result = state._make_not_expr('not', 'check')
 
         self.assertEqual(result, [('check', 'not check')])
-
-    @mock.patch.object(policy, 'ResultCheck', lambda x, y: (x, y))
-    def test_make_result(self):
-        state = policy.ParseState()
-
-        result = state._make_result('result', ':', 'check', '/')
-
-        self.assertEqual(result, [
-            ('result_expr', ('check', 'result')),
-            ('/', '/'),
-        ])
-
-    def test_make_result_list(self):
-        state = policy.ParseState()
-
-        result = state._make_result_list('expr1', ';', 'expr2', '/')
-
-        self.assertEqual(result, [
-            ('result_list', ['expr1', 'expr2']),
-            ('/', '/'),
-        ])
-
-    def test_extend_result_list(self):
-        state = policy.ParseState()
-
-        result = state._extend_result_list(['expr1', 'expr2'], ';', 'expr3',
-                                           '/')
-
-        self.assertEqual(result, [
-            ('result_list', ['expr1', 'expr2', 'expr3']),
-            ('/', '/'),
-        ])
-
-    @mock.patch.object(policy, 'CaseCheck', lambda x: x)
-    def test_make_case_from_list(self):
-        state = policy.ParseState()
-
-        result = state._make_case_from_list('case', '{', ['expr1', 'expr2'],
-                                            '}')
-
-        self.assertEqual(result, [('case_expr', ['expr1', 'expr2'])])
-
-    @mock.patch.object(policy, 'CaseCheck', lambda x: x)
-    def test_make_case_from_expr(self):
-        state = policy.ParseState()
-
-        result = state._make_case_from_expr('case', '{', 'expr', '}')
-
-        self.assertEqual(result, [('case_expr', ['expr'])])
 
 
 class ParseTextRuleTestCase(unittest.TestCase):
