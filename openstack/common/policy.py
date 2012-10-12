@@ -48,27 +48,6 @@ policy rule::
 
     project_id:%(project_id)s and not role:dunce
 
-The policy language also allows for finer-grained policies.  Consider
-a function that not only wants to check whether a user is allowed to
-modify an object, but wants to see which set of fields the user is
-allowed to modify.  For this, we can use the new "case" expression::
-
-    case {
-        "fulladmin" = role:admin;
-        "projectadmin" = project_id:%(project_id)s and role:projectadmin
-    }
-
-(Note this expression is broken across lines for readability; this
-would be specified as a single string to the policy language parser.)
-
-For this rule, each of the checks is performed in turn, i.e., first we
-check "role:admin", then we check "project_id:%(project_id)s and
-role:projectadmin".  For the first check that succeeds, we return the
-string on the left-hand side of the '=', so if "role:admin" matches,
-we would get the string "fulladmin" back, instead of just the "True"
-value.  If none of the checks succeeds, then the "False" value will be
-returned.
-
 Finally, two special policy checks should be mentioned; the policy
 check "@" will always accept an access, and the policy check "!" will
 always reject an access.  (Note that if a rule is either the empty
@@ -398,75 +377,6 @@ class OrCheck(BaseCheck):
         return self
 
 
-class ResultCheck(BaseCheck):
-    """
-    A special policy check that returns a value other than "True" if
-    the evaluated rule accepts.  Used as a component of the CaseCheck.
-    """
-
-    def __init__(self, rule, result):
-        """
-        Initialize the ResultCheck.
-
-        :param rule: The rule that will be evaluated.
-        :param result: The result that will be returned if the rule
-                       matches.  If the rule does not match, False
-                       will be returned.
-        """
-
-        self.rule = rule
-        self.result = result
-
-    def __str__(self):
-        """Return a string representation of this check."""
-
-        return "%r=%s" % (self.result, self.rule)
-
-    def __call__(self, target, cred):
-        """
-        Check the policy.  Returns the defined result if the rule
-        accepts, or False if the rule rejects.
-        """
-
-        return self.result if self.rule(target, cred) else False
-
-
-class CaseCheck(BaseCheck):
-    """
-    A special policy check that allows for the return of values other
-    than a simple "True"; this can be used to allow for finer grained
-    policy checks.
-    """
-
-    def __init__(self, cases):
-        """
-        Initialize the CaseCheck.
-
-        :param cases: A list of CaseCheck objects defining the
-                      recognized rules and results.
-        """
-
-        self.cases = cases
-
-    def __str__(self):
-        """Return a string representation of this check."""
-
-        return "case { %s }" % '; '.join(str(c) for c in self.cases)
-
-    def __call__(self, target, cred):
-        """
-        Check the policy.  Returns the appropriate result if a
-        ResultCheck matches, or False if no ResultCheck matches.
-        """
-
-        for case in self.cases:
-            result = case(target, cred)
-            if result is not False:
-                return result
-
-        return False
-
-
 def _parse_check(rule):
     """
     Parse a single base check rule into an appropriate Check object.
@@ -535,7 +445,7 @@ def _parse_list_rule(rule):
 
 
 # Used for tokenizing the policy language
-_tokenize_re = re.compile(r'(\s+|\{|\}|=|;)')
+_tokenize_re = re.compile(r'\s+')
 
 
 def _parse_tokenize(rule):
@@ -571,7 +481,7 @@ def _parse_tokenize(rule):
 
         # Yield the cleaned token
         lowered = clean.lower()
-        if lowered in ('case', 'and', 'or', 'not', '{', '}', '=', ';'):
+        if lowered in ('and', 'or', 'not'):
             # Special tokens
             yield lowered, clean
         elif clean:
@@ -745,64 +655,6 @@ class ParseState(object):
         """Invert the result of another check."""
 
         return [('check', NotCheck(check))]
-
-    @reducer('string', '=', 'check', ';')
-    @reducer('string', '=', 'check', '}')
-    @reducer('string', '=', 'and_expr', ';')
-    @reducer('string', '=', 'and_expr', '}')
-    @reducer('string', '=', 'or_expr', ';')
-    @reducer('string', '=', 'or_expr', '}')
-    def _make_result(self, result, _colon, check, delim):
-        """
-        Create a 'result_expr' from a desired 'string' and a 'check'
-        expression (or 'and_expr', or 'or_expr').
-        """
-
-        return [
-            ('result_expr', ResultCheck(check, result)),
-            (delim, delim),  # delim was needed for lookahead
-        ]
-
-    @reducer('result_expr', ';', 'result_expr', ';')
-    @reducer('result_expr', ';', 'result_expr', '}')
-    def _make_result_list(self, expr1, _delim, expr2, delim):
-        """
-        Create a 'result_list' from a sequence of 'result_expr's.
-        """
-
-        return [
-            ('result_list', [expr1, expr2]),
-            (delim, delim),  # Don't need lookahead, but the token's there
-        ]
-
-    @reducer('result_list', ';', 'result_expr', ';')
-    @reducer('result_list', ';', 'result_expr', '}')
-    def _extend_result_list(self, result_list, _delim, result_expr, delim):
-        """
-        Extend a 'result_list' by adding one more 'result_expr' to it.
-        """
-
-        result_list.append(result_expr)
-        return [
-            ('result_list', result_list),
-            (delim, delim),  # Don't need lookahead, but the token's there
-        ]
-
-    @reducer('case', '{', 'result_list', '}')
-    def _make_case_from_list(self, _case, _b1, result_list, _b2):
-        """
-        Create a 'case_expr' from a 'result_list'.
-        """
-
-        return [('case_expr', CaseCheck(result_list))]
-
-    @reducer('case', '{', 'result_expr', '}')
-    def _make_case_from_expr(self, _case, _b1, result_expr, _b2):
-        """
-        Create a 'case_expr' from a single 'result_expr'.
-        """
-
-        return [('case_expr', CaseCheck([result_expr]))]
 
 
 def _parse_text_rule(rule):
