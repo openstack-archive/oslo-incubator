@@ -1,0 +1,12 @@
+Change-Id: I76751a6b4e096443f7dfea1e5dba595790cc6ec1
+Verified+2: Jenkins
+Code-Review+1: Joe Heck <heckj@mac.com>
+Code-Review+1: Vish Ishaya <vishvananda@gmail.com>
+Code-Review+2: Jason Kölker <jason@koelker.net>
+Approved+1: Mark McLoughlin <markmc@redhat.com>
+Code-Review+2: Mark McLoughlin <markmc@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 12 Oct 2012 18:07:36 +0000
+Reviewed-on: https://review.openstack.org/14340
+Project: openstack/openstack-common
+Branch: refs/heads/master
