@@ -137,6 +137,16 @@ def loads(s):
 def load(s):
     return json.load(s)
 
+def is_json(s):
+    try:
+        #FIXME(wanglong): optimize this call in good method
+        #is there good method to determine that a string is 
+        #json format.
+        json.loads(s)
+        return True
+    except:
+        return False
+    
 
 try:
     import anyjson

@@ -34,6 +34,10 @@ class JSONUtilsTestCase(unittest.TestCase):
     def test_load(self):
         x = StringIO.StringIO('{"a": "b"}')
         self.assertEqual(jsonutils.load(x), {'a': 'b'})
+        
+    def test_is_json(self):
+        self.assertTrue(jsonutils.is_json('{"a": "b"}'))
+        self.assertFalse(jsonutils.is_json('not a json'))
 
 
 class ToPrimitiveTestCase(unittest.TestCase):
