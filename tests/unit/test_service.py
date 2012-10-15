@@ -33,6 +33,14 @@ from openstack.common import service
 from tests import utils
 
 
+opts = [
+    cfg.StrOpt('config_file', default='/dev/null'),
+    cfg.StrOpt('host', default='localhost'),
+]
+
+CONF = cfg.CONF
+CONF.register_opts(opts)
+
 LOG = logging.getLogger(__name__)
 
 
