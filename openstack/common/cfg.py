@@ -1320,7 +1320,12 @@ class ConfigOpts(collections.Mapping):
         logger.log(lvl, "*" * 80)
         logger.log(lvl, "Configuration options gathered from:")
         logger.log(lvl, "command line args: %s", self._args)
-        logger.log(lvl, "config files: %s", self.config_file)
+        # Don't raise if self.config_file is undefined.
+        try:
+            config_file = self.config_file
+        except NoSuchOptError:
+            config_file = None
+        logger.log(lvl, "config files: %s", config_file)
         logger.log(lvl, "=" * 80)
 
         def _sanitize(opt, value):
@@ -1329,8 +1334,11 @@ class ConfigOpts(collections.Mapping):
 
         for opt_name in sorted(self._opts):
             opt = self._get_opt_info(opt_name)['opt']
-            logger.log(lvl, "%-30s = %s", opt_name,
-                       _sanitize(opt, getattr(self, opt_name)))
+            try:
+                value = _sanitize(opt, getattr(self, opt_name))
+            except NoSuchOptError:
+                value = None
+            logger.log(lvl, "%-30s = %s", opt_name, value)
 
         for group_name in self._groups:
             group_attr = self.GroupAttr(self, self._get_group(group_name))
