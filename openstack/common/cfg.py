@@ -1320,7 +1320,12 @@ class ConfigOpts(collections.Mapping):
         logger.log(lvl, "*" * 80)
         logger.log(lvl, "Configuration options gathered from:")
         logger.log(lvl, "command line args: %s", self._args)
-        logger.log(lvl, "config files: %s", self.config_file)
+        # Don't raise if self.config_file is undefined.
+        try:
+            config_file = self.config_file
+        except NoSuchOptError:
+            config_file = None
+        logger.log(lvl, "config files: %s", config_file)
         logger.log(lvl, "=" * 80)
 
         def _sanitize(opt, value):
