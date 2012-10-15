@@ -29,10 +29,11 @@ from eventlet import greenthread
 from openstack.common import cfg
 from openstack.common.gettextutils import _
 from openstack.common import log as logging
+from openstack.common.notifier import api as notifier_api
 from openstack.common import service
 from tests import utils
 
-
+CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
@@ -108,7 +109,16 @@ class ServiceLauncherTest(utils.BaseTestCase):
         self.assertEqual(len(workers), self.workers)
         return workers
 
+    def setUp(self):
+        super(ServiceLauncherTest, self).setUp()
+        # FIXME(markmc): Ugly hack to workaround bug #1073732
+        CONF.unregister_opts(notifier_api.notifier_opts)
+        # NOTE(markmc): ConfigOpts.log_opt_values() uses CONF.config-file
+        CONF(args=[], default_config_files=[])
+
     def tearDown(self):
+        CONF.reset()
+        CONF.register_opts(notifier_api.notifier_opts)
         if self.pid:
             # Make sure all processes are stopped
             os.kill(self.pid, signal.SIGTERM)
