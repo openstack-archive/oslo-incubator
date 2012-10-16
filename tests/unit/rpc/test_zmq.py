@@ -44,7 +44,6 @@ FLAGS = cfg.CONF
 
 
 class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
-#    @testutils.skip_if(zmq is None, "Test requires zmq")
     @testutils.skip_if(True, "Zmq tests broken on jenkins")
     def setUp(self, topic='test', topic_nested='nested'):
         if not impl_zmq:
@@ -53,11 +52,10 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
         self.reactor = None
         self.rpc = impl_zmq
 
-        FLAGS.set_override('rpc_zmq_bind_address', '127.0.0.1')
-        FLAGS.set_override('rpc_zmq_host', '127.0.0.1')
-        FLAGS.set_override('rpc_response_timeout', 5)
-        FLAGS.set_default('rpc_zmq_matchmaker',
-                          'mod_matchmaker.MatchMakerLocalhost')
+        self.config(rpc_zmq_bind_address='127.0.0.1')
+        self.config(rpc_zmq_host='127.0.0.1')
+        self.config(rpc_response_timeout=5)
+        self.config(rpc_zmq_matchmaker='mod_matchmaker.MatchMakerLocalhost')
 
         # We'll change this if we detect no daemon running.
         ipc_dir = FLAGS.rpc_zmq_ipc_dir
@@ -70,7 +68,7 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
             LOG.info(_("Running internal zmq receiver."))
             # The normal ipc_dir default needs to run as root,
             # /tmp is easier within a testing environment.
-            FLAGS.set_default('rpc_zmq_ipc_dir', internal_ipc_dir)
+            self.config(rpc_zmq_ipc_dir=internal_ipc_dir)
 
             # Value has changed.
             ipc_dir = FLAGS.rpc_zmq_ipc_dir
