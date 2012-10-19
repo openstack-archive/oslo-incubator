@@ -132,34 +132,34 @@ class LockTestCase(test_utils.BaseTestCase):
         """We can lock across multiple processes"""
         tempdir = tempfile.mkdtemp()
         self.config(lock_path=tempdir)
-        rpipe1, wpipe1 = os.pipe()
-        rpipe2, wpipe2 = os.pipe()
 
-        @lockutils.synchronized('testlock1', 'test-', external=True)
-        def f(rpipe, wpipe):
-            try:
-                os.write(wpipe, "foo")
-            except OSError, e:
-                self.assertEquals(e.errno, errno.EPIPE)
-                return
+        # NOTE(mikal): This test has been re-written from what nova had. The
+        # import element here is that we need to check that holding the lock
+        # blocks the other process.
 
-            rfds, _wfds, _efds = select.select([rpipe], [], [], 1)
-            self.assertEquals(len(rfds), 0, "The other process, which was "
-                                            "supposed to be locked, "
-                                            "wrote on its end of the "
-                                            "pipe")
-            os.close(rpipe)
+        @lockutils.synchronized('external', 'test-', external=True)
+        def f(tempdir):
+            first = os.path.join(tempdir, 'first')
+            second = os.path.join(tempdir, 'second')
+
+            if not os.path.exists(first):
+                # We're the first runner
+                with open(first, 'w') as f:
+                    pass
+
+                time.sleep(0.1)
+
+                self.assertFalse(os.path.exists(second))
+                with open(second, 'w') as f:
+                    pass
+
+            else:
+                # The second file must exist as well, or we're running at the
+                # same time!
+                self.assertTrue(os.path.exists(second))
 
         pid = os.fork()
         if pid > 0:
-            os.close(wpipe1)
-            os.close(rpipe2)
-
-            f(rpipe1, wpipe2)
+            f(tempdir)
         else:
-            os.close(rpipe1)
-            os.close(wpipe2)
-
-            time.sleep(0.1)
-            f(rpipe2, wpipe1)
-            os._exit(0)
+            f(tempdir)
