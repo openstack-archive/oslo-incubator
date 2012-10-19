@@ -160,6 +160,5 @@ class LockTestCase(test_utils.BaseTestCase):
             os.close(rpipe1)
             os.close(wpipe2)
 
-            time.sleep(0.1)
             f(rpipe2, wpipe1)
             os._exit(0)
