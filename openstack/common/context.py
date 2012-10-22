@@ -55,6 +55,7 @@ class RequestContext(object):
                 'is_admin': self.is_admin,
                 'read_only': self.read_only,
                 'show_deleted': self.show_deleted,
+                'read_deleted': self.show_deleted,
                 'auth_token': self.auth_tok,
                 'request_id': self.request_id}
 
