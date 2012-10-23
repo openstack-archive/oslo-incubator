@@ -20,6 +20,7 @@ import errno
 import functools
 import os
 import shutil
+import tempfile
 import time
 import weakref
 
