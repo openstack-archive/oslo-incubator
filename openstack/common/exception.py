@@ -97,6 +97,10 @@ class DatabaseMigrationError(Error):
     pass
 
 
+class DeprecatedConfig(Error):
+    message = _("Fatal call to deprecated config %(msg)s")
+
+
 class ClientConnectionError(Exception):
     """Error resulting from a client connecting to a server"""
     pass
