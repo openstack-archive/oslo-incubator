@@ -41,6 +41,7 @@ import sys
 import traceback
 
 from openstack.common import cfg
+from openstack.common import exception
 from openstack.common.gettextutils import _
 from openstack.common import jsonutils
 from openstack.common import local
@@ -76,6 +77,9 @@ log_opts = [
     cfg.BoolOpt('publish_errors',
                 default=False,
                 help='publish error events'),
+    cfg.BoolOpt('fatal_deprecations',
+                default=False,
+                help='make deprecations fatal'),
 
     # NOTE(mikal): there are two options here because sometimes we are handed
     # a full instance (and could include more information), and other times we
@@ -169,6 +173,14 @@ class ContextAdapter(logging.LoggerAdapter):
 
     def audit(self, msg, *args, **kwargs):
         self.log(logging.AUDIT, msg, *args, **kwargs)
+
+    def deprecated(self, msg, *args, **kwargs):
+        stdmsg = _("Deprecated Config: %s") % msg
+        if CONF.fatal_deprecations:
+            self.critical(stdmsg, *args, **kwargs)
+            raise exception.DeprecatedConfig(message=stdmsg)
+        else:
+            self.warn(stdmsg, *args, **kwargs)
 
     def process(self, msg, kwargs):
         if 'extra' not in kwargs:
