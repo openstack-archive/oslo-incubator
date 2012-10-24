@@ -29,6 +29,7 @@ from eventlet import semaphore
 from openstack.common import cfg
 from openstack.common import fileutils
 from openstack.common.gettextutils import _
+from openstack.common import local
 from openstack.common import log as logging
 
 
@@ -47,6 +48,26 @@ util_opts = [
 
 CONF = cfg.CONF
 CONF.register_opts(util_opts)
+
+
+class LocksHeld(object):
+    """Weakref capable wrapper around a list.
+
+    openstack.common.local requires that we store a weak ref. This is a
+    thin wrapper around a list to make that work.
+    """
+
+    def __init__(self):
+        self.locks_held = []
+
+    def append(self, item):
+        self.locks_held.append(item)
+
+    def remove(self, item):
+        self.locks_head.remove(item)
+
+    def list(self):
+        return ', '.join(self.locks_held)
 
 
 class _InterProcessLock(object):
@@ -140,7 +161,7 @@ def synchronized(name, lock_file_prefix, external=False, lock_path=None):
         def foo(self, *args):
            ...
 
-    ensures that only one thread will execute the bar method at a time.
+    ensures that only one thread will execute the foo method at a time.
 
     Different methods can share the same lock::
 
@@ -184,49 +205,62 @@ def synchronized(name, lock_file_prefix, external=False, lock_path=None):
                 LOG.debug(_('Got semaphore "%(lock)s" for method '
                             '"%(method)s"...'), {'lock': name,
                                                  'method': f.__name__})
-                if external and not CONF.disable_process_locking:
-                    LOG.debug(_('Attempting to grab file lock "%(lock)s" for '
-                                'method "%(method)s"...'),
-                              {'lock': name, 'method': f.__name__})
-                    cleanup_dir = False
 
-                    # We need a copy of lock_path because it is non-local
-                    local_lock_path = lock_path
-                    if not local_lock_path:
-                        local_lock_path = CONF.lock_path
+                # NOTE(mikal): I know this looks odd
+                if (not hasattr(local.store, 'locks_held') or
+                    local.store.locks_held) is None):
+                    local.store.locks_held = LocksHeld()
+                local.store.locks_held.append(name)
 
-                    if not local_lock_path:
-                        cleanup_dir = True
-                        local_lock_path = tempfile.mkdtemp()
+                try:
+                    if external and not CONF.disable_process_locking:
+                        LOG.debug(_('Attempting to grab file lock "%(lock)s" '
+                                    'for method "%(method)s"...'),
+                                  {'lock': name, 'method': f.__name__})
+                        cleanup_dir = False
 
-                    if not os.path.exists(local_lock_path):
-                        cleanup_dir = True
-                        fileutils.ensure_tree(local_lock_path)
+                        # We need a copy of lock_path because it is non-local
+                        local_lock_path = lock_path
+                        if not local_lock_path:
+                            local_lock_path = CONF.lock_path
 
-                    # NOTE(mikal): the lock name cannot contain directory
-                    # separators
-                    safe_name = name.replace(os.sep, '_')
-                    lock_file_name = '%s%s' % (lock_file_prefix, safe_name)
-                    lock_file_path = os.path.join(local_lock_path,
-                                                  lock_file_name)
+                        if not local_lock_path:
+                            cleanup_dir = True
+                            local_lock_path = tempfile.mkdtemp()
 
-                    try:
-                        lock = InterProcessLock(lock_file_path)
-                        with lock:
-                            LOG.debug(_('Got file lock "%(lock)s" at %(path)s '
-                                        'for method "%(method)s"...'),
-                                      {'lock': name,
-                                       'path': lock_file_path,
-                                       'method': f.__name__})
-                            retval = f(*args, **kwargs)
-                    finally:
-                        # NOTE(vish): This removes the tempdir if we needed
-                        #             to create one. This is used to cleanup
-                        #             the locks left behind by unit tests.
-                        if cleanup_dir:
-                            shutil.rmtree(local_lock_path)
-                else:
-                    retval = f(*args, **kwargs)
+                        if not os.path.exists(local_lock_path):
+                            cleanup_dir = True
+                            fileutils.ensure_tree(local_lock_path)
+
+                        # NOTE(mikal): the lock name cannot contain directory
+                        # separators
+                        safe_name = name.replace(os.sep, '_')
+                        lock_file_name = '%s%s' % (lock_file_prefix, safe_name)
+                        lock_file_path = os.path.join(local_lock_path,
+                                                      lock_file_name)
+
+                        try:
+                            lock = InterProcessLock(lock_file_path)
+                            with lock:
+                                LOG.debug(_('Got file lock "%(lock)s" at '
+                                            '%(path)s for method '
+                                            '"%(method)s"...'),
+                                          {'lock': name,
+                                           'path': lock_file_path,
+                                           'method': f.__name__})
+                                retval = f(*args, **kwargs)
+                        finally:
+                            # NOTE(vish): This removes the tempdir if we needed
+                            #             to create one. This is used to
+                            #             cleanup the locks left behind by unit
+                            #             tests.
+                            if cleanup_dir:
+                                shutil.rmtree(local_lock_path)
+                    else:
+                        retval = f(*args, **kwargs)
+
+                finally:
+                    local.store.locks_held.remove(name)
 
             return retval
         return inner

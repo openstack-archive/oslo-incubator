@@ -26,6 +26,9 @@ class WeakLocal(corolocal.local):
     def __getattribute__(self, attr):
         rval = corolocal.local.__getattribute__(self, attr)
         if rval:
+            # NOTE(mikal): this bit is confusing. What is stored is a weak
+            # reference, not the value itself. We therefore need to lookup
+            # the weak reference and return the inner value here.
             rval = rval()
         return rval
 
