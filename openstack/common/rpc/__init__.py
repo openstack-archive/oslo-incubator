@@ -25,8 +25,16 @@ For some wrappers that add message versioning to rpc, see:
     rpc.proxy
 """
 
+import inspect
+import logging
+
 from openstack.common import cfg
+from openstack.common.gettextutils import _
 from openstack.common import importutils
+from openstack.common import lockutils
+
+
+LOG = logging.getLogger(__name__)
 
 
 rpc_opts = [
@@ -67,7 +75,8 @@ rpc_opts = [
     #           help='AMQP exchange to connect to if using RabbitMQ or Qpid'),
 ]
 
-cfg.CONF.register_opts(rpc_opts)
+CONF = cfg.CONF
+CONF.register_opts(rpc_opts)
 
 
 def create_connection(new=True):
@@ -83,10 +92,25 @@ def create_connection(new=True):
 
     :returns: An instance of openstack.common.rpc.common.Connection
     """
-    return _get_impl().create_connection(cfg.CONF, new=new)
+    return _get_impl().create_connection(CONF, new=new)
 
 
-def call(context, topic, msg, timeout=None):
+def _check_for_lock():
+    if not CONF.debug:
+        return None
+
+    if getattr(lockutils.thread_local, 'lock_held', 0) > 0:
+        stack = ' :: '.join([frame[3] for frame in inspect.stack()])
+        LOG.warn(_('A RPC is being made while holding a lock. This is '
+                   'probably a bug. Please report it. Include the '
+                   'following: [%(stack)s].'),
+                 {'stack': stack})
+        return True
+
+    return False
+
+
+def call(context, topic, msg, timeout=None, check_for_lock=False):
     """Invoke a remote method that returns something.
 
     :param context: Information that identifies the user that has made this
@@ -106,7 +130,9 @@ def call(context, topic, msg, timeout=None):
     :raises: openstack.common.rpc.common.Timeout if a complete response
              is not received before the timeout is reached.
     """
-    return _get_impl().call(cfg.CONF, context, topic, msg, timeout)
+    if check_for_lock:
+        _check_for_lock()
+    return _get_impl().call(CONF, context, topic, msg, timeout)
 
 
 def cast(context, topic, msg):
@@ -124,7 +150,7 @@ def cast(context, topic, msg):
 
     :returns: None
     """
-    return _get_impl().cast(cfg.CONF, context, topic, msg)
+    return _get_impl().cast(CONF, context, topic, msg)
 
 
 def fanout_cast(context, topic, msg):
@@ -145,10 +171,10 @@ def fanout_cast(context, topic, msg):
 
     :returns: None
     """
-    return _get_impl().fanout_cast(cfg.CONF, context, topic, msg)
+    return _get_impl().fanout_cast(CONF, context, topic, msg)
 
 
-def multicall(context, topic, msg, timeout=None):
+def multicall(context, topic, msg, timeout=None, check_for_lock=False):
     """Invoke a remote method and get back an iterator.
 
     In this case, the remote method will be returning multiple values in
@@ -175,7 +201,9 @@ def multicall(context, topic, msg, timeout=None):
     :raises: openstack.common.rpc.common.Timeout if a complete response
              is not received before the timeout is reached.
     """
-    return _get_impl().multicall(cfg.CONF, context, topic, msg, timeout)
+    if check_for_lock:
+        _check_for_lock()
+    return _get_impl().multicall(CONF, context, topic, msg, timeout)
 
 
 def notify(context, topic, msg):
@@ -188,7 +216,7 @@ def notify(context, topic, msg):
 
     :returns: None
     """
-    return _get_impl().notify(cfg.CONF, context, topic, msg)
+    return _get_impl().notify(CONF, context, topic, msg)
 
 
 def cleanup():
@@ -216,7 +244,7 @@ def cast_to_server(context, server_params, topic, msg):
 
     :returns: None
     """
-    return _get_impl().cast_to_server(cfg.CONF, context, server_params, topic,
+    return _get_impl().cast_to_server(CONF, context, server_params, topic,
                                       msg)
 
 
@@ -232,7 +260,7 @@ def fanout_cast_to_server(context, server_params, topic, msg):
 
     :returns: None
     """
-    return _get_impl().fanout_cast_to_server(cfg.CONF, context, server_params,
+    return _get_impl().fanout_cast_to_server(CONF, context, server_params,
                                              topic, msg)
 
 
@@ -262,10 +290,10 @@ def _get_impl():
     global _RPCIMPL
     if _RPCIMPL is None:
         try:
-            _RPCIMPL = importutils.import_module(cfg.CONF.rpc_backend)
+            _RPCIMPL = importutils.import_module(CONF.rpc_backend)
         except ImportError:
             # For backwards compatibility with older nova config.
-            impl = cfg.CONF.rpc_backend.replace('nova.rpc',
-                                                'nova.openstack.common.rpc')
+            impl = CONF.rpc_backend.replace('nova.rpc',
+                                            'nova.openstack.common.rpc')
             _RPCIMPL = importutils.import_module(impl)
     return _RPCIMPL
