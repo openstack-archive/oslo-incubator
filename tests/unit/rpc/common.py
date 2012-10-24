@@ -29,6 +29,7 @@ import nose
 from openstack.common import cfg
 from openstack.common import exception
 from openstack.common.gettextutils import _
+from openstack.common import lockutils
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
 from openstack.common.rpc import dispatcher as rpc_dispatcher

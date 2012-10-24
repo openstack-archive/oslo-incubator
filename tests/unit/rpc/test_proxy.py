@@ -23,6 +23,7 @@ import stubout
 import unittest
 
 from openstack.common import context
+from openstack.common import lockutils
 from openstack.common import rpc
 from openstack.common.rpc import proxy
 
@@ -54,6 +55,7 @@ class RpcProxyTestCase(unittest.TestCase):
         self.fake_kwargs = None
 
         def _fake_rpc_method(*args, **kwargs):
+            rpc.check_for_lock()
             self.fake_args = args
             self.fake_kwargs = kwargs
             if has_retval:
@@ -109,6 +111,17 @@ class RpcProxyTestCase(unittest.TestCase):
 
     def test_multicall(self):
         self._test_rpc_method('multicall', has_timeout=True, has_retval=True)
+
+    def test_multicall_with_lock_held(self):
+        self.assertFalse(rpc.rpc_with_lock_detected)
+
+        @lockutils.synchronized('detecting', 'test-')
+        def f():
+            self._test_rpc_method('multicall', has_timeout=True,
+                                  has_retval=True)
+
+        f()
+        self.assertTrue(rpc.rpc_with_lock_detected)
 
     def test_cast(self):
         self._test_rpc_method('cast')

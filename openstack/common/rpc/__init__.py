@@ -25,8 +25,14 @@ For some wrappers that add message versioning to rpc, see:
     rpc.proxy
 """
 
+import inspect
+import logging
+
 from openstack.common import cfg
 from openstack.common import importutils
+
+
+LOG = logging.getLogger(__name__)
 
 
 rpc_opts = [
@@ -85,6 +91,27 @@ def create_connection(new=True):
     return _get_impl().create_connection(cfg.CONF, new=new)
 
 
+rpc_with_lock_detected = False
+
+
+def check_for_lock():
+    global rpc_with_lock_detected
+
+    lock_held = False
+    stack = []
+    for frame in inspect.stack():
+        stack.append(frame[3])
+        if frame[3] == 'inner_with_lock':
+            lock_held = True
+
+    if lock_held:
+        rpc_with_lock_detected = True
+        LOG.warn(_('A RPC is being made while holding a lock. This is '
+                   'probably a bug. Please report it. Include the '
+                   'following: [%(stack)s].'),
+                 {'stack': ' :: '.join(stack)})
+
+
 def call(context, topic, msg, timeout=None):
     """Invoke a remote method that returns something.
 
@@ -105,6 +132,7 @@ def call(context, topic, msg, timeout=None):
     :raises: openstack.common.rpc.common.Timeout if a complete response
              is not received before the timeout is reached.
     """
+    check_for_lock()
     return _get_impl().call(cfg.CONF, context, topic, msg, timeout)
 
 
@@ -174,6 +202,7 @@ def multicall(context, topic, msg, timeout=None):
     :raises: openstack.common.rpc.common.Timeout if a complete response
              is not received before the timeout is reached.
     """
+    check_for_lock()
     return _get_impl().multicall(cfg.CONF, context, topic, msg, timeout)
 
 

@@ -169,7 +169,7 @@ def synchronized(name, lock_file_prefix, external=False, lock_path=None):
 
     def wrap(f):
         @functools.wraps(f)
-        def inner(*args, **kwargs):
+        def inner_with_lock(*args, **kwargs):
             # NOTE(soren): If we ever go natively threaded, this will be racy.
             #              See http://stackoverflow.com/questions/5390569/dyn
             #              amically-allocating-and-destroying-mutexes
@@ -229,5 +229,5 @@ def synchronized(name, lock_file_prefix, external=False, lock_path=None):
                     retval = f(*args, **kwargs)
 
             return retval
-        return inner
+        return inner_with_lock
     return wrap
