@@ -21,6 +21,7 @@ import functools
 import os
 import shutil
 import tempfile
+import threading
 import time
 import weakref
 
@@ -131,6 +132,9 @@ else:
 _semaphores = weakref.WeakValueDictionary()
 
 
+thread_local = threading.local()
+
+
 def synchronized(name, lock_file_prefix, external=False, lock_path=None):
     """Synchronization decorator.
 
@@ -170,6 +174,8 @@ def synchronized(name, lock_file_prefix, external=False, lock_path=None):
     def wrap(f):
         @functools.wraps(f)
         def inner(*args, **kwargs):
+            global thread_local
+
             # NOTE(soren): If we ever go natively threaded, this will be racy.
             #              See http://stackoverflow.com/questions/5390569/dyn
             #              amically-allocating-and-destroying-mutexes
@@ -184,49 +190,56 @@ def synchronized(name, lock_file_prefix, external=False, lock_path=None):
                 LOG.debug(_('Got semaphore "%(lock)s" for method '
                             '"%(method)s"...'), {'lock': name,
                                                  'method': f.__name__})
-                if external and not CONF.disable_process_locking:
-                    LOG.debug(_('Attempting to grab file lock "%(lock)s" for '
-                                'method "%(method)s"...'),
-                              {'lock': name, 'method': f.__name__})
-                    cleanup_dir = False
+                thread_local.lock_held = True
+                try:
+                    if external and not CONF.disable_process_locking:
+                        LOG.debug(_('Attempting to grab file lock "%(lock)s" '
+                                    'for method "%(method)s"...'),
+                                  {'lock': name, 'method': f.__name__})
+                        cleanup_dir = False
 
-                    # We need a copy of lock_path because it is non-local
-                    local_lock_path = lock_path
-                    if not local_lock_path:
-                        local_lock_path = CONF.lock_path
+                        # We need a copy of lock_path because it is non-local
+                        local_lock_path = lock_path
+                        if not local_lock_path:
+                            local_lock_path = CONF.lock_path
 
-                    if not local_lock_path:
-                        cleanup_dir = True
-                        local_lock_path = tempfile.mkdtemp()
+                        if not local_lock_path:
+                            cleanup_dir = True
+                            local_lock_path = tempfile.mkdtemp()
 
-                    if not os.path.exists(local_lock_path):
-                        cleanup_dir = True
-                        fileutils.ensure_tree(local_lock_path)
+                        if not os.path.exists(local_lock_path):
+                            cleanup_dir = True
+                            fileutils.ensure_tree(local_lock_path)
 
-                    # NOTE(mikal): the lock name cannot contain directory
-                    # separators
-                    safe_name = name.replace(os.sep, '_')
-                    lock_file_name = '%s%s' % (lock_file_prefix, safe_name)
-                    lock_file_path = os.path.join(local_lock_path,
-                                                  lock_file_name)
+                        # NOTE(mikal): the lock name cannot contain directory
+                        # separators
+                        safe_name = name.replace(os.sep, '_')
+                        lock_file_name = '%s%s' % (lock_file_prefix, safe_name)
+                        lock_file_path = os.path.join(local_lock_path,
+                                                      lock_file_name)
 
-                    try:
-                        lock = InterProcessLock(lock_file_path)
-                        with lock:
-                            LOG.debug(_('Got file lock "%(lock)s" at %(path)s '
-                                        'for method "%(method)s"...'),
-                                      {'lock': name,
-                                       'path': lock_file_path,
-                                       'method': f.__name__})
-                            retval = f(*args, **kwargs)
-                    finally:
-                        # NOTE(vish): This removes the tempdir if we needed
-                        #             to create one. This is used to cleanup
-                        #             the locks left behind by unit tests.
-                        if cleanup_dir:
-                            shutil.rmtree(local_lock_path)
-                else:
-                    retval = f(*args, **kwargs)
+                        try:
+                            lock = InterProcessLock(lock_file_path)
+                            with lock:
+                                LOG.debug(_('Got file lock "%(lock)s" at '
+                                            '%(path)s for method '
+                                            '"%(method)s"...'),
+                                          {'lock': name,
+                                           'path': lock_file_path,
+                                           'method': f.__name__})
+                                retval = f(*args, **kwargs)
+                        finally:
+                            # NOTE(vish): This removes the tempdir if we needed
+                            #             to create one. This is used to
+                            #             cleanup the locks left behind by unit
+                            #             tests.
+                            if cleanup_dir:
+                                shutil.rmtree(local_lock_path)
+                    else:
+                        retval = f(*args, **kwargs)
+
+                finally:
+                    thread_local.lock_held = False
 
             return retval
         return inner
