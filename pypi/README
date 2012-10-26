@@ -1,0 +1,2 @@
+This directory is just here to hold the setup.py used to register the
+Oslo name on PyPI, to avoid project name collisions.
