@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Approved+1: Russell Bryant <rbryant@redhat.com>
+Code-Review+2: Russell Bryant <rbryant@redhat.com>
+Code-Review+2: Doug Hellmann <doug.hellmann@dreamhost.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 26 Oct 2012 19:37:05 +0000
+Reviewed-on: https://review.openstack.org/14887
+Project: openstack/openstack-common
+Branch: refs/heads/master
