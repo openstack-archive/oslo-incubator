@@ -49,12 +49,12 @@ htmlhelp_basename = '%sdoc' % project
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass
 # [howto/manual]).
-latex_documents = [
-        ('index',
-         '%s.tex' % project,
-         u'%s Documentation' % project,
-         u'OpenStack LLC', 'manual'),
-]
+latex_documents = [(
+    'index',
+    '%s.tex' % project,
+    u'%s Documentation' % project,
+    u'OpenStack LLC', 'manual'
+)]
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'http://docs.python.org/': None}
