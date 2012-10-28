@@ -13,15 +13,11 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-import os
-import sys
 
-from eventlet import event
 from eventlet import greenthread
 from eventlet import greenpool
 
 from openstack.common import loopingcall
-from openstack.common.gettextutils import _
 from openstack.common import log as logging
 
 

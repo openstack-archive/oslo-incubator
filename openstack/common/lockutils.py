@@ -24,11 +24,11 @@ import tempfile
 import time
 import weakref
 
-from eventlet import greenthread
 from eventlet import semaphore
 
 from openstack.common import cfg
 from openstack.common import fileutils
+from openstack.common.gettextutils import _
 from openstack.common import log as logging
 
 

@@ -309,10 +309,11 @@ def load_paste_app(app_name, options, args, config_dir=None):
                 logger.debug("%(key)-30s %(value)s" % locals())
             logger.debug("*" * 80)
         app = deploy.loadapp("config:%s" % conf_file, name=app_name)
-    except (LookupError, ImportError), e:
+    except (LookupError, ImportError) as e:
         raise RuntimeError("Unable to load %(app_name)s from "
                            "configuration file %(conf_file)s."
-                           "\nGot: %(e)r" % locals())
+                           "\nGot: %(e)r" %
+                           dict(app_name=app_name, conf_file=conf_file, e=e))
     return conf, app
 
 

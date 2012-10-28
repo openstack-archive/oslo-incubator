@@ -55,7 +55,6 @@ the modules to copy and the base destination module
 Obviously, the first way is the easiest!
 """
 
-import imp
 import os
 import os.path
 import re

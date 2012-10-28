@@ -109,4 +109,4 @@ class PeriodicTasks(object):
                 if raise_on_error:
                     raise
                 LOG.exception(_("Error during %(full_task_name)s: %(e)s"),
-                              locals())
+                              dict(full_task_name=full_task_name, e=e))
