@@ -13,8 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import uuid
-
 from openstack.common import cfg
 from openstack.common import context
 from openstack.common.gettextutils import _
@@ -22,6 +20,7 @@ from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import log as logging
 from openstack.common import timeutils
+from openstack.common import uuidutils
 
 
 LOG = logging.getLogger(__name__)
@@ -112,7 +111,7 @@ def notify(context, publisher_id, event_type, priority, payload):
 
     Message example::
 
-        {'message_id': str(uuid.uuid4()),
+        {'message_id': uuidutils.uuid4_str(),
          'publisher_id': 'compute.host1',
          'timestamp': timeutils.utcnow(),
          'priority': 'WARN',
@@ -127,7 +126,7 @@ def notify(context, publisher_id, event_type, priority, payload):
     # Ensure everything is JSON serializable.
     payload = jsonutils.to_primitive(payload, convert_instances=True)
 
-    msg = dict(message_id=str(uuid.uuid4()),
+    msg = dict(message_id=uuidutils.uuid4_str(),
                publisher_id=publisher_id,
                event_type=event_type,
                priority=priority,

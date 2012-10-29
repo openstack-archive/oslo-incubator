@@ -19,7 +19,6 @@ import functools
 import itertools
 import logging
 import time
-import uuid
 
 import eventlet
 import greenlet
@@ -31,6 +30,7 @@ from openstack.common.gettextutils import _
 from openstack.common import jsonutils
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
+from openstack.common import uuidutils
 
 LOG = logging.getLogger(__name__)
 
@@ -202,7 +202,7 @@ class FanoutConsumer(ConsumerBase):
             session, callback,
             "%s_fanout" % topic,
             {"durable": False, "type": "fanout"},
-            "%s_fanout_%s" % (topic, uuid.uuid4().hex),
+            "%s_fanout_%s" % (topic, uuidutils.uuid4_hex()),
             {"exclusive": True})
 
 

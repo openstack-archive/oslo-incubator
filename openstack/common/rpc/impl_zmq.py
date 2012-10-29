@@ -19,7 +19,6 @@ import socket
 import string
 import sys
 import types
-import uuid
 
 import eventlet
 from eventlet.green import zmq
@@ -30,6 +29,7 @@ from openstack.common.gettextutils import _
 from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common.rpc import common as rpc_common
+from openstack.common import uuidutils
 
 
 # for convenience, are not modified.
@@ -546,7 +546,7 @@ def _call(addr, context, msg_id, topic, msg, timeout=None):
     timeout = timeout or CONF.rpc_response_timeout
 
     # The msg_id is used to track replies.
-    msg_id = str(uuid.uuid4().hex)
+    msg_id = uuidutils.uuid4_hex()
 
     # Replies always come into the reply service.
     reply_topic = "zmq_replies.%s" % CONF.rpc_zmq_host

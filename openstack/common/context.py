@@ -23,11 +23,12 @@ context or provide additional information in their specific WSGI pipeline.
 """
 
 import itertools
-import uuid
+
+from openstack.common import uuidutils
 
 
 def generate_request_id():
-    return 'req-' + str(uuid.uuid4())
+    return 'req-' + uuidutils.uuid4_str()
 
 
 class RequestContext(object):

@@ -28,7 +28,6 @@ AMQP, but is deprecated and predates this code.
 import inspect
 import logging
 import sys
-import uuid
 
 from eventlet import greenpool
 from eventlet import pools
@@ -39,6 +38,7 @@ from openstack.common import excutils
 from openstack.common.gettextutils import _
 from openstack.common import local
 from openstack.common.rpc import common as rpc_common
+from openstack.common import uuidutils
 
 
 LOG = logging.getLogger(__name__)
@@ -350,7 +350,7 @@ def multicall(conf, context, topic, msg, timeout, connection_pool):
     # connection.close() will get called which will put it back into
     # the pool
     LOG.debug(_('Making asynchronous call on %s ...'), topic)
-    msg_id = uuid.uuid4().hex
+    msg_id = uuidutils.uuid4_hex()
     msg.update({'_msg_id': msg_id})
     LOG.debug(_('MSG_ID is %s') % (msg_id))
     pack_context(msg, context)

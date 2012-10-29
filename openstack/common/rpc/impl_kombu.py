@@ -20,7 +20,6 @@ import socket
 import ssl
 import sys
 import time
-import uuid
 
 import eventlet
 import greenlet
@@ -34,6 +33,7 @@ from openstack.common.gettextutils import _
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
 from openstack.common import network_utils
+from openstack.common import uuidutils
 
 kombu_opts = [
     cfg.StrOpt('kombu_ssl_version',
@@ -261,7 +261,7 @@ class FanoutConsumer(ConsumerBase):
 
         Other kombu options may be passed
         """
-        unique = uuid.uuid4().hex
+        unique = uuidutils.uuid4_hex()
         exchange_name = '%s_fanout' % topic
         queue_name = '%s_fanout_%s' % (topic, unique)
 
