@@ -31,9 +31,9 @@ import kombu.messaging
 
 from openstack.common import cfg
 from openstack.common.gettextutils import _
+from openstack.common import network_utils
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
-from openstack.common import network_utils
 
 kombu_opts = [
     cfg.StrOpt('kombu_ssl_version',

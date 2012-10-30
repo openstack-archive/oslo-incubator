@@ -22,8 +22,8 @@ import sys
 from eventlet import event
 from eventlet import greenthread
 
-from openstack.common import log as logging
 from openstack.common.gettextutils import _
+from openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
 

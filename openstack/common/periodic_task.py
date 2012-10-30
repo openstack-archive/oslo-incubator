@@ -13,8 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from openstack.common import log as logging
 from openstack.common.gettextutils import _
+from openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
 
