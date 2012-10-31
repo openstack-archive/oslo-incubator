@@ -13,10 +13,8 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-import os
-import sys
 
-from eventlet import event
+from eventlet import greenlet
 from eventlet import greenpool
 from eventlet import greenthread
 
@@ -106,6 +104,8 @@ class ThreadGroup():
         for x in self.timers:
             try:
                 x.wait()
+            except greenlet.GreenletExit:
+                pass
             except Exception as ex:
                 LOG.exception(ex)
         current = greenthread.getcurrent()
@@ -114,5 +114,7 @@ class ThreadGroup():
                 continue
             try:
                 x.wait()
+            except greenlet.GreenletExit:
+                pass
             except Exception as ex:
                 LOG.exception(ex)
