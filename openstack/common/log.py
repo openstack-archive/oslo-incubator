@@ -307,6 +307,10 @@ def _setup_logging_from_conf(product_name):
     for handler in log_root.handlers:
         log_root.removeHandler(handler)
 
+    # to make our product logger works as root logger
+    # for other sub loggers
+    log_root.propagate = 0
+
     if CONF.use_syslog:
         facility = _find_facility_from_conf()
         syslog = logging.handlers.SysLogHandler(address='/dev/log',
