@@ -62,58 +62,6 @@ class ApiErrorTest(unittest.TestCase):
         self.assertEqual(err.message, 'fake error')
 
 
-class ProcessExecutionErrorTest(unittest.TestCase):
-
-    def test_defaults(self):
-        err = exception.ProcessExecutionError()
-        self.assertTrue('None\n' in err.message)
-        self.assertTrue('code: -\n' in err.message)
-
-    def test_with_description(self):
-        description = 'The Narwhal Bacons at Midnight'
-        err = exception.ProcessExecutionError(description=description)
-        self.assertTrue(description in err.message)
-
-    def test_with_exit_code(self):
-        exit_code = 0
-        err = exception.ProcessExecutionError(exit_code=exit_code)
-        self.assertTrue(str(exit_code) in err.message)
-
-    def test_with_cmd(self):
-        cmd = 'telinit'
-        err = exception.ProcessExecutionError(cmd=cmd)
-        self.assertTrue(cmd in err.message)
-
-    def test_with_stdout(self):
-        stdout = """
-        Lo, praise of the prowess of people-kings
-        of spear-armed Danes, in days long sped,
-        we have heard, and what honot the athelings won!
-        Oft Scyld the Scefing from squadroned foes,
-        from many a tribe, the mead-bench tore,
-        awing the earls. Since erse he lay
-        friendless, a foundling, fate repaid him:
-        for he waxed under welkin, in wealth he trove,
-        till before him the folk, both far and near,
-        who house by the whale-path, heard his mandate,
-        gabe him gits: a good king he!
-        To him an heir was afterward born,
-        a son in his halls, whom heaven sent
-        to favor the fol, feeling their woe
-        that erst they had lacked an earl for leader
-        so long a while; the Lord endowed him,
-        the Wielder of Wonder, with world's renown.
-        """.strip()
-        err = exception.ProcessExecutionError(stdout=stdout)
-        print err.message
-        self.assertTrue('people-kings' in err.message)
-
-    def test_with_stderr(self):
-        stderr = 'Cottonian library'
-        err = exception.ProcessExecutionError(stderr=stderr)
-        self.assertTrue(stderr in str(err.message))
-
-
 class BadStoreUriTest(unittest.TestCase):
 
     def test(self):
