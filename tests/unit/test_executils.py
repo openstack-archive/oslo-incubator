@@ -1,0 +1,83 @@
+# vim: tabstop=4 shiftwidth=4 softtabstop=4
+
+# Copyright 2011 OpenStack LLC.
+# All Rights Reserved.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+
+import unittest
+
+import mock
+
+from openstack.common import executils
+
+
+class UtilsTest(unittest.TestCase):
+    # NOTE(jkoelker) Moar tests from nova need to be ported. But they
+    #                need to be mock'd out. Currently they requre actually
+    #                running code.
+    def test_execute_unknown_kwargs(self):
+        self.assertRaises(executils.UnknownArgumentError, executils.execute,
+                          hozer=True)
+
+
+class ProcessExecutionErrorTest(unittest.TestCase):
+
+    def test_defaults(self):
+        err = executils.ProcessExecutionError()
+        self.assertTrue('None\n' in err.message)
+        self.assertTrue('code: -\n' in err.message)
+
+    def test_with_description(self):
+        description = 'The Narwhal Bacons at Midnight'
+        err = executils.ProcessExecutionError(description=description)
+        self.assertTrue(description in err.message)
+
+    def test_with_exit_code(self):
+        exit_code = 0
+        err = executils.ProcessExecutionError(exit_code=exit_code)
+        self.assertTrue(str(exit_code) in err.message)
+
+    def test_with_cmd(self):
+        cmd = 'telinit'
+        err = executils.ProcessExecutionError(cmd=cmd)
+        self.assertTrue(cmd in err.message)
+
+    def test_with_stdout(self):
+        stdout = """
+        Lo, praise of the prowess of people-kings
+        of spear-armed Danes, in days long sped,
+        we have heard, and what honot the athelings won!
+        Oft Scyld the Scefing from squadroned foes,
+        from many a tribe, the mead-bench tore,
+        awing the earls. Since erse he lay
+        friendless, a foundling, fate repaid him:
+        for he waxed under welkin, in wealth he trove,
+        till before him the folk, both far and near,
+        who house by the whale-path, heard his mandate,
+        gabe him gits: a good king he!
+        To him an heir was afterward born,
+        a son in his halls, whom heaven sent
+        to favor the fol, feeling their woe
+        that erst they had lacked an earl for leader
+        so long a while; the Lord endowed him,
+        the Wielder of Wonder, with world's renown.
+        """.strip()
+        err = executils.ProcessExecutionError(stdout=stdout)
+        print err.message
+        self.assertTrue('people-kings' in err.message)
+
+    def test_with_stderr(self):
+        stderr = 'Cottonian library'
+        err = executils.ProcessExecutionError(stderr=stderr)
+        self.assertTrue(stderr in str(err.message))

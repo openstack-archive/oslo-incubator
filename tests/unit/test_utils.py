@@ -74,9 +74,3 @@ class UtilsTest(unittest.TestCase):
     def test_int_from_bool_as_string(self):
         self.assertEqual(1, utils.int_from_bool_as_string(True))
         self.assertEqual(0, utils.int_from_bool_as_string(False))
-
-    # NOTE(jkoelker) Moar tests from nova need to be ported. But they
-    #                need to be mock'd out. Currently they requre actually
-    #                running code.
-    def test_execute_unknown_kwargs(self):
-        self.assertRaises(exception.Error, utils.execute, hozer=True)
