@@ -51,7 +51,7 @@ class Thread(object):
         return self.thread.wait()
 
 
-class ThreadGroup():
+class ThreadGroup(object):
     """
     The point of this class is to:
     - keep track of timers and greenthreads (making it easier to stop them
