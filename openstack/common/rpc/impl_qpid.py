@@ -51,7 +51,7 @@ qpid_opts = [
                default='',
                help='Space separated list of SASL mechanisms to use for auth'),
     cfg.BoolOpt('qpid_reconnect',
-                default=True,
+                default=False,
                 help='Automatically reconnect'),
     cfg.IntOpt('qpid_reconnect_timeout',
                default=0,
@@ -307,13 +307,20 @@ class Connection(object):
             params.setdefault(key, default_params[key])
 
         self.broker = params['hostname'] + ":" + str(params['port'])
+        self.username = params['username']
+        self.password = params['password']
+        self.connection_create()
+        self.reconnect()
+        
+    def connection_create(self):
         # Create the connection - this does not open the connection
         self.connection = qpid.messaging.Connection(self.broker)
 
         # Check if flags are set and if so set them for the connection
         # before we call open
-        self.connection.username = params['username']
-        self.connection.password = params['password']
+        self.connection.username = self.username
+        self.connection.password = self.password
+
         self.connection.sasl_mechanisms = self.conf.qpid_sasl_mechanisms
         self.connection.reconnect = self.conf.qpid_reconnect
         if self.conf.qpid_reconnect_timeout:
@@ -334,10 +341,6 @@ class Connection(object):
         self.connection.protocol = self.conf.qpid_protocol
         self.connection.tcp_nodelay = self.conf.qpid_tcp_nodelay
 
-        # Open is part of reconnect -
-        # NOTE(WGH) not sure we need this with the reconnect flags
-        self.reconnect()
-
     def _register_consumer(self, consumer):
         self.consumers[str(consumer.get_receiver())] = consumer
 
@@ -354,6 +357,7 @@ class Connection(object):
 
         while True:
             try:
+                self.connection_create()
                 self.connection.open()
             except qpid.messaging.exceptions.ConnectionError, e:
                 LOG.error(_('Unable to connect to AMQP server: %s'), e)
