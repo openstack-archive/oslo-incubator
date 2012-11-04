@@ -57,6 +57,12 @@ class LoggerTestCase(test_utils.BaseTestCase):
             self.assertRaises(AttributeError, getattr, log, func)
 
 
+class GreenLoggerTestCase(LoggerTestCase):
+    def setUp(self):
+        self.config(logging_async=True)
+        super(GreenLoggerTestCase, self).setUp()
+
+
 class LogHandlerTestCase(test_utils.BaseTestCase):
     def test_log_path_logdir(self):
         self.config(logdir='/some/path', logfile=None)
