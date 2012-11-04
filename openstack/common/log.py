@@ -36,6 +36,7 @@ import logging
 import logging.config
 import logging.handlers
 import os
+import Queue
 import stat
 import sys
 import traceback
@@ -46,8 +47,18 @@ from openstack.common import jsonutils
 from openstack.common import local
 from openstack.common import notifier
 
+import eventlet
+
 
 log_opts = [
+    cfg.BoolOpt('logging_async',
+                default=False,
+                help='asynchronously write logs in a background thread'),
+    cfg.IntOpt('logging_async_backlog',
+               default=0,
+               help='Number of messages to backlog. '
+                    'Value of 0 is unlimited. Falls back to synchronous '
+                    'operation if backlog is full.'),
     cfg.StrOpt('logging_context_format_string',
                default='%(asctime)s %(levelname)s %(name)s [%(request_id)s '
                        '%(user_id)s %(project_id)s] %(instance)s'
@@ -279,6 +290,12 @@ def setup(product_name):
     """Setup logging."""
     sys.excepthook = _create_logging_excepthook(product_name)
 
+    # The ThreadedLogger class provides a background
+    # greenthread to asynchronously (but serially)
+    # process log messages.
+    if CONF.logging_async:
+        logging.setLoggerClass(ThreadedLogger)
+
     if CONF.log_config:
         try:
             logging.config.fileConfig(CONF.log_config)
@@ -369,6 +386,67 @@ def _setup_logging_from_conf(product_name):
             logger.addHandler(handler)
 
 _loggers = {}
+_threadedlogger_queue = None
+
+
+def _threadedlogger_proc(self):
+    """Process queued log messages"""
+    while True:
+        try:
+            handle, args = _threadedlogger_queue.get()
+            handle(*args)
+            _threadedlogger_queue.task_done()
+        except:
+            # Don't let the logger die.
+            # Generate a log message manually,
+            # since we can't directly use the
+            # standard logging methods here.
+            # TODO(ewindisch): write a test for this.
+            try:
+                fn, lno, func = self.findCaller()
+            except ValueError:
+                fn, lno, func = "(unknown file)", 0, "(unknown function)"
+
+            try:
+                msg = _("Error in writing log message.")
+                r = getLogger().makeRecord('ThreadedLogger', logging.ERROR,
+                                           fn, lno, msg, [], sys.exc_info(),
+                                           func, None)
+                handle(r)
+                return
+            except:
+                # If THIS happens, logging is really busted.
+                # ... just dump something to stderr
+                sys.exc_info()[2].print_tb()
+
+
+def _threadedlogger_asynclog(fn):
+    """Queue a log message"""
+    def queue_func(self, *args):
+        _threadedlogger_queue.put([fn, args])
+    return queue_func
+
+
+class ThreadedLogger(logging.Logger):
+    """ThreadedLogger: serialized, asynchronous logging.
+       Using ThreadedLogger will not block on logging in eventlet,
+       but will keep logs in order by serializing them through an
+       in-memory queue.
+    """
+    def __init__(self, name):
+        # Use a global queue because instance-level
+        # decorators aren't easy (and overkill).
+        # Also, this might be preferable for logging.
+        global _threadedlogger_queue
+        if not _threadedlogger_queue:
+            _threadedlogger_queue = Queue.Queue(CONF.logging_async_backlog)
+            eventlet.spawn_n(_threadedlogger_proc, self)
+
+        logging.Logger.__init__(self, name)
+
+    @_threadedlogger_asynclog
+    def handle(self, record):
+        super().handle(self, record)
 
 
 def getLogger(name='unknown', version='unknown'):
@@ -468,3 +546,20 @@ class DeprecatedConfig(Exception):
 
     def __init__(self, msg):
         super(Exception, self).__init__(self.message % dict(msg=msg))
+
+
+def close():
+    """Close the logging system.
+       Stops accepting messages and flushes.
+    """
+    if _threadedlogger_queue:
+        # Flush messages.
+        _threadedlogger_queue.join()
+        # Reset to None, so ThreadedLogger might be reinitialized.
+        _threadedlogger_queue = None
+
+    for name in _loggers:
+        # Flush messages.
+        _loggers[name].shutdown()
+        # Reset to None so getLoggers can reinitialize this.
+        _loggers[name] = None
