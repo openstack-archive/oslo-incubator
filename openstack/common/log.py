@@ -36,18 +36,24 @@ import logging
 import logging.config
 import logging.handlers
 import os
+import Queue
 import stat
 import sys
 import traceback
 
-from openstack.common import cfg
-from openstack.common.gettextutils import _
-from openstack.common import jsonutils
-from openstack.common import local
-from openstack.common import notifier
+from nova.openstack.common import cfg
+from nova.openstack.common.gettextutils import _
+from nova.openstack.common import jsonutils
+from nova.openstack.common import local
+from nova.openstack.common import notifier
+
+import eventlet
 
 
 log_opts = [
+    cfg.BoolOpt('logging_async',
+                default=False,
+                help='asynchronously write logs in a background thread'),
     cfg.StrOpt('logging_context_format_string',
                default='%(asctime)s %(levelname)s %(name)s [%(request_id)s '
                        '%(user_id)s %(project_id)s] %(instance)s'
@@ -257,7 +263,7 @@ class JSONFormatter(logging.Formatter):
 
 class PublishErrorsHandler(logging.Handler):
     def emit(self, record):
-        if ('openstack.common.notifier.log_notifier' in
+        if ('nova.openstack.common.notifier.log_notifier' in
             CONF.notification_driver):
             return
         notifier.api.notify(None, 'error.publisher',
@@ -278,6 +284,12 @@ def _create_logging_excepthook(product_name):
 def setup(product_name):
     """Setup logging."""
     sys.excepthook = _create_logging_excepthook(product_name)
+
+    # The ThreadedLogger class provides a background
+    # greenthread to asynchronously (but serially)
+    # process log messages.
+    if CONF.logging_async:
+        logging.setLoggerClass(ThreadedLogger)
 
     if CONF.log_config:
         try:
@@ -369,6 +381,64 @@ def _setup_logging_from_conf(product_name):
             logger.addHandler(handler)
 
 _loggers = {}
+_threadedlogger_queue = None
+
+
+def _threadedlogger_proc(self):
+    """Process queued log messages"""
+    while True:
+        fn, args, kwargs = _threadedlogger_queue.get()
+        fn(*args, **kwargs)
+        _threadedlogger_queue.task_done()
+
+
+def _threadedlogger_asynclog(fn):
+    """Queue a log message"""
+    def queue_func(*args, **kwargs):
+        _threadedlogger_queue.put([fn, args, kwargs])
+    return queue_func
+
+
+class ThreadedLogger(logging.Logger):
+    """ThreadedLogger: serialized, asynchronous logging.
+       Using ThreadedLogger will not block on logging in eventlet,
+       but will keep logs in order by serializing them through an
+       in-memory queue.
+    """
+    def __init__(self, name):
+        # Use a global queue because instance-level
+        # decorators aren't easy (and overkill).
+        # Also, this might be preferable for logging.
+        global _threadedlogger_queue
+        if not _threadedlogger_queue:
+            _threadedlogger_queue = Queue.Queue()
+            eventlet.spawn_n(_threadedlogger_proc, self)
+
+        logging.Logger.__init__(self, name)
+
+    @_threadedlogger_asynclog
+    def critical(self, *args, **kwargs):
+        super().info(self, *args, **kwargs)
+
+    @_threadedlogger_asynclog
+    def debug(self, *args, **kwargs):
+        super().debug(self, *args, **kwargs)
+
+    @_threadedlogger_asynclog
+    def error(self, *args, **kwargs):
+        super().error(self, *args, **kwargs)
+
+    @_threadedlogger_asynclog
+    def exception(self, *args, **kwargs):
+        super().exception(self, *args, **kwargs)
+
+    @_threadedlogger_asynclog
+    def info(self, *args, **kwargs):
+        super().info(self, *args, **kwargs)
+
+    @_threadedlogger_asynclog
+    def warning(self, *args, **kwargs):
+        super().warning(self, *args, **kwargs)
 
 
 def getLogger(name='unknown', version='unknown'):
@@ -468,3 +538,20 @@ class DeprecatedConfig(Exception):
 
     def __init__(self, msg):
         super(Exception, self).__init__(self.message % dict(msg=msg))
+
+
+def close():
+    """Close the logging system.
+       Stops accepting messages and flushes.
+    """
+    if _threadedlogger_queue:
+        # Flush messages.
+        _threadedlogger_queue.join()
+        # Reset to None, so ThreadedLogger might be reinitialized.
+        _threadedlogger_queue = None
+
+    for name in _loggers:
+        # Flush messages.
+        _loggers[name].shutdown()
+        # Reset to None so getLoggers can reinitialize this.
+        _loggers[name] = None
