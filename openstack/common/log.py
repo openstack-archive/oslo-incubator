@@ -46,8 +46,14 @@ from openstack.common import jsonutils
 from openstack.common import local
 from openstack.common import notifier
 
+from eventlet import greenthread
+from eventlet import queue as eventlet_queue
+
 
 log_opts = [
+    cfg.BoolOpt('logging_async',
+                default=False,
+                help='asynchronously write logs in a background thread'),
     cfg.StrOpt('logging_context_format_string',
                default='%(asctime)s %(levelname)s %(name)s [%(request_id)s '
                        '%(user_id)s %(project_id)s] %(instance)s'
@@ -268,6 +274,12 @@ def setup(product_name):
     """Setup logging."""
     sys.excepthook = _create_logging_excepthook(product_name)
 
+    # The greenlogger class provides a background
+    # greenthread to asynchronously (but serially)
+    # process log messages.
+    if CONF.logging_async:
+        logging.setLoggerClass(GreenLogger)
+
     if CONF.log_config:
         try:
             logging.config.fileConfig(CONF.log_config)
@@ -358,6 +370,59 @@ def _setup_logging_from_conf(product_name):
             logger.addHandler(handler)
 
 _loggers = {}
+_greenlogger_queue = None
+
+
+def _greenlogger_proc(self):
+    while True:
+        greenthread.spawn(_greenlogger_queue.get())
+
+
+def _greenlogger_asynclog(func):
+    def queue_func(*args, **kwargs):
+        _greenlogger_queue.put([fn, *args, **kwargs])
+    return queue_func
+
+
+class GreenLogger(logging.Logger):
+    """GreenLogger: serialized, asynchronous logging.
+       Using GreenLogger will not block on logging in eventlet,
+       but will keep logs in order by serializing them through an
+       in-memory queue.
+    """
+    def __init__(self, name):
+        # Use a global queue because instance-level
+        # decorators aren't easy (and overkill).
+        # Also, this might be preferable for logging.
+        global _greenlogger_queue
+        if not _greenlogger_queue:
+            _greenlogger_queue = eventlet_queue.LightQueue()
+            eventlet.spawn_n(_proc_logs, self)
+
+        super(logging.Logger).__init__(self, name)
+
+    @_greenlogger_asynclog
+    def info(self, *args, **kwargs):
+        super().info(self, *args, **kwargs)
+
+    @_greenlogger_asynclog
+    def warning(self, *args, **kwargs):
+        super().warning(self, *args, **kwargs)
+
+    @_greenlogger_asynclog
+    def error(self, *args, **kwargs):
+        super().error(self, *args, **kwargs)
+
+    @_asynclog
+        super().critical(self, *args, **kwargs)
+
+    @_asynclog
+    def exception(self, *args, **kwargs):
+        super().exception(self, *args, **kwargs)
+
+    @_asynclog
+    def debug(self, *args, **kwargs):
+        super().debug(self, *args, **kwargs)
 
 
 def getLogger(name='unknown', version='unknown'):
