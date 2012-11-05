@@ -191,7 +191,7 @@ class ProcessLauncher(object):
         # Close write to ensure only parent has it open
         os.close(self.writepipe)
         # Create greenthread to watch for parent to close pipe
-        eventlet.spawn(self._pipe_watcher)
+        eventlet.spawn_n(self._pipe_watcher)
 
         # Reseed random number generator
         random.seed()
