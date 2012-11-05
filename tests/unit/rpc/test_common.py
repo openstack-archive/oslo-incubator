@@ -21,13 +21,11 @@ import logging
 import sys
 
 from openstack.common import cfg
-from openstack.common import context
 from openstack.common import exception
 from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import rpc
 from openstack.common.rpc import common as rpc_common
-from tests.unit.rpc import common
 from tests import utils as test_utils
 
 
