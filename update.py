@@ -142,8 +142,8 @@ def _copy_file(path, base, dest_dir):
     shutil.copy2(path, dest)
 
     _replace(dest,
-             '^from openstack.common',
-             'from ' + base + '.openstack.common')
+             '^( *)from openstack.common',
+             r'\1from ' + base + '.openstack.common')
 
     _replace(dest,
              '\'openstack\.common',
