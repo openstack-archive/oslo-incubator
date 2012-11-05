@@ -141,8 +141,13 @@ class RpcDispatcher(object):
             had_compatible = had_compatible or is_compatible
             if not hasattr(proxyobj, method):
                 continue
+            if method.startswith("_"):
+                continue
+            proxy_method = getattr(proxyobj, method)
+            if not hasattr(proxy_method, '__call__'):
+                continue
             if is_compatible:
-                return getattr(proxyobj, method)(ctxt, **kwargs)
+                return proxy_method(ctxt, **kwargs)
 
         if had_compatible:
             raise AttributeError("No such RPC function '%s'" % method)
