@@ -167,3 +167,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         importutils.import_module = orig_import_module
 
         self.assertEqual(self.mod, 'nova.openstack.common.rpc.impl_qpid')
+
+    def test_queue_get_for(self):
+        self.assertEqual(rpc.queue_get_for(None, 'a', 'b'), 'a.b')
+        self.assertEqual(rpc.queue_get_for(None, 'a', None), 'a')
