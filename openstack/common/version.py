@@ -21,7 +21,7 @@ Utilities for consuming the auto-generated versioninfo files.
 import datetime
 import pkg_resources
 
-import setup
+import common_setup
 
 
 class _deferred_version_string(object):
@@ -62,9 +62,10 @@ class VersionInfo(object):
         """Defer to the openstack.common.setup routines for making a
         version from git."""
         if self.pre_version is None:
-            return setup.get_post_version(self.python_package)
+            return common_setup.get_post_version(self.python_package)
         else:
-            return setup.get_pre_version(self.python_package, self.pre_version)
+            return common_setup.get_pre_version(self.python_package,
+                                                self.pre_version)
 
     def _newer_version(self, pending_version):
         """Check to see if we're working with a stale version or not.

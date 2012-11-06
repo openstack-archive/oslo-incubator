@@ -17,14 +17,14 @@
 
 import setuptools
 
-from openstack.common import setup
+from openstack.common import common_setup
 
-requires = setup.parse_requirements()
-depend_links = setup.parse_dependency_links()
+requires = common_setup.parse_requirements()
+depend_links = common_setup.parse_dependency_links()
 
 setuptools.setup(
     name='openstack.common',
-    version=setup.get_post_version('openstack'),
+    version=common_setup.get_post_version('openstack'),
     description="Common components for Openstack",
     long_description="Common components for Openstack "
                      "including paster templates.",
@@ -42,7 +42,7 @@ setuptools.setup(
     packages=setuptools.find_packages(exclude=['ez_setup',
                                                'examples', 'tests']),
     include_package_data=True,
-    cmdclass=setup.get_cmdclass(),
+    cmdclass=common_setup.get_cmdclass(),
     zip_safe=True,
     install_requires=requires,
     dependency_links=depend_links,

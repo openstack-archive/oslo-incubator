@@ -20,7 +20,7 @@ import unittest
 from tempfile import mkstemp
 import sys
 
-from openstack.common.setup import *
+from openstack.common.common_setup import *
 
 
 class EmailTestCase(unittest.TestCase):
