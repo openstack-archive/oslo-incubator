@@ -16,7 +16,6 @@
 
 import errno
 import os
-import select
 import shutil
 import tempfile
 import time
@@ -25,6 +24,7 @@ import unittest
 import eventlet
 from eventlet import greenthread
 from eventlet import greenpool
+import eventlet.green.select
 
 from openstack.common import lockutils
 from tests import utils as test_utils
@@ -143,7 +143,8 @@ class LockTestCase(test_utils.BaseTestCase):
                 self.assertEquals(e.errno, errno.EPIPE)
                 return
 
-            rfds, _wfds, _efds = select.select([rpipe], [], [], 1)
+            rfds, _wfds, _efds = eventlet.green.select.select([rpipe],
+                                                              [], [], 1)
             self.assertEquals(len(rfds), 0, "The other process, which was "
                                             "supposed to be locked, "
                                             "wrote on its end of the "
