@@ -18,19 +18,43 @@
 import functools
 import itertools
 import logging
+import select
 import time
 import uuid
 
 import eventlet
+import eventlet.patcher
 import greenlet
-import qpid.messaging
-import qpid.messaging.exceptions
 
 from openstack.common import cfg
 from openstack.common.gettextutils import _
 from openstack.common import jsonutils
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
+
+
+# NOTE(russellb): We're wrapping select() here because we observed eventlet's
+# select() lying to us in https://bugs.launchpad.net/quantum/+bug/1073999 .
+# By doing a non-blocking call of the system's built-in select(), we sanity
+# check the result from eventlet's select(), which should be pretty harmless,
+# with a neglible performance impact.
+#
+# We must also patch select before importing the qpid libs so that qpid gets
+# our new version.
+
+_patched_select = select.select
+_orig_select = eventlet.patcher.original('select').select
+
+
+def _custom_select(*args, **kwargs):
+    rlist, wlist, xlist = _patched_select(*args, **kwargs)
+    return _orig_select(rlist, wlist, xlist, 0)
+
+select.select = _custom_select
+
+
+import qpid.messaging
+import qpid.messaging.exceptions
 
 LOG = logging.getLogger(__name__)
 
