@@ -29,6 +29,16 @@ class FakeService(service.Service):
     def test_method(self):
         return self.method_result
 
+class FakeHookService(FakeService):
+    def __init__(self, host, topic):
+        super(FakeService, self).__init__(host, topic)
+        self.hooked = False
+
+    def pre_consume_hook(self, service):
+        self.hooked = True
+
+    def test_hook(self):
+        return self.hooked
 
 class RpcServiceManagerTestCase(utils.BaseTestCase):
     """Test cases for Services"""
@@ -44,4 +54,10 @@ class RpcServiceManagerTestCase(utils.BaseTestCase):
         serv = FakeService('test-host', 'test-topic')
         serv.start()
         self.assertEqual(serv.test_method(), 'manager')
+        serv.stop()
+
+    def test_hook_default(self):
+        serv = FakeHookService('test-host', 'test-topic')
+        serv.start()
+        self.assertTrue(serv.test_hook())
         serv.stop()

@@ -57,6 +57,10 @@ class Service(service.Service):
 
         self.conn.create_consumer(self.topic, dispatcher, fanout=True)
 
+        # Hook to allow the manager create private consumer
+        if callable(getattr(self.manager, 'pre_consume_hook', None)):
+            self.manager.pre_consume_hook(self)
+
         # Consume from all consumers in a thread
         self.conn.consume_in_thread()
 
