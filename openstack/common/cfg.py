@@ -209,15 +209,15 @@ For command line utilities that dispatch to other command line utilities, the
 disable_interspersed_args() method is available. If this this method is called,
 then parsing e.g.::
 
-  script --verbose cmd --debug /tmp/mything
+    script --verbose cmd --debug /tmp/mything
 
 will no longer return::
 
-  ['cmd', '/tmp/mything']
+    ['cmd', '/tmp/mything']
 
 as the leftover arguments, but will instead return::
 
-  ['cmd', '--debug', '/tmp/mything']
+    ['cmd', '--debug', '/tmp/mything']
 
 i.e. argument parsing is stopped at the first non-option argument.
 
@@ -225,7 +225,7 @@ Options may be declared as required so that an error is raised if the user
 does not supply a value for the option.
 
 Options may be declared as secret so that their values are not leaked into
-log files:
+log files::
 
      opts = [
         cfg.StrOpt('s3_store_access_key', secret=True),
@@ -234,20 +234,20 @@ log files:
      ]
 
 This module also contains a global instance of the CommonConfigOpts class
-in order to support a common usage pattern in OpenStack:
+in order to support a common usage pattern in OpenStack::
 
-  from openstack.common import cfg
+    from openstack.common import cfg
 
-  opts = [
-    cfg.StrOpt('bind_host', default='0.0.0.0'),
-    cfg.IntOpt('bind_port', default=9292),
-  ]
+    opts = [
+        cfg.StrOpt('bind_host', default='0.0.0.0'),
+        cfg.IntOpt('bind_port', default=9292),
+    ]
 
-  CONF = cfg.CONF
-  CONF.register_opts(opts)
+    CONF = cfg.CONF
+    CONF.register_opts(opts)
 
-  def start(server, app):
-      server.start(app, CONF.bind_port, CONF.bind_host)
+    def start(server, app):
+        server.start(app, CONF.bind_port, CONF.bind_host)
 
 """
 

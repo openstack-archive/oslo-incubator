@@ -51,22 +51,33 @@ class ProcessExecutionError(Exception):
 
 def execute(*cmd, **kwargs):
     """
-    Helper method to execute command with optional retry.
+    Helper method to shell out and execute a command through subprocess with
+    optional retry.
 
-    :cmd                Passed to subprocess.Popen.
-    :process_input      Send to opened process.
-    :check_exit_code    Defaults to 0. Raise executils.ProcessExecutionError
-                        unless program exits with this code.
-    :delay_on_retry     True | False. Defaults to True. If set to True, wait a
-                        short amount of time before retrying.
-    :attempts           How many times to retry cmd.
-    :run_as_root        True | False. Defaults to False. If set to True,
-                        the command is prefixed by the command specified
-                        in the root_helper kwarg.
-    :root_helper        command to prefix all cmd's with
-
-    :raises executils.UnknownArgumentError on receiving unknown arguments
-    :raises executils.ProcessExecutionError
+    :param cmd:             Passed to subprocess.Popen.
+    :type cmd:              string
+    :param process_input:   Send to opened process.
+    :type proces_input:     string
+    :param check_exit_code: Defaults to 0. Will raise
+                            :class:`ProcessExecutionError`
+                            if the command exits without returning this value
+                            as a returncode
+    :type check_exit_code:  int
+    :param delay_on_retry:  True | False. Defaults to True. If set to True,
+                            wait a short amount of time before retrying.
+    :type delay_on_retry:   boolean
+    :param attempts:        How many times to retry cmd.
+    :type attemps:          int
+    :param run_as_root:     True | False. Defaults to False. If set to True,
+                            the command is prefixed by the command specified
+                            in the root_helper kwarg.
+    :type run_as_root:      boolean
+    :param root_helper:     command to prefix all cmd's with
+    :type root_helper:      string
+    :returns:               (stdout, stderr) from process execution
+    :raises:                :class:`UnknownArgumentError` on
+                            receiving unknown arguments
+    :raises:                :class:`ProcessExecutionError`
     """
 
     process_input = kwargs.pop('process_input', None)
