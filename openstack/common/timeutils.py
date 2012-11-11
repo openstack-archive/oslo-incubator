@@ -30,7 +30,11 @@ PERFECT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f"
 
 
 def isotime(at=None):
-    """Stringify time in ISO 8601 format"""
+    """Stringify time in ISO 8601 format
+    :param at: (optional) datetime instance to convert into a string
+    :type at: :class:`datetime.datetime`
+    :returns: string in ISO8601 format
+    """
     if not at:
         at = utcnow()
     str = at.strftime(TIME_FORMAT)

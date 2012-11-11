@@ -1,7 +1,10 @@
 OpenStack Common Code
 =====================
 
-Code shared for common tasks across OpenStack. Contents:
+Code shared across OpenStack.
+
+Contents
+--------
 
 .. toctree::
    :maxdepth: 1
