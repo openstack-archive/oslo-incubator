@@ -27,7 +27,6 @@ import sys
 import time
 
 import eventlet
-import greenlet
 import logging as std_logging
 
 from openstack.common import cfg
@@ -54,7 +53,7 @@ class Launcher(object):
         :returns: None
 
         """
-        self._services = []
+        self._services = threadgroup.ThreadGroup('launcher')
         eventlet_backdoor.initialize_if_enabled()
 
     @staticmethod
@@ -75,8 +74,7 @@ class Launcher(object):
         :returns: None
 
         """
-        gt = eventlet.spawn(self.run_service, service)
-        self._services.append(gt)
+        self._services.add_thread(self.run_service, service)
 
     def stop(self):
         """Stop all services which are currently running.
@@ -84,8 +82,7 @@ class Launcher(object):
         :returns: None
 
         """
-        for service in self._services:
-            service.kill()
+        self._services.stop()
 
     def wait(self):
         """Waits until all services have been stopped, and then returns.
@@ -93,11 +90,7 @@ class Launcher(object):
         :returns: None
 
         """
-        for service in self._services:
-            try:
-                service.wait()
-            except greenlet.GreenletExit:
-                pass
+        self._services.wait()
 
 
 class SignalExit(SystemExit):
