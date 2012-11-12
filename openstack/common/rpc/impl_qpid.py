@@ -294,17 +294,13 @@ class Connection(object):
         self.consumer_thread = None
         self.conf = conf
 
-        if server_params is None:
-            server_params = {}
-
-        default_params = dict(hostname=self.conf.qpid_hostname,
-                              port=self.conf.qpid_port,
-                              username=self.conf.qpid_username,
-                              password=self.conf.qpid_password)
-
-        params = server_params
-        for key in default_params.keys():
-            params.setdefault(key, default_params[key])
+        params = {
+            'hostname': self.conf.qpid_hostname,
+            'port': self.conf.qpid_port,
+            'username': self.conf.qpid_username,
+            'password': self.conf.qpid_password,
+        }
+        params.update(server_params or {})
 
         self.broker = params['hostname'] + ":" + str(params['port'])
         # Create the connection - this does not open the connection
