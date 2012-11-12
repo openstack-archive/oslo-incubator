@@ -122,9 +122,8 @@ class UsageTestCase(BaseTestCase):
         f = StringIO.StringIO()
         self.conf([])
         self.conf.print_usage(file=f)
-        print "--", f.getvalue(), "++"
         self.assertTrue('usage: test FOO BAR' in f.getvalue())
-        self.assertTrue('Options:' not in f.getvalue())
+        self.assertTrue('optional:' not in f.getvalue())
 
 
 class HelpTestCase(BaseTestCase):
@@ -134,7 +133,7 @@ class HelpTestCase(BaseTestCase):
         self.conf([])
         self.conf.print_help(file=f)
         self.assertTrue('usage: test FOO BAR' in f.getvalue())
-        self.assertTrue('Options:' in f.getvalue())
+        self.assertTrue('optional' in f.getvalue())
         self.assertTrue('-h, --help' in f.getvalue())
 
 
