@@ -1,5 +1,5 @@
 [gerrit]
 host=review.openstack.org
 port=29418
-project=openstack/openstack-common.git
+project=openstack/oslo-incubator.git
 defaultbranch=stable/folsom
