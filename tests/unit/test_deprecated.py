@@ -38,16 +38,16 @@ class DeprecatedConfigTestCase(test_utils.BaseTestCase):
 
     def test_deprecated(self):
         LOG.deprecated('test')
-        self.assertEqual(self.warnbuffer, 'Deprecated Config: test')
+        self.assertEqual(self.warnbuffer, 'Deprecated: test')
 
     def test_deprecated_fatal(self):
         self.config(fatal_deprecations=True)
         self.assertRaises(logging.DeprecatedConfig,
                           LOG.deprecated, "test2")
-        self.assertEqual(self.critbuffer, 'Deprecated Config: test2')
+        self.assertEqual(self.critbuffer, 'Deprecated: test2')
 
     def test_deprecated_logs_only_once(self):
         LOG.deprecated('only once!')
         LOG.deprecated('only once!')
         LOG.deprecated('only once!')
-        self.assertEqual(self.warnbuffer, 'Deprecated Config: only once!')
+        self.assertEqual(self.warnbuffer, 'Deprecated: only once!')
