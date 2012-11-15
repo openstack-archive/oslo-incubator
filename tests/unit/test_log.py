@@ -22,6 +22,13 @@ def _fake_context():
 class LoggerTestCase(test_utils.BaseTestCase):
     def setUp(self):
         super(LoggerTestCase, self).setUp()
+
+        # common context has different fields to the defaults in log.py
+        self.config(logging_context_format_string='%(asctime)s %(levelname)s '
+                                                  '%(name)s [%(request_id)s '
+                                                  '%(user)s %(tenant)s] '
+                                                  '%(message)s')
+
         self.log = log.getLogger()
 
     def test_handlers_have_legacy_formatter(self):
