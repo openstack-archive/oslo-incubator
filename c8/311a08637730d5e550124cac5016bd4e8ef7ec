@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Approved+1: Mark McLoughlin <markmc@redhat.com>
+Code-Review+2: Mark McLoughlin <markmc@redhat.com>
+Code-Review+1: garyk <gkotton@redhat.com>
+Code-Review+1: Julien Danjou <julien@danjou.info>
+Submitted-by: Jenkins
+Submitted-at: Thu, 15 Nov 2012 10:52:46 +0000
+Reviewed-on: https://review.openstack.org/15478
+Project: openstack/oslo-incubator
+Branch: refs/heads/stable/folsom
