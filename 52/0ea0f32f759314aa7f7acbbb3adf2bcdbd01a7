@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Approved+1: Russell Bryant <rbryant@redhat.com>
+Code-Review+2: Russell Bryant <rbryant@redhat.com>
+Code-Review+2: Michael Still <michael.still@canonical.com>
+Code-Review+1: Angus Salkeld <asalkeld@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 16 Nov 2012 18:14:50 +0000
+Reviewed-on: https://review.openstack.org/15913
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
