@@ -14,9 +14,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import datetime
 import unittest
 
+from eventlet import greenthread
+import mox
+
 from openstack.common import loopingcall
+from openstack.common import timeutils
 
 
 class LoopingCallTestCase(unittest.TestCase):
@@ -38,15 +43,42 @@ class LoopingCallTestCase(unittest.TestCase):
         timer = loopingcall.LoopingCall(_raise_it)
         self.assertFalse(timer.start(interval=0.5).wait())
 
+    def _wait_for_zero(self):
+        """Called at an interval until num_runs == 0."""
+        if self.num_runs == 0:
+            raise loopingcall.LoopingCallDone(False)
+        else:
+            self.num_runs = self.num_runs - 1
+
     def test_repeat(self):
         self.num_runs = 2
 
-        def _wait_for_zero():
-            """Called at an interval until num_runs == 0."""
-            if self.num_runs == 0:
-                raise loopingcall.LoopingCallDone(False)
-            else:
-                self.num_runs = self.num_runs - 1
-
-        timer = loopingcall.LoopingCall(_wait_for_zero)
+        timer = loopingcall.LoopingCall(self._wait_for_zero)
         self.assertFalse(timer.start(interval=0.5).wait())
+
+    def test_interval_adjustment(self):
+        """Ensure the interval is adjusted to account for task duration"""
+        self.num_runs = 3
+
+        now = datetime.datetime.utcnow()
+        second = datetime.timedelta(seconds=1)
+        smidgen = datetime.timedelta(microseconds=10000)
+        timeoverrides = [now, now + second - smidgen,
+                         now, now + second + second,
+                         now, now + second + smidgen]
+
+        m = mox.Mox()
+        m.StubOutWithMock(greenthread, 'sleep')
+        greenthread.sleep(mox.IsAlmost(0.02))
+        greenthread.sleep(mox.IsAlmost(0.0))
+        greenthread.sleep(mox.IsAlmost(0.0))
+        m.ReplayAll()
+
+        try:
+            timeutils.set_time_override(timeoverrides)
+            timer = loopingcall.LoopingCall(self._wait_for_zero)
+            timer.start(interval=1.01).wait()
+        finally:
+            timeutils.clear_time_override()
+            m.UnsetStubs()
+            m.VerifyAll()
