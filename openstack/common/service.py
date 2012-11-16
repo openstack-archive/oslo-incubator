@@ -132,9 +132,9 @@ class ServiceLauncher(Launcher):
         except SystemExit as exc:
             status = exc.code
         finally:
-            self.stop()
             if rpc:
                 rpc.cleanup()
+            self.stop()
         return status
 
 
