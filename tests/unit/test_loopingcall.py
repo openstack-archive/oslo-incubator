@@ -14,9 +14,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import datetime
 import unittest
 
+from eventlet import greenthread
+
 from openstack.common import loopingcall
+from openstack.common import timeutils
 
 
 class LoopingCallTestCase(unittest.TestCase):
@@ -38,15 +42,36 @@ class LoopingCallTestCase(unittest.TestCase):
         timer = loopingcall.LoopingCall(_raise_it)
         self.assertFalse(timer.start(interval=0.5).wait())
 
+    def _wait_for_zero(self):
+        """Called at an interval until num_runs == 0."""
+        if self.num_runs == 0:
+            raise loopingcall.LoopingCallDone(False)
+        else:
+            self.num_runs = self.num_runs - 1
+
     def test_repeat(self):
         self.num_runs = 2
 
-        def _wait_for_zero():
-            """Called at an interval until num_runs == 0."""
-            if self.num_runs == 0:
-                raise loopingcall.LoopingCallDone(False)
-            else:
-                self.num_runs = self.num_runs - 1
-
-        timer = loopingcall.LoopingCall(_wait_for_zero)
+        timer = loopingcall.LoopingCall(self._wait_for_zero)
         self.assertFalse(timer.start(interval=0.5).wait())
+
+    def test_interval_adjustment(self):
+        """Ensure the interval is adjusted to account for task duration"""
+        self.num_runs = 10
+
+        now = datetime.datetime.utcnow()
+        second = datetime.timedelta(seconds=1)
+        timeoverrides = [now + ((i * second) if i % 2 == 1
+                                else ((i - 1) * second)) for i in xrange(20)]
+
+        try:
+            timeutils.set_time_override(timeoverrides)
+            timer = loopingcall.LoopingCall(self._wait_for_zero)
+            start = datetime.datetime.now()
+            timer.start(interval=2.01).wait()
+            end = datetime.datetime.now()
+            delta = end - start
+            elapsed = delta.seconds + float(delta.microseconds) / (10 ** 6)
+            self.assertTrue(elapsed < 0.2)
+        finally:
+            timeutils.clear_time_override()

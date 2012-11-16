@@ -24,6 +24,7 @@ from eventlet import greenthread
 
 from openstack.common.gettextutils import _
 from openstack.common import log as logging
+from openstack.common import timeutils
 
 LOG = logging.getLogger(__name__)
 
@@ -62,10 +63,19 @@ class LoopingCall(object):
 
             try:
                 while self._running:
+                    start = timeutils.utcnow()
                     self.f(*self.args, **self.kw)
+                    end = timeutils.utcnow()
                     if not self._running:
                         break
-                    greenthread.sleep(interval)
+                    delta = end - start
+                    elapsed = (delta.seconds +
+                               float(delta.microseconds) / (10 ** 6))
+                    delay = interval - elapsed
+                    if delay <= 0:
+                        LOG.warn(_('task run outlasted interval by %s sec') %
+                                 -delay)
+                    greenthread.sleep(delay if delay > 0 else 0)
             except LoopingCallDone, e:
                 self.stop()
                 done.send(e.retvalue)
