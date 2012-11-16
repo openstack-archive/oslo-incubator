@@ -14,7 +14,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import datetime
 import unittest
+
+from eventlet import greenthread
 
 from openstack.common import loopingcall
 
@@ -50,3 +53,22 @@ class LoopingCallTestCase(unittest.TestCase):
 
         timer = loopingcall.LoopingCall(_wait_for_zero)
         self.assertFalse(timer.start(interval=0.5).wait())
+
+    def test_interval_adjustment(self):
+        """Ensure the interval is adjusted to account for task duration"""
+        self.num_runs = 10
+
+        def _laggard():
+            greenthread.sleep(0.125)
+            if self.num_runs == 0:
+                raise loopingcall.LoopingCallDone(False)
+            else:
+                self.num_runs = self.num_runs - 1
+
+        timer = loopingcall.LoopingCall(_laggard)
+        start = datetime.datetime.now()
+        timer.start(interval=0.25).wait()
+        end = datetime.datetime.now()
+        delta = end - start
+        elapsed = delta.seconds + float(delta.microseconds) / (10 ** 6)
+        self.assertTrue(elapsed < 3.0)

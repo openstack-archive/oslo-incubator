@@ -17,6 +17,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import datetime
 import sys
 
 from eventlet import event
@@ -62,10 +63,16 @@ class LoopingCall(object):
 
             try:
                 while self._running:
+                    start = datetime.datetime.now()
                     self.f(*self.args, **self.kw)
+                    end = datetime.datetime.now()
                     if not self._running:
                         break
-                    greenthread.sleep(interval)
+                    delta = end - start
+                    elapsed = (delta.seconds +
+                               float(delta.microseconds) / (10 ** 6))
+                    delay = interval - elapsed
+                    greenthread.sleep(delay if delay > 0 else 0)
             except LoopingCallDone, e:
                 self.stop()
                 done.send(e.retvalue)
