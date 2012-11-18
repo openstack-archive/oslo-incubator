@@ -78,34 +78,47 @@ opts = [
     cfg.StrOpt('dest-dir',
                default=None,
                help='Destination project directory'),
+    # NOTE(kiall): Seems positional arg's can't have a - in the name?
+    cfg.StrOpt('destdirpositional',
+               default=None,
+               help='Destination project directory',
+               positional=True),
 ]
 
 
 def _parse_args(argv):
     conf = cfg.ConfigOpts()
     conf.register_cli_opts(opts)
-    args = conf(argv, usage='Usage: %(prog)s [config-file|dest-dir]')
+    conf(argv, usage='Usage: %(prog)s [config-file|dest-dir]')
 
-    if len(args) == 1:
+    if not conf.dest_dir and conf.destdirpositional:
+        conf.set_override('dest_dir', conf.destdirpositional)
+
+    if not conf.dest_dir:
+        conf.print_usage(file=sys.stderr)
+        sys.exit(1)
+
+    if not conf.config_file:
         def def_config_file(dest_dir):
             return os.path.join(dest_dir, 'openstack-common.conf')
 
-        i = argv.index(args[0])
-
+        dest_dir = None
         config_file = None
-        if os.path.isfile(argv[i]):
-            config_file = argv[i]
-        elif (os.path.isdir(argv[i])
-              and os.path.isfile(def_config_file(argv[i]))):
-            config_file = def_config_file(argv[i])
+        if os.path.isfile(conf.dest_dir):
+            argv.remove(conf.dest_dir)
+            dest_dir = os.path.dirname(conf.dest_dir)
+            config_file = conf.dest_dir
+        elif (os.path.isdir(conf.dest_dir)
+              and os.path.isfile(def_config_file(conf.dest_dir))):
+            config_file = def_config_file(conf.dest_dir)
+
+        if dest_dir:
+            argv.extend(['--dest-dir', dest_dir])
 
         if config_file:
-            argv[i:i + 1] = ['--config-file', config_file]
-            args = conf(argv)
-
-    if args:
-        conf.print_usage(file=sys.stderr)
-        sys.exit(1)
+            argv.extend(['--config-file', config_file])
+            conf.clear_override('dest_dir')
+            conf(argv)
 
     return conf
 
