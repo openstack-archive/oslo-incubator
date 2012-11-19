@@ -135,3 +135,12 @@ def unmarshall_time(tyme):
                              minute=tyme['minute'],
                              second=tyme['second'],
                              microsecond=tyme['microsecond'])
+
+
+def delta_seconds(before, after):
+    delta = after - before
+    try:
+        return delta.total_seconds()
+    except AttributeError:
+        return ((delta.days * 24 * 3600) + delta.seconds +
+                float(delta.microseconds) / (10 ** 6))
