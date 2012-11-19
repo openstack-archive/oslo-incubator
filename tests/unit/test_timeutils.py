@@ -122,6 +122,13 @@ class TimeUtilsTest(unittest.TestCase):
         backagain = timeutils.unmarshall_time(binary)
         self.assertEqual(now, backagain)
 
+    def test_delta_seconds(self):
+        before = timeutils.utcnow()
+        after = before + datetime.timedelta(days=7, seconds=59,
+                                            microseconds=123456)
+        self.assertAlmostEquals(604859.123456,
+                                timeutils.delta_seconds(before, after))
+
 
 class TestIso8601Time(unittest.TestCase):
 
