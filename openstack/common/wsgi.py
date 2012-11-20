@@ -568,9 +568,9 @@ class RequestDeserializer(object):
         """Extract necessary pieces of the request.
 
         :param request: Request object
-        :returns tuple of expected controller action name, dictionary of
-                 keyword arguments to pass to the controller, the expected
-                 content type of the response
+        :returns: tuple of (expected controller action name, dictionary of
+                  keyword arguments to pass to the controller, the expected
+                  content type of the response)
 
         """
         action_args = self.get_action_args(request.environ)
