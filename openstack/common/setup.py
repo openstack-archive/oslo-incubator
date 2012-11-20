@@ -337,7 +337,9 @@ def get_git_branchname():
 def get_pre_version(projectname, base_version):
     """Return a version which is leading up to a version that will
        be released in the future."""
-    if os.path.isdir('.git'):
+    if os.getenv('OS_VERSION_OVERRIDE'):
+        return os.getenv('OS_VERSION_OVERRIDE')
+    elif os.path.isdir('.git'):
         current_tag = _get_git_current_tag()
         if current_tag is not None:
             version = current_tag
