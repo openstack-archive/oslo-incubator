@@ -20,7 +20,7 @@ return keys for direct exchanges, per (approximate) AMQP parlance.
 
 import contextlib
 import itertools
-import logging
+import json
 
 from openstack.common import cfg
 from openstack.common import log as logging

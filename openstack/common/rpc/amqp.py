@@ -282,7 +282,7 @@ class ProxyCallback(object):
                 ctxt.reply(rval, None, connection_pool=self.connection_pool)
             # This final None tells multicall that it is done.
             ctxt.reply(ending=True, connection_pool=self.connection_pool)
-        except Exception as e:
+        except Exception:
             LOG.exception('Exception during message handling')
             ctxt.reply(None, sys.exc_info(),
                        connection_pool=self.connection_pool)
@@ -407,8 +407,9 @@ def fanout_cast_to_server(conf, context, server_params, topic, msg,
 
 def notify(conf, context, topic, msg, connection_pool):
     """Sends a notification event on a topic."""
-    event_type = msg.get('event_type')
-    LOG.debug(_('Sending %(event_type)s on %(topic)s'), locals())
+    LOG.debug(_('Sending %(event_type)s on %(topic)s'),
+              dict(event_type=msg.get('event_type'),
+                   topic=topic))
     pack_context(msg, context)
     with ConnectionContext(conf, connection_pool) as conn:
         conn.notify_send(topic, msg)
