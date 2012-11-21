@@ -13,6 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import eventlet
+
 from openstack.common.gettextutils import _
 from openstack.common import log as logging
 
@@ -87,9 +89,8 @@ class _PeriodicTasksMeta(type):
 class PeriodicTasks(object):
     __metaclass__ = _PeriodicTasksMeta
 
-    def run_periodic_tasks(self, *args, **kwargs):
+    def run_periodic_tasks(self, context, raise_on_error=False):
         """Tasks to be run at a periodic interval."""
-        raise_on_error = kwargs.get('raise_on_error', False)
         for task_name, task in self._periodic_tasks:
             full_task_name = '.'.join([self.__class__.__name__, task_name])
 
@@ -104,7 +105,10 @@ class PeriodicTasks(object):
             LOG.debug(_("Running periodic task %(full_task_name)s"), locals())
 
             try:
-                task(self, *args, **kwargs)
+                task(self, context)
+                # NOTE(tiantian): After finished a task, allow caller to
+                # do other work (report_state, processing AMPQ request etc.)
+                eventlet.sleep(0)
             except Exception as e:
                 if raise_on_error:
                     raise
