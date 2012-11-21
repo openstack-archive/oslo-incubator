@@ -18,7 +18,6 @@ from eventlet import greenlet
 from eventlet import greenpool
 from eventlet import greenthread
 
-from openstack.common.gettextutils import _
 from openstack.common import log as logging
 from openstack.common import loopingcall
 
