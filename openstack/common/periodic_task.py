@@ -89,7 +89,7 @@ class PeriodicTasks(object):
 
     def run_periodic_tasks(self, *args, **kwargs):
         """Tasks to be run at a periodic interval."""
-        raise_on_error = kwargs.get('raise_on_error', False)
+        raise_on_error = kwargs.pop('raise_on_error', False)
         for task_name, task in self._periodic_tasks:
             full_task_name = '.'.join([self.__class__.__name__, task_name])
 
