@@ -27,6 +27,7 @@ import sys
 import time
 
 import eventlet
+import extras
 import logging as std_logging
 
 from openstack.common import cfg
@@ -35,11 +36,8 @@ from openstack.common.gettextutils import _
 from openstack.common import log as logging
 from openstack.common import threadgroup
 
-try:
-    from openstack.common import rpc
-except ImportError:
-    rpc = None
 
+rpc = extras.try_import('openstack.common.rpc')
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
@@ -253,10 +251,12 @@ class ProcessLauncher(object):
 
         if os.WIFSIGNALED(status):
             sig = os.WTERMSIG(status)
-            LOG.info(_('Child %(pid)d killed by signal %(sig)d'), locals())
+            LOG.info(_('Child {pid} killed by signal {sig}').format(
+                     pid=pid, sig=sig))
         else:
             code = os.WEXITSTATUS(status)
-            LOG.info(_('Child %(pid)d exited with status %(code)d'), locals())
+            LOG.info(_('Child {pid} exited with status {code}').format(
+                     pid=pid, code=code))
 
         if pid not in self.children:
             LOG.warning(_('pid %d not in child list'), pid)
