@@ -174,7 +174,7 @@ class ContextAdapter(logging.LoggerAdapter):
         self.log(logging.AUDIT, msg, *args, **kwargs)
 
     def deprecated(self, msg, *args, **kwargs):
-        stdmsg = _("Deprecated Config: %s") % msg
+        stdmsg = _("Deprecated: %s") % msg
         if CONF.fatal_deprecations:
             self.critical(stdmsg, *args, **kwargs)
             raise DeprecatedConfig(msg=stdmsg)
