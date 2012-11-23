@@ -27,6 +27,7 @@ import sys
 import time
 
 import eventlet
+import extras
 import logging as std_logging
 
 from openstack.common import cfg
@@ -35,11 +36,7 @@ from openstack.common.gettextutils import _
 from openstack.common import log as logging
 from openstack.common import threadgroup
 
-try:
-    from openstack.common import rpc
-except ImportError:
-    rpc = None
-
+rpc = extras.try_import('openstack.common.rpc')
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
