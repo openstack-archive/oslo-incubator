@@ -133,3 +133,7 @@ class MalformedRequestBody(OpenstackException):
 
 class InvalidContentType(OpenstackException):
     message = "Invalid content type %(content_type)s"
+
+
+class ClassNotFound(OpenstackException):
+    message = _("Class %(class_name)s could not be found: %(exception)s")
