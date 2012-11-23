@@ -135,3 +135,16 @@ def unmarshall_time(tyme):
                              minute=tyme['minute'],
                              second=tyme['second'],
                              microsecond=tyme['microsecond'])
+
+
+def delta_seconds(before, after):
+    """
+    Compute the difference in seconds between two date, time, or
+    datetime objects (as a float, to microsecond resolution).
+    """
+    delta = after - before
+    try:
+        return delta.total_seconds()
+    except AttributeError:
+        return ((delta.days * 24 * 3600) + delta.seconds +
+                float(delta.microseconds) / (10 ** 6))
