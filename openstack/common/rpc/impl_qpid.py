@@ -17,7 +17,6 @@
 
 import functools
 import itertools
-import logging
 import time
 import uuid
 
@@ -29,6 +28,7 @@ import qpid.messaging.exceptions
 from openstack.common import cfg
 from openstack.common.gettextutils import _
 from openstack.common import jsonutils
+from openstack.common import log as logging
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
 

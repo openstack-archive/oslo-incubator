@@ -26,7 +26,6 @@ AMQP, but is deprecated and predates this code.
 """
 
 import inspect
-import logging
 import sys
 import uuid
 
@@ -38,6 +37,7 @@ from openstack.common import cfg
 from openstack.common import excutils
 from openstack.common.gettextutils import _
 from openstack.common import local
+from openstack.common import log as logging
 from openstack.common.rpc import common as rpc_common
 
 

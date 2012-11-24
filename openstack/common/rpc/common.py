@@ -18,13 +18,13 @@
 #    under the License.
 
 import copy
-import logging
 import traceback
 
 from openstack.common.gettextutils import _
 from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import local
+from openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)
