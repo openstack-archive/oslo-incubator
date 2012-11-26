@@ -97,7 +97,7 @@ def wrap_exception(f):
         except Exception, e:
             if not isinstance(e, Error):
                 #exc_type, exc_value, exc_traceback = sys.exc_info()
-                logging.exception('Uncaught exception')
+                logging.exception(_('Uncaught exception'))
                 #logging.error(traceback.extract_stack(exc_traceback))
                 raise Error(str(e))
             raise

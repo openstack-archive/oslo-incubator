@@ -150,7 +150,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
         class Nested(object):
             @staticmethod
             def put_queue(context, value):
-                LOG.debug("Got value in put_queue: %s", value)
+                LOG.debug(_("Got value in put_queue: %s"), value)
                 QUEUE.put(value)
 
         nested = Nested()
