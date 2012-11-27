@@ -78,34 +78,31 @@ opts = [
     cfg.StrOpt('dest-dir',
                default=None,
                help='Destination project directory'),
+    cfg.StrOpt('configfile_or_destdir',
+               default=None,
+               help='A config file or destination project directory',
+               positional=True),
 ]
 
 
 def _parse_args(argv):
     conf = cfg.ConfigOpts()
     conf.register_cli_opts(opts)
-    args = conf(argv, usage='Usage: %(prog)s [config-file|dest-dir]')
+    conf(argv, usage='Usage: %(prog)s [config-file|dest-dir]')
 
-    if len(args) == 1:
+    if conf.configfile_or_destdir:
         def def_config_file(dest_dir):
             return os.path.join(dest_dir, 'openstack-common.conf')
 
-        i = argv.index(args[0])
-
         config_file = None
-        if os.path.isfile(argv[i]):
-            config_file = argv[i]
-        elif (os.path.isdir(argv[i])
-              and os.path.isfile(def_config_file(argv[i]))):
-            config_file = def_config_file(argv[i])
+        if os.path.isfile(conf.configfile_or_destdir):
+            config_file = conf.configfile_or_destdir
+        elif (os.path.isdir(conf.configfile_or_destdir)
+              and os.path.isfile(def_config_file(conf.configfile_or_destdir))):
+            config_file = def_config_file(conf.configfile_or_destdir)
 
         if config_file:
-            argv[i:i + 1] = ['--config-file', config_file]
-            args = conf(argv)
-
-    if args:
-        conf.print_usage(file=sys.stderr)
-        sys.exit(1)
+            conf(argv + ['--config-file', config_file])
 
     return conf
 
