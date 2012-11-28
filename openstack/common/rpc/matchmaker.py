@@ -23,8 +23,8 @@ import itertools
 import logging
 
 from openstack.common import cfg
-from openstack.common import log as logging
 from openstack.common.gettextutils import _
+from openstack.common import log as logging
 
 
 matchmaker_opts = [
