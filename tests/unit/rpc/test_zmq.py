@@ -29,7 +29,7 @@ from openstack.common import exception
 from openstack.common.gettextutils import _
 from openstack.common import rpc
 from openstack.common import testutils
-from openstack.common import utils
+from openstack.common import convertutils
 from tests.unit.rpc import common
 
 try:
@@ -115,7 +115,7 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
             self.reactor.close()
 
             try:
-                utils.execute('rm', '-rf', FLAGS.rpc_zmq_ipc_dir)
+                convertutils.execute('rm', '-rf', FLAGS.rpc_zmq_ipc_dir)
             except exception.Error:
                 pass
 
