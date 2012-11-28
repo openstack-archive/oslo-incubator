@@ -302,8 +302,8 @@ class ProcessLauncher(object):
 class Service(object):
     """Service object for binaries running on hosts."""
 
-    def __init__(self):
-        self.tg = threadgroup.ThreadGroup('service')
+    def __init__(self, threads=1000):
+        self.tg = threadgroup.ThreadGroup('service', threads)
 
     def start(self):
         pass
