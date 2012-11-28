@@ -56,8 +56,7 @@ class Service(service.Service):
     """
 
     def __init__(self, threads=1000):
-        super(Service, self).__init__()
-        self.pool = eventlet.GreenPool(threads)
+        super(Service, self).__init__(threads)
 
     def start(self, application, port, host='0.0.0.0', backlog=128):
         """Start serving this service using the provided server instance.
@@ -66,8 +65,9 @@ class Service(service.Service):
 
         """
         super(Service, self).start()
-        socket = eventlet.listen((host, port), backlog=backlog)
-        self.pool.spawn_n(self._run, application, socket)
+        self.socket = eventlet.listen((host, port), backlog=backlog)
+        (self.host, self.port) = self.socket.getsockname()
+        self.tg.add_thread(self._run, application, self.socket)
 
     def stop(self):
         """Stop serving this API.
@@ -77,18 +77,10 @@ class Service(service.Service):
         """
         super(Service, self).stop()
 
-    def wait(self):
-        """Wait until all servers have completed running."""
-        super(Service, self).wait()
-        try:
-            self.pool.waitall()
-        except KeyboardInterrupt:
-            pass
-
     def _run(self, application, socket):
         """Start a WSGI server in a new green thread."""
         logger = logging.getLogger('eventlet.wsgi.server')
-        eventlet.wsgi.server(socket, application, custom_pool=self.pool,
+        eventlet.wsgi.server(socket, application, custom_pool=self.tg.pool,
                              log=logging.WritableLogger(logger))
 
 
