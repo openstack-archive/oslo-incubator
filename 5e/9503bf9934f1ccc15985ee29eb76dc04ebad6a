@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Approved+1: Jason Kölker <jason@koelker.net>
+Code-Review+2: Jason Kölker <jason@koelker.net>
+Code-Review+2: Russell Bryant <rbryant@redhat.com>
+Code-Review+1: Laurence Miao <laurence.miao@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Thu, 29 Nov 2012 16:49:34 +0000
+Reviewed-on: https://review.openstack.org/16805
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
