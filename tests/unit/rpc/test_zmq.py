@@ -27,9 +27,9 @@ import os
 from openstack.common import cfg
 from openstack.common import exception
 from openstack.common.gettextutils import _
+from openstack.common import processutils
 from openstack.common import rpc
 from openstack.common import testutils
-from openstack.common import utils
 from tests.unit.rpc import common
 
 try:
@@ -115,7 +115,7 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
             self.reactor.close()
 
             try:
-                utils.execute('rm', '-rf', FLAGS.rpc_zmq_ipc_dir)
+                processutils.execute('rm', '-rf', FLAGS.rpc_zmq_ipc_dir)
             except exception.Error:
                 pass
 
