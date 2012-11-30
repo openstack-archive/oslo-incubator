@@ -237,7 +237,7 @@ def read_versioninfo(project):
         with open(versioninfo_path, 'r') as vinfo:
             version = vinfo.read().strip()
     else:
-        version = "0.0.0"
+        version = None
     return version
 
 
@@ -337,7 +337,8 @@ def get_git_branchname():
 def get_pre_version(projectname, base_version):
     """Return a version which is leading up to a version that will
        be released in the future."""
-    if os.path.isdir('.git'):
+    version = read_versioninfo(projectname)
+    if not version and os.path.isdir('.git'):
         current_tag = _get_git_current_tag()
         if current_tag is not None:
             version = current_tag
@@ -348,9 +349,8 @@ def get_pre_version(projectname, base_version):
             version_suffix = _get_git_next_version_suffix(branch_name)
             version = "%s~%s" % (base_version, version_suffix)
         write_versioninfo(projectname, version)
-        return version
-    else:
-        version = read_versioninfo(projectname)
+    if not version:
+        version = "0.0.0"
     return version
 
 
@@ -359,8 +359,10 @@ def get_post_version(projectname):
     revision if there is one, or tag plus number of additional revisions
     if the current revision has no tag."""
 
-    if os.path.isdir('.git'):
+    version = read_versioninfo(projectname)
+    if not version and os.path.isdir('.git'):
         version = _get_git_post_version()
         write_versioninfo(projectname, version)
-        return version
-    return read_versioninfo(projectname)
+    if not version:
+        version = "0.0.0"
+    return version
