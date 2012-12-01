@@ -22,11 +22,25 @@ Unit Tests for remote procedure calls using fake_impl
 import eventlet
 eventlet.monkey_patch()
 
+from openstack.common import cfg
+from openstack.common import rpc
 from openstack.common.rpc import impl_fake
 from tests.unit.rpc import common
+
+
+CONF = cfg.CONF
 
 
 class RpcFakeTestCase(common.BaseRpcTestCase):
     def setUp(self):
         self.rpc = impl_fake
         super(RpcFakeTestCase, self).setUp()
+
+    def test_non_primitive_raises(self):
+        class Foo(object):
+            pass
+
+        self.assertRaises(TypeError, self.rpc.cast, CONF, self.context,
+                          'foo', {'x': Foo()})
+        self.assertRaises(TypeError, self.rpc.call, CONF, self.context,
+                          'foo', {'x': Foo()})
