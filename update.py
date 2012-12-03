@@ -115,7 +115,7 @@ def _dest_path(path, base, dest_dir):
 
 
 def _replace(path, pattern, replacement):
-    with open(path, "r+") as f:
+    with open(path, "rb+") as f:
         lines = f.readlines()
         f.seek(0)
         f.truncate()
