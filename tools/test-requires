@@ -17,3 +17,4 @@ setuptools-git>=0.4
 sphinx
 testtools>=0.9.22
 webtest
+MySQL-python
