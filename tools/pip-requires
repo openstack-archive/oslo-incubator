@@ -9,3 +9,4 @@ iso8601>=0.1.4
 anyjson==0.2.4
 kombu==1.0.4
 argparse
+sqlalchemy>=0.6.0
