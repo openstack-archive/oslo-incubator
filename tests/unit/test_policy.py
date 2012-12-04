@@ -449,8 +449,8 @@ class ParseStateMetaTestCase(unittest.TestCase):
 
         self.assertTrue(hasattr(FakeState, 'reducers'))
         for reduction, reducer in FakeState.reducers:
-            if (reduction == ['a', 'b', 'c'] or
-                reduction == ['d', 'e', 'f']):
+            if (reduction == ['a', 'b', 'c']
+                    or reduction == ['d', 'e', 'f']):
                 self.assertEqual(reducer, 'reduce1')
             elif reduction == ['g', 'h', 'i']:
                 self.assertEqual(reducer, 'reduce2')

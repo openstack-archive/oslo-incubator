@@ -574,7 +574,7 @@ class ParseState(object):
 
         for reduction, methname in self.reducers:
             if (len(self.tokens) >= len(reduction) and
-                self.tokens[-len(reduction):] == reduction):
+                    self.tokens[-len(reduction):] == reduction):
                     # Get the reduction method
                     meth = getattr(self, methname)
 
