@@ -24,6 +24,7 @@ import unittest
 import stubout
 
 from openstack.common.cfg import *
+from openstack.common import version
 
 
 class ExceptionsTestCase(unittest.TestCase):
@@ -1565,6 +1566,49 @@ class OptDumpingTestCase(BaseTestCase):
                           "blaa.key                       = *****",
                           "*" * 80,
                           ])
+
+
+class ConfigOptsTestCase(BaseTestCase):
+    def setUp(self):
+        super(ConfigOptsTestCase, self).setUp()
+        self.conf = ConfigOpts()
+
+    def test_hard_coded_version(self):
+        self.conf([], project="project", prog="prog", version="1.0.0")
+        self.assertEquals(self.conf.version, '1.0.0')
+
+    def test_print_hard_coded_version(self):
+        string = '1.0.0'
+        self.stubs.Set(sys, 'stderr', StringIO.StringIO())
+        self.assertRaises(SystemExit,
+                          self.conf,
+                          ['--version'],
+                          project="project",
+                          prog="prog",
+                          version=string)
+        self.assertEquals(string, sys.stderr.getvalue().strip())
+
+    def test_deferred_version(self):
+        deferred_string = version.VersionInfo("openstack").\
+            deferred_version_string()
+        self.conf([], project="project", prog="prog", version=deferred_string)
+        self.assertEquals(str(self.conf.version), str(deferred_string))
+
+    def test_print_deferred_version(self):
+        class MyVersionInfo(version.VersionInfo):
+            def _generate_version(self):
+                return "5.5.5.5"
+
+        deferred_string = MyVersionInfo("openstack")\
+            .deferred_version_string()
+        self.stubs.Set(sys, 'stderr', StringIO.StringIO())
+        self.assertRaises(SystemExit,
+                          self.conf, ['--version'],
+                          project="project",
+                          prog="prog",
+                          default_config_files=".",
+                          version=deferred_string)
+        self.assertEquals("5.5.5.5", sys.stderr.getvalue().strip())
 
 
 class CommonOptsTestCase(BaseTestCase):

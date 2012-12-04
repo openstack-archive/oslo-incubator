@@ -24,11 +24,23 @@ import pkg_resources
 import setup
 
 
-class _deferred_version_string(object):
+class _deferred_version_string(str):
     """Internal helper class which provides delayed version calculation."""
-    def __init__(self, version_info, prefix):
-        self.version_info = version_info
-        self.prefix = prefix
+
+    def __new__(cls, version_info, prefix):
+        new_obj = str.__new__(cls, "")
+        new_obj.version_info = version_info
+        new_obj.prefix = prefix
+        return new_obj
+
+    def __len__(self):
+        return self.__str__().__len__()
+
+    def __contains__(self, item):
+        return self.__str__().__contains__(item)
+
+    def __getslice__(self, i, j):
+        return self.__str__().__getslice__(i, j)
 
     def __str__(self):
         return "%s%s" % (self.prefix, self.version_info.version_string())
