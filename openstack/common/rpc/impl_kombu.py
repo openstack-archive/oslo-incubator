@@ -162,7 +162,15 @@ class ConsumerBase(object):
         def _callback(raw_message):
             message = self.channel.message_to_python(raw_message)
             try:
-                callback(message.payload)
+                if isinstance(message.payload, basestring):
+                    msg = rpc_common.deserialize_msg(message.payload)
+                else:
+                    # NOTE(russellb): This would be a message sent from a
+                    # version before serialization was handled outside of
+                    # the kombu library. In that case, we get the dict
+                    # already deserialized.
+                    msg = message.payload
+                callback(msg)
                 message.ack()
             except Exception:
                 LOG.exception(_("Failed to process message... skipping it."))

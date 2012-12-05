@@ -169,3 +169,12 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
     def test_queue_get_for(self):
         self.assertEqual(rpc.queue_get_for(None, 'a', 'b'), 'a.b')
         self.assertEqual(rpc.queue_get_for(None, 'a', None), 'a')
+
+    def test_serialize_msg(self):
+        msg = {'foo': 'bar'}
+        s_msg = {'version': rpc_common.RPC_WIRE_VERSION, 'message': msg}
+        serialized = rpc_common.serialize_msg(msg)
+
+        self.assertEqual(jsonutils.dumps(s_msg), rpc_common.serialize_msg(msg))
+
+        self.assertEqual(msg, rpc_common.deserialize_msg(serialized))

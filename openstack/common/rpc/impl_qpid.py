@@ -124,7 +124,14 @@ class ConsumerBase(object):
         """Fetch the message and pass it to the callback object"""
         message = self.receiver.fetch()
         try:
-            self.callback(message.content)
+            if isinstance(message.content, basestring):
+                msg = rpc_common.deserialize_msg(message.content)
+            else:
+                # NOTE(russellb): This would be a message sent from a version
+                # before serialization was handled outside of the qpid library.
+                # In that case, we get the dict already deserialized.
+                msg = message.content
+            self.callback(msg)
         except Exception:
             LOG.exception(_("Failed to process message... skipping it."))
         finally:
