@@ -57,6 +57,15 @@ rpc_opts = [
     cfg.BoolOpt('fake_rabbit',
                 default=False,
                 help='If passed, use a fake RabbitMQ provider'),
+    cfg.StrOpt('rpc_envelope_version',
+               default='1.0',
+               help='Envelope format of rpc messages. The message envelope '
+                    'is a wrapper for messages that includes additional '
+                    'metadata. The code currently only understands'
+                    '1.0 and 2.0. It can handle receiving both, but is'
+                    'set to send 1.0 by default. Only switch to 2.0 '
+                    'when all nodes have been updated to handle receiving '
+                    'version 2.0.'),
     #
     # The following options are not registered here, but are expected to be
     # present. The project using this library must register these options with
