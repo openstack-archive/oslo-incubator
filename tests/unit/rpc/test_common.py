@@ -236,3 +236,32 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
 
         self.assertRaises(rpc_common.ClientException, naughty)
         self.assertRaises(ValueError, really_naughty)
+
+    def test_serialize_msg_v1(self):
+        self.config(rpc_envelope_version='1.0')
+        msg = {'foo': 'bar'}
+        self.assertEqual(msg, rpc_common.serialize_msg(msg))
+
+    def test_serialize_msg_v2(self):
+        self.config(rpc_envelope_version=rpc_common._RPC_ENVELOPE_VERSION)
+        msg = {'foo': 'bar'}
+        s_msg = {'oslo.version': rpc_common._RPC_ENVELOPE_VERSION,
+                 'oslo.message': jsonutils.dumps(msg)}
+        serialized = rpc_common.serialize_msg(msg)
+
+        self.assertEqual(s_msg, rpc_common.serialize_msg(msg))
+
+        self.assertEqual(msg, rpc_common.deserialize_msg(serialized))
+
+    def test_deserialize_msg_no_envelope(self):
+        self.assertEqual(1, rpc_common.deserialize_msg(1))
+        self.assertEqual([], rpc_common.deserialize_msg([]))
+        self.assertEqual({}, rpc_common.deserialize_msg({}))
+        self.assertEqual('foo', rpc_common.deserialize_msg('foo'))
+
+    def test_deserialize_msg_bad_version(self):
+        s_msg = {'oslo.version': '8675309.0',
+                 'oslo.message': 'whatever'}
+
+        self.assertRaises(rpc_common.UnsupportedRpcEnvelopeVersion,
+                          rpc_common.deserialize_msg, s_msg)

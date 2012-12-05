@@ -21,6 +21,7 @@ import copy
 import sys
 import traceback
 
+from openstack.common import cfg
 from openstack.common.gettextutils import _
 from openstack.common import importutils
 from openstack.common import jsonutils
@@ -28,7 +29,41 @@ from openstack.common import local
 from openstack.common import log as logging
 
 
+CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
+
+
+'''RPC Envelope Version.
+
+This version number applies to the top level structure of messages sent out.
+It does *not* apply to the message payload, which must be versioned
+independently.  For example, when using rpc APIs, a version number is applied
+for changes to the API being exposed over rpc.  This version number is handled
+in the rpc proxy and dispatcher modules.
+
+This version number applies to the message envelope that is used in the
+serialization done inside the rpc layer.  See serialize_msg() and
+deserialize_msg().
+
+The current message format (version 2.0) is very simple.  It is:
+
+    {
+        'oslo.version': <RPC Envelope Version as a String>,
+        'oslo.message': <Application Message Payload, JSON encoded>
+    }
+
+Message format version '1.0' is just considered to be the messages we sent
+without a message envelope.
+
+So, the current message envelope just includes the envelope version.  It may
+eventually contain additional information, such as a signature for the message
+payload.
+
+We will JSON encode the application message payload.  The message envelope,
+which includes the JSON encoded application message body, will be passed down
+to the messaging libraries as a dict.
+'''
+_RPC_ENVELOPE_VERSION = '2.0'
 
 
 class RPCException(Exception):
@@ -89,6 +124,11 @@ class InvalidRPCConnectionReuse(RPCException):
 class UnsupportedRpcVersion(RPCException):
     message = _("Specified RPC version, %(version)s, not supported by "
                 "this endpoint.")
+
+
+class UnsupportedRpcEnvelopeVersion(RPCException):
+    message = _("Specified RPC envelope version, %(version)s, "
+                "not supported by this endpoint.")
 
 
 class Connection(object):
@@ -344,3 +384,80 @@ def client_exceptions(*exceptions):
             return catch_client_exception(exceptions, func, *args, **kwargs)
         return inner
     return outer
+
+
+def version_is_compatible(mversion, version):
+    """Determine whether versions are compatible.
+
+    :param mversion: The version implemented
+    :param version: The version requested by an incoming message.
+    """
+    version_parts = version.split('.')
+    mversion_parts = mversion.split('.')
+    if int(version_parts[0]) != int(mversion_parts[0]):  # Major
+        return False
+    if int(version_parts[1]) > int(mversion_parts[1]):  # Minor
+        return False
+    return True
+
+
+def serialize_msg(raw_msg):
+    if CONF.rpc_envelope_version == '1.0':
+        return raw_msg
+
+    if CONF.rpc_envelope_version != _RPC_ENVELOPE_VERSION:
+        LOG.error(_('The rpc_envelope_version set in the configuration is '
+                    'not valid.'))
+        raise UnsupportedRpcEnvelopeVersion(version=CONF.rpc_envelope_version)
+
+    # NOTE(russellb) See the docstring for _RPC_ENVELOPE_VERSION for more
+    # information about this format.
+    msg = {'oslo.version': _RPC_ENVELOPE_VERSION,
+           'oslo.message': jsonutils.dumps(raw_msg)}
+    return msg
+
+
+def deserialize_msg(msg):
+    # NOTE(russellb): Hang on to your hats, this road is about to
+    # get a little bumpy.
+    #
+    # Robustness Principle:
+    #    "Be strict in what you send, liberal in what you accept."
+    #
+    # At this point we have to do a bit of guessing about what it
+    # is we just received.  Here is the set of possibilities:
+    #
+    # 1) We received a dict.  This could be 2 things:
+    #
+    #   a) Inspect it to see if it looks like a standard message envelope.
+    #      If so, great!
+    #
+    #   b) If it doesn't look like a standard message envelope, it could either
+    #      be a notification (which we don't wrap), or a message from before
+    #      we added a message envelope (referred to as version 1.0).
+    #      Just return the message as-is.
+    #
+    # 2) It's any other non-dict type.  Just return it and hope for the best.
+    #    This case covers return values from rpc.call() from before message
+    #    envelopes were used.  (messages to call a method were always a dict)
+
+    if not isinstance(msg, dict):
+        # See #2 above.
+        return msg
+
+    base_envelope_keys = ('oslo.version', 'oslo.message')
+    if not all(map(lambda key: key in msg, base_envelope_keys)):
+        #  See #1.b above.
+        return msg
+
+    # At this point we think we have the message envelope
+    # format we were expecting. (#1.a above)  Hopefully there aren't any
+    # notifications or dict-based rpc.call() return values that have both
+    # 'version' and 'message' in them!
+
+    if not version_is_compatible(_RPC_ENVELOPE_VERSION, msg['oslo.version']):
+        raise UnsupportedRpcEnvelopeVersion(version=msg['oslo.version'])
+
+    raw_msg = jsonutils.loads(msg['oslo.message'])
+
+    return raw_msg
