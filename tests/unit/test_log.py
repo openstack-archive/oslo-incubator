@@ -293,3 +293,32 @@ class FancyRecordTestCase(test_utils.BaseTestCase):
 
         self.colorlog.warn("warn", context=ctxt)
         self.assertEqual(infoexpected + warnexpected, self.stream.getvalue())
+
+
+class SetDefaultsTestCase(test_utils.BaseTestCase):
+    class TestConfigOpts(cfg.ConfigOpts):
+        def __call__(self, args=None):
+            return cfg.ConfigOpts.__call__(self,
+                                           args=args,
+                                           prog='test',
+                                           version='1.0',
+                                           usage='%(prog)s FOO BAR',
+                                           default_config_files=[])
+
+    def setUp(self):
+        super(SetDefaultsTestCase, self).setUp()
+        self.conf = self.TestConfigOpts()
+        self.conf.register_opts(log.log_opts)
+
+    def test_default_to_none(self):
+        log.set_defaults(logging_context_format_string=None)
+        self.conf([])
+        self.assertEquals(self.conf.logging_context_format_string, None)
+
+    def test_change_default(self):
+        my_default = '%(asctime)s %(levelname)s %(name)s [%(request_id)s '\
+                     '%(user_id)s %(project)s] %(instance)s'\
+                     '%(message)s'
+        log.set_defaults(logging_context_format_string=my_default)
+        self.conf([])
+        self.assertEquals(self.conf.logging_context_format_string, my_default)
