@@ -222,3 +222,25 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
 
         self.assertRaises(rpc_common.ClientException, naughty)
         self.assertRaises(ValueError, really_naughty)
+
+    def test_serialize_msg_v1(self):
+        self.config(rpc_wire_version='1.0')
+        msg = {'foo': 'bar'}
+        self.assertEqual(msg, rpc_common.serialize_msg(msg))
+
+    def test_serialize_msg_v2(self):
+        self.config(rpc_wire_version=rpc_common.RPC_WIRE_VERSION)
+        msg = {'foo': 'bar'}
+        s_msg = {'version': rpc_common.RPC_WIRE_VERSION,
+                 'message': jsonutils.dumps(msg)}
+        serialized = rpc_common.serialize_msg(msg)
+
+        self.assertEqual(s_msg, rpc_common.serialize_msg(msg))
+
+        self.assertEqual(msg, rpc_common.deserialize_msg(serialized))
+
+    def test_deserialize_msg_no_envelope(self):
+        self.assertEqual(1, rpc_common.deserialize_msg(1))
+        self.assertEqual([], rpc_common.deserialize_msg([]))
+        self.assertEqual({}, rpc_common.deserialize_msg({}))
+        self.assertEqual('foo', rpc_common.deserialize_msg('foo'))
