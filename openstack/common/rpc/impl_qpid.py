@@ -124,7 +124,8 @@ class ConsumerBase(object):
         """Fetch the message and pass it to the callback object"""
         message = self.receiver.fetch()
         try:
-            self.callback(message.content)
+            msg = rpc_common.deserialize_msg(message.content)
+            self.callback(msg)
         except Exception:
             LOG.exception(_("Failed to process message... skipping it."))
         finally:
