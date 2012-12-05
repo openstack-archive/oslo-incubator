@@ -118,7 +118,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
             self.received_message = message
 
         conn.declare_topic_consumer('a_topic', _callback)
-        conn.topic_send('a_topic', message)
+        conn.topic_send('a_topic', rpc_common.serialize_msg(message))
         conn.consume(limit=1)
         conn.close()
 
@@ -138,7 +138,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
 
         conn.declare_topic_consumer('a_topic', _callback,
                                     exchange_name="foorbar")
-        conn.topic_send('a_topic', message)
+        conn.topic_send('a_topic', rpc_common.serialize_msg(message))
         conn.consume(limit=1)
         conn.close()
 
@@ -162,7 +162,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
 
         conn.declare_topic_consumer('a_topic', _callback1, queue_name='queue1')
         conn.declare_topic_consumer('a_topic', _callback2, queue_name='queue2')
-        conn.topic_send('a_topic', message)
+        conn.topic_send('a_topic', rpc_common.serialize_msg(message))
         conn.consume(limit=2)
         conn.close()
 
@@ -192,7 +192,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
                                     exchange_name="abc")
         conn.declare_topic_consumer('a_topic', _callback2, queue_name='queue2',
                                     exchange_name="abc")
-        conn.topic_send('a_topic', message)
+        conn.topic_send('a_topic', rpc_common.serialize_msg(message))
         conn.consume(limit=2)
         conn.close()
 
@@ -222,7 +222,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
                                     exchange_name="abc")
         conn.declare_topic_consumer('a_topic', _callback2, queue_name='queue2',
                                     exchange_name="def")
-        conn.topic_send('a_topic', message)
+        conn.topic_send('a_topic', rpc_common.serialize_msg(message))
         conn.consume(limit=2)
         conn.close()
 
@@ -241,7 +241,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
             self.received_message = message
 
         conn.declare_direct_consumer('a_direct', _callback)
-        conn.direct_send('a_direct', message)
+        conn.direct_send('a_direct', rpc_common.serialize_msg(message))
         conn.consume(limit=1)
         conn.close()
 
@@ -438,7 +438,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
             self.received_message = message
 
         conn.declare_direct_consumer('a_direct', _callback)
-        conn.direct_send('a_direct', message)
+        conn.direct_send('a_direct', rpc_common.serialize_msg(message))
 
         info = _raise_exc_stub(self.stubs, 1, conn.connection,
                                'drain_events', 'foo timeout foo')

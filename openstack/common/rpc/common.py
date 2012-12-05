@@ -30,6 +30,34 @@ from openstack.common import log as logging
 LOG = logging.getLogger(__name__)
 
 
+'''RPC Wire Version.
+
+This version number applies to the top level structure of messages sent out.
+It does *not* apply to the message payload, which must be versioned
+independently.  For example, when using rpc APIs, a version number is applied
+for changes to the API being exposed over rpc.  This version number is handled
+in the rpc proxy and dispatcher modules.
+
+This version number applies to the message envelope that is used in the
+serialization done inside the rpc layer.  See serialize_msg() and
+deserialize_msg().
+
+One fundamental assumption here is that messages will always be json encoded.
+
+The current message format is very simple.  It is:
+
+    {
+        'version': <RPC Wire Version as a String>,
+        'message': <Application Message Payload>
+    }
+
+So, the current message envelope just includes the wire version.  It may
+eventually contain additional information, such as a signature for the message
+payload.
+'''
+RPC_WIRE_VERSION = '2.0'
+
+
 class RPCException(Exception):
     message = _("An unknown RPC related exception occurred.")
 
@@ -87,6 +115,11 @@ class InvalidRPCConnectionReuse(RPCException):
 
 class UnsupportedRpcVersion(RPCException):
     message = _("Specified RPC version, %(version)s, not supported by "
+                "this endpoint.")
+
+
+class UnsupportedRpcWireVersion(RPCException):
+    message = _("Specified RPC wire version, %(version)s, not supported by "
                 "this endpoint.")
 
 
@@ -309,3 +342,25 @@ class CommonRpcContext(object):
             context.values['read_deleted'] = read_deleted
 
         return context
+
+
+def serialize_msg(raw_msg):
+    # NOTE(russellb) See the docstring for RPC_WIRE_VERSION for more
+    # information about this format.
+    msg = {'version': RPC_WIRE_VERSION, 'message': raw_msg}
+    return jsonutils.dumps(msg)
+
+
+def _get_major(version):
+    return version.split('.', 1)[0]
+
+
+def deserialize_msg(msg):
+    raw_msg = jsonutils.loads(msg)
+
+    # NOTE(russellb): Only check the major version number, since minor version
+    # changes are backwards compatible.
+    if _get_major(raw_msg['version']) != _get_major(RPC_WIRE_VERSION):
+        raise UnsupportedRpcWireVersion(version=raw_msg['version'])
+
+    return raw_msg['message']
