@@ -169,3 +169,56 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
     def test_queue_get_for(self):
         self.assertEqual(rpc.queue_get_for(None, 'a', 'b'), 'a.b')
         self.assertEqual(rpc.queue_get_for(None, 'a', None), 'a')
+
+    def test_client_exception(self):
+        e = None
+        try:
+            try:
+                raise ValueError()
+            except Exception:
+                raise rpc_common.ClientException()
+        except rpc_common.ClientException, e:
+            pass
+
+        self.assertTrue(isinstance(e, rpc_common.ClientException))
+        self.assertTrue(e._exc_info[1], ValueError)
+
+    def test_catch_client_exception(self):
+        def naughty(param):
+            int(param)
+
+        e = None
+        try:
+            rpc_common.catch_client_exception([ValueError], naughty, 'a')
+        except rpc_common.ClientException, e:
+            pass
+
+        self.assertTrue(isinstance(e, rpc_common.ClientException))
+        self.assertTrue(isinstance(e._exc_info[1], ValueError))
+
+    def test_catch_client_exception_other(self):
+        class FooException(Exception):
+            pass
+
+        def naughty():
+            raise FooException()
+
+        e = None
+        self.assertRaises(FooException,
+                          rpc_common.catch_client_exception,
+                          [ValueError], naughty)
+
+    def test_client_exceptions_decorator(self):
+        class FooException(Exception):
+            pass
+
+        @rpc_common.client_exceptions([FooException])
+        def naughty():
+            raise FooException()
+
+        @rpc_common.client_exceptions([FooException])
+        def really_naughty():
+            raise ValueError()
+
+        self.assertRaises(rpc_common.ClientException, naughty)
+        self.assertRaises(ValueError, really_naughty)
