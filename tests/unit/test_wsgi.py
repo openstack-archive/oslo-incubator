@@ -449,14 +449,14 @@ class ServerTest(unittest.TestCase):
 class WSGIServerTest(unittest.TestCase):
 
     def test_pool(self):
-        server = wsgi.Service()
+        server = wsgi.Service('fake', 9000)
         self.assertTrue(server.tg)
         self.assertTrue(server.tg.pool)
         self.assertEqual(server.tg.pool.free(), 1000)
 
     def test_start_random_port(self):
-        server = wsgi.Service()
-        server.start("test_random_port", 0)
+        server = wsgi.Service('test_random_port', 0)
+        server.start()
         self.assertEqual("0.0.0.0", server.host)
         self.assertNotEqual(0, server.port)
         server.stop()
