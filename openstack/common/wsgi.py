@@ -35,6 +35,7 @@ from openstack.common import exception
 from openstack.common.gettextutils import _
 from openstack.common import jsonutils
 from openstack.common import log as logging
+from openstack.common import pastedeploy
 from openstack.common import service
 
 
@@ -732,3 +733,25 @@ class XMLDeserializer(TextDeserializer):
 
     def default(self, datastring):
         return {'body': self._from_xml(datastring)}
+
+
+def launch(app_name, port, paste_config_file, data={},
+           host='0.0.0.0', backlog=128, threads=1000):
+    """Launches a wsgi server based on the passed in paste_config_file.
+
+       Launch provides a easy way to create a paste app from the config
+       file and launch it via the service launcher. It takes care of
+       all of the plumbing. The only caveat is that the paste_config_file
+       must be a file that paste.deploy can find and handle. There is
+       a helper method in cfg.py that finds files.
+
+       Example:
+         conf_file = CONF.find_file(CONF.api_paste_config)
+         launcher = wsgi.launch('myapp', CONF.bind_port, conf_file)
+         launcher.wait()
+
+    """
+    app = pastedeploy.paste_deploy_app(paste_config_file, app_name, data)
+    server = Service(app, port, host=host,
+                     backlog=backlog, threads=threads)
+    return service.launch(server)
