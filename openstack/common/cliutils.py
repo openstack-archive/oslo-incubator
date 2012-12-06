@@ -25,12 +25,10 @@ class MissingArgs(Exception):
 
     def __str__(self):
         if len(self.missing) == 1:
-            return ("An argument is missing: %(missing)s" %
-                    dict(missing=self.missing[0]))
+            return "An argument is missing"
         else:
-            return ("%(num)d arguments are missing: %(missing)s" %
-                    dict(num=len(self.missing),
-                         missing=string.join(self.missing, ', ')))
+            return ("%(num)d arguments are missing" %
+                    dict(num=len(self.missing)))
 
 
 def validate_args(fn, *args, **kwargs):
