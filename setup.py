@@ -22,6 +22,15 @@ from openstack.common import setup
 requires = setup.parse_requirements()
 depend_links = setup.parse_dependency_links()
 
+filters = {
+    "AvailabilityZoneFilter = "
+    "openstack.common.filters.availability_zone_filter:AvailabilityZoneFilter",
+    "CapabilitiesFilter = "
+    "openstack.common.filters.capabilities_filter:CapabilitiesFilter",
+    "JsonFilter = "
+    "openstack.common.filters.json_filter:JsonFilter",
+}
+
 setuptools.setup(
     name='openstack.common',
     version=setup.get_post_version('openstack'),
@@ -47,8 +56,8 @@ setuptools.setup(
     install_requires=requires,
     dependency_links=depend_links,
     setup_requires=['setuptools-git>=0.4'],
-    entry_points="""
-      # -*- Entry points: -*-
-      """,
+    entry_points={
+        "openstack.common.filters": filters,
+    },
     namespace_packages=['openstack'],
 )
