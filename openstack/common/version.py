@@ -22,6 +22,7 @@ import datetime
 import pkg_resources
 
 import setup
+import argparse
 
 
 class _deferred_version_string(str):
@@ -41,20 +42,21 @@ class _deferred_version_string(str):
                 self._version_info.version_string())
         return self._cached_version
 
-    def __len__(self):
-        return self._get_cached_version().__len__()
-
-    def __contains__(self, item):
-        return self._get_cached_version().__contains__(item)
-
-    def __getslice__(self, i, j):
-        return self._get_cached_version().__getslice__(i, j)
-
     def __str__(self):
         return self._get_cached_version()
 
-    def __repr__(self):
-        return self._get_cached_version()
+
+class VersionFormatter(argparse.HelpFormatter):
+    def add_text(self, text):
+        if isinstance(text, _deferred_version_string):
+            self.text = str(text)
+        else:
+            super(VersionFormatter, self).add_text(text)
+
+    def format_help(self):
+        if self.text:
+            return self.text
+        return super(VersionFormatter, self).format_help()
 
 
 class VersionInfo(object):
