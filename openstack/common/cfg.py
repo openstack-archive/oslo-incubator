@@ -267,6 +267,7 @@ import string
 import sys
 
 from openstack.common import iniparser
+from openstack.common import version
 
 
 class Error(Exception):
@@ -1013,6 +1014,10 @@ class MultiConfigParser(object):
         raise KeyError
 
 
+def get_formatter(*args, **kwargs):
+    return version.VersionFormatter(*args, **kwargs)
+
+
 class ConfigOpts(collections.Mapping):
 
     """
@@ -1045,7 +1050,9 @@ class ConfigOpts(collections.Mapping):
         if default_config_files is None:
             default_config_files = find_config_files(project, prog)
 
-        self._oparser = argparse.ArgumentParser(prog=prog, usage=usage)
+        self._oparser = argparse.ArgumentParser(prog=prog,
+                                                usage=usage,
+                                                formatter_class=get_formatter)
         self._oparser.add_argument('--version',
                                    action='version',
                                    version=version)
