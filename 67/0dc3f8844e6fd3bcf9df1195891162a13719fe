@@ -1,0 +1,11 @@
+Verified+2: Jenkins
+Code-Review+1: Vish Ishaya <vishvananda@gmail.com>
+Code-Review+2: Jason Kölker <jason@koelker.net>
+Approved+1: Michael Still <michael.still@canonical.com>
+Code-Review+2: Michael Still <michael.still@canonical.com>
+Code-Review+1: Davanum Srinivas <davanum@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Sat, 08 Dec 2012 08:15:53 +0000
+Reviewed-on: https://review.openstack.org/17533
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
