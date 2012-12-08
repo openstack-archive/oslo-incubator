@@ -84,6 +84,20 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
 
     def test_deserialize_remote_exception(self):
         failure = {
+            'class': 'NotImplementedError',
+            'module': 'exceptions',
+            'message': '',
+            'tb': ['raise NotImplementedError'],
+        }
+        serialized = jsonutils.dumps(failure)
+
+        after_exc = rpc_common.deserialize_remote_exception(FLAGS, serialized)
+        self.assertTrue(isinstance(after_exc, NotImplementedError))
+        #assure the traceback was added
+        self.assertTrue('raise NotImplementedError' in unicode(after_exc))
+
+    def test_deserialize_remote_custom_exception(self):
+        failure = {
             'class': 'OpenstackException',
             'module': 'openstack.common.exception',
             'message': exception.OpenstackException.message,
