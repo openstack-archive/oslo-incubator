@@ -22,6 +22,11 @@ from openstack.common import setup
 requires = setup.parse_requirements()
 depend_links = setup.parse_dependency_links()
 
+weights = [
+    "FakeWeigher1 = tests.unit.fakes:FakeWeigher1",
+    "FakeWeigher2 = tests.unit.fakes:FakeWeigher2",
+]
+
 setuptools.setup(
     name='openstack.common',
     version=setup.get_post_version('openstack'),
@@ -47,8 +52,8 @@ setuptools.setup(
     install_requires=requires,
     dependency_links=depend_links,
     setup_requires=['setuptools-git>=0.4'],
-    entry_points="""
-      # -*- Entry points: -*-
-      """,
+    entry_points={
+        "openstack.common.tests.fakes.weights": weights,
+    },
     namespace_packages=['openstack'],
 )
