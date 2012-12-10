@@ -33,6 +33,11 @@ filters = [
     "openstack.common.scheduler.filters.json_filter:JsonFilter",
 ]
 
+weights = [
+    "FakeWeigher1 = tests.unit.fakes:FakeWeigher1",
+    "FakeWeigher2 = tests.unit.fakes:FakeWeigher2",
+]
+
 setuptools.setup(
     name='openstack.common',
     version=setup.get_post_version('openstack'),
@@ -60,6 +65,7 @@ setuptools.setup(
     setup_requires=['setuptools-git>=0.4'],
     entry_points={
         "openstack.common.scheduler.filters": filters,
+        "openstack.common.tests.fakes.weights": weights,
     },
     namespace_packages=['openstack'],
 )
