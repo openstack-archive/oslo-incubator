@@ -64,7 +64,9 @@ class BaseParser(object):
 
         for line in lineiter:
             self.lineno += 1
-
+            # remove all spaces before the key
+            if line.find('=') > 0:
+                line = line.lstrip()
             line = line.rstrip()
             if not line:
                 # Blank line, ends multi-line values
