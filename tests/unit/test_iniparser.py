@@ -119,8 +119,18 @@ class ParserTestCase(unittest.TestCase):
         self.parser.parse(lines)
         self.assertEquals(self.parser.values, {'': {'foo': [' bar ']}})
 
+    def test_removing_leading_spaces(self):
+        lines = ["    foo = bar"]
+        self.parser.parse(lines)
+        self.assertEquals(self.parser.values, {'': {'foo': ['bar']}})
 
-class ExceptionTestCase(unittest.TestCase):
+    def test_removing_trailing_spaces(self):
+        lines = ["foo = bar    "]
+        self.parser.parse(lines)
+        self.assertEquals(self.parser.values, {'': {'foo': ['bar']}})
+
+
+cla ExceptionTestCase(unittest.TestCase):
     def test_parseerror(self):
         exc = iniparser.ParseError('test', 42, 'example')
         self.assertEquals(str(exc), "at line 42, test: 'example'")
