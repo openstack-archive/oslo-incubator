@@ -42,23 +42,23 @@ class DeferredVersionTestCase(BaseTestCase):
         super(DeferredVersionTestCase, self).setUp()
         self.conf = ConfigOpts()
 
-    def test_deferred_version(self):
+    def test_cached_version(self):
         class MyVersionInfo(version.VersionInfo):
             def _generate_version(self):
                 return "5.5.5.5"
 
         deferred_string = MyVersionInfo("openstack").\
-            deferred_version_string()
+            cached_version_string()
         self.conf([], project="project", prog="prog", version=deferred_string)
         self.assertEquals("5.5.5.5", str(self.conf.version))
 
-    def test_print_deferred_version(self):
+    def test_print_cached_version(self):
         class MyVersionInfo(version.VersionInfo):
             def _generate_version(self):
                 return "5.5.5.5"
 
         deferred_string = MyVersionInfo("openstack")\
-            .deferred_version_string()
+            .cached_version_string()
         self.stubs.Set(sys, 'stderr', StringIO.StringIO())
         self.assertRaises(SystemExit,
                           self.conf, ['--version'],
@@ -66,3 +66,22 @@ class DeferredVersionTestCase(BaseTestCase):
                           prog="prog",
                           version=deferred_string)
         self.assertEquals("5.5.5.5", sys.stderr.getvalue().strip())
+
+    def test_print_cached_version_with_long_string(self):
+        my_version = "11111222223333344444555556666677777888889999900000"
+
+        class MyVersionInfo(version.VersionInfo):
+            def _generate_version(self):
+                return my_version
+
+        deferred_string = MyVersionInfo("openstack")\
+            .cached_version_string()
+
+        for i in range(50):
+            self.stubs.Set(sys, 'stderr', StringIO.StringIO())
+            self.assertRaises(SystemExit,
+                              self.conf, ['--version'],
+                              project="project",
+                              prog="prog",
+                              version=deferred_string)
+            self.assertEquals(my_version, sys.stderr.getvalue().strip())
