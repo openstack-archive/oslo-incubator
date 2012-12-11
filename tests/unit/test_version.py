@@ -24,6 +24,7 @@ import unittest
 import stubout
 
 from openstack.common.cfg import *
+from openstack.common import testutils
 from openstack.common import version
 
 
@@ -52,6 +53,7 @@ class DeferredVersionTestCase(BaseTestCase):
         self.conf([], project="project", prog="prog", version=deferred_string)
         self.assertEquals("5.5.5.5", str(self.conf.version))
 
+    @testutils.skip_test('test should be skipped until bug 1087575 is fixed')
     def test_print_deferred_version(self):
         class MyVersionInfo(version.VersionInfo):
             def _generate_version(self):
