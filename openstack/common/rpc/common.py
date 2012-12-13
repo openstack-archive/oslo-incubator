@@ -408,8 +408,8 @@ def version_is_compatible(imp_version, version):
     return True
 
 
-def serialize_msg(raw_msg):
-    if not _SEND_RPC_ENVELOPE:
+def serialize_msg(raw_msg, force_envelope=False):
+    if not _SEND_RPC_ENVELOPE and not force_envelope:
         return raw_msg
 
     # NOTE(russellb) See the docstring for _RPC_ENVELOPE_VERSION for more
@@ -436,8 +436,8 @@ def deserialize_msg(msg):
     #      If so, great!
     #
     #   b) If it doesn't look like a standard message envelope, it could either
-    #      be a notification (which we don't wrap), or a message from before
-    #      we added a message envelope (referred to as version 1.0).
+    #      be a notification, or a message from before we added a message
+    #      envelope (referred to as version 1.0).
     #      Just return the message as-is.
     #
     # 2) It's any other non-dict type.  Just return it and hope for the best.
