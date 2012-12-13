@@ -74,6 +74,14 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
                                {"method": "echo", "args": {"value": value}})
         self.assertEqual(value, result)
 
+    def test_call_succeed_despite_missing_args(self):
+        if not self.rpc:
+            raise nose.SkipTest('rpc driver not available.')
+
+        result = self.rpc.call(FLAGS, self.context, self.topic,
+                               {"method": "fourtytwo"})
+        self.assertEqual(42, result)
+
     def test_call_succeed_despite_multiple_returns_yield(self):
         if not self.rpc:
             raise nose.SkipTest('rpc driver not available.')
@@ -135,9 +143,14 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
                                             "args": {"value": value}})
         self.assertEqual(self.context.to_dict(), result)
 
-    def _test_cast(self, fanout=False):
-        """Test casts by pushing items through a channeled queue."""
+    def _test_cast(self, method, value, args=None, fanout=False):
+        """Test casts by pushing items through a channeled queue.
 
+           @param: method a reference to a method returning a value
+           @param: value the value expected from method
+           @param: args optional dictionary arguments to method
+           @param: fanout boolean for use of rpc fanout method
+        """
         # Not a true global, but capitalized so
         # it is clear it is leaking scope into Nested()
         QUEUE = eventlet.queue.Queue()
@@ -149,19 +162,22 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
         # global, and do not keep state outside this test.
         class Nested(object):
             @staticmethod
-            def put_queue(context, value):
-                LOG.debug(_("Got value in put_queue: %s"), value)
-                QUEUE.put(value)
+            def curry(*args, **kwargs):
+                QUEUE.put(method(*args, **kwargs))
 
         nested = Nested()
         conn = self._create_consumer(nested, self.topic_nested, fanout)
-        value = 42
 
-        method = (self.rpc.cast, self.rpc.fanout_cast)[fanout]
-        method(FLAGS, self.context,
-               self.topic_nested,
-               {"method": "put_queue",
-                "args": {"value": value}})
+        rpc_method = (self.rpc.cast, self.rpc.fanout_cast)[fanout]
+
+        msg = {'method': 'curry'}
+        if args and isinstance(args, dict):
+            msg['args'] = {}
+            msg['args'].update(args)
+
+        rpc_method(FLAGS, self.context,
+                   self.topic_nested,
+                   msg)
 
         try:
             # If it does not succeed in 2 seconds, give up and assume
@@ -174,10 +190,13 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
         self.assertEqual(value, result)
 
     def test_cast_success(self):
-        self._test_cast(False)
+        self._test_cast(TestReceiver.echo, 42, {"value": 42}, fanout=False)
 
     def test_fanout_success(self):
-        self._test_cast(True)
+        self._test_cast(TestReceiver.echo, 42, {"value": 42}, fanout=True)
+
+    def test_cast_success_despite_missing_args(self):
+        self._test_cast(TestReceiver.fourtytwo, 42, fanout=True)
 
     def test_nested_calls(self):
         if not self.rpc:
@@ -288,6 +307,11 @@ class TestReceiver(object):
         """Simply returns whatever value is sent in."""
         LOG.debug(_("Received %s"), value)
         return value
+
+    @staticmethod
+    def fourtytwo(context):
+        """Simply returns 42."""
+        return 42
 
     @staticmethod
     def context(context, value):
