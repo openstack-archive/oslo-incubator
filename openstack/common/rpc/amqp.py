@@ -33,6 +33,7 @@ from eventlet import greenpool
 from eventlet import pools
 from eventlet import semaphore
 
+from openstack.common import cfg
 from openstack.common import excutils
 from openstack.common.gettextutils import _
 from openstack.common import local
@@ -40,6 +41,7 @@ from openstack.common import log as logging
 from openstack.common.rpc import common as rpc_common
 
 
+CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
@@ -411,17 +413,15 @@ def fanout_cast_to_server(conf, context, server_params, topic, msg,
         conn.fanout_send(topic, rpc_common.serialize_msg(msg))
 
 
-def notify(conf, context, topic, msg, connection_pool):
+def notify(conf, context, topic, msg, connection_pool, envelope):
     """Sends a notification event on a topic."""
     LOG.debug(_('Sending %(event_type)s on %(topic)s'),
               dict(event_type=msg.get('event_type'),
                    topic=topic))
     pack_context(msg, context)
     with ConnectionContext(conf, connection_pool) as conn:
-        # NOTE(russellb): We are explicitly *NOT* using serialize_msg() here.
-        # The messages sent out as notifications are intended to be consumed by
-        # 3rd party applications.  The notification producer is entirely
-        # responsible for the message content and versioning.
+        if envelope:
+            msg = rpc_common.serialize_msg(msg)
         conn.notify_send(topic, msg)
 
 
