@@ -41,6 +41,7 @@ from openstack.common import log as logging
 from openstack.common.rpc import common as rpc_common
 
 
+CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
@@ -419,10 +420,8 @@ def notify(conf, context, topic, msg, connection_pool):
                    topic=topic))
     pack_context(msg, context)
     with ConnectionContext(conf, connection_pool) as conn:
-        # NOTE(russellb): We are explicitly *NOT* using serialize_msg() here.
-        # The messages sent out as notifications are intended to be consumed by
-        # 3rd party applications.  The notification producer is entirely
-        # responsible for the message content and versioning.
+        if CONF.rpc_notification_envelope:
+            msg = rpc_common.serialize_msg(msg)
         conn.notify_send(topic, msg)
 
 

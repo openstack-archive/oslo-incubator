@@ -66,6 +66,17 @@ rpc_opts = [
                     'set to send 1.0 by default. Only switch to 2.0 '
                     'when all nodes have been updated to handle receiving '
                     'version 2.0.'),
+    cfg.BoolOpt('rpc_notification_envelope',
+                default=False,
+                help='Since notifications are consumed by applications '
+                     'outside of OpenStack, it is useful to be able to '
+                     'control whether or not notifications specifically '
+                     'are using the rpc message envelope for the sake of '
+                     'backwards compatibility. Set this option to True '
+                     'to enable the use of a message envelope around the '
+                     'body of a notification. Eventually this will be '
+                     'required if you want to take advantage of signing '
+                     'notifications (once that is implemented).'),
     #
     # The following options are not registered here, but are expected to be
     # present. The project using this library must register these options with

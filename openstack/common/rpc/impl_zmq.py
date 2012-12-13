@@ -655,7 +655,7 @@ def notify(conf, context, topic, msg, **kwargs):
     # NOTE(ewindisch): dot-priority in rpc notifier does not
     # work with our assumptions.
     topic.replace('.', '-')
-    kwargs['serialize'] = False
+    kwargs['serialize'] = CONF.rpc_notification_envelope
     cast(conf, context, topic, msg, **kwargs)
 
 
