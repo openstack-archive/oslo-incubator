@@ -29,6 +29,7 @@ import nose
 from openstack.common import cfg
 from openstack.common import exception
 from openstack.common.gettextutils import _
+from openstack.common import jsonutils
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
 from openstack.common.rpc import dispatcher as rpc_dispatcher
@@ -275,6 +276,34 @@ class BaseRpcAMQPTestCase(BaseRpcTestCase):
                                {"method": "echo",
                                 "args": {"value": value}})
         self.assertEqual(value, result)
+
+    def test_notification_envelope(self):
+        raw_msg = {'a': 'b'}
+        self.test_msg = None
+
+        def fake_notify_send(_conn, topic, msg):
+            self.test_msg = msg
+
+        self.stubs.Set(self.rpc.Connection, 'notify_send', fake_notify_send)
+
+        self.rpc.notify(FLAGS, self.context, 'notifications.info', raw_msg,
+                        envelope=False)
+        self.assertEqual(self.test_msg, raw_msg)
+
+        # Envelopes enabled, but not enabled for notifications
+        self.stubs.Set(rpc_common, '_SEND_RPC_ENVELOPE', True)
+        self.rpc.notify(FLAGS, self.context, 'notifications.info', raw_msg,
+                        envelope=False)
+        self.assertEqual(self.test_msg, raw_msg)
+
+        # Now turn it on for notifications
+        msg = {
+            'oslo.version': rpc_common._RPC_ENVELOPE_VERSION,
+            'oslo.message': jsonutils.dumps(raw_msg),
+        }
+        self.rpc.notify(FLAGS, self.context, 'notifications.info', raw_msg,
+                        envelope=True)
+        self.assertEqual(self.test_msg, msg)
 
 
 class TestReceiver(object):
