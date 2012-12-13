@@ -60,6 +60,17 @@ rpc_opts = [
     cfg.StrOpt('control_exchange',
                default='openstack',
                help='AMQP exchange to connect to if using RabbitMQ or Qpid'),
+    cfg.BoolOpt('rpc_notification_envelope',
+                default=False,
+                help='Since notifications are consumed by applications '
+                     'outside of OpenStack, it is useful to be able to '
+                     'control whether or not notifications specifically '
+                     'are using the rpc message envelope for the sake of '
+                     'backwards compatibility. Set this option to True '
+                     'to enable the use of a message envelope around the '
+                     'body of a notification. Eventually this will be '
+                     'required if you want to take advantage of signing '
+                     'notifications (once that is implemented).'),
 ]
 
 cfg.CONF.register_opts(rpc_opts)
