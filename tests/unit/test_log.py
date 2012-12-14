@@ -52,13 +52,19 @@ class LoggerTestCase(test_utils.BaseTestCase):
         self.config(verbose=True)
         log.setup("test_is_verbose")
         logger = logging.getLogger("test_is_verbose")
+        self.assertEqual(logging.INFO, logger.getEffectiveLevel())
+
+    def test_will_be_debug_if_debug_flag_set(self):
+        self.config(debug=True)
+        log.setup("test_is_debug")
+        logger = logging.getLogger("test_is_debug")
         self.assertEqual(logging.DEBUG, logger.getEffectiveLevel())
 
     def test_will_not_be_verbose_if_verbose_flag_not_set(self):
         self.config(verbose=False)
         log.setup("test_is_not_verbose")
         logger = logging.getLogger("test_is_not_verbose")
-        self.assertEqual(logging.INFO, logger.getEffectiveLevel())
+        self.assertEqual(logging.WARNING, logger.getEffectiveLevel())
 
     def test_no_logging_via_module(self):
         for func in ('critical', 'error', 'exception', 'warning', 'warn',
