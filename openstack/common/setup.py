@@ -156,7 +156,14 @@ def _get_git_next_version_suffix(branch_name):
 
 
 def _get_git_current_tag():
-    return _run_shell_command("git tag --contains HEAD")
+    tag_info = _get_git_tag_info()
+    possible_tags = _run_shell_command("git tag --contains HEAD")
+    if not possible_tags:
+        return None
+    tags = possible_tags.split('\n')
+    if tag_info in tags:
+        return tag_info
+    return None
 
 
 def _get_git_tag_info():
