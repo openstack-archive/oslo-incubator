@@ -1,0 +1,11 @@
+Verified+2: Jenkins
+Code-Review+2: Russell Bryant <rbryant@redhat.com>
+Code-Review+1: Zhongyue Luo <zhongyue.nah@intel.com>
+Approved+1: Michael Still <mikal@stillhq.com>
+Code-Review+2: Michael Still <mikal@stillhq.com>
+Code-Review+1: Davanum Srinivas <davanum@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 18 Dec 2012 00:35:27 +0000
+Reviewed-on: https://review.openstack.org/17831
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
