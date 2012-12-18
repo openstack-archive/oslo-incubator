@@ -262,10 +262,12 @@ import collections
 import copy
 import functools
 import glob
+from keyring.backend import KeyringBackend
 import os
 import string
 import sys
 
+from openstack.common import importutils
 from openstack.common import iniparser
 
 
@@ -513,7 +515,8 @@ class Opt(object):
 
     def __init__(self, name, dest=None, short=None, default=None,
                  positional=False, metavar=None, help=None,
-                 secret=False, required=False, deprecated_name=None):
+                 secret=False, required=False, deprecated_name=None,
+                 secure=False):
         """Construct an Opt object.
 
         The only required parameter is the option's name. However, it is
@@ -529,6 +532,7 @@ class Opt(object):
         :param secret: true iff the value should be obfuscated in log output
         :param required: true iff a value must be supplied for this option
         :param deprecated_name: deprecated name option.  Acts like an alias
+        :param secure: true if the value may come from a secure source
         """
         self.name = name
         if dest is None:
@@ -546,6 +550,10 @@ class Opt(object):
             self.deprecated_name = deprecated_name.replace('-', '_')
         else:
             self.deprecated_name = None
+        self.secure = secure
+        # Secure implies secret
+        if secure:
+            self.secret = True
 
     def __ne__(self, another):
         return vars(self) != vars(another)
@@ -1032,6 +1040,7 @@ class ConfigOpts(collections.Mapping):
 
         self._oparser = None
         self._cparser = None
+        self._secure_source = None
         self._cli_values = {}
         self.__cache = {}
         self._config_opts = []
@@ -1138,6 +1147,9 @@ class ConfigOpts(collections.Mapping):
 
         self._parse_config_files()
 
+        # Need to set secure_source if it's been specified
+        self._set_secure_source()
+
         self._check_required_opts()
 
     def __getattr__(self, name):
@@ -1182,6 +1194,7 @@ class ConfigOpts(collections.Mapping):
         self._cli_values.clear()
         self._oparser = argparse.ArgumentParser()
         self._cparser = None
+        self._secure_source = None
         self.unregister_opts(self._config_opts)
         for group in self._groups.values():
             group._clear()
@@ -1477,6 +1490,16 @@ class ConfigOpts(collections.Mapping):
             return info['override']
 
         values = []
+        # Check if the option is tagged as secure and if we have a
+        # secure source to fetch it from
+        if opt.secure and self._secure_source:
+            section = group.name if group is not None else 'DEFAULT'
+            value = self._secure_source.get_password(section, name)
+            if value is None:
+                raise ConfigFileValueError(
+                    _("Secure source missing '%s'") % name)
+            return value
+
         if self._cparser is not None:
             section = group.name if group is not None else 'DEFAULT'
             try:
@@ -1570,6 +1593,19 @@ class ConfigOpts(collections.Mapping):
             raise NoSuchOptError(opt_name, group)
 
         return opts[opt_name]
+
+    def _set_secure_source(self):
+        # Check for the option first, Yes we could just wrap this with a
+        # try/except NoSuchOpt, but let's check up front to save time
+        if self.__contains__('secure_source'):
+            source_name = self.__getitem__('secure_source')
+            # Make sure we have a value before we try to import it
+            if source_name:
+                self._secure_source = importutils.import_object(source_name)
+                # Make sure the source implements KeyringBackend
+                if not isinstance(self._secure_source, KeyringBackend):
+                    raise ConfigFileValueError(
+                        _("Secure source not a KeyringBackend"))
 
     def _parse_config_files(self):
         """Parse the config files from --config-file and --config-dir.
@@ -1778,10 +1814,16 @@ class CommonConfigOpts(ConfigOpts):
                help='syslog facility to receive log lines')
     ]
 
+    secure_source_opts = [
+        StrOpt('secure_source',
+               help='full class name for the keyring module')
+    ]
+
     def __init__(self):
         super(CommonConfigOpts, self).__init__()
         self.register_cli_opts(self.common_cli_opts)
         self.register_cli_opts(self.logging_cli_opts)
+        self.register_opts(self.secure_source_opts)
 
 
 CONF = CommonConfigOpts()
