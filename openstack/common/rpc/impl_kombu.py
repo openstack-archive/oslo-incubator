@@ -66,6 +66,7 @@ kombu_opts = [
                help='the RabbitMQ userid'),
     cfg.StrOpt('rabbit_password',
                default='guest',
+               secure=True,
                help='the RabbitMQ password'),
     cfg.StrOpt('rabbit_virtual_host',
                default='/',
