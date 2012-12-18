@@ -1831,3 +1831,96 @@ class SetDefaultsTestCase(BaseTestCase):
         set_defaults(opts, foo='bar')
         self.conf([])
         self.assertEquals(self.conf.blaa.foo, 'bar')
+
+from keyring.backend import KeyringBackend
+
+
+# This is a Fake secure source that we can use to confirm that it's used
+# I'd like to make this an inner class to the SecureSourceTestCase, but
+# then I wasn't able to get it dynamically imported
+class FakeSecureSource(KeyringBackend):
+    def supported(self):
+        return 0
+
+    def get_password(self, service, username):
+        value = service + "_" + username
+        return value
+
+    def set_password(self, service, username, password):
+        raise PasswordSetError("NoNo")
+
+
+# This is another fake secure source, but this one doesn't implment
+# KeyringBackend, so it'll cause an error to be thrown. Again, I'd like
+# this to be an inner class to SecureSourceTestCase, but I couldn't get
+# it to work.
+class FakeInvalidSource(object):
+    pass
+
+
+class SecureSourceTestCase(BaseTestCase):
+
+    def test_secure_source(self):
+        opts = [StrOpt('foo', secure=True),
+                StrOpt('bar'),
+                StrOpt('secure_source')]
+        self.conf.register_opts(opts)
+        # Note that 'foo', being secure, does not need to appear in the
+        # config file
+        paths = self.create_tempfiles(
+            [('test',
+              '[DEFAULT]\n'
+              'secure_source = tests.unit.test_cfg.FakeSecureSource\n'
+              'bar = 10\n')])
+
+        self.conf(['--config-file', paths[0]])
+        # If we used our FakeSecureService above, then the value of foo should
+        # be the section + "_" + name, while the value of 'bar', which is not
+        # defined as secure, should be the same as the config file.
+        self.assertEquals(self.conf.foo, 'DEFAULT_foo')
+        self.assertEquals(self.conf.bar, '10')
+
+    def test_empty_source_name(self):
+        opts = [StrOpt('foo', secure=True),
+                StrOpt('secure_source')]
+        self.conf.register_opts(opts)
+        paths = self.create_tempfiles([('test',
+                                        '[DEFAULT]\n'
+                                        'secure_source = \n'
+                                        'foo = hello\n')])
+
+        self.conf(['--config-file', paths[0]])
+        # No secure source, should just get the value
+        self.assertEquals(self.conf.foo, 'hello')
+
+    def test_source_not_found(self):
+        opts = [StrOpt('foo', secure=True),
+                StrOpt('secure_source')]
+        self.conf.register_opts(opts)
+        # Use a class for the secure source that won't be found.
+        paths = self.create_tempfiles([('test',
+                                        '[DEFAULT]\n'
+                                        'secure_source = bar\n'
+                                        'foo = 6.66\n')])
+
+        try:
+            self.conf(['--config-file', paths[0]])
+        except ImportError, imerr:
+            print imerr
+            self.assertTrue("Class bar cannot be found" in str(imerr))
+
+    def test_invalid_source(self):
+        opts = [StrOpt('foo', secure=True),
+                StrOpt('secure_source')]
+        self.conf.register_opts(opts)
+        paths = self.create_tempfiles([
+            ('test',
+             '[DEFAULT]\n'
+             'secure_source = tests.unit.test_cfg.FakeInvalidSource\n'
+             'foo = 6.66\n')])
+
+        try:
+            self.conf(['--config-file', paths[0]])
+        except ConfigFileValueError, cfve:
+            print cfve
+            self.assertTrue("not a KeyringBackend" in str(cfve))
