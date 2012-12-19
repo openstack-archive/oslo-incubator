@@ -55,6 +55,7 @@ the modules to copy and the base destination module
 Obviously, the first way is the easiest!
 """
 
+import glob
 import os
 import os.path
 import re
@@ -128,14 +129,14 @@ def _make_dirs(path):
         os.makedirs(os.path.dirname(path))
 
 
-def _copy_file(path, base, dest_dir):
-    dest = _dest_path(path, base, dest_dir)
-
+def _copy_file(path, dest, base):
     _make_dirs(dest)
     if not os.path.isdir(os.path.dirname(dest)):
         os.makedirs(os.path.dirname(dest))
 
     shutil.copy2(path, dest)
+
+    _replace(dest, 'oslo', base)
 
     _replace(dest,
              '^( *)from openstack.common',
@@ -150,6 +151,10 @@ def _copy_file(path, base, dest_dir):
              '\"' + base + '.openstack.common')
 
 
+def _copy_pyfile(path, base, dest_dir):
+    _copy_file(path, _dest_path(path, base, dest_dir), base)
+
+
 def _copy_module(mod, base, dest_dir):
     print ("Copying openstack.common.%s under the %s module in %s" %
            (mod, base, dest_dir))
@@ -158,19 +163,30 @@ def _copy_module(mod, base, dest_dir):
         path = _mod_to_path('openstack.common')
         for d in mod.split('.')[:-1]:
             path = os.path.join(path, d)
-            _copy_file(os.path.join(path, '__init__.py'), base, dest_dir)
+            _copy_pyfile(os.path.join(path, '__init__.py'), base, dest_dir)
 
     mod_path = _mod_to_path('openstack.common.%s' % mod)
     mod_file = '%s.py' % mod_path
     if os.path.isfile(mod_file):
-        _copy_file(mod_file, base, dest_dir)
+        _copy_pyfile(mod_file, base, dest_dir)
     elif os.path.isdir(mod_path):
         dest = os.path.join(dest_dir, _mod_to_path(base),
                             'openstack', 'common', mod)
         _make_dirs(dest)
         sources = filter(lambda x: x[-3:] == '.py', os.listdir(mod_path))
         for s in sources:
-            _copy_file(os.path.join(mod_path, s), base, dest_dir)
+            _copy_pyfile(os.path.join(mod_path, s), base, dest_dir)
+
+    globs_to_copy = [
+        os.path.join('bin', 'oslo-' + mod + '*'),
+        os.path.join('etc', 'oslo', mod + '*.conf'),
+    ]
+
+    for matches in [glob.glob(g) for g in globs_to_copy]:
+        for match in matches:
+            dest = os.path.join(dest_dir, match.replace('oslo', base))
+            print "Copying %s to %s" % (match, dest)
+            _copy_file(match, dest, base)
 
 
 def _create_module_init(base, dest_dir, *sub_paths):
