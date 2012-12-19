@@ -46,6 +46,19 @@ from openstack.common import jsonutils
 from openstack.common import local
 from openstack.common import notifier
 
+# Ensure logging configuration is thread-safe
+from eventlet.green import thread, threading
+logging.thread = thread
+logging.threading = threading
+logging._lock = logging.threading.RLock()
+
+# Ensure under rsyslog restart scenarios that eventlet send() doesn't
+# consider ENOTCONN a reason to retry as it will retry infinitely
+# without yielding
+import errno
+import eventlet.greenio
+eventlet.greenio.SOCKET_BLOCKING = set((errno.EWOULDBLOCK,))
+
 
 log_opts = [
     cfg.StrOpt('logging_context_format_string',
