@@ -56,6 +56,9 @@ class _deferred_version_string(str):
     def __repr__(self):
         return self._get_cached_version()
 
+    def replace(self, old, new):
+        return str(self).replace(old, new)
+
 
 class VersionInfo(object):
 
