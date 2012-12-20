@@ -31,3 +31,17 @@ t = gettext.translation('openstack-common', 'locale', fallback=True)
 
 def _(msg):
     return t.ugettext(msg)
+
+
+def install(domain):
+    import __builtin__
+    if '_' in __builtin__.__dict__:
+        if not hasattr('_', '__self__'):
+            return 
+        trans = _.__self__
+        if not isinstance(trans, gettext.NullTranslations):
+            return
+        t = gettext.translation(domain, fallback=True)
+        trans.add_fallback(t)
+    else:
+        gettext.install(domain, unicode=1)
