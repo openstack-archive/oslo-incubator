@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import errno
 import os
 import shutil
 import sys
@@ -23,6 +24,7 @@ import unittest
 
 import stubout
 
+import openstack.common.cfg
 from openstack.common.cfg import *
 
 
@@ -1831,3 +1833,45 @@ class SetDefaultsTestCase(BaseTestCase):
         set_defaults(opts, foo='bar')
         self.conf([])
         self.assertEquals(self.conf.blaa.foo, 'bar')
+
+
+class _FakeConfigParser(object):
+    def __init__(self, filename, section):
+        self.filename = filename
+
+    def parse(self):
+        if self.filename == 'perm_error':
+            raise IOError(errno.EACCES, 'fake permission denied',
+                          self.filename)
+        if self.filename == 'other_error':
+            raise IOError(42, 'meaning of life unavailable', self.filename)
+
+
+class MultiFileParserTestCase(BaseTestCase):
+    def test_read_ioerror_permissions(self):
+        stderr = StringIO.StringIO()
+        self.stubs.Set(openstack.common.cfg, 'ConfigParser', _FakeConfigParser)
+        self.stubs.Set(sys, 'stderr', stderr)
+
+        try:
+            mcp = MultiConfigParser()
+            mcp.read(['perm_error'])
+            stderr.seek(0)
+            self.assertTrue(stderr.read().startswith('Permission denied'))
+
+        finally:
+            self.stubs.UnsetAll()
+
+    def test_read_ioerror_other(self):
+        stderr = StringIO.StringIO()
+        self.stubs.Set(openstack.common.cfg, 'ConfigParser', _FakeConfigParser)
+        self.stubs.Set(sys, 'stderr', stderr)
+
+        try:
+            mcp = MultiConfigParser()
+            mcp.read(['other_error'])
+            stderr.seek(0)
+            self.assertTrue(stderr.read().startswith('IOError reading'))
+
+        finally:
+            self.stubs.UnsetAll()
