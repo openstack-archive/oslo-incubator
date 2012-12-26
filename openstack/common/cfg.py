@@ -990,7 +990,20 @@ class MultiConfigParser(object):
 
             try:
                 parser.parse()
-            except IOError:
+            except IOError, e:
+                if e.errno == 13:
+                    # NOTE(mikal): Permission denied. Note that this is early
+                    # enough that we can't LOG, we instead print to stderr.
+                    sys.stderr.write(_('Permission denied while reading the '
+                                       '%(filename)s config file. Treating it '
+                                       'as missing.') % {'filename': filename})
+                else:
+                    sys.stderr.write(_('IOError reading the config file '
+                                       '%(filename)s. Error is %(num)d -- '
+                                       '%(error)s. Treating it as missing.')
+                                     % {'filename': filename,
+                                        'error': e.message,
+                                        'num': e.errno})
                 continue
             self.parsed.insert(0, sections)
             read_ok.append(filename)
