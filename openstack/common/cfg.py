@@ -266,6 +266,7 @@ import os
 import string
 import sys
 
+from openstack.common.gettextutils import _
 from openstack.common import iniparser
 
 
