@@ -243,7 +243,7 @@ class ProcessLauncher(object):
 
     def _wait_child(self):
         try:
-            pid, status = os.wait()
+            pid, status = os.waitpid(0, os.WNOHANG)
         except OSError as exc:
             if exc.errno not in (errno.EINTR, errno.ECHILD):
                 raise
