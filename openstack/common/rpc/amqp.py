@@ -355,7 +355,7 @@ def multicall(conf, context, topic, msg, timeout, connection_pool):
     # that will continue to use the connection.  When it's done,
     # connection.close() will get called which will put it back into
     # the pool
-    LOG.debug(_('Making asynchronous call on %s ...'), topic)
+    LOG.debug(_('Making synchronous call on %s ...'), topic)
     msg_id = uuid.uuid4().hex
     msg.update({'_msg_id': msg_id})
     LOG.debug(_('MSG_ID is %s') % (msg_id))
