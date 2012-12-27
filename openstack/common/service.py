@@ -243,7 +243,9 @@ class ProcessLauncher(object):
 
     def _wait_child(self):
         try:
-            pid, status = os.wait()
+            pid, status = os.waitpid(0, os.WNOHANG)
+            if not pid:
+                return None
         except OSError as exc:
             if exc.errno not in (errno.EINTR, errno.ECHILD):
                 raise
@@ -275,6 +277,7 @@ class ProcessLauncher(object):
         while self.running:
             wrap = self._wait_child()
             if not wrap:
+                eventlet.greenthread.sleep(.01)
                 continue
 
             while self.running and len(wrap.children) < wrap.workers:

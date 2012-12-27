@@ -226,15 +226,8 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
                           self.topic,
                           {"method": "block",
                            "args": {"value": value}}, timeout=1)
-        try:
-            self.rpc.call(FLAGS, self.context,
-                          self.topic,
-                          {"method": "block",
-                           "args": {"value": value}},
-                          timeout=1)
-            self.fail("should have thrown Timeout")
-        except rpc_common.Timeout as exc:
-            pass
+        # Wait for the remote to die
+        time.sleep(2)
 
 
 class BaseRpcAMQPTestCase(BaseRpcTestCase):
