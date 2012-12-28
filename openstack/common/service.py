@@ -225,6 +225,9 @@ class ProcessLauncher(object):
             finally:
                 wrap.service.stop()
 
+            if rpc:
+                rpc.cleanup()
+
             os._exit(status)
 
         LOG.info(_('Started child %d'), pid)
