@@ -97,17 +97,21 @@ class ServiceLauncherTest(utils.BaseTestCase):
 
         self.pid = pid
 
-        # Wait for up to a second for workers to get started
-        start = time.time()
-        while time.time() - start < 1:
-            workers = self._get_workers()
-            if len(workers) == self.workers:
-                break
+        # Wait at most 10 seconds to spawn workers
+        self._wait(lambda: self.workers == len(self._get_workers()), 10)
 
-            time.sleep(.1)
-
+        workers = self._get_workers()
         self.assertEqual(len(workers), self.workers)
         return workers
+
+    def _wait(self, cond, timeout):
+        start = time.time()
+        while True:
+            if cond():
+                break
+            if time.time() - start > timeout:
+                break
+            time.sleep(1)
 
     def setUp(self):
         super(ServiceLauncherTest, self).setUp()
@@ -149,18 +153,11 @@ class ServiceLauncherTest(utils.BaseTestCase):
         LOG.info('pid of first child is %s' % start_workers[0])
         os.kill(start_workers[0], signal.SIGTERM)
 
-        # loop and check if new worker is spawned (for 1 second max)
-        start = time.time()
-        while time.time() - start < 1:
-            end_workers = self._get_workers()
-            LOG.info('workers: %r' % end_workers)
-
-            if start_workers != end_workers:
-                break
-
-            time.sleep(.1)
+        # Wait at most 5 seconds to respawn a worker
+        self._wait(lambda: start_workers != self._get_workers(), 5)
 
         # Make sure worker pids don't match
+        end_workers = self._get_workers()
         self.assertNotEqual(start_workers, end_workers)
 
     def _terminate_with_signal(self, sig):
@@ -168,17 +165,10 @@ class ServiceLauncherTest(utils.BaseTestCase):
 
         os.kill(self.pid, sig)
 
-        # loop and check if all processes are killed (for 1 second max)
-        start = time.time()
-        while time.time() - start < 1:
-            workers = self._get_workers()
-            LOG.info('workers: %r' % workers)
+        # Wait at most 5 seconds to kill all workers
+        self._wait(lambda: not self._get_workers(), 5)
 
-            if not workers:
-                break
-
-            time.sleep(.1)
-
+        workers = self._get_workers()
         self.assertFalse(workers, 'No OS processes left.')
 
     def test_terminate_sigkill(self):
