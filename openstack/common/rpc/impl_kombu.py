@@ -196,7 +196,7 @@ class DirectConsumer(ConsumerBase):
         # Default options
         options = {'durable': False,
                    'auto_delete': True,
-                   'exclusive': True}
+                   'exclusive': False}
         options.update(kwargs)
         exchange = kombu.entity.Exchange(name=msg_id,
                                          type='direct',
@@ -269,7 +269,7 @@ class FanoutConsumer(ConsumerBase):
         options = {'durable': False,
                    'queue_arguments': _get_queue_arguments(conf),
                    'auto_delete': True,
-                   'exclusive': True}
+                   'exclusive': False}
         options.update(kwargs)
         exchange = kombu.entity.Exchange(name=exchange_name, type='fanout',
                                          durable=options['durable'],
@@ -316,7 +316,7 @@ class DirectPublisher(Publisher):
 
         options = {'durable': False,
                    'auto_delete': True,
-                   'exclusive': True}
+                   'exclusive': False}
         options.update(kwargs)
         super(DirectPublisher, self).__init__(channel, msg_id, msg_id,
                                               type='direct', **options)
@@ -350,7 +350,7 @@ class FanoutPublisher(Publisher):
         """
         options = {'durable': False,
                    'auto_delete': True,
-                   'exclusive': True}
+                   'exclusive': False}
         options.update(kwargs)
         super(FanoutPublisher, self).__init__(channel, '%s_fanout' % topic,
                                               None, type='fanout', **options)
