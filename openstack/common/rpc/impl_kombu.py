@@ -469,7 +469,7 @@ class Connection(object):
             LOG.info(_("Reconnecting to AMQP server on "
                      "%(hostname)s:%(port)d") % params)
             try:
-                self.connection.close()
+                self.connection.release()
             except self.connection_errors:
                 pass
             # Setting this in case the next statement fails, though
