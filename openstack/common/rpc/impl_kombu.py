@@ -540,6 +540,9 @@ class Connection(object):
             if self.interval_max:
                 sleep_time = min(sleep_time, self.interval_max)
 
+            if attempt > 5:
+                raise Exception
+
             log_info['sleep_time'] = sleep_time
             LOG.error(_('AMQP server on %(hostname)s:%(port)d is '
                         'unreachable: %(err_str)s. Trying again in '
