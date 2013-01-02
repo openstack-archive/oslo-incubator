@@ -265,3 +265,50 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
 
         self.assertRaises(rpc_common.UnsupportedRpcEnvelopeVersion,
                           rpc_common.deserialize_msg, s_msg)
+
+    def test_safe_log_sanitizes_globals(self):
+        def logger_method(msg, data):
+            self.assertEquals('<SANITIZED>', data['_context_auth_token'])
+            self.assertEquals('<SANITIZED>', data['auth_token'])
+
+        data = {'_context_auth_token': 'banana',
+                'auth_token': 'cheese'}
+        rpc_common._safe_log(logger_method, 'foo', data)
+
+    def test_safe_log_sanitizes_set_admin_password(self):
+        def logger_method(msg, data):
+            self.assertEquals('<SANITIZED>', data['args']['new_pass'])
+
+        data = {'_context_auth_token': 'banana',
+                'auth_token': 'cheese',
+                'method': 'set_admin_password',
+                'args': {'new_pass': 'gerkin'}}
+        rpc_common._safe_log(logger_method, 'foo', data)
+
+    def test_safe_log_sanitizes_run_instance(self):
+        def logger_method(msg, data):
+            self.assertEquals('<SANITIZED>', data['args']['admin_password'])
+
+        data = {'_context_auth_token': 'banana',
+                'auth_token': 'cheese',
+                'method': 'run_instance',
+                'args': {'admin_password': 'gerkin'}}
+        rpc_common._safe_log(logger_method, 'foo', data)
+
+    def test_safe_log_sanitizes_cells_route_message(self):
+        def logger_method(msg, data):
+            vals = data['args']['message']['args']['method_info']
+            self.assertEquals('<SANITIZED>', vals['method_kwargs']['password'])
+
+        meth_info = {'method_args': ['aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'],
+                     'method': 'set_admin_password',
+                     'method_kwargs': {'password': 'this_password_is_visible'}}
+        data = {'method': 'route_message',
+                'args': {'routing_path': 'a.fake.path',
+                         'direction': 'down',
+                         'message': {'args': {'is_broadcast': False,
+                                              'service_name': 'compute',
+                                              'method_info': meth_info},
+                                     'method': 'run_service_api_method'},
+                         'dest_cell_name': 'cell!0001'}}
+        rpc_common._safe_log(logger_method, 'foo', data)

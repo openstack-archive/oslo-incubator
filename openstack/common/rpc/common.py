@@ -212,8 +212,12 @@ class Connection(object):
 
 def _safe_log(log_func, msg, msg_data):
     """Sanitizes the msg_data field before logging."""
-    SANITIZE = {'set_admin_password': ('new_pass',),
-                'run_instance': ('admin_password',), }
+    SANITIZE = {'set_admin_password': [('args', 'new_pass')],
+                'run_instance': [('args', 'admin_password')],
+                'route_message': [('args', 'message', 'args', 'method_info',
+                                   'method_kwargs', 'password'),
+                                  ('args', 'message', 'args', 'method_info',
+                                   'method_kwargs', 'admin_password')]}
 
     has_method = 'method' in msg_data and msg_data['method'] in SANITIZE
     has_context_token = '_context_auth_token' in msg_data
@@ -225,14 +229,16 @@ def _safe_log(log_func, msg, msg_data):
     msg_data = copy.deepcopy(msg_data)
 
     if has_method:
-        method = msg_data['method']
-        if method in SANITIZE:
-            args_to_sanitize = SANITIZE[method]
-            for arg in args_to_sanitize:
-                try:
-                    msg_data['args'][arg] = "<SANITIZED>"
-                except KeyError:
-                    pass
+        for arg in SANITIZE.get(msg_data['method'], []):
+            try:
+                d = msg_data
+                for elem in arg[:-1]:
+                    d = d[elem]
+                d[arg[-1]] = '<SANITIZED>'
+            except KeyError, e:
+                LOG.info(_('Failed to sanitize %(item)s. Key error %(err)s'),
+                         {'item': arg,
+                          'err': e})
 
     if has_context_token:
         msg_data['_context_auth_token'] = '<SANITIZED>'
