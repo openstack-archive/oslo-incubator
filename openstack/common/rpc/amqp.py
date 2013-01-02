@@ -293,6 +293,10 @@ class ProxyCallback(object):
             ctxt.reply(None, sys.exc_info(),
                        connection_pool=self.connection_pool)
 
+    def wait(self):
+        """Wait for all callback threads to exit."""
+        self.pool.waitall()
+
 
 class MulticallWaiter(object):
     def __init__(self, conf, connection, timeout):
