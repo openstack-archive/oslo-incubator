@@ -140,7 +140,10 @@ class ZmqSocket(object):
             else:
                 self.sock.connect(addr)
         except Exception:
-            raise RPCException(_("Could not open socket."))
+            raise RPCException(_("Could not open socket. "
+                                 "Connecting to %(addr)s with %(type)s; "
+                                 "Subscribed to %(subscribe)s; "
+                                 "Bind: %(bind)s") % str_data)
 
     def socket_s(self):
         """Get socket type as string."""
@@ -250,7 +253,7 @@ class InternalContext(object):
         """Process a curried message and cast the result to topic."""
         LOG.debug(_("Running func with context: %s"), ctx.to_dict())
         data.setdefault('version', None)
-        data.setdefault('args', [])
+        data.setdefault('args', {})
 
         try:
             result = proxy.dispatch(
@@ -344,49 +347,89 @@ class ZmqBaseReactor(ConsumerBase):
 
         self.pool = eventlet.greenpool.GreenPool(conf.rpc_thread_pool_size)
 
-    def register(self, proxy, in_addr, zmq_type_in, out_addr=None,
-                 zmq_type_out=None, in_bind=True, out_bind=True,
-                 subscribe=None):
+        self._delayed_registrations = []
 
-        LOG.info(_("Registering reactor"))
+    def register(*args, **kwargs):
+        def _register(self, proxy, in_addr, zmq_type_in, out_addr=None,
+                     zmq_type_out=None, in_bind=True, out_bind=True,
+                     subscribe=None):
+            """Perform registrations. Must return sockets to poll."""
 
-        if zmq_type_in not in (zmq.PULL, zmq.SUB):
-            raise RPCException("Bad input socktype")
+            LOG.info(_("Registering reactor"))
 
-        # Items push in.
-        inq = ZmqSocket(in_addr, zmq_type_in, bind=in_bind,
-                        subscribe=subscribe)
+            if zmq_type_in not in (zmq.PULL, zmq.SUB):
+                raise RPCException("Bad input socktype")
 
-        self.proxies[inq] = proxy
-        self.sockets.append(inq)
+            # Items push in.
+            inq = ZmqSocket(in_addr, zmq_type_in, bind=in_bind,
+                            subscribe=subscribe)
 
-        LOG.info(_("In reactor registered"))
+            self.proxies[inq] = proxy
+            self.sockets.append(inq)
 
-        if not out_addr:
-            return
+            LOG.info(_("In reactor registered"))
 
-        if zmq_type_out not in (zmq.PUSH, zmq.PUB):
-            raise RPCException("Bad output socktype")
+            if not out_addr:
+                return inq
 
-        # Items push out.
-        outq = ZmqSocket(out_addr, zmq_type_out, bind=out_bind)
+            if zmq_type_out not in (zmq.PUSH, zmq.PUB):
+                raise RPCException("Bad output socktype")
 
-        self.mapping[inq] = outq
-        self.mapping[outq] = inq
-        self.sockets.append(outq)
+            # Items push out.
+            outq = ZmqSocket(out_addr, zmq_type_out, bind=out_bind)
 
-        LOG.info(_("Out reactor registered"))
+            self.mapping[inq] = outq
+            self.mapping[outq] = inq
+            self.sockets.append(outq)
+
+            LOG.info(_("Out reactor registered"))
+
+            # socket to poll.
+            return inq
+
+        self = args[0]
+        self._delayed_registrations.append([_register, args, kwargs])
 
     def consume_in_thread(self):
-        def _consume(sock):
-            LOG.info(_("Consuming socket"))
-            while True:
-                self.consume(sock)
+        """Consumes each delayed consumer registration in a thread,
+           uses multiple (green) threads, rather than
+           a single thread.
+        """
+        def _consume(wait_channel, registration):
+            # We must create the sockets in
+            # this greenthread, otherwise eventlet
+            # freaks out!
+            r = registration
 
-        for k in self.proxies.keys():
+            try:
+                sock = r[0](*r[1], **r[2])
+            except Exception:
+                wait_channel.send_exception(*sys.exc_info())
+                return
+
+            # Notify evntq that we have completed registration
+            wait_channel.send(True)
+
+            while True:
+                LOG.info(_("Consuming socket."))
+                r[1][0].consume(sock)
+
+        while len(self._delayed_registrations) > 0:
+            wait_channel = eventlet.event.Event()
+            r = self._delayed_registrations.pop()
+
+            # Consume registered sockets.
             self.threads.append(
-                self.pool.spawn(_consume, k)
+                self.pool.spawn(_consume, wait_channel, r)
             )
+
+            # Wait for registration to succeed.
+            # We do this so this loop only
+            # completes once every socket
+            # has been created (via register)
+            # Also re-raises exceptions met
+            # performing registration.
+            wait_channel.wait()
 
     def wait(self):
         for t in self.threads:
