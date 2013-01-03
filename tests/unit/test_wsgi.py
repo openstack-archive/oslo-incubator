@@ -179,6 +179,17 @@ class JSONDictSerializerTest(unittest.TestCase):
         result = result.replace('\n', '').replace(' ', '')
         self.assertEqual(result, expected_json)
 
+    def test_object_unicode(self):
+        class TestUnicode:
+            def __unicode__(self):
+                return u'TestUnicode'
+        input_dict = dict(cls=TestUnicode())
+        expected_str = '{"cls":"TestUnicode"}'
+        serializer = wsgi.JSONDictSerializer()
+        result = serializer.serialize(input_dict)
+        result = result.replace('\n', '').replace(' ', '')
+        self.assertEqual(result, expected_str)
+
 
 class TextDeserializerTest(unittest.TestCase):
 
