@@ -28,6 +28,7 @@ import greenlet
 from openstack.common import cfg
 from openstack.common.gettextutils import _
 from openstack.common import importutils
+from openstack.common import jsonutils
 from openstack.common.rpc import common as rpc_common
 
 
@@ -74,6 +75,27 @@ zmq_opts = [
 CONF = None
 ZMQ_CTX = None  # ZeroMQ Context, must be global.
 matchmaker = None  # memoized matchmaker object
+
+
+def _serialize(data):
+    """
+    Serialization wrapper
+    We prefer using JSON, but it cannot encode all types.
+    Error if a developer passes us bad data.
+    """
+    try:
+        return str(jsonutils.dumps(data, ensure_ascii=True))
+    except TypeError:
+        LOG.error(_("JSON serialization failed."))
+        raise
+
+
+def _deserialize(data):
+    """
+    Deserialization wrapper
+    """
+    LOG.debug(_("Deserializing: %s"), data)
+    return jsonutils.loads(data)
 
 
 class ZmqSocket(object):
@@ -186,7 +208,8 @@ class ZmqClient(object):
     def cast(self, msg_id, topic, data, serialize=True, force_envelope=False):
         if serialize:
             data = rpc_common.serialize_msg(data, force_envelope)
-        self.outq.send([str(msg_id), str(topic), str('cast'), data])
+        self.outq.send([str(msg_id), str(topic), str('cast'),
+                        _serialize(data)])
 
     def close(self):
         self.outq.close()
@@ -211,11 +234,12 @@ class RpcContext(rpc_common.CommonRpcContext):
     @classmethod
     def marshal(self, ctx):
         ctx_data = ctx.to_dict()
-        return rpc_common.serialize_msg(ctx_data)
+        return _serialize(rpc_common.serialize_msg(ctx_data))
 
     @classmethod
     def unmarshal(self, data):
-        return RpcContext.from_dict(rpc_common.deserialize_msg(data))
+        return RpcContext.from_dict(
+            rpc_common.deserialize_msg(_deserialize(data)))
 
 
 class InternalContext(object):
@@ -412,11 +436,12 @@ class ZmqProxy(ZmqBaseReactor):
             sock_type = zmq.PUB
         elif topic.startswith('zmq_replies'):
             sock_type = zmq.PUB
-            inside = rpc_common.deserialize_msg(in_msg)
+            inside = rpc_common.deserialize_msg(_deserialize(in_msg))
             msg_id = inside[-1]['args']['msg_id']
             response = inside[-1]['args']['response']
             LOG.debug(_("->response->%s"), response)
-            data = [str(msg_id), rpc_common.serialize_msg(response)]
+            data = [str(msg_id),
+                    _serialize(rpc_common.serialize_msg(response))]
         else:
             sock_type = zmq.PUSH
 
@@ -459,7 +484,7 @@ class ZmqReactor(ZmqBaseReactor):
 
         msg_id, topic, style, in_msg = data
 
-        ctx, request = rpc_common.deserialize_msg(in_msg)
+        ctx, request = rpc_common.deserialize_msg(_deserialize(in_msg))
         ctx = RpcContext.unmarshal(ctx)
 
         proxy = self.proxies[sock]
@@ -570,7 +595,7 @@ def _call(addr, context, msg_id, topic, msg, timeout=None):
             msg = msg_waiter.recv()
             LOG.debug(_("Received message: %s"), msg)
             LOG.debug(_("Unpacking response"))
-            responses = rpc_common.deserialize_msg(msg[-1])
+            responses = rpc_common.deserialize_msg(_deserialize(msg[-1]))
         # ZMQError trumps the Timeout error.
         except zmq.ZMQError:
             raise RPCException("ZMQ Socket Error")
