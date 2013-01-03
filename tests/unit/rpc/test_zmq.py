@@ -41,20 +41,22 @@ except ImportError:
 
 LOG = logging.getLogger(__name__)
 FLAGS = cfg.CONF
+TESTCNT = 0
 
 
 class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
-    @testutils.skip_if(True, "Zmq tests broken on jenkins")
+    #@testutils.skip_if(True, "Zmq tests broken on jenkins")
+    @testutils.skip_if(not impl_zmq, "ZeroMQ library required")
     def setUp(self, topic='test', topic_nested='nested'):
-        if not impl_zmq:
-            return None
-
+        global TESTCNT
+        TESTCNT+=1
         self.reactor = None
         self.rpc = impl_zmq
 
         self.config(rpc_zmq_bind_address='127.0.0.1')
         self.config(rpc_zmq_host='127.0.0.1')
         self.config(rpc_response_timeout=5)
+        self.config(rpc_zmq_port=9500+TESTCNT)
         self.config(rpc_zmq_matchmaker='mod_matchmaker.MatchMakerLocalhost')
 
         # We'll change this if we detect no daemon running.
@@ -108,9 +110,8 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
                         "Socket may already be in use."))
             raise
 
+    @testutils.skip_if(not impl_zmq, "ZeroMQ library required")
     def tearDown(self):
-        if not impl_zmq:
-            return None
         if self.reactor:
             self.reactor.close()
 
