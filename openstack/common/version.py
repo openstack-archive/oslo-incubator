@@ -1,4 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 #    Copyright 2012 OpenStack LLC
 #
@@ -18,10 +17,44 @@
 Utilities for consuming the auto-generated versioninfo files.
 """
 
-import datetime
 import pkg_resources
+import os
+import subprocess
 
-import setup
+
+def _run_shell_command(cmd):
+    if os.name == 'nt':
+        output = subprocess.Popen(["cmd.exe", "/C", cmd],
+                                  stdout=subprocess.PIPE)
+    else:
+        output = subprocess.Popen(["/bin/sh", "-c", cmd],
+                                  stdout=subprocess.PIPE)
+    out = output.communicate()
+    if len(out) == 0:
+        return None
+    if len(out[0].strip()) == 0:
+        return None
+    return out[0].strip()
+
+
+def read_versioninfo(project):
+    """Read the versioninfo file. If it doesn't exist, we're in a github
+       zipball, and there's really no way to know what version we really
+       are, but that should be ok, because the utility of that should be
+       just about nil if this code path is in use in the first place."""
+    versioninfo_path = os.path.join(project, 'versioninfo')
+    if os.path.exists(versioninfo_path):
+        with open(versioninfo_path, 'r') as vinfo:
+            version = vinfo.read().strip()
+    else:
+        version = None
+    return version
+
+
+def write_versioninfo(project, version):
+    """Write a simple file containing the version of the package."""
+    with open(os.path.join(project, 'versioninfo'), 'w') as fil:
+        fil.write("%s\n" % version)
 
 
 class VersionInfo(object):
@@ -42,38 +75,20 @@ class VersionInfo(object):
             self.python_package = package
         else:
             self.python_package = python_package
-        self.pre_version = pre_version
         self.version = None
         self._cached_version = None
 
     def _generate_version(self):
-        """Defer to the openstack.common.setup routines for making a
-        version from git."""
-        if self.pre_version is None:
-            return setup.get_post_version(self.python_package)
-        else:
-            return setup.get_pre_version(self.python_package, self.pre_version)
+        """Return a version which is equal to the tag that's on the current
+        revision if there is one, or tag plus number of additional revisions
+        if the current revision has no tag."""
 
-    def _newer_version(self, pending_version):
-        """Check to see if we're working with a stale version or not.
-        We expect a version string that either looks like:
-          2012.2~f3~20120708.10.4426392
-        which is an unreleased version of a pre-version, or:
-          0.1.1.4.gcc9e28a
-        which is an unreleased version of a post-version, or:
-          0.1.1
-        Which is a release and which should match tag.
-        For now, if we have a date-embedded version, check to see if it's
-        old, and if so re-generate. Otherwise, just deal with it.
-        """
-        try:
-            version_date = int(self.version.split("~")[-1].split('.')[0])
-            if version_date < int(datetime.date.today().strftime('%Y%m%d')):
-                return self._generate_version()
-            else:
-                return pending_version
-        except Exception:
-            return pending_version
+        version = read_versioninfo(self.python_package)
+        if not version and os.path.isdir('.git'):
+            version = _run_shell_command(
+                "git describe --always").replace('-', '.')
+            write_versioninfo(self.python_package, version)
+        return version
 
     def version_string_with_vcs(self, always=False):
         """Return the full version of the package including suffixes indicating
@@ -93,9 +108,8 @@ class VersionInfo(object):
             requirement = pkg_resources.Requirement.parse(self.python_package)
             versioninfo = "%s/versioninfo" % self.package
             try:
-                raw_version = pkg_resources.resource_string(requirement,
-                                                            versioninfo)
-                self.version = self._newer_version(raw_version.strip())
+                self.version = pkg_resources.resource_string(requirement,
+                                                             versioninfo)
             except (IOError, pkg_resources.DistributionNotFound):
                 self.version = self._generate_version()
 

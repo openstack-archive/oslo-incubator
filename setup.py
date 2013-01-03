@@ -18,13 +18,16 @@
 import setuptools
 
 from openstack.common import setup
+from openstack.common import version
 
 requires = setup.parse_requirements()
 depend_links = setup.parse_dependency_links()
+version_info = version.VersionInfo('openstack')
+
 
 setuptools.setup(
     name='openstack.common',
-    version=setup.get_post_version('openstack'),
+    version=version_info.canonical_version_string(always=True),
     description="Common components for Openstack",
     long_description="Common components for Openstack "
                      "including paster templates.",
