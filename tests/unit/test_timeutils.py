@@ -27,14 +27,10 @@ from openstack.common import timeutils
 class TimeUtilsTest(unittest.TestCase):
 
     def setUp(self):
-        utc_timezone = iso8601.iso8601.UTC
         self.skynet_self_aware_time_str = '1997-08-29T06:14:00Z'
-        self.skynet_self_aware_time = datetime.datetime(1997, 8, 29, 6, 14, 0,
-                                                        tzinfo=utc_timezone)
-        self.one_minute_before = datetime.datetime(1997, 8, 29, 6, 13, 0,
-                                                   tzinfo=iso8601.iso8601.UTC)
-        self.one_minute_after = datetime.datetime(1997, 8, 29, 6, 15, 0,
-                                                  tzinfo=iso8601.iso8601.UTC)
+        self.skynet_self_aware_time = datetime.datetime(1997, 8, 29, 6, 14, 0)
+        self.one_minute_before = datetime.datetime(1997, 8, 29, 6, 13, 0)
+        self.one_minute_after = datetime.datetime(1997, 8, 29, 6, 15, 0)
         self.skynet_self_aware_time_perfect_str = '1997-08-29T06:14:00.000000'
         self.skynet_self_aware_time_perfect = datetime.datetime(1997, 8, 29,
                                                                 6, 14, 0)
@@ -50,7 +46,9 @@ class TimeUtilsTest(unittest.TestCase):
 
     def test_parse_isotime(self):
         expect = timeutils.parse_isotime(self.skynet_self_aware_time_str)
-        self.assertEqual(self.skynet_self_aware_time, expect)
+        skynet_self_aware_time_utc = self.skynet_self_aware_time.replace(
+            tzinfo=iso8601.iso8601.UTC)
+        self.assertEqual(skynet_self_aware_time_utc, expect)
 
     def test_strtime(self):
         expect = timeutils.strtime(self.skynet_self_aware_time_perfect)
@@ -90,8 +88,7 @@ class TimeUtilsTest(unittest.TestCase):
     def test_utcnow_ts(self):
         skynet_self_aware_timestamp = 872835240
         dt = datetime.datetime.utcfromtimestamp(skynet_self_aware_timestamp)
-        expect = dt.replace(tzinfo=iso8601.iso8601.UTC)
-        self.assertEqual(self.skynet_self_aware_time, expect)
+        self.assertEqual(self.skynet_self_aware_time, dt)
         with mock.patch('datetime.datetime') as datetime_mock:
             datetime_mock.utcnow.return_value = self.skynet_self_aware_time
             ts = timeutils.utcnow_ts()
