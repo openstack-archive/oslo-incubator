@@ -1,5 +1,5 @@
 PasteDeploy==1.5.0
-WebOb==1.0.8
+WebOb==1.2.3
 eventlet
 extras
 greenlet>=0.3.1
