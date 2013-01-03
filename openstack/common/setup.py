@@ -131,57 +131,6 @@ def _run_shell_command(cmd):
     return out[0].strip()
 
 
-def _get_git_next_version_suffix(branch_name):
-    datestamp = datetime.datetime.now().strftime('%Y%m%d')
-    if branch_name == 'milestone-proposed':
-        revno_prefix = "r"
-    else:
-        revno_prefix = ""
-    _run_shell_command("git fetch origin +refs/meta/*:refs/remotes/meta/*")
-    milestone_cmd = "git show meta/openstack/release:%s" % branch_name
-    milestonever = _run_shell_command(milestone_cmd)
-    if milestonever:
-        first_half = "%s~%s" % (milestonever, datestamp)
-    else:
-        first_half = datestamp
-
-    post_version = _get_git_post_version()
-    # post version should look like:
-    # 0.1.1.4.gcc9e28a
-    # where the bit after the last . is the short sha, and the bit between
-    # the last and second to last is the revno count
-    (revno, sha) = post_version.split(".")[-2:]
-    second_half = "%s%s.%s" % (revno_prefix, revno, sha)
-    return ".".join((first_half, second_half))
-
-
-def _get_git_current_tag():
-    return _run_shell_command("git tag --contains HEAD")
-
-
-def _get_git_tag_info():
-    return _run_shell_command("git describe --tags")
-
-
-def _get_git_post_version():
-    current_tag = _get_git_current_tag()
-    if current_tag is not None:
-        return current_tag
-    else:
-        tag_info = _get_git_tag_info()
-        if tag_info is None:
-            base_version = "0.0"
-            cmd = "git --no-pager log --oneline"
-            out = _run_shell_command(cmd)
-            revno = len(out.split("\n"))
-            sha = _run_shell_command("git describe --always")
-        else:
-            tag_infos = tag_info.split("-")
-            base_version = "-".join(tag_infos[:-2])
-            (revno, sha) = tag_infos[-2:]
-        return "%s.%s.%s" % (base_version, revno, sha)
-
-
 def write_git_changelog():
     """Write a changelog based on the git changelog."""
     new_changelog = 'ChangeLog'
@@ -225,26 +174,6 @@ _rst_template = """%(heading)s
   :undoc-members:
   :show-inheritance:
 """
-
-
-def read_versioninfo(project):
-    """Read the versioninfo file. If it doesn't exist, we're in a github
-       zipball, and there's really no way to know what version we really
-       are, but that should be ok, because the utility of that should be
-       just about nil if this code path is in use in the first place."""
-    versioninfo_path = os.path.join(project, 'versioninfo')
-    if os.path.exists(versioninfo_path):
-        with open(versioninfo_path, 'r') as vinfo:
-            version = vinfo.read().strip()
-    else:
-        version = "0.0.0"
-    return version
-
-
-def write_versioninfo(project, version):
-    """Write a simple file containing the version of the package."""
-    with open(os.path.join(project, 'versioninfo'), 'w') as fil:
-        fil.write("%s\n" % version)
 
 
 def get_cmdclass():
@@ -324,43 +253,3 @@ def get_cmdclass():
 
     return cmdclass
 
-
-def get_git_branchname():
-    for branch in _run_shell_command("git branch --color=never").split("\n"):
-        if branch.startswith('*'):
-            _branch_name = branch.split()[1].strip()
-    if _branch_name == "(no":
-        _branch_name = "no-branch"
-    return _branch_name
-
-
-def get_pre_version(projectname, base_version):
-    """Return a version which is leading up to a version that will
-       be released in the future."""
-    if os.path.isdir('.git'):
-        current_tag = _get_git_current_tag()
-        if current_tag is not None:
-            version = current_tag
-        else:
-            branch_name = os.getenv('BRANCHNAME',
-                                    os.getenv('GERRIT_REFNAME',
-                                              get_git_branchname()))
-            version_suffix = _get_git_next_version_suffix(branch_name)
-            version = "%s~%s" % (base_version, version_suffix)
-        write_versioninfo(projectname, version)
-        return version
-    else:
-        version = read_versioninfo(projectname)
-    return version
-
-
-def get_post_version(projectname):
-    """Return a version which is equal to the tag that's on the current
-    revision if there is one, or tag plus number of additional revisions
-    if the current revision has no tag."""
-
-    if os.path.isdir('.git'):
-        version = _get_git_post_version()
-        write_versioninfo(projectname, version)
-        return version
-    return read_versioninfo(projectname)
