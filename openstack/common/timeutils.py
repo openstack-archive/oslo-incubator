@@ -61,6 +61,11 @@ def parse_strtime(timestr, fmt=PERFECT_TIME_FORMAT):
     return datetime.datetime.strptime(timestr, fmt)
 
 
+def parse_strtime_utc(timestr, fmt=PERFECT_TIME_FORMAT):
+    """Turn a formatted time back into a UTC datetime."""
+    return parse_strtime(timestr, fmt).replace(tzinfo=iso8601.iso8601.UTC)
+
+
 def normalize_time(timestamp):
     """Normalize time in arbitrary timezone to UTC naive object"""
     offset = timestamp.utcoffset()
@@ -71,11 +76,15 @@ def normalize_time(timestamp):
 
 def is_older_than(before, seconds):
     """Return True if before is older than seconds."""
+    if isinstance(before, str):
+        before = parse_strtime_utc(before)
     return utcnow() - before > datetime.timedelta(seconds=seconds)
 
 
 def is_newer_than(after, seconds):
     """Return True if after is newer than seconds."""
+    if isinstance(after, str):
+        after = parse_strtime_utc(after)
     return after - utcnow() > datetime.timedelta(seconds=seconds)
 
 
