@@ -21,6 +21,7 @@ from openstack.common import setup
 
 requires = setup.parse_requirements()
 depend_links = setup.parse_dependency_links()
+package = 'openstack.common'
 
 filters = [
     "AvailabilityZoneFilter = "
@@ -39,8 +40,8 @@ weights = [
 ]
 
 setuptools.setup(
-    name='openstack.common',
-    version=setup.get_post_version('openstack'),
+    name=package,
+    version=setup.get_version(package),
     description="Common components for Openstack",
     long_description="Common components for Openstack "
                      "including paster templates.",
@@ -62,7 +63,6 @@ setuptools.setup(
     zip_safe=True,
     install_requires=requires,
     dependency_links=depend_links,
-    setup_requires=['setuptools-git>=0.4'],
     entry_points={
         "openstack.common.scheduler.filters": filters,
         "openstack.common.tests.fakes.weights": weights,

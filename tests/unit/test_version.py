@@ -44,7 +44,7 @@ class DeferredVersionTestCase(BaseTestCase):
 
     def test_cached_version(self):
         class MyVersionInfo(version.VersionInfo):
-            def _generate_version(self):
+            def _get_version_from_pkg_resources(self):
                 return "5.5.5.5"
 
         deferred_string = MyVersionInfo("openstack").\
@@ -54,7 +54,7 @@ class DeferredVersionTestCase(BaseTestCase):
 
     def test_print_cached_version(self):
         class MyVersionInfo(version.VersionInfo):
-            def _generate_version(self):
+            def _get_version_from_pkg_resources(self):
                 return "5.5.5.5"
 
         deferred_string = MyVersionInfo("openstack")\
@@ -71,7 +71,7 @@ class DeferredVersionTestCase(BaseTestCase):
         my_version = "11111222223333344444555556666677777888889999900000"
 
         class MyVersionInfo(version.VersionInfo):
-            def _generate_version(self):
+            def _get_version_from_pkg_resources(self):
                 return my_version
 
         deferred_string = MyVersionInfo("openstack")\
