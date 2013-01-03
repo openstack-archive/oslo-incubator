@@ -41,13 +41,16 @@ except ImportError:
 
 LOG = logging.getLogger(__name__)
 FLAGS = cfg.CONF
+# TESTCNT used for ephemeral port/directory management
+TESTCNT = 0
 
 
 class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
-    @testutils.skip_if(True, "Zmq tests broken on jenkins")
+    #@testutils.skip_if(True, "Zmq tests broken on jenkins")
+    @testutils.skip_if(not impl_zmq, "ZeroMQ library required")
     def setUp(self, topic='test', topic_nested='nested'):
-        if not impl_zmq:
-            return None
+        global TESTCNT
+        TESTCNT += 1
 
         self.reactor = None
         self.rpc = impl_zmq
@@ -60,21 +63,19 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
         # We'll change this if we detect no daemon running.
         ipc_dir = FLAGS.rpc_zmq_ipc_dir
 
-        # Our IPC dir, if no nova-rpc-zmq_receiver is running system-wide.
-        internal_ipc_dir = '/tmp/openstack-zmq.ipc.test'
-
         # Only launch the router if it isn't running.
         if not os.path.exists(os.path.join(ipc_dir, "zmq_topic_zmq_replies")):
-            LOG.info(_("Running internal zmq receiver."))
-            # The normal ipc_dir default needs to run as root,
-            # /tmp is easier within a testing environment.
+            # NOTE(ewindisch): rpc_zmq_port and internal_ipc_dir must
+            #                  increment to avoid async socket
+            #                  closing/wait delays causing races
+            #                  between tearDown() and setUp()
+            self.config(rpc_zmq_port=9500 + TESTCNT)
+            internal_ipc_dir = "/tmp/openstack-zmq.ipc.test.%s" % TESTCNT
             self.config(rpc_zmq_ipc_dir=internal_ipc_dir)
 
-            # Value has changed.
-            ipc_dir = FLAGS.rpc_zmq_ipc_dir
-
-            self.setup_receiver(ipc_dir)
-        elif ipc_dir != internal_ipc_dir:
+            LOG.info(_("Running internal zmq receiver."))
+            self.setup_receiver(internal_ipc_dir)
+        else:
             LOG.warning(_("Detected zmq-receiver socket."))
             LOG.warning(_("Assuming nova-rpc-zmq-receiver is running."))
             LOG.warning(_("Using system zmq receiver deamon."))
@@ -108,9 +109,8 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
                         "Socket may already be in use."))
             raise
 
+    @testutils.skip_if(not impl_zmq, "ZeroMQ library required")
     def tearDown(self):
-        if not impl_zmq:
-            return None
         if self.reactor:
             self.reactor.close()
 
