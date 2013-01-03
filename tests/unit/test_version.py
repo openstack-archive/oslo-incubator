@@ -1,6 +1,7 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 # Copyright 2012 Red Hat, Inc.
+# Copyright 2012-2013 Hewlett-Packard Development Company, L.P.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -44,7 +45,7 @@ class DeferredVersionTestCase(BaseTestCase):
 
     def test_cached_version(self):
         class MyVersionInfo(version.VersionInfo):
-            def _generate_version(self):
+            def _get_version_from_pkg_resources(self):
                 return "5.5.5.5"
 
         deferred_string = MyVersionInfo("openstack").\
@@ -54,7 +55,7 @@ class DeferredVersionTestCase(BaseTestCase):
 
     def test_print_cached_version(self):
         class MyVersionInfo(version.VersionInfo):
-            def _generate_version(self):
+            def _get_version_from_pkg_resources(self):
                 return "5.5.5.5"
 
         deferred_string = MyVersionInfo("openstack")\
@@ -71,7 +72,7 @@ class DeferredVersionTestCase(BaseTestCase):
         my_version = "11111222223333344444555556666677777888889999900000"
 
         class MyVersionInfo(version.VersionInfo):
-            def _generate_version(self):
+            def _get_version_from_pkg_resources(self):
                 return my_version
 
         deferred_string = MyVersionInfo("openstack")\
