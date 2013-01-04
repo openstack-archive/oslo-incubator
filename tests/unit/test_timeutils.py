@@ -65,25 +65,47 @@ class TimeUtilsTest(unittest.TestCase):
         t = timeutils.parse_strtime(s)
         self.assertEqual(orig_t, t)
 
-    def test_is_older_than(self):
+    def _test_is_older_than(self, fn):
+        strptime = datetime.datetime.strptime
         with mock.patch('datetime.datetime') as datetime_mock:
             datetime_mock.utcnow.return_value = self.skynet_self_aware_time
-            expect_true = timeutils.is_older_than(self.one_minute_before, 59)
+            datetime_mock.strptime = strptime
+            expect_true = timeutils.is_older_than(fn(self.one_minute_before),
+                                                  59)
             self.assertTrue(expect_true)
-            expect_false = timeutils.is_older_than(self.one_minute_before, 60)
+            expect_false = timeutils.is_older_than(fn(self.one_minute_before),
+                                                   60)
             self.assertFalse(expect_false)
-            expect_false = timeutils.is_older_than(self.one_minute_before, 61)
+            expect_false = timeutils.is_older_than(fn(self.one_minute_before),
+                                                   61)
             self.assertFalse(expect_false)
 
-    def test_is_newer_than(self):
+    def test_is_older_than_datetime(self):
+        self._test_is_older_than(lambda x: x)
+
+    def test_is_older_than_str(self):
+        self._test_is_older_than(timeutils.strtime)
+
+    def _test_is_newer_than(self, fn):
+        strptime = datetime.datetime.strptime
         with mock.patch('datetime.datetime') as datetime_mock:
             datetime_mock.utcnow.return_value = self.skynet_self_aware_time
-            expect_true = timeutils.is_newer_than(self.one_minute_after, 59)
+            datetime_mock.strptime = strptime
+            expect_true = timeutils.is_newer_than(fn(self.one_minute_after),
+                                                  59)
             self.assertTrue(expect_true)
-            expect_false = timeutils.is_newer_than(self.one_minute_after, 60)
+            expect_false = timeutils.is_newer_than(fn(self.one_minute_after),
+                                                   60)
             self.assertFalse(expect_false)
-            expect_false = timeutils.is_newer_than(self.one_minute_after, 61)
+            expect_false = timeutils.is_newer_than(fn(self.one_minute_after),
+                                                   61)
             self.assertFalse(expect_false)
+
+    def test_is_newer_than_datetime(self):
+        self._test_is_newer_than(lambda x: x)
+
+    def test_is_newer_than_str(self):
+        self._test_is_newer_than(timeutils.strtime)
 
     def test_utcnow_ts(self):
         skynet_self_aware_timestamp = 872835240
