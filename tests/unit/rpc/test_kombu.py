@@ -309,6 +309,11 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
                                   'fake_topic', {'msg': 'fake'})
 
     @testutils.skip_test("kombu memory transport seems buggy with "
+                         "fanout queues")
+    def test_fanout_success(self):
+        super(common.BaseRpcAMQPTestCase, self).test_fanout_success()
+
+    @testutils.skip_test("kombu memory transport seems buggy with "
                          "fanout queues as this test passes when "
                          "you use rabbit (fake_rabbit=False)")
     def test_fanout_send_receive(self):
