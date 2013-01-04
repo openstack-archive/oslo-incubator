@@ -1,0 +1,11 @@
+Verified+2: Jenkins
+Code-Review+1: Vish Ishaya <vishvananda@gmail.com>
+Code-Review+1: Thierry Carrez <thierry@openstack.org>
+Approved+1: Mark McLoughlin <markmc@redhat.com>
+Code-Review+2: Mark McLoughlin <markmc@redhat.com>
+Code-Review+2: Michael Still <mikal@stillhq.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 04 Jan 2013 10:51:15 +0000
+Reviewed-on: https://review.openstack.org/18436
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
