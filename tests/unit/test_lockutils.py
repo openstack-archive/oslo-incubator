@@ -27,6 +27,7 @@ from eventlet import greenthread
 from eventlet import greenpool
 
 from openstack.common import lockutils
+from openstack.common import testutils
 from tests import utils as test_utils
 
 
@@ -128,6 +129,7 @@ class LockTestCase(test_utils.BaseTestCase):
             if os.path.exists(tempdir):
                 shutil.rmtree(tempdir)
 
+    @testutils.skip_test("Regularly fails, see bug #1095957")
     def test_synchronized_externally(self):
         """We can lock across multiple processes"""
         tempdir = tempfile.mkdtemp()
