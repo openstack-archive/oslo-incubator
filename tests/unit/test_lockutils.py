@@ -15,6 +15,7 @@
 #    under the License.
 
 import errno
+import fcntl
 import os
 import select
 import shutil
@@ -129,39 +130,54 @@ class LockTestCase(test_utils.BaseTestCase):
             if os.path.exists(tempdir):
                 shutil.rmtree(tempdir)
 
-    @testutils.skip_test("Regularly fails, see bug #1095957")
     def test_synchronized_externally(self):
         """We can lock across multiple processes"""
         tempdir = tempfile.mkdtemp()
         self.config(lock_path=tempdir)
-        rpipe1, wpipe1 = os.pipe()
-        rpipe2, wpipe2 = os.pipe()
 
-        @lockutils.synchronized('testlock1', 'test-', external=True)
-        def f(rpipe, wpipe):
-            try:
-                os.write(wpipe, "foo")
-            except OSError, e:
-                self.assertEquals(e.errno, errno.EPIPE)
-                return
+        @lockutils.synchronized('external', 'test-', external=True)
+        def lock_files(tempdir):
+            if not os.path.exists(tempdir):
+                os.makedirs(tempdir)
 
-            rfds, _wfds, _efds = select.select([rpipe], [], [], 1)
-            self.assertEquals(len(rfds), 0, "The other process, which was "
-                                            "supposed to be locked, "
-                                            "wrote on its end of the "
-                                            "pipe")
-            os.close(rpipe)
+            # Open some files we can use for locking
+            handles = []
+            for n in range(50):
+                path = os.path.join(tempdir, ('file-%s' % n))
+                handles.append(open(path, 'w'))
 
-        pid = os.fork()
-        if pid > 0:
-            os.close(wpipe1)
-            os.close(rpipe2)
+            # Loop over all the handles and try locking the file
+            # without blocking, keep a count of how many files we
+            # were able to lock and then unlock. If the lock fails
+            # we get an IOError and bail out with bad exit code
+            count = 0
+            for handle in handles:
+                try:
+                    fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    count += 1
+                    fcntl.flock(handle, fcntl.LOCK_UN)
+                except IOError:
+                    os._exit(2)
+                finally:
+                    handle.close()
 
-            f(rpipe1, wpipe2)
-        else:
-            os.close(rpipe1)
-            os.close(wpipe2)
+            # Check if we were able to open all files
+            self.assertEqual(50, count)
 
-            time.sleep(0.1)
-            f(rpipe2, wpipe1)
-            os._exit(0)
+        try:
+            children = []
+            for n in range(50):
+                pid = os.fork()
+                if pid:
+                    children.append(pid)
+                else:
+                    lock_files(tempdir)
+                    os._exit(0)
+
+            for i, child in enumerate(children):
+                (pid, status) = os.waitpid(child, 0)
+                if pid:
+                    self.assertEqual(0, status)
+        finally:
+            if os.path.exists(tempdir):
+                shutil.rmtree(tempdir, ignore_errors=True)
