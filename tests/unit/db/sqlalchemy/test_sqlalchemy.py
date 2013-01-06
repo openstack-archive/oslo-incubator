@@ -45,7 +45,8 @@ class DbPoolTestCase(test_utils.BaseTestCase):
 
     def test_db_pool_option(self):
         self.config(sql_idle_timeout=11, sql_min_pool_size=21,
-                    sql_max_pool_size=42)
+                    sql_max_pool_size=42,
+                    sql_connection='mysql://user:pass@127.0.0.1/nova')
 
         info = {}
 
@@ -62,9 +63,7 @@ class DbPoolTestCase(test_utils.BaseTestCase):
         self.stubs.Set(db_pool, 'ConnectionPool',
                        FakeConnectionPool)
 
-        sql_connection = 'mysql://user:pass@127.0.0.1/nova'
-        self.assertRaises(TestException, session.create_engine,
-                          sql_connection)
+        self.assertRaises(TestException, session.create_engine)
 
         self.assertEqual(info['module'], MySQLdb)
         self.assertEqual(info['kwargs']['max_idle'], 11)
