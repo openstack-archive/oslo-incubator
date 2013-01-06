@@ -75,19 +75,30 @@ class NotifierTestCase(test_utils.BaseTestCase):
         notifier_api.notify(ctxt, 'publisher_id', 'event_type',
                             notifier_api.WARN, dict(a=3))
 
-    def test_send_rabbit_notification(self):
-        self.stubs.Set(cfg.CONF, 'notification_driver',
-                       ['openstack.common.notifier.rabbit_notifier'])
+    def _test_rpc_notify(self, driver, envelope=False):
+        self.stubs.Set(cfg.CONF, 'notification_driver', [driver])
         self.mock_notify = False
+        self.envelope = False
 
-        def mock_notify(cls, *args):
+        def mock_notify(cls, *args, **kwargs):
             self.mock_notify = True
+            self.envelope = kwargs.get('envelope', False)
 
         self.stubs.Set(rpc, 'notify', mock_notify)
         notifier_api.notify(ctxt, 'publisher_id', 'event_type',
                             notifier_api.WARN, dict(a=3))
 
         self.assertEqual(self.mock_notify, True)
+        self.assertEqual(self.envelope, envelope)
+
+    def test_rabbit_notifier(self):
+        self._test_rpc_notify('openstack.common.notifier.rabbit_notifier')
+
+    def test_rpc_notifier(self):
+        self._test_rpc_notify('openstack.common.notifier.rpc_notifier')
+
+    def test_rpc_notifier2(self):
+        self._test_rpc_notify('openstack.common.notifier.rpc_notifier2', True)
 
     def test_invalid_priority(self):
         self.assertRaises(notifier_api.BadPriorityException,

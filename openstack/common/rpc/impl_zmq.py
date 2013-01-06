@@ -183,9 +183,9 @@ class ZmqClient(object):
     def __init__(self, addr, socket_type=zmq.PUSH, bind=False):
         self.outq = ZmqSocket(addr, socket_type, bind=bind)
 
-    def cast(self, msg_id, topic, data, serialize=True):
+    def cast(self, msg_id, topic, data, serialize=True, force_envelope=False):
         if serialize:
-            data = rpc_common.serialize_msg(data)
+            data = rpc_common.serialize_msg(data, force_envelope)
         self.outq.send([str(msg_id), str(topic), str('cast'), data])
 
     def close(self):
@@ -510,7 +510,8 @@ class Connection(rpc_common.Connection):
         self.reactor.consume_in_thread()
 
 
-def _cast(addr, context, msg_id, topic, msg, timeout=None, serialize=True):
+def _cast(addr, context, msg_id, topic, msg, timeout=None, serialize=True,
+          force_envelope=False):
     timeout_cast = timeout or CONF.rpc_cast_timeout
     payload = [RpcContext.marshal(context), msg]
 
@@ -519,7 +520,7 @@ def _cast(addr, context, msg_id, topic, msg, timeout=None, serialize=True):
             conn = ZmqClient(addr)
 
             # assumes cast can't return an exception
-            conn.cast(msg_id, topic, payload, serialize)
+            conn.cast(msg_id, topic, payload, serialize, force_envelope)
         except zmq.ZMQError:
             raise RPCException("Cast failed. ZMQ Socket Exception")
         finally:
@@ -588,7 +589,8 @@ def _call(addr, context, msg_id, topic, msg, timeout=None):
     return responses[-1]
 
 
-def _multi_send(method, context, topic, msg, timeout=None, serialize=True):
+def _multi_send(method, context, topic, msg, timeout=None, serialize=True,
+                force_envelope=False):
     """
     Wraps the sending of messages,
     dispatches to the matchmaker and sends
@@ -614,7 +616,8 @@ def _multi_send(method, context, topic, msg, timeout=None, serialize=True):
 
         if method.__name__ == '_cast':
             eventlet.spawn_n(method, _addr, context,
-                             _topic, _topic, msg, timeout, serialize)
+                             _topic, _topic, msg, timeout, serialize,
+                             force_envelope)
             return
         return method(_addr, context, _topic, _topic, msg, timeout)
 
@@ -655,7 +658,8 @@ def notify(conf, context, topic, msg, **kwargs):
     # NOTE(ewindisch): dot-priority in rpc notifier does not
     # work with our assumptions.
     topic.replace('.', '-')
-    kwargs['serialize'] = False
+    kwargs['serialize'] = kwargs.pop('envelope')
+    kwargs['force_envelope'] = True
     cast(conf, context, topic, msg, **kwargs)
 
 
