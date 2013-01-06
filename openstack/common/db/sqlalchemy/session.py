@@ -235,19 +235,19 @@ CONF = cfg.CONF
 CONF.register_opts(sql_opts)
 LOG = logging.getLogger(__name__)
 
-_ENGINE = None
-_MAKER = None
+_ENGINES = {}
+_MAKERS = {}
 
 
-def get_session(autocommit=True, expire_on_commit=False):
+def get_session(autocommit=True, expire_on_commit=False, config_group=None):
     """Return a SQLAlchemy session."""
-    global _MAKER
+    global _MAKERS
 
-    if _MAKER is None:
-        engine = get_engine()
-        _MAKER = get_maker(engine, autocommit, expire_on_commit)
+    if config_group not in _MAKERS:
+        engine = get_engine(config_group=config_group)
+        _MAKERS[config_group] = get_maker(engine, autocommit, expire_on_commit)
 
-    session = _MAKER()
+    session = _MAKERS[config_group]()
     session = wrap_session(session)
     return session
 
@@ -259,12 +259,12 @@ def wrap_session(session):
     return session
 
 
-def get_engine():
+def get_engine(config_group=None):
     """Return a SQLAlchemy engine."""
-    global _ENGINE
-    if _ENGINE is None:
-        _ENGINE = create_engine(CONF.sql_connection)
-    return _ENGINE
+    global _ENGINES
+    if config_group not in _ENGINES:
+        _ENGINES[config_group] = create_engine(config_group)
+    return _ENGINES[config_group]
 
 
 def synchronous_switch_listener(dbapi_conn, connection_rec):
@@ -320,29 +320,30 @@ def is_db_connection_error(args):
     return False
 
 
-def create_engine(sql_connection):
+def create_engine(config_group=None):
     """Return a new SQLAlchemy engine."""
-    connection_dict = sqlalchemy.engine.url.make_url(sql_connection)
+    _CONF = CONF if config_group is None else CONF[config_group]
+    connection_dict = sqlalchemy.engine.url.make_url(_CONF.sql_connection)
 
     engine_args = {
-        "pool_recycle": CONF.sql_idle_timeout,
+        "pool_recycle": _CONF.sql_idle_timeout,
         "echo": False,
         'convert_unicode': True,
     }
 
     # Map our SQL debug level to SQLAlchemy's options
-    if CONF.sql_connection_debug >= 100:
+    if _CONF.sql_connection_debug >= 100:
         engine_args['echo'] = 'debug'
-    elif CONF.sql_connection_debug >= 50:
+    elif _CONF.sql_connection_debug >= 50:
         engine_args['echo'] = True
 
     if "sqlite" in connection_dict.drivername:
         engine_args["poolclass"] = NullPool
 
-        if CONF.sql_connection == "sqlite://":
+        if _CONF.sql_connection == "sqlite://":
             engine_args["poolclass"] = StaticPool
             engine_args["connect_args"] = {'check_same_thread': False}
-    elif all((CONF.sql_dbpool_enable, HAS_MYSQLDB,
+    elif all((_CONF.sql_dbpool_enable, HAS_MYSQLDB,
               "mysql" in connection_dict.drivername)):
         LOG.info(_("Using mysql/eventlet db_pool."))
         # MySQLdb won't accept 'None' in the password field
@@ -352,29 +353,29 @@ def create_engine(sql_connection):
             'passwd': password,
             'host': connection_dict.host,
             'user': connection_dict.username,
-            'min_size': CONF.sql_min_pool_size,
-            'max_size': CONF.sql_max_pool_size,
-            'max_idle': CONF.sql_idle_timeout}
+            'min_size': _CONF.sql_min_pool_size,
+            'max_size': _CONF.sql_max_pool_size,
+            'max_idle': _CONF.sql_idle_timeout}
         creator = db_pool.ConnectionPool(MySQLdb, **pool_args)
         engine_args['creator'] = creator.create
     else:
-        engine_args['pool_size'] = CONF.sql_max_pool_size
-        if CONF.sql_max_overflow is not None:
-            engine_args['max_overflow'] = CONF.sql_max_overflow
+        engine_args['pool_size'] = _CONF.sql_max_pool_size
+        if _CONF.sql_max_overflow is not None:
+            engine_args['max_overflow'] = _CONF.sql_max_overflow
 
-    engine = sqlalchemy.create_engine(sql_connection, **engine_args)
+    engine = sqlalchemy.create_engine(_CONF.sql_connection, **engine_args)
 
     sqlalchemy.event.listen(engine, 'checkin', greenthread_yield)
 
     if 'mysql' in connection_dict.drivername:
         sqlalchemy.event.listen(engine, 'checkout', ping_listener)
     elif 'sqlite' in connection_dict.drivername:
-        if not CONF.sqlite_synchronous:
+        if not _CONF.sqlite_synchronous:
             sqlalchemy.event.listen(engine, 'connect',
                                     synchronous_switch_listener)
         sqlalchemy.event.listen(engine, 'connect', add_regexp_listener)
 
-    if (CONF.sql_connection_trace and
+    if (_CONF.sql_connection_trace and
             engine.dialect.dbapi.__name__ == 'MySQLdb'):
         patch_mysqldb_with_stacktrace_comments()
 
@@ -384,7 +385,7 @@ def create_engine(sql_connection):
         if not is_db_connection_error(e.args[0]):
             raise
 
-        remaining = CONF.sql_max_retries
+        remaining = _CONF.sql_max_retries
         if remaining == -1:
             remaining = 'infinite'
         while True:
@@ -392,7 +393,7 @@ def create_engine(sql_connection):
             LOG.warn(msg % remaining)
             if remaining != 'infinite':
                 remaining -= 1
-            time.sleep(CONF.sql_retry_interval)
+            time.sleep(_CONF.sql_retry_interval)
             try:
                 engine.connect()
                 break
