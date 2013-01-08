@@ -122,17 +122,18 @@ class NotifierTestCase(test_utils.BaseTestCase):
         self.assertEqual(self.test_topic, 'testnotify.debug')
 
     def test_error_notification(self):
-        self.stubs.Set(cfg.CONF, 'notification_driver',
-                       ['openstack.common.notifier.rabbit_notifier'])
-        self.stubs.Set(cfg.CONF, 'publish_errors', True)
-        LOG = log.getLogger('common')
-        log.setup(None)
+        self.config(publish_errors=True,
+                    use_stderr=False)
+
+        def mock_notify(context, message):
+            msgs.append(message)
+
         msgs = []
+        self.stubs.Set(no_op_notifier, 'notify', mock_notify)
 
-        def mock_notify(context, topic, data):
-            msgs.append(data)
+        LOG = log.getLogger('test_error_notification.common')
+        log.setup('test_error_notification')
 
-        self.stubs.Set(rpc, 'notify', mock_notify)
         LOG.error('foo')
         self.assertEqual(1, len(msgs))
         msg = msgs[0]
