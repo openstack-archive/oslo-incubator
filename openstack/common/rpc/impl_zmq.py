@@ -61,6 +61,9 @@ zmq_opts = [
     cfg.IntOpt('rpc_zmq_contexts', default=1,
                help='Number of ZeroMQ contexts, defaults to 1'),
 
+    cfg.IntOpt('rpc_zmq_concurrent_casts', default=1000,
+               help='Number of casts to process simutaniously'),
+
     cfg.StrOpt('rpc_zmq_ipc_dir', default='/var/run/openstack',
                help='Directory for holding IPC sockets'),
 
@@ -75,6 +78,7 @@ zmq_opts = [
 CONF = None
 ZMQ_CTX = None  # ZeroMQ Context, must be global.
 matchmaker = None  # memoized matchmaker object
+ZMQ_CAST_POOL = None # GreenPool for casts
 
 
 def _serialize(data):
@@ -638,9 +642,9 @@ def _multi_send(method, context, topic, msg, timeout=None, serialize=True,
         _addr = "tcp://%s:%s" % (ip_addr, conf.rpc_zmq_port)
 
         if method.__name__ == '_cast':
-            eventlet.spawn_n(method, _addr, context,
-                             _topic, _topic, msg, timeout, serialize,
-                             force_envelope)
+            ZMQ_CAST_POOL.spawn_n(method, _addr, context,
+                                  _topic, _topic, msg, timeout, serialize,
+                                  force_envelope)
             return
         return method(_addr, context, _topic, _topic, msg, timeout)
 
@@ -690,6 +694,9 @@ def cleanup():
     """Clean up resources in use by implementation."""
     global ZMQ_CTX
     global matchmaker
+
+    ZMQ_CAST_POOL.waitall()
+
     matchmaker = None
     ZMQ_CTX.term()
     ZMQ_CTX = None
@@ -705,10 +712,14 @@ def register_opts(conf):
     global ZMQ_CTX
     global matchmaker
     global CONF
+    global ZMQ_CAST_POOL
 
     if not CONF:
         conf.register_opts(zmq_opts)
         CONF = conf
+    if not ZMQ_CAST_POOL:
+        ZMQ_CAST_POOL = eventlet.greenpool.GreenPool(
+            conf.rpc_zmq_concurrent_casts)
     # Don't re-set, if this method is called twice.
     if not ZMQ_CTX:
         ZMQ_CTX = zmq.Context(conf.rpc_zmq_contexts)
