@@ -471,3 +471,10 @@ class WSGIServerTest(unittest.TestCase):
         self.assertEqual("0.0.0.0", server.host)
         self.assertNotEqual(0, server.port)
         server.stop()
+
+    def test_start_random_port_with_ipv6(self):
+        server = wsgi.Service('test_random_port', 0, host="::1")
+        server.start()
+        self.assertEqual("::1", server.host)
+        self.assertNotEqual(0, server.port)
+        server.stop()

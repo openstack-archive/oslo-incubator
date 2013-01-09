@@ -25,6 +25,7 @@ eventlet.patcher.monkey_patch(all=False, socket=True)
 
 import routes
 import routes.middleware
+import socket
 import sys
 import webob.dec
 import webob.exc
@@ -70,7 +71,14 @@ class Service(service.Service):
 
         """
         super(Service, self).start()
+        try:
+            socket.inet_pton(socket.AF_INET6, self._host)
+            family = socket.AF_INET6
+        except Exception:
+            family = socket.AF_INET
+
         self._socket = eventlet.listen((self._host, self._port),
+                                       family,
                                        backlog=self.backlog)
         self.tg.add_thread(self._run, self.application, self._socket)
 
