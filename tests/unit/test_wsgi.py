@@ -19,6 +19,8 @@ import unittest
 import webob
 
 import mock
+import routes
+import urllib2
 
 from openstack.common import exception
 from openstack.common import wsgi
@@ -470,4 +472,41 @@ class WSGIServerTest(unittest.TestCase):
         server.start()
         self.assertEqual("0.0.0.0", server.host)
         self.assertNotEqual(0, server.port)
+        server.stop()
+
+    def test_app(self):
+        greetings = 'Hello, World!!!'
+
+        def hello_world(env, start_response):
+            if env['PATH_INFO'] != '/':
+                start_response('404 Not Found',
+                               [('Content-Type', 'text/plain')])
+                return ['Not Found\r\n']
+            start_response('200 OK', [('Content-Type', 'text/plain')])
+            return [greetings]
+
+        server = wsgi.Service(hello_world, 0)
+        server.start()
+
+        response = urllib2.urlopen('http://127.0.0.1:%d/' % server.port)
+        self.assertEquals(greetings, response.read())
+
+        server.stop()
+
+    def test_app_using_router(self):
+        greetings = 'Hello, World!!!'
+
+        @webob.dec.wsgify
+        def hello_world(req):
+            return greetings
+
+        mapper = routes.Mapper()
+        mapper.connect(None, "/v1.0/{path_info:.*}", controller=hello_world)
+        router = wsgi.Router(mapper)
+        server = wsgi.Service(router, 0)
+        server.start()
+
+        response = urllib2.urlopen('http://127.0.0.1:%d/v1.0/' % server.port)
+        self.assertEquals(greetings, response.read())
+
         server.stop()
