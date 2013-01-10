@@ -642,7 +642,8 @@ def _multi_send(method, context, topic, msg, timeout=None, serialize=True,
                              _topic, _topic, msg, timeout, serialize,
                              force_envelope)
             return
-        return method(_addr, context, _topic, _topic, msg, timeout)
+        return method(_addr, context, _topic, _topic, msg, timeout,
+                      serialize, force_envelope)
 
 
 def create_connection(conf, new=True):
