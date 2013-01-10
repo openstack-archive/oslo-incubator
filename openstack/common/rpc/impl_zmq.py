@@ -551,7 +551,8 @@ def _cast(addr, context, msg_id, topic, msg, timeout=None, serialize=True,
                 conn.close()
 
 
-def _call(addr, context, msg_id, topic, msg, timeout=None):
+def _call(addr, context, msg_id, topic, msg, timeout=None,
+          serialize=True, force_envelope=False):
     # timeout_response is how long we wait for a response
     timeout = timeout or CONF.rpc_response_timeout
 
@@ -586,7 +587,8 @@ def _call(addr, context, msg_id, topic, msg, timeout=None):
             )
 
             LOG.debug(_("Sending cast"))
-            _cast(addr, context, msg_id, topic, payload)
+            _cast(addr, context, msg_id, topic, payload,
+                  serialize=serialize, force_envelope=force_envelope)
 
             LOG.debug(_("Cast sent; Waiting reply"))
             # Blocks until receives reply
@@ -642,7 +644,8 @@ def _multi_send(method, context, topic, msg, timeout=None, serialize=True,
                              _topic, _topic, msg, timeout, serialize,
                              force_envelope)
             return
-        return method(_addr, context, _topic, _topic, msg, timeout)
+        return method(_addr, context, _topic, _topic, msg, timeout,
+                      serialize, force_envelope)
 
 
 def create_connection(conf, new=True):
