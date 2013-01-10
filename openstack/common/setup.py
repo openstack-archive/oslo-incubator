@@ -20,12 +20,14 @@ Utilities with minimum-depends for use in setup.py
 """
 
 import datetime
+import distutils.errors
 import os
 import re
 import subprocess
 import sys
 
 from setuptools.command import sdist
+from setuptools import Command
 
 
 def parse_mailmap(mailmap='.mailmap'):
@@ -257,6 +259,58 @@ def get_cmdclass():
             if filename.endswith('.py') and filename != '__init__.py':
                 arg["%s.%s" % (dirname.replace('/', '.'),
                                filename[:-3])] = True
+
+    class Testr(Command):
+
+        description = "Run unit tests using testr"
+
+        user_options = [
+            ('testr-args=', 't', "Run 'testr' with these args")
+        ]
+        print_slowest = True
+
+        def _run_testr(self, *args):
+            from testrepository import commands
+            commands.run_argv([sys.argv[0]] + list(args),
+                              sys.stdin, sys.stdout, sys.stderr)
+
+        def initialize_options(self):
+            self.testr_args = None
+
+        def finalize_options(self):
+            if self.testr_args is None:
+                self.testr_args = []
+            else:
+                self.testr_args = self.testr_args.split()
+
+        def run(self):
+            """Set up testr repo, then run testr"""
+            if not os.path.isdir(".testrepository"):
+                self._run_testr("init")
+
+            testr_ret = self._run_testr("run", "--parallel", *self.testr_args)
+            if testr_ret:
+                raise distutils.errors.DistutilsError("testr failed")
+            if self.print_slowest:
+                print "Slowest Tests"
+                self._run_testr("slowest")
+
+    class Coverage(Testr):
+
+        print_slowest = False
+
+        def run(self):
+            package = self.distribution.get_name()
+            if package.startswith('python-'):
+                package = package[7:]
+            os.environ['PYTHON'] = ("coverage run --source %s --parallel-mode"
+                                    % package)
+            Testr.run(self)
+            os.system("coverage combine")
+            os.system("coverage html -d ./cover")
+
+    cmdclass['testr'] = Testr
+    cmdclass['testr_coverage'] = Coverage
 
     class LocalSDist(sdist.sdist):
         """Builds the ChangeLog and Authors files from VC first."""
