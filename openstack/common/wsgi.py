@@ -18,25 +18,42 @@
 """Utility methods for working with WSGI servers."""
 
 import datetime
+import errno
+import socket
+import sys
+import time
+
 import eventlet
 import eventlet.wsgi
-
-eventlet.patcher.monkey_patch(all=False, socket=True)
-
 import routes
 import routes.middleware
-import sys
 import webob.dec
 import webob.exc
 from xml.dom import minidom
 from xml.parsers import expat
 
+eventlet.patcher.monkey_patch(all=False, socket=True)
+
+from openstack.common import cfg
 from openstack.common import exception
 from openstack.common.gettextutils import _
 from openstack.common import jsonutils
 from openstack.common import log as logging
 from openstack.common import service
+from openstack.common import sslutils
 
+socket_opts = [
+    cfg.IntOpt('backlog',
+               default=4096,
+               help="Number of backlog requests to configure the socket with"),
+    cfg.IntOpt('tcp_keepidle',
+               default=600,
+               help="Sets the value of TCP_KEEPIDLE in seconds for each "
+                    "server socket. Not supported on OS X."),
+]
+
+CONF = cfg.CONF
+CONF.register_opts(socket_opts)
 
 LOG = logging.getLogger(__name__)
 
@@ -56,12 +73,44 @@ class Service(service.Service):
     """
 
     def __init__(self, application, port,
-                 host='0.0.0.0', backlog=128, threads=1000):
+                 host='0.0.0.0', backlog=4096, threads=1000):
         self.application = application
         self._port = port
         self._host = host
-        self.backlog = backlog
+        self._backlog = backlog if backlog else CONF.backlog
         super(Service, self).__init__(threads)
+
+    def _get_socket(self, host, port, backlog):
+        bind_addr = (host, port)
+
+        sock = None
+        retry_until = time.time() + 30
+        while not sock and time.time() < retry_until:
+            try:
+                sock = eventlet.listen(bind_addr,
+                                       backlog=backlog)
+                if sslutils.is_enabled():
+                    sock = sslutils.wrap(sock)
+
+            except socket.error, err:
+                if err.args[0] != errno.EADDRINUSE:
+                    raise
+                eventlet.sleep(0.1)
+        if not sock:
+            raise RuntimeError(_("Could not bind to %(host)s:%(port)s "
+                               "after trying for 30 seconds") %
+                               {'host': host, 'port': port})
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # sockets can hang around forever without keepalive
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+
+        # This option isn't available in the OS X version of eventlet
+        if getattr(socket, 'TCP_KEEPIDLE', None) is not None:
+            sock.setsockopt(socket.IPPROTO_TCP,
+                            socket.TCP_KEEPIDLE,
+                            CONF.tcp_keepidle)
+
+        return sock
 
     def start(self):
         """Start serving this service using the provided server instance.
@@ -70,8 +119,7 @@ class Service(service.Service):
 
         """
         super(Service, self).start()
-        self._socket = eventlet.listen((self._host, self._port),
-                                       backlog=self.backlog)
+        self._socket = self._get_socket(self._host, self._port, self._backlog)
         self.tg.add_thread(self._run, self.application, self._socket)
 
     @property
