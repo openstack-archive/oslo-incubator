@@ -15,6 +15,7 @@
 #    under the License.
 
 import pprint
+import os.path
 import socket
 import string
 import sys
@@ -29,6 +30,7 @@ from openstack.common import cfg
 from openstack.common.gettextutils import _
 from openstack.common import importutils
 from openstack.common import jsonutils
+from openstack.common import processutils as utils
 from openstack.common.rpc import common as rpc_common
 
 
@@ -486,6 +488,37 @@ class ZmqProxy(ZmqBaseReactor):
         except eventlet.queue.Full:
             LOG.error(_("Local per-topic backlog buffer full for topic "
                         "%(topic)s. Dropping message.") % {'topic': topic})
+
+    def consume_in_thread(self):
+        """Runs the ZmqProxy service"""
+        ipc_dir = CONF.rpc_zmq_ipc_dir
+        consume_in = "tcp://%s:%s" % \
+            (CONF.rpc_zmq_bind_address,
+             CONF.rpc_zmq_port)
+        consumption_proxy = InternalContext(None)
+
+        if not os.path.isdir(ipc_dir):
+            try:
+                utils.execute('mkdir', '-p', ipc_dir, run_as_root=True)
+                utils.execute('chown', "%s:%s" % (os.getuid(), os.getgid()),
+                              ipc_dir, run_as_root=True)
+                utils.execute('chmod', '750', ipc_dir, run_as_root=True)
+            except exception.ProcessExecutionError:
+                LOG.error(_("Could not create IPC directory %s") %
+                          (ipc_dir, ))
+                raise
+
+        try:
+            self.register(consumption_proxy,
+                          consume_in,
+                          zmq.PULL,
+                          out_bind=True)
+        except zmq.ZMQError:
+            LOG.error(_("Could not create ZeroMQ receiver daemon. "
+                        "Socket may already be in use."))
+            raise
+
+        super(ZmqProxy, self).consume_in_thread()
 
 
 class ZmqReactor(ZmqBaseReactor):
