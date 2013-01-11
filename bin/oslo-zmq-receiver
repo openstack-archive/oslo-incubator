@@ -47,28 +47,7 @@ CONF(sys.argv[1:], project='oslo')
 def main():
     logging.setup("oslo")
 
-    ipc_dir = CONF.rpc_zmq_ipc_dir
-
-    # Create the necessary directories/files for this service.
-    if not os.path.isdir(ipc_dir):
-        try:
-            utils.execute('mkdir', '-p', ipc_dir, run_as_root=True)
-            utils.execute('chown', "%s:%s" % (os.getuid(), os.getgid()),
-                          ipc_dir, run_as_root=True)
-            utils.execute('chmod', '750', ipc_dir, run_as_root=True)
-        except exception.ProcessExecutionError:
-            logging.error(_("Could not create IPC socket directory."))
-            return
-
     with contextlib.closing(impl_zmq.ZmqProxy(CONF)) as reactor:
-        consume_in = "tcp://%s:%s" % \
-            (CONF.rpc_zmq_bind_address,
-             CONF.rpc_zmq_port)
-        consumption_proxy = impl_zmq.InternalContext(None)
-
-        reactor.register(consumption_proxy,
-                         consume_in, zmq.PULL, out_bind=True)
-
         reactor.consume_in_thread()
         reactor.wait()
 
