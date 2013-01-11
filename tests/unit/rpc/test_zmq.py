@@ -75,7 +75,8 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
             self.config(rpc_zmq_ipc_dir=internal_ipc_dir)
 
             LOG.info(_("Running internal zmq receiver."))
-            self.setup_receiver(internal_ipc_dir)
+            reactor = impl_zmq.ZmqProxy(FLAGS)
+            reactor.consume_in_thread()
         else:
             LOG.warning(_("Detected zmq-receiver socket."))
             LOG.warning(_("Assuming nova-rpc-zmq-receiver is running."))
@@ -83,32 +84,6 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
 
         super(_RpcZmqBaseTestCase, self).setUp(
             topic=topic, topic_nested=topic_nested)
-
-    def setup_receiver(self, ipc_dir):
-        # Only launch the receiver if it isn't running independently.
-        # This is checked again, with the (possibly) new ipc_dir.
-        if not os.path.isdir(ipc_dir):
-            try:
-                os.mkdir(ipc_dir)
-            except OSError:
-                LOG.error(_("Could not create IPC directory %s") % (ipc_dir, ))
-                raise
-        try:
-            self.reactor = impl_zmq.ZmqProxy(FLAGS)
-            consume_in = "tcp://%s:%s" % \
-                (FLAGS.rpc_zmq_bind_address,
-                 FLAGS.rpc_zmq_port)
-            consumption_proxy = impl_zmq.InternalContext(None)
-
-            self.reactor.register(consumption_proxy,
-                                  consume_in,
-                                  zmq.PULL,
-                                  out_bind=True)
-            self.reactor.consume_in_thread()
-        except zmq.ZMQError:
-            LOG.error(_("Could not create ZeroMQ receiver daemon. "
-                        "Socket may already be in use."))
-            raise
 
     @testutils.skip_if(not impl_zmq, "ZeroMQ library required")
     def tearDown(self):
