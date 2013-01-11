@@ -61,14 +61,6 @@ def main():
             return
 
     with contextlib.closing(impl_zmq.ZmqProxy(CONF)) as reactor:
-        consume_in = "tcp://%s:%s" % \
-            (CONF.rpc_zmq_bind_address,
-             CONF.rpc_zmq_port)
-        consumption_proxy = impl_zmq.InternalContext(None)
-
-        reactor.register(consumption_proxy,
-                         consume_in, zmq.PULL, out_bind=True)
-
         reactor.consume_in_thread()
         reactor.wait()
 
