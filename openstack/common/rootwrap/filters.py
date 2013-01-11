@@ -95,9 +95,9 @@ class DnsmasqFilter(CommandFilter):
 
     def match(self, userargs):
         if (userargs[0] == 'env' and
-            userargs[1].startswith(self.CONFIG_FILE_ARG) and
-            userargs[2].startswith('NETWORK_ID=') and
-            userargs[3] == 'dnsmasq'):
+                userargs[1].startswith(self.CONFIG_FILE_ARG) and
+                userargs[2].startswith('NETWORK_ID=') and
+                userargs[3] == 'dnsmasq'):
             return True
         return False
 
