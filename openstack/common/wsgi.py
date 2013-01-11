@@ -18,6 +18,7 @@
 """Utility methods for working with WSGI servers."""
 
 import datetime
+import errno
 import eventlet
 import eventlet.wsgi
 
@@ -25,18 +26,33 @@ eventlet.patcher.monkey_patch(all=False, socket=True)
 
 import routes
 import routes.middleware
+import os
+import socket
+import ssl
 import sys
+import time
 import webob.dec
 import webob.exc
 from xml.dom import minidom
 from xml.parsers import expat
 
+from openstack.common import cfg
 from openstack.common import exception
 from openstack.common.gettextutils import _
 from openstack.common import jsonutils
 from openstack.common import log as logging
 from openstack.common import service
 
+socket_opts = [
+    cfg.IntOpt('backlog', default=4096),
+    cfg.IntOpt('tcp_keepidle', default=600),
+    cfg.StrOpt('ca_file'),
+    cfg.StrOpt('cert_file'),
+    cfg.StrOpt('key_file'),
+]
+
+CONF = cfg.CONF
+CONF.register_opts(socket_opts)
 
 LOG = logging.getLogger(__name__)
 
@@ -63,6 +79,79 @@ class Service(service.Service):
         self.backlog = backlog
         super(Service, self).__init__(threads)
 
+    def _get_socket(self, host, port, backlog):
+        bind_addr = (host, port)
+
+        address_family = [
+            addr[0] for addr in socket.getaddrinfo(bind_addr[0],
+                                                   bind_addr[1],
+                                                   socket.AF_UNSPEC,
+                                                   socket.SOCK_STREAM)
+            if addr[0] in (socket.AF_INET, socket.AF_INET6)
+        ][0]
+
+        cert_file = CONF.cert_file
+        key_file = CONF.key_file
+        ca_file = CONF.ca_file
+        use_ssl = cert_file or key_file
+
+        if cert_file and not os.path.exists(cert_file):
+            raise RuntimeError(_("Unable to find cert_file : %s") % cert_file)
+
+        if ca_file and not os.path.exists(ca_file):
+            raise RuntimeError(_("Unable to find ca_file : %s") % ca_file)
+
+        if key_file and not os.path.exists(key_file):
+            raise RuntimeError(_("Unable to find key_file : %s") % key_file)
+
+        if use_ssl and (not cert_file or not key_file):
+            raise RuntimeError(_("When running server in SSL mode, you must "
+                                 "specify both a cert_file and key_file "
+                                 "option value in your configuration file"))
+
+        def wrap_ssl(sock):
+            ssl_kwargs = {
+                'server_side': True,
+                'certfile': cert_file,
+                'keyfile': key_file,
+                'cert_reqs': ssl.CERT_NONE,
+            }
+
+            if CONF.ca_file:
+                ssl_kwargs['ca_certs'] = ca_file
+                ssl_kwargs['cert_reqs'] = ssl.CERT_REQUIRED
+
+            return ssl.wrap_socket(sock, **ssl_kwargs)
+
+        sock = None
+        retry_until = time.time() + 30
+        while not sock and time.time() < retry_until:
+            try:
+                sock = eventlet.listen(bind_addr,
+                                       backlog=backlog,
+                                       family=address_family)
+                if use_ssl:
+                    sock = wrap_ssl(sock)
+
+            except socket.error, err:
+                if err.args[0] != errno.EADDRINUSE:
+                    raise
+                eventlet.sleep(0.1)
+        if not sock:
+            raise RuntimeError(_("Could not bind to %s:%s after trying for 30 "
+                                 "seconds") % bind_addr)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # sockets can hang around forever without keepalive
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+
+        # This option isn't available in the OS X version of eventlet
+        if hasattr(socket, 'TCP_KEEPIDLE'):
+            sock.setsockopt(socket.IPPROTO_TCP,
+                            socket.TCP_KEEPIDLE,
+                            CONF.tcp_keepidle)
+
+        return sock
+
     def start(self):
         """Start serving this service using the provided server instance.
 
@@ -70,8 +159,7 @@ class Service(service.Service):
 
         """
         super(Service, self).start()
-        self._socket = eventlet.listen((self._host, self._port),
-                                       backlog=self.backlog)
+        self._socket = self._get_socket(self._host, self._port, self.backlog)
         self.tg.add_thread(self._run, self.application, self._socket)
 
     @property
@@ -93,8 +181,14 @@ class Service(service.Service):
     def _run(self, application, socket):
         """Start a WSGI server in a new green thread."""
         logger = logging.getLogger('eventlet.wsgi')
-        eventlet.wsgi.server(socket, application, custom_pool=self.tg.pool,
-                             log=logging.WritableLogger(logger))
+        try:
+            eventlet.wsgi.server(socket,
+                                 application,
+                                 custom_pool=self.tg.pool,
+                                 log=logging.WritableLogger(logger))
+        except IOError, e:
+            raise RuntimeError(_("I/O error (%d): {%s}")
+                               % (e.errno, e.strerror))
 
 
 class Middleware(object):
