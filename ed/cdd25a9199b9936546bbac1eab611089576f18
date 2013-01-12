@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Approved+1: Michael Still <mikal@stillhq.com>
+Code-Review+2: Michael Still <mikal@stillhq.com>
+Code-Review+2: Davanum Srinivas (DIMS) <davanum@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Sat, 12 Jan 2013 10:12:02 +0000
+Reviewed-on: https://review.openstack.org/19354
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
