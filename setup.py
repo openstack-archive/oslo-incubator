@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- encoding: utf-8 -*-
 # Copyright (c) 2012 OpenStack, LLC.
+# Copyright (c) 2012-2013 Hewlett-Packard Development Company, L.P.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,6 +22,7 @@ from openstack.common import setup
 
 requires = setup.parse_requirements()
 depend_links = setup.parse_dependency_links()
+package = 'openstack.common'
 
 filters = [
     "AvailabilityZoneFilter = "
@@ -39,8 +41,8 @@ weights = [
 ]
 
 setuptools.setup(
-    name='openstack.common',
-    version=setup.get_post_version('openstack'),
+    name=package,
+    version=setup.get_version(package),
     description="Common components for Openstack",
     long_description="Common components for Openstack "
                      "including paster templates.",
@@ -62,7 +64,6 @@ setuptools.setup(
     zip_safe=True,
     install_requires=requires,
     dependency_links=depend_links,
-    setup_requires=['setuptools-git>=0.4'],
     entry_points={
         "openstack.common.scheduler.filters": filters,
         "openstack.common.tests.fakes.weights": weights,
