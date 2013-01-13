@@ -361,10 +361,12 @@ def _setup_logging_from_conf(product_name):
                                                    datefmt=datefmt))
         handler.setFormatter(LegacyFormatter(datefmt=datefmt))
 
-    if CONF.verbose or CONF.debug:
+    if CONF.debug:
         log_root.setLevel(logging.DEBUG)
-    else:
+    elif CONF.verbose:
         log_root.setLevel(logging.INFO)
+    else:
+        log_root.setLevel(logging.WARNING)
 
     level = logging.NOTSET
     for pair in CONF.default_log_levels:
