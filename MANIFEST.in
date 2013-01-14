@@ -1,6 +1,5 @@
 include AUTHORS
 include ChangeLog
-include openstack/versioninfo
 exclude .gitignore
 exclude .gitreview
 
