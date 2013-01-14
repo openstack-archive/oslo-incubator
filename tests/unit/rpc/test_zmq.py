@@ -59,7 +59,8 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
         self.config(rpc_zmq_bind_address='127.0.0.1')
         self.config(rpc_zmq_host='127.0.0.1')
         self.config(rpc_response_timeout=5)
-        self.config(rpc_zmq_matchmaker='mod_matchmaker.MatchMakerLocalhost')
+        self.config(
+            rpc_zmq_matchmaker='openstack.common.rpc.matchmaker.MatchMakerLocalhost')
 
         # We'll change this if we detect no daemon running.
         ipc_dir = FLAGS.rpc_zmq_ipc_dir
