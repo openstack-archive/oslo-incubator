@@ -521,6 +521,13 @@ class Opt(object):
         The only required parameter is the option's name. However, it is
         common to also supply a default and help string for all options.
 
+        When renaming options, it is possible to use the deprecated_name
+        argument to maintain backwards compatibility e.g.
+
+            >>> conf = ConfigOpts()
+            >>> conf.register_opt(StrOpt('foo', deprecated_name='bar'))
+            True
+
         :param name: the option's name
         :param dest: the name of the corresponding ConfigOpts property
         :param short: a single character CLI option name
