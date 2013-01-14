@@ -26,6 +26,7 @@ from openstack.common.gettextutils import _
 from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import local
+from openstack.common import lockutils
 from openstack.common import log as logging
 
 
@@ -210,14 +211,39 @@ class Connection(object):
         raise NotImplementedError()
 
 
+# This is where log sanitization configuration for the next two methods is
+# stored
+SANITIZE = {}
+
+
+@lockutils.synchronized('sanitize_config', 'oslo-')
+def register_sanitize_methods(sanitize_config):
+    """Register methods requiring sanitization.
+
+    The format for this is a dictionary like this:
+        {'set_admin_password': [('args', 'new_pass')]}
+
+    This will sanitize calls to set_admin_password, sanitizing elements of
+    the subdictionary called args with the name new_pass.
+    """
+    SANITIZE.update(sanitize_config)
+
+
+@lockutils.synchronized('sanitize_config', 'oslo-')
 def _safe_log(log_func, msg, msg_data):
     """Sanitizes the msg_data field before logging."""
-    SANITIZE = {'set_admin_password': [('args', 'new_pass')],
-                'run_instance': [('args', 'admin_password')],
-                'route_message': [('args', 'message', 'args', 'method_info',
-                                   'method_kwargs', 'password'),
-                                  ('args', 'message', 'args', 'method_info',
-                                   'method_kwargs', 'admin_password')]}
+    global SANITIZE
+    if len(SANITIZE) == 0:
+        # TODO(mikal): this is only here until this code is landed and
+        # integrated into nova
+        SANITIZE = {'set_admin_password': [('args', 'new_pass')],
+                    'run_instance': [('args', 'admin_password')],
+                    'route_message': [('args', 'message', 'args',
+                                       'method_info', 'method_kwargs',
+                                       'password'),
+                                      ('args', 'message', 'args',
+                                       'method_info', 'method_kwargs',
+                                       'admin_password')]}
 
     has_method = 'method' in msg_data and msg_data['method'] in SANITIZE
     has_context_token = '_context_auth_token' in msg_data
