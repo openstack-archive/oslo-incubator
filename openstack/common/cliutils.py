@@ -36,11 +36,11 @@ def validate_args(fn, *args, **kwargs):
     >>> validate_args(lambda a: None)
     Traceback (most recent call last):
         ...
-    MissingArgs: An argument is missing: a
+    MissingArgs: An argument is missing
     >>> validate_args(lambda a, b, c, d: None, 0, c=1)
     Traceback (most recent call last):
         ...
-    MissingArgs: 2 arguments are missing: b, d
+    MissingArgs: 2 arguments are missing
 
     :param fn: the function to check
     :param arg: the positional arguments supplied
