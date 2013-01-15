@@ -32,6 +32,7 @@ import uuid
 from eventlet import greenpool
 from eventlet import pools
 from eventlet import semaphore
+from eventlet import queue
 
 from openstack.common import excutils
 from openstack.common.gettextutils import _
@@ -45,6 +46,9 @@ LOG = logging.getLogger(__name__)
 
 class Pool(pools.Pool):
     """Class that implements a Pool of Connections."""
+
+    reply_proxy = None
+
     def __init__(self, conf, connection_cls, *args, **kwargs):
         self.connection_cls = connection_cls
         self.conf = conf
@@ -148,8 +152,58 @@ class ConnectionContext(rpc_common.Connection):
             raise rpc_common.InvalidRPCConnectionReuse()
 
 
-def msg_reply(conf, msg_id, connection_pool, reply=None, failure=None,
-              ending=False, log_failure=True):
+class ReplyProxy(ConnectionContext):
+    """ Connection class for RPC replies / callbacks """
+    def __init__(self, conf, connection_pool):
+        self._call_waiters = {}
+        self._num_call_waiters = 0
+        self._num_call_waiters_wrn_threshhold = 10
+        self._msg_id = 'reply_' + uuid.uuid4().hex
+        super(ReplyProxy, self).__init__(conf, connection_pool, pooled=False)
+        self.declare_direct_consumer(self._msg_id, self._process_data)
+        self.consume_in_thread()
+
+    def _process_data(self, message_data):
+        reply_id = message_data.pop('_reply_id', None)
+        if not reply_id:
+            if self._num_call_waiters > 1:
+                LOG.error(_('No reply_id in reply likely due to a backlevel '
+                            'callee. The reply is discarded : %s') %
+                          message_data)
+                return
+            if self._num_call_waiters == 1:
+                LOG.warn(_('No reply_id in reply likely due to a downlevel '
+                           'callee. The reply is still delivered.'))
+                for reply_id in self._call_waiters:
+                    waiter = self._call_waiters[reply_id] 
+                waiter.put(message_data)
+                return
+        waiter = self._call_waiters.get(reply_id)
+        if not waiter:
+            LOG.warn(_('No calling threads waiting for reply_id : %s'
+                       ', message : %s') % (reply_id, message_data))
+        else:
+            waiter.put(message_data)
+
+    def add_call_waiter(self, waiter, reply_id):
+        self._num_call_waiters += 1
+        if self._num_call_waiters > self._num_call_waiters_wrn_threshhold:
+            LOG.warn(_('Number of call waiters is greater than warning '
+                       'threshhold: %d. There could be a MulticallProxyWaiter '
+                       'leak.') % self._num_call_waiters_wrn_threshhold)
+            self._num_call_waiters_wrn_threshhold *= 2
+        self._call_waiters[reply_id] = waiter
+
+    def del_call_waiter(self, reply_id):
+        self._num_call_waiters -= 1
+        del self._call_waiters[reply_id]
+
+    def get_msg_id(self):
+        return self._msg_id
+
+
+def msg_reply(conf, msg_id, reply_id, connection_pool, reply=None,
+              failure=None, ending=False, log_failure=True):
     """Sends a reply or an error on the channel signified by msg_id.
 
     Failure should be a sys.exc_info() tuple.
@@ -168,6 +222,10 @@ def msg_reply(conf, msg_id, connection_pool, reply=None, failure=None,
                    'failure': failure}
         if ending:
             msg['ending'] = True
+        # If a reply_id exists, add it to the reply
+        # otherwise it is a downlevel caller so will not expect it
+        if reply_id:
+            msg['_reply_id'] = reply_id
         conn.direct_send(msg_id, rpc_common.serialize_msg(msg))
 
 
@@ -175,6 +233,7 @@ class RpcContext(rpc_common.CommonRpcContext):
     """Context that supports replying to a rpc.call"""
     def __init__(self, **kwargs):
         self.msg_id = kwargs.pop('msg_id', None)
+        self.reply_id = kwargs.pop('reply_id', None)
         self.conf = kwargs.pop('conf')
         super(RpcContext, self).__init__(**kwargs)
 
@@ -182,13 +241,14 @@ class RpcContext(rpc_common.CommonRpcContext):
         values = self.to_dict()
         values['conf'] = self.conf
         values['msg_id'] = self.msg_id
+        values['reply_id'] = self.reply_id
         return self.__class__(**values)
 
     def reply(self, reply=None, failure=None, ending=False,
               connection_pool=None, log_failure=True):
         if self.msg_id:
-            msg_reply(self.conf, self.msg_id, connection_pool, reply, failure,
-                      ending, log_failure)
+            msg_reply(self.conf, self.msg_id, self.reply_id, connection_pool,
+                      reply, failure, ending, log_failure)
             if ending:
                 self.msg_id = None
 
@@ -204,6 +264,7 @@ def unpack_context(conf, msg):
             value = msg.pop(key)
             context_dict[key[9:]] = value
     context_dict['msg_id'] = msg.pop('_msg_id', None)
+    context_dict['reply_id'] = msg.pop('_reply_id', None)
     context_dict['conf'] = conf
     ctx = RpcContext.from_dict(context_dict)
     rpc_common._safe_log(LOG.debug, _('unpacked context: %s'), ctx.to_dict())
@@ -298,6 +359,64 @@ class ProxyCallback(object):
         self.pool.waitall()
 
 
+class MulticallProxyWaiter(object):
+    def __init__(self, conf, reply_id, timeout, connection_pool):
+        self._reply_id = reply_id
+        self._timeout = timeout or conf.rpc_response_timeout
+        self._reply_proxy = connection_pool.reply_proxy
+        self._done = False
+        self._got_ending = False
+        self._conf = conf
+        self._dataqueue = queue.LightQueue()
+        # Add this caller to the reply proxy's call_waiters
+        self._reply_proxy.add_call_waiter(self, self._reply_id)
+
+    def put(self, data):
+        self._dataqueue.put(data)
+
+    def done(self):
+        if self._done:
+            return
+        self._done = True
+        # Remove this caller from reply proxy's call_waiters
+        self._reply_proxy.del_call_waiter(self._reply_id)
+
+    def _process_data(self, data):
+        result = None
+        if data['failure']:
+            failure = data['failure']
+            result = rpc_common.deserialize_remote_exception(self._conf,
+                                                             failure)
+        elif data.get('ending', False):
+            self._got_ending = True
+        else:
+            result = data['result']
+        return result
+
+    def __iter__(self):
+        """Return a result until we get a reply with an 'ending" flag"""
+        if self._done:
+            raise StopIteration
+        while True:
+            try:
+                data = self._dataqueue.get(timeout=self._timeout)
+                result = self._process_data(data)
+            except queue.Empty:
+                LOG.exception(_('Timed out waiting for RPC response.'))
+                self.done()
+                raise rpc_common.Timeout()
+            except Exception:
+                with excutils.save_and_reraise_exception():
+                    self.done()
+            if self._got_ending:
+                self.done()
+                raise StopIteration
+            if isinstance(result, Exception):
+                self.done()
+                raise result
+            yield result
+
+
 class MulticallWaiter(object):
     def __init__(self, conf, connection, timeout):
         self._connection = connection
@@ -353,22 +472,41 @@ def create_connection(conf, new, connection_pool):
     return ConnectionContext(conf, connection_pool, pooled=not new)
 
 
+_reply_proxy_create_sem = semaphore.Semaphore()
+
+
 def multicall(conf, context, topic, msg, timeout, connection_pool):
     """Make a call that returns multiple times."""
+    # For amqp_rpc_single_reply_queue = False,
     # Can't use 'with' for multicall, as it returns an iterator
     # that will continue to use the connection.  When it's done,
     # connection.close() will get called which will put it back into
     # the pool
+    # For amqp_rpc_single_reply_queue = True,
+    # The 'with' statement is mandatory for closing the connection
     LOG.debug(_('Making synchronous call on %s ...'), topic)
-    msg_id = uuid.uuid4().hex
+    if not conf.amqp_rpc_single_reply_queue:
+        msg_id = uuid.uuid4().hex
+    else:
+        with _reply_proxy_create_sem:
+            if not connection_pool.reply_proxy:
+                connection_pool.reply_proxy = ReplyProxy(conf, connection_pool)
+        msg_id = connection_pool.reply_proxy.get_msg_id()
     msg.update({'_msg_id': msg_id})
     LOG.debug(_('MSG_ID is %s') % (msg_id))
     pack_context(msg, context)
 
-    conn = ConnectionContext(conf, connection_pool)
-    wait_msg = MulticallWaiter(conf, conn, timeout)
-    conn.declare_direct_consumer(msg_id, wait_msg)
-    conn.topic_send(topic, rpc_common.serialize_msg(msg))
+    if not conf.amqp_rpc_single_reply_queue:
+        conn = ConnectionContext(conf, connection_pool)
+        wait_msg = MulticallWaiter(conf, conn, timeout)
+        conn.declare_direct_consumer(msg_id, wait_msg)
+        conn.topic_send(topic, rpc_common.serialize_msg(msg))
+    else:
+        reply_id = uuid.uuid4().hex
+        msg.update({'_reply_id': reply_id})
+        wait_msg = MulticallProxyWaiter(conf, reply_id, timeout, connection_pool)
+        with ConnectionContext(conf, connection_pool) as conn:
+            conn.topic_send(topic, rpc_common.serialize_msg(msg))
     return wait_msg
 
 

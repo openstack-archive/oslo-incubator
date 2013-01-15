@@ -21,6 +21,7 @@ Unit Tests for remote procedure calls shared between all implementations
 
 import logging
 import time
+import datetime
 
 import eventlet
 from eventlet import greenthread
@@ -331,6 +332,228 @@ class BaseRpcAMQPTestCase(BaseRpcTestCase):
                         envelope=True)
         self.assertEqual(self.test_msg, msg)
 
+    def test_single_reply_queue_on_has_ids(self,
+            single_reply_queue_for_callee_off=False):
+        if not self.rpc:
+            raise nose.SkipTest('rpc driver not available.')
+
+        self.config(amqp_rpc_single_reply_queue=True)
+
+        self.orig_unpack_context = rpc_amqp.unpack_context
+
+        def my_unpack_context(conf, msg):
+            self.assertTrue('_reply_id' in msg)
+            if single_reply_queue_for_callee_off:
+                # Simulate a downlevel RPC callee by making the
+                # callee think it is responding to a downlevel
+                # RPC caller. This is done by removing the
+                # reply_id
+                msg.pop('_reply_id')
+            return self.orig_unpack_context(conf, msg)
+
+        self.stubs.Set(rpc_amqp, 'unpack_context', my_unpack_context)
+
+        self.ReplyProxy_was_called = False
+
+        class MyReplyProxy(rpc_amqp.ReplyProxy):
+            def _process_data(myself, message_data):
+                #with open('mylog', 'a') as f:
+                #    f.write('my_process_data: ' + str(message_data) + '\n')
+                if not single_reply_queue_for_callee_off:
+                    self.assertTrue('_reply_id' in message_data)
+                else:
+                    self.assertTrue(not '_reply_id' in message_data)
+                self.ReplyProxy_was_called = True
+                super(MyReplyProxy, myself)._process_data(message_data)
+
+        self.orig_reply_proxy = self.conn.pool.reply_proxy
+        self.conn.pool.reply_proxy = MyReplyProxy(FLAGS, self.conn.pool)
+
+        value = 42
+        result = self.rpc.call(FLAGS, self.context, self.topic,
+                               {"method": "echo", "args": {"value": value}})
+        self.assertEqual(value, result)
+
+        #The single_reply_queue_for_callee_off=True results in RPC timeout
+        #errors in the multithreaded case.  Uncommenting the following
+        #will produce that, but it seems that unit tests fail when
+        #LOG.error is called, so the verification that the correct error
+        #occurs cannot be left in the test.
+        #self.multithreaded_resp_routing()
+
+        self.assertTrue(self.ReplyProxy_was_called)
+
+        self.stubs.UnsetAll()
+        self.conn.pool.reply_proxy = self.orig_reply_proxy
+
+    def test_single_reply_queue_off_no_ids(
+            self, single_reply_queue_for_callee_on=False):
+        if not self.rpc:
+            raise nose.SkipTest('rpc driver not available.')
+
+        self.config(amqp_rpc_single_reply_queue=False)
+
+        def my_unpack_context(conf, msg):
+            self.assertTrue(not '_reply_id' in msg)
+            if single_reply_queue_for_callee_on:
+                self.config(amqp_rpc_single_reply_queue=True)
+            return self.orig_unpack_context(conf, msg)
+
+        self.orig_unpack_context = rpc_amqp.unpack_context
+        self.stubs.Set(rpc_amqp, 'unpack_context', my_unpack_context)
+
+        self.MulticallWaiter_call_was_called = False
+
+        def my_MulticallWaiter_call(myself, data):
+            #with open('mylog', 'a') as f:
+            #    f.write('my_MulticallWaiter_call: ' + str(data) + '\n')
+            self.assertTrue(not '_reply_id' in data)
+            self.MulticallWaiter_call_was_called = True
+            return self.orig_MulticallWaiter_call(myself, data)
+
+        self.orig_MulticallWaiter_call = rpc_amqp.MulticallWaiter.__call__
+        self.stubs.Set(rpc_amqp.MulticallWaiter, '__call__',
+                       my_MulticallWaiter_call)
+
+        value = 42
+        result = self.rpc.call(FLAGS, self.context, self.topic,
+                               {"method": "echo", "args": {"value": value}})
+        self.assertEqual(value, result)
+        self.assertTrue(self.MulticallWaiter_call_was_called)
+
+        self.stubs.UnsetAll()
+
+    def test_single_reply_queue_caller_off_callee_on(self):
+
+        self.test_single_reply_queue_off_no_ids(
+            single_reply_queue_for_callee_on=True)
+
+    def test_single_reply_queue_caller_on_callee_off(self):
+
+        self.test_single_reply_queue_on_has_ids(
+            single_reply_queue_for_callee_off=True)
+
+    def multithreaded_resp_routing(self):
+
+        global synced_echo_call
+        synced_echo_call = SyncedEchoCall()
+
+        callid1 = synced_echo_call.spawn(self.rpc.call, FLAGS, self.context,
+                                         self.topic, value=1)
+        callid2 = synced_echo_call.spawn(self.rpc.call, FLAGS, self.context,
+                                         self.topic, value=2)
+        callid3 = synced_echo_call.spawn(self.rpc.call, FLAGS, self.context,
+                                         self.topic, value=3)
+
+        r3 = synced_echo_call.post(callid3)
+        self.assertEqual(synced_echo_call.wait_states(),
+                         synced_echo_call.expected_wait_states())
+        r1 = synced_echo_call.post(callid1)
+        self.assertEqual(synced_echo_call.wait_states(),
+                         synced_echo_call.expected_wait_states())
+        r2 = synced_echo_call.post(callid2)
+        self.assertEqual(synced_echo_call.wait_states(),
+                         synced_echo_call.expected_wait_states())
+
+        #synced_echo_call.print_times()
+        self.assertEqual((r1, r2, r3), (1, 2, 3))
+        self.assertTrue(synced_echo_call.verify_time_order(callid3, callid1,
+                                                           callid2))
+
+    def test_multithreaded_resp_routing(self):
+        if not self.rpc:
+            raise nose.SkipTest('rpc driver not available.')
+
+        self.config(amqp_rpc_single_reply_queue=False)
+        self.multithreaded_resp_routing()
+        self.config(amqp_rpc_single_reply_queue=True)
+        self.multithreaded_resp_routing()
+
+
+synced_echo_call = None
+
+def rpc_wrapper(callid, func, *args):
+    """This wrapper was added because tests would hang when there was a bug
+       that caused the RPC to timeout.  The post event would hang waiting for
+       the wait event.  The missing wait is added here.  It just makes
+       debugging the unit tests easier.
+    """
+    try:
+        ret = func(*args)
+    except rpc_common.Timeout as exc:
+        synced_echo_call.wait(callid)
+        ret = None
+    return ret
+
+class SyncedEchoCall():
+    """Class to control the synchronization of the synced_echo method of the
+       TestReceiver class
+    """
+    class data():
+        def __init__(self):
+            self.gthread = None
+            self.event = eventlet.event.Event()
+            self.waiting = False
+            self.expected_wait_state = False
+            self.time = 0
+
+    def __init__(self):
+        self.list = []
+
+    def spawn(self, *args, **kwargs):
+        idx = len(self.list)
+        self.list.append(SyncedEchoCall.data())
+        args = list(args)
+        value = kwargs['value']
+        args.append({"method": "synced_echo", "args":
+                     {"value": value, "callid": idx}})
+        args.insert(0, idx)
+        args.insert(0, rpc_wrapper)
+        self.list[idx].gthread = eventlet.spawn(*args)
+        self.list[idx].expected_wait_state = True
+        return idx
+
+    def wait_states(self):
+        rlist = []
+        for i in self.list:
+            rlist.append(i.waiting)
+        return rlist
+
+    def expected_wait_states(self):
+        rlist = []
+        for i in self.list:
+            rlist.append(i.expected_wait_state)
+        return rlist
+
+    def post(self, idx):
+        self.list[idx].event.send()
+        retval = self.list[idx].gthread.wait()
+        self.list[idx].expected_wait_state = False
+        #self.print_wait_states()
+        return retval
+
+    def wait(self, idx):
+        self.list[idx].waiting = True
+        self.list[idx].event.wait()
+        self.list[idx].waiting = False
+        self.list[idx].time = datetime.datetime.now()
+
+    def verify_time_order(self, idx1, idx2, idx3):
+        return self.list[idx1].time < self.list[idx2].time and \
+            self.list[idx2].time < self.list[idx3].time
+
+    def print_times(self):
+        with open('mylog', 'a') as f:
+            f.write('SyncedEchoCall times: ' + '\n')
+            f.write('        ' + str(self.list[0].time) + '\n')
+            f.write('        ' + str(self.list[1].time) + '\n')
+            f.write('        ' + str(self.list[2].time) + '\n')
+
+    def print_wait_states(self):
+        with open('mylog', 'a') as f:
+            f.write('SyncedEchoCall times: ' +
+                    str(self.wait_states()) + '\n')
+
 
 class TestReceiver(object):
     """Simple Proxy class so the consumer has methods to call.
@@ -342,6 +565,14 @@ class TestReceiver(object):
     def echo(context, value):
         """Simply returns whatever value is sent in."""
         LOG.debug(_("Received %s"), value)
+        return value
+
+    @staticmethod
+    def synced_echo(context, value, callid):
+        """Waits on the event identified by callid."""
+        LOG.debug(_("Received %s"), value)
+        global synced_echo_call
+        synced_echo_call.wait(callid)
         return value
 
     @staticmethod
