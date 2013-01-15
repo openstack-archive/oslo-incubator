@@ -60,6 +60,10 @@ rpc_opts = [
     cfg.StrOpt('control_exchange',
                default='openstack',
                help='AMQP exchange to connect to if using RabbitMQ or Qpid'),
+    cfg.BoolOpt('amqp_rpc_enable_fast_single_reply_queue',
+                default=True,
+                help='Enable AMQP based RPC call single reply queue'
+                'performance improvement'),
 ]
 
 cfg.CONF.register_opts(rpc_opts)
