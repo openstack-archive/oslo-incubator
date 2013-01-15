@@ -23,7 +23,6 @@ import types
 import uuid
 
 import eventlet
-from eventlet.green import zmq
 import greenlet
 
 from openstack.common import cfg
@@ -33,6 +32,7 @@ from openstack.common import jsonutils
 from openstack.common import processutils as utils
 from openstack.common.rpc import common as rpc_common
 
+zmq = importutils.try_import('eventlet.green.zmq')
 
 # for convenience, are not modified.
 pformat = pprint.pformat
@@ -212,7 +212,9 @@ class ZmqSocket(object):
 class ZmqClient(object):
     """Client for ZMQ sockets."""
 
-    def __init__(self, addr, socket_type=zmq.PUSH, bind=False):
+    def __init__(self, addr, socket_type=None, bind=False):
+        if socket_type is None:
+            socket_type = zmq.PUSH
         self.outq = ZmqSocket(addr, socket_type, bind=bind)
 
     def cast(self, msg_id, topic, data, serialize=True, force_envelope=False):
@@ -766,6 +768,9 @@ def cleanup():
 
 
 def _get_ctxt():
+    if not zmq:
+        raise ImportError("Failed to import eventlet.green.zmq")
+
     global ZMQ_CTX
     if not ZMQ_CTX:
         ZMQ_CTX = zmq.Context(CONF.rpc_zmq_contexts)
