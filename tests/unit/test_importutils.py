@@ -109,3 +109,11 @@ class ImportUtilsTest(unittest.TestCase):
         dt = importutils.import_object('datetime.datetime', 2012, 4, 5)
         self.assertTrue(isinstance(dt, sys.modules['datetime'].datetime))
         self.assertEqual(dt, datetime.datetime(2012, 4, 5))
+
+    def test_try_import(self):
+        dt = importutils.try_import('datetime')
+        self.assertEqual(sys.modules['datetime'], dt)
+
+    def test_try_import_returns_default(self):
+        foo = importutils.try_import('foo.bar')
+        self.assertEqual(None, foo)

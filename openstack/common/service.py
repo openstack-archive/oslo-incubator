@@ -27,17 +27,17 @@ import sys
 import time
 
 import eventlet
-import extras
 import logging as std_logging
 
 from openstack.common import cfg
 from openstack.common import eventlet_backdoor
 from openstack.common.gettextutils import _
+from openstack.common import importutils
 from openstack.common import log as logging
 from openstack.common import threadgroup
 
 
-rpc = extras.try_import('openstack.common.rpc')
+rpc = importutils.try_import('openstack.common.rpc')
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
