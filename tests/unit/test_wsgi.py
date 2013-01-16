@@ -492,6 +492,13 @@ class WSGIServerTest(unittest.TestCase):
         self.assertNotEqual(0, server.port)
         server.stop()
 
+    def test_start_random_port_with_ipv6(self):
+        server = wsgi.Service('test_random_port', 0, host="::1")
+        server.start()
+        self.assertEqual("::1", server.host)
+        self.assertNotEqual(0, server.port)
+        server.stop()
+
     def test_app(self):
         greetings = 'Hello, World!!!'
 
@@ -554,3 +561,49 @@ class WSGIServerTest(unittest.TestCase):
         self.assertEquals(greetings, response.read())
 
         server.stop()
+
+    def test_app_using_router_ipv6_and_ssl(self):
+
+        CONF.set_default("cert_file",
+                         os.path.join(TEST_VAR_DIR, 'certificate.crt'),
+                         group="ssl")
+        CONF.set_default("key_file",
+                         os.path.join(TEST_VAR_DIR, 'privatekey.key'),
+                         group="ssl")
+
+        greetings = 'Hello, World!!!'
+
+        @webob.dec.wsgify
+        def hello(req):
+            return greetings
+
+        mapper = routes.Mapper()
+        mapper.connect(None, "/v1.0/{path_info:.*}", controller=hello)
+        router = wsgi.Router(mapper)
+        server = wsgi.Service(router, 0, host="::1")
+        server.start()
+
+        response = urllib2.urlopen('https://[::1]:%d/v1.0/' % server.port)
+        self.assertEquals(greetings, response.read())
+
+        server.stop()
+
+
+class TestWSGIServer2(unittest.TestCase):
+    def setUp(self):
+        self.eventlet_p = mock.patch.object(wsgi, 'eventlet')
+        self.eventlet = self.eventlet_p.start()
+        self.server = wsgi.Service('test_random_port',
+                                   0,
+                                   host="fe80::204:acff:fe96:da87%eth0")
+
+    def tearDown(self):
+        self.eventlet_p.stop()
+
+    def test_ipv6_with_link_local_start(self):
+        self.server.start()
+        self.eventlet.assert_has_calls([
+            mock.call.listen(('fe80::204:acff:fe96:da87%eth0', 0, 0, 2),
+                             family=10,
+                             backlog=4096)
+        ])

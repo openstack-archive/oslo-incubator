@@ -82,14 +82,23 @@ class Service(service.Service):
 
     def _get_socket(self, host, port, backlog):
 
-        bind_addr = (host, port)
+        # TODO(dims): eventlet's green dns/socket module does not actually
+        # support IPv6 in getaddrinfo(). We need to get around this in the
+        # future or monitor upstream for a fix
+        info = socket.getaddrinfo(host,
+                                  port,
+                                  socket.AF_UNSPEC,
+                                  socket.SOCK_STREAM)[0]
+        family = info[0]
+        bind_addr = info[-1]
 
         sock = None
         retry_until = time.time() + 30
         while not sock and time.time() < retry_until:
             try:
                 sock = eventlet.listen(bind_addr,
-                                       backlog=backlog)
+                                       backlog=backlog,
+                                       family=family)
                 if sslutils.is_enabled():
                     sock = sslutils.wrap(sock)
 
