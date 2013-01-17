@@ -22,6 +22,14 @@ from openstack.common import log as logging
 from openstack.common import loopingcall
 
 
+# The greenlet.GreenletExit exception (which is raised when a greenthread has
+# been killed and should exit) incorrectly inherits from Exception, which is
+# the "Common base class for all non-exit exceptions". This means it tends to
+# get caught and ignored by "except Exception:" blocks. Therefore here we
+# monkey-patch in the correct base class (BaseException) to prevent this.
+greenlet.GreenletExit.__bases__ = (BaseException,)
+
+
 LOG = logging.getLogger(__name__)
 
 
