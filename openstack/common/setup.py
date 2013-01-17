@@ -107,13 +107,15 @@ def parse_dependency_links(requirements_files=['requirements.txt',
     return dependency_links
 
 
-def _run_shell_command(cmd):
+def _run_shell_command(cmd, throw_on_error=False):
     if os.name == 'nt':
         output = subprocess.Popen(["cmd.exe", "/C", cmd],
                                   stdout=subprocess.PIPE)
     else:
         output = subprocess.Popen(["/bin/sh", "-c", cmd],
                                   stdout=subprocess.PIPE)
+    if output.returncode:
+        raise Exception("%s returned %d" % cmd, output.returncode)
     out = output.communicate()
     if len(out) == 0:
         return None
@@ -259,8 +261,12 @@ def get_version_from_git():
     if the current revision has no tag."""
 
     if os.path.isdir('.git'):
-        return  _run_shell_command(
-            "git describe --always").replace('-', '.')
+        try:
+            return  _run_shell_command(
+                "git describe --exact-match",
+                throw_on_error=True).replace('-', '.')
+        except Exception:
+            return _run_shell_command("git log -n1 --pretty=format:%h")
     return None
 
 
