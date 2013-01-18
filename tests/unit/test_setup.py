@@ -16,9 +16,9 @@
 #    under the License.
 
 import os
-import unittest
-from tempfile import mkstemp
 import sys
+from tempfile import mkstemp
+import unittest
 
 from openstack.common.setup import *
 

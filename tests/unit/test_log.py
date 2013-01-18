@@ -5,8 +5,8 @@ import subprocess
 import sys
 import textwrap
 
-from openstack.common import context
 from openstack.common import cfg
+from openstack.common import context
 from openstack.common import jsonutils
 from openstack.common import log
 from openstack.common.notifier import api as notifier
