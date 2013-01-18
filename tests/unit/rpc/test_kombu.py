@@ -33,8 +33,8 @@ from openstack.common import exception
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
 from openstack.common import testutils
-from tests import utils
 from tests.unit.rpc import common
+from tests import utils
 
 try:
     import kombu

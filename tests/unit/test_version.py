@@ -17,8 +17,8 @@
 
 import os
 import shutil
-import sys
 import StringIO
+import sys
 import tempfile
 import unittest
 
