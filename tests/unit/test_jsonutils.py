@@ -16,9 +16,9 @@
 #    under the License.
 
 import datetime
+import StringIO
 import unittest
 import xmlrpclib
-import StringIO
 
 from openstack.common import jsonutils
 

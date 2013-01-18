@@ -24,8 +24,8 @@ import time
 import unittest
 
 import eventlet
-from eventlet import greenthread
 from eventlet import greenpool
+from eventlet import greenthread
 
 from openstack.common import lockutils
 from openstack.common import testutils
