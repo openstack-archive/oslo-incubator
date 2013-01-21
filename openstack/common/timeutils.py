@@ -98,6 +98,11 @@ def utcnow():
     return datetime.datetime.utcnow()
 
 
+def iso8601_from_timestamp(timestamp):
+    """Returns a iso8601 formated date from timestamp"""
+    return datetime.datetime.utcfromtimestamp(timestamp).isoformat()
+
+
 utcnow.override_time = None
 
 
