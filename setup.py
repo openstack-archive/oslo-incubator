@@ -42,7 +42,7 @@ weights = [
 
 setuptools.setup(
     name=package,
-    version=setup.get_version(package),
+    version=setup.get_version(package, '2013.1'),
     description="Common components for Openstack",
     long_description="Common components for Openstack "
                      "including paster templates.",
