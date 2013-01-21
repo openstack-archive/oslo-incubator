@@ -21,6 +21,7 @@ return keys for direct exchanges, per (approximate) AMQP parlance.
 import contextlib
 import itertools
 import json
+import random
 
 from openstack.common import cfg
 from openstack.common.gettextutils import _
@@ -182,6 +183,26 @@ class RoundRobinRingExchange(RingExchange):
         return [(key + '.' + host, host)]
 
 
+class RandomRingExchange(RingExchange):
+    """A Topic Exchange based on a hashmap."""
+    def __init__(self, ring=None):
+        self.rand = random.Random()
+        self.rand.seed()
+
+        super(RandomRingExchange, self).__init__(ring)
+
+    def run(self, key):
+        if not self._ring_has(key):
+            LOG.warn(
+                _("No key defining hosts for topic '%s', "
+                  "see ringfile") % (key, )
+            )
+            return []
+        index = self.rand.randrange(0, stop=len(self.ring))
+        host = self.ring[key][index]
+        return [(key + '.' + host, host)]
+
+
 class FanoutRingExchange(RingExchange):
     """Fanout Exchange based on a hashmap."""
     def __init__(self, ring=None):
@@ -224,9 +245,22 @@ class DirectExchange(Exchange):
 class MatchMakerRing(MatchMakerBase):
     """
     Match Maker where hosts are loaded from a static hashmap.
+    Topics are resolved via random lookup.
     """
     def __init__(self, ring=None):
         super(MatchMakerRing, self).__init__()
+        self.add_binding(FanoutBinding(), FanoutRingExchange(ring))
+        self.add_binding(DirectBinding(), DirectExchange())
+        self.add_binding(TopicBinding(), RandomRingExchange(ring))
+
+
+class MatchMakerRoundRobinRing(MatchMakerBase):
+    """
+    Match Maker where hosts are loaded from a static hashmap.
+    Topics are resolved via round-robin.
+    """
+    def __init__(self, ring=None):
+        super(MatchMakerRoundRobinRing, self).__init__()
         self.add_binding(FanoutBinding(), FanoutRingExchange(ring))
         self.add_binding(DirectBinding(), DirectExchange())
         self.add_binding(TopicBinding(), RoundRobinRingExchange(ring))

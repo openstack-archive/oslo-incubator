@@ -41,7 +41,7 @@ class _MatchMakerTestCase(unittest.TestCase):
             self.assertTrue(host in matched_hosts)
 
 
-class MatchMakerFileTestCase(_MatchMakerTestCase):
+class MatchMakerRingTestCase(_MatchMakerTestCase):
     def setUp(self):
         self.topic = "test"
         self.hosts = ['hello', 'world', 'foo', 'bar', 'baz']
@@ -49,7 +49,47 @@ class MatchMakerFileTestCase(_MatchMakerTestCase):
             self.topic: self.hosts
         }
         self.driver = matchmaker.MatchMakerRing(ring)
-        super(MatchMakerFileTestCase, self).setUp()
+        super(MatchMakerRingTestCase, self).setUp()
+
+    def test_hosts_not_in_order(self):
+        # Technically we could get randomly get
+        # our results in-order. Running 5 times
+        # to minimize false-negatives.
+        for i in range(1, 5):
+            tmp_host_list = []
+
+            for host in self.hosts:
+                queues = self.driver.queues(self.topic)
+                self.assertTrue(len(queues) == 1)
+                matched_host = queues[0][1]
+                tmp_host_list.append(matched_host)
+
+            self.assertFalse(self.hosts == tmp_host_list)
+
+
+class MatchMakerRoundRobinRingTestCase(_MatchMakerTestCase):
+    def setUp(self):
+        self.topic = "test"
+        self.hosts = ['hello', 'world', 'foo', 'bar', 'baz']
+        ring = {
+            self.topic: self.hosts
+        }
+        self.driver = matchmaker.MatchMakerRoundRobinRing(ring)
+        super(MatchMakerRoundRobinRingTestCase, self).setUp()
+
+    def test_hosts_in_order(self):
+        # Technically we could get randomly get
+        # our results in-order. Running 5 times
+        # to minimize false-negatives.
+        for i in range(1, 5):
+            tmp_host_list = []
+            for host in self.hosts:
+                queues = self.driver.queues(self.topic)
+                self.assertTrue(len(queues) == 1)
+                matched_host = queues[0][1]
+                tmp_host_list.append(matched_host)
+
+            self.assertTrue(self.hosts == tmp_host_list)
 
 
 class MatchMakerLocalhostTestCase(_MatchMakerTestCase):
