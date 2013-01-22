@@ -111,6 +111,12 @@ def _get_queue_arguments(conf):
     return {'x-ha-policy': 'all'} if conf.rabbit_ha_queues else {}
 
 
+def is_ha_queue(options):
+    """Returns True if rabbit_ha_queues is used."""
+    return (True if options.get('queue_arguments', {}).get('x-ha-policy')
+            else False)
+
+
 class ConsumerBase(object):
     """Consumer base class."""
 
@@ -166,6 +172,12 @@ class ConsumerBase(object):
                 callback(msg)
                 message.ack()
             except Exception:
+                # NOTE: Raising exception is necessary in case of using
+                # Mirroed Queue, this enables MulticallWaiter reconnecting
+                # when exceptions occur on the way to return results.
+                if (self.kwargs['exchange'].type == 'direct'
+                        and is_ha_queue(self.kwargs)):
+                    raise
                 LOG.exception(_("Failed to process message... skipping it."))
 
         self.queue.consume(*args, callback=_callback, **options)
@@ -196,6 +208,7 @@ class DirectConsumer(ConsumerBase):
         """
         # Default options
         options = {'durable': False,
+                   'queue_arguments': _get_queue_arguments(conf),
                    'auto_delete': True,
                    'exclusive': False}
         options.update(kwargs)
