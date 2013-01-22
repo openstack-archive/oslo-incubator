@@ -165,9 +165,10 @@ class ConsumerBase(object):
             try:
                 msg = rpc_common.deserialize_msg(message.payload)
                 callback(msg)
-                message.ack()
             except Exception:
                 LOG.exception(_("Failed to process message... skipping it."))
+            finally:
+                message.ack()
 
         self.queue.consume(*args, callback=_callback, **options)
 
