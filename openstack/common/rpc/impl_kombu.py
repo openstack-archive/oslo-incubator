@@ -164,9 +164,9 @@ class ConsumerBase(object):
             try:
                 msg = rpc_common.deserialize_msg(message.payload)
                 callback(msg)
-                message.ack()
             except Exception:
                 LOG.exception(_("Failed to process message... skipping it."))
+            message.ack()
 
         self.queue.consume(*args, callback=_callback, **options)
 
@@ -196,6 +196,7 @@ class DirectConsumer(ConsumerBase):
         """
         # Default options
         options = {'durable': False,
+                   'queue_arguments': _get_queue_arguments(conf),
                    'auto_delete': True,
                    'exclusive': False}
         options.update(kwargs)
