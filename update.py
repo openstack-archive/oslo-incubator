@@ -179,6 +179,7 @@ def _copy_module(mod, base, dest_dir):
 
     globs_to_copy = [
         os.path.join('bin', 'oslo-' + mod + '*'),
+        os.path.join('tools', mod + '*'),
         os.path.join('etc', 'oslo', mod + '*.conf'),
     ]
 
