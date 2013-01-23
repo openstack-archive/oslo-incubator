@@ -15,16 +15,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import unittest
-import webob
-
 import mock
+import testtools
+import webob
 
 from openstack.common import exception
 from openstack.common import wsgi
 
 
-class RequestTest(unittest.TestCase):
+class RequestTest(testtools.TestCase):
 
     def test_content_type_missing(self):
         request = wsgi.Request.blank('/tests/123', method='POST')
@@ -105,7 +104,7 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(result, "application/new_type")
 
 
-class ActionDispatcherTest(unittest.TestCase):
+class ActionDispatcherTest(testtools.TestCase):
 
     def test_dispatch(self):
         serializer = wsgi.ActionDispatcher()
@@ -128,7 +127,7 @@ class ActionDispatcherTest(unittest.TestCase):
                          'Two trousers')
 
 
-class ResponseHeadersSerializerTest(unittest.TestCase):
+class ResponseHeadersSerializerTest(testtools.TestCase):
 
     def test_default(self):
         serializer = wsgi.ResponseHeadersSerializer()
@@ -148,14 +147,14 @@ class ResponseHeadersSerializerTest(unittest.TestCase):
         self.assertEqual(response.headers['X-Custom-Header'], '123')
 
 
-class DictSerializerTest(unittest.TestCase):
+class DictSerializerTest(testtools.TestCase):
 
     def test_dispatch_default(self):
         serializer = wsgi.DictSerializer()
         self.assertEqual(serializer.serialize({}, 'NonExistantAction'), '')
 
 
-class XMLDictSerializerTest(unittest.TestCase):
+class XMLDictSerializerTest(testtools.TestCase):
 
     def test_xml(self):
         input_dict = dict(servers=dict(a=(2, 3)))
@@ -169,7 +168,7 @@ class XMLDictSerializerTest(unittest.TestCase):
         self.assertEqual(result, expected_xml)
 
 
-class JSONDictSerializerTest(unittest.TestCase):
+class JSONDictSerializerTest(testtools.TestCase):
 
     def test_json(self):
         input_dict = dict(servers=dict(a=(2, 3)))
@@ -191,14 +190,14 @@ class JSONDictSerializerTest(unittest.TestCase):
         self.assertEqual(result, expected_str)
 
 
-class TextDeserializerTest(unittest.TestCase):
+class TextDeserializerTest(testtools.TestCase):
 
     def test_dispatch_default(self):
         deserializer = wsgi.TextDeserializer()
         self.assertEqual(deserializer.deserialize({}, 'update'), {})
 
 
-class JSONDeserializerTest(unittest.TestCase):
+class JSONDeserializerTest(testtools.TestCase):
 
     def test_json(self):
         data = """{"a": {
@@ -222,7 +221,7 @@ class JSONDeserializerTest(unittest.TestCase):
         self.assertEqual(deserializer.deserialize(data), as_dict)
 
 
-class XMLDeserializerTest(unittest.TestCase):
+class XMLDeserializerTest(testtools.TestCase):
 
     def test_xml(self):
         xml = """
@@ -254,7 +253,7 @@ class XMLDeserializerTest(unittest.TestCase):
         self.assertEqual(deserializer.deserialize(xml), as_dict)
 
 
-class RequestHeadersDeserializerTest(unittest.TestCase):
+class RequestHeadersDeserializerTest(testtools.TestCase):
 
     def test_default(self):
         deserializer = wsgi.RequestHeadersDeserializer()
@@ -271,9 +270,10 @@ class RequestHeadersDeserializerTest(unittest.TestCase):
         self.assertEqual(deserializer.deserialize(req, 'update'), {'a': 'b'})
 
 
-class ResponseSerializerTest(unittest.TestCase):
+class ResponseSerializerTest(testtools.TestCase):
 
     def setUp(self):
+        super(ResponseSerializerTest, self).setUp()
         class JSONSerializer(object):
             def serialize(self, data, action='default'):
                 return 'pew_json'
@@ -293,9 +293,6 @@ class ResponseSerializerTest(unittest.TestCase):
 
         self.serializer = wsgi.ResponseSerializer(self.body_serializers,
                                                   HeadersSerializer())
-
-    def tearDown(self):
-        pass
 
     def test_get_serializer(self):
         ctype = 'application/json'
@@ -332,9 +329,10 @@ class ResponseSerializerTest(unittest.TestCase):
                           {}, 'application/unknown')
 
 
-class RequestDeserializerTest(unittest.TestCase):
+class RequestDeserializerTest(testtools.TestCase):
 
     def setUp(self):
+        super(RequestDeserializerTest, self).setUp()
         class JSONDeserializer(object):
             def deserialize(self, data, action='default'):
                 return 'pew_json'
@@ -399,7 +397,7 @@ class RequestDeserializerTest(unittest.TestCase):
         self.assertEqual(expected, deserialized)
 
 
-class ResourceTest(unittest.TestCase):
+class ResourceTest(testtools.TestCase):
 
     def test_dispatch(self):
         class Controller(object):
@@ -439,7 +437,7 @@ class ResourceTest(unittest.TestCase):
         self.assertEqual(response.status, '415 Unsupported Media Type')
 
 
-class ServerTest(unittest.TestCase):
+class ServerTest(testtools.TestCase):
 
     def test_run_server(self):
         listen_patcher = mock.patch('eventlet.listen')
@@ -457,7 +455,7 @@ class ServerTest(unittest.TestCase):
             server_patcher.stop()
 
 
-class WSGIServerTest(unittest.TestCase):
+class WSGIServerTest(testtools.TestCase):
 
     def test_pool(self):
         server = wsgi.Service('fake', 9000)

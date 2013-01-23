@@ -16,17 +16,18 @@
 #    under the License.
 
 import datetime
-import unittest
 
 import iso8601
 import mock
+import testtools
 
 from openstack.common import timeutils
 
 
-class TimeUtilsTest(unittest.TestCase):
+class TimeUtilsTest(testtools.TestCase):
 
     def setUp(self):
+        super(TimeUtilsTest, self).setUp()
         self.skynet_self_aware_time_str = '1997-08-29T06:14:00Z'
         self.skynet_self_aware_time = datetime.datetime(1997, 8, 29, 6, 14, 0)
         self.one_minute_before = datetime.datetime(1997, 8, 29, 6, 13, 0)
@@ -34,9 +35,7 @@ class TimeUtilsTest(unittest.TestCase):
         self.skynet_self_aware_time_perfect_str = '1997-08-29T06:14:00.000000'
         self.skynet_self_aware_time_perfect = datetime.datetime(1997, 8, 29,
                                                                 6, 14, 0)
-
-    def tearDown(self):
-        timeutils.clear_time_override()
+        self.addCleanup(timeutils.clear_time_override)
 
     def test_isotime(self):
         with mock.patch('datetime.datetime') as datetime_mock:
@@ -149,7 +148,7 @@ class TimeUtilsTest(unittest.TestCase):
                                 timeutils.delta_seconds(before, after))
 
 
-class TestIso8601Time(unittest.TestCase):
+class TestIso8601Time(testtools.TestCase):
 
     def _instaneous(self, timestamp, yr, mon, day, hr, min, sec, micro):
         self.assertEquals(timestamp.year, yr)

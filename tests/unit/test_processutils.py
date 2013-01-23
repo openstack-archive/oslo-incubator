@@ -15,14 +15,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import unittest
+import testtools
 
 import mock
 
 from openstack.common import processutils
 
 
-class UtilsTest(unittest.TestCase):
+class UtilsTest(testtools.TestCase):
     # NOTE(jkoelker) Moar tests from nova need to be ported. But they
     #                need to be mock'd out. Currently they requre actually
     #                running code.
@@ -32,7 +32,7 @@ class UtilsTest(unittest.TestCase):
                           hozer=True)
 
 
-class ProcessExecutionErrorTest(unittest.TestCase):
+class ProcessExecutionErrorTest(testtools.TestCase):
 
     def test_defaults(self):
         err = processutils.ProcessExecutionError()

@@ -21,7 +21,7 @@ import select
 import shutil
 import tempfile
 import time
-import unittest
+import testtools
 
 import eventlet
 from eventlet import greenpool

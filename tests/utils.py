@@ -19,14 +19,14 @@
 
 import stubout
 import subprocess
-import unittest
+import testtools
 
 from openstack.common import cfg
 
 CONF = cfg.CONF
 
 
-class BaseTestCase(unittest.TestCase):
+class BaseTestCase(testtools.TestCase):
 
     def setUp(self):
         super(BaseTestCase, self).setUp()

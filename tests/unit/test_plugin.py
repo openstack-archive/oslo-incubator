@@ -14,7 +14,7 @@
 #    under the License.
 
 import pkg_resources
-import unittest
+import testtools
 
 from openstack.common import cfg
 from openstack.common.notifier import api as notifier_api

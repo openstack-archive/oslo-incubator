@@ -20,14 +20,14 @@ Unit Tests for rpc.proxy
 
 import copy
 import stubout
-import unittest
+import testtools
 
 from openstack.common import context
 from openstack.common import rpc
 from openstack.common.rpc import proxy
 
 
-class RpcProxyTestCase(unittest.TestCase):
+class RpcProxyTestCase(testtools.TestCase):
 
     def setUp(self):
         self.stubs = stubout.StubOutForTesting()
