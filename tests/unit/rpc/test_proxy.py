@@ -19,20 +19,15 @@ Unit Tests for rpc.proxy
 """
 
 import copy
-import stubout
-import testtools
 
 from openstack.common import context
 from openstack.common.fixture import moxstubout
 from openstack.common import rpc
 from openstack.common.rpc import proxy
+from tests import utils
 
 
-class RpcProxyTestCase(testtools.TestCase):
-
-    def setUp(self):
-        super(RpcProxyTestCase, self).setUp()
-        self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
+class RpcProxyTestCase(utils.BaseTestCase):
 
     def _test_rpc_method(self, rpc_method, has_timeout=False, has_retval=False,
                          server_params=None, supports_topic_override=True):

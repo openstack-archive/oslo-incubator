@@ -22,21 +22,12 @@ import sys
 import tempfile
 import testtools
 
-import stubout
-
 from openstack.common.cfg import *
 from openstack.common import version
+from tests import utils
 
 
-class BaseTestCase(testtools.TestCase):
-
-    def setUp(self):
-        super(BaseTestCase, self).setUp()
-        self.stubs = stubout.StubOutForTesting()
-        self.addCleanup(self.stubs.UnsetAll)
-
-
-class DeferredVersionTestCase(BaseTestCase):
+class DeferredVersionTestCase(utils.BaseTestCase):
 
     def setUp(self):
         super(DeferredVersionTestCase, self).setUp()
