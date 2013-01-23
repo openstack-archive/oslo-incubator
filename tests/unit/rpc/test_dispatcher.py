@@ -18,14 +18,14 @@
 Unit Tests for rpc.dispatcher
 """
 
-import unittest
+import testtools
 
 from openstack.common import context
 from openstack.common.rpc import common as rpc_common
 from openstack.common.rpc import dispatcher
 
 
-class RpcDispatcherTestCase(unittest.TestCase):
+class RpcDispatcherTestCase(testtools.TestCase):
     class API1(object):
         RPC_API_VERSION = '1.0'
 
@@ -60,11 +60,8 @@ class RpcDispatcherTestCase(unittest.TestCase):
             self.test_method_arg1 = arg1
 
     def setUp(self):
-        self.ctxt = context.RequestContext('fake_user', 'fake_project')
         super(RpcDispatcherTestCase, self).setUp()
-
-    def tearDown(self):
-        super(RpcDispatcherTestCase, self).tearDown()
+        self.ctxt = context.RequestContext('fake_user', 'fake_project')
 
     def _test_dispatch(self, version, expectations):
         v2 = self.API2()

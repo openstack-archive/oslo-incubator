@@ -18,12 +18,14 @@
 import os
 import sys
 from tempfile import mkstemp
-import unittest
+
+import fixtures
+import testtools
 
 from openstack.common.setup import *
 
 
-class EmailTestCase(unittest.TestCase):
+class EmailTestCase(testtools.TestCase):
 
     def test_str_dict_replace(self):
         string = 'Johnnie T. Hozer'
@@ -32,14 +34,12 @@ class EmailTestCase(unittest.TestCase):
                          canonicalize_emails(string, mapping))
 
 
-class MailmapTestCase(unittest.TestCase):
+class MailmapTestCase(testtools.TestCase):
 
     def setUp(self):
+        super(MailmapTestCase, self).setUp()
+        self.useFixture(fixtures.NestedTempfile())
         (fd, self.mailmap) = mkstemp(prefix='openstack', suffix='.setup')
-
-    def tearDown(self):
-        if os.path.exists(self.mailmap):
-            os.remove(self.mailmap)
 
     def test_mailmap_with_fullname(self):
         with open(self.mailmap, 'w') as mm_fh:
@@ -60,14 +60,12 @@ class MailmapTestCase(unittest.TestCase):
                          parse_mailmap(self.mailmap))
 
 
-class ParseRequirementsTest(unittest.TestCase):
+class ParseRequirementsTest(testtools.TestCase):
 
     def setUp(self):
+        super(ParseRequirementsTest, self).setUp()
+        self.useFixture(fixtures.NestedTempfile())
         (fd, self.tmp_file) = mkstemp(prefix='openstack', suffix='.setup')
-
-    def tearDown(self):
-        if os.path.exists(self.tmp_file):
-            os.remove(self.tmp_file)
 
     def test_parse_requirements_normal(self):
         with open(self.tmp_file, 'w') as fh:

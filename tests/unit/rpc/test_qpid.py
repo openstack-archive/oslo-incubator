@@ -26,12 +26,12 @@ eventlet.monkey_patch()
 import logging
 import mox
 import stubout
-import unittest
+import testtools
 
 from openstack.common import cfg
 from openstack.common import context
+from openstack.common.fixture import moxstubout
 from openstack.common.rpc import amqp as rpc_amqp
-from openstack.common import testutils
 
 try:
     from openstack.common.rpc import impl_qpid
@@ -45,7 +45,7 @@ FLAGS = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
-class RpcQpidTestCase(unittest.TestCase):
+class RpcQpidTestCase(testtools.TestCase):
     """
     Exercise the public API of impl_qpid utilizing mox.
 
@@ -65,8 +65,12 @@ class RpcQpidTestCase(unittest.TestCase):
     def setUp(self):
         super(RpcQpidTestCase, self).setUp()
 
-        self.stubs = stubout.StubOutForTesting()
-        self.mox = mox.Mox()
+        if qpid is None:
+            self.skipTest("Test required qpid")
+
+        mox_fixture = self.useFixture(moxstubout.MoxStubout)
+        self.stubs = mox_fixture.stubs
+        self.mox = mox_fixture.mox
 
         self.mock_connection = None
         self.mock_session = None
@@ -82,11 +86,9 @@ class RpcQpidTestCase(unittest.TestCase):
             qpid.messaging.Session = lambda *_x, **_y: self.mock_session
             qpid.messaging.Sender = lambda *_x, **_y: self.mock_sender
             qpid.messaging.Receiver = lambda *_x, **_y: self.mock_receiver
+        self.addCleanup(self._close_qpid)
 
-    def tearDown(self):
-        self.mox.UnsetStubs()
-        self.stubs.UnsetAll()
-        self.stubs.SmartUnsetAll()
+    def _close_qpid(self):
         if qpid:
             qpid.messaging.Connection = self.orig_connection
             qpid.messaging.Session = self.orig_session
@@ -97,9 +99,6 @@ class RpcQpidTestCase(unittest.TestCase):
             # in self._setup_to_server_tests()
             impl_qpid.Connection.pool.connection_cls = impl_qpid.Connection
 
-        super(RpcQpidTestCase, self).tearDown()
-
-    @testutils.skip_if(qpid is None, "Test requires qpid")
     def test_create_connection(self):
         self.mock_connection = self.mox.CreateMock(self.orig_connection)
         self.mock_session = self.mox.CreateMock(self.orig_session)
@@ -151,15 +150,12 @@ class RpcQpidTestCase(unittest.TestCase):
                                    fanout)
         connection.close()
 
-    @testutils.skip_if(qpid is None, "Test requires qpid")
     def test_create_consumer(self):
         self._test_create_consumer(fanout=False)
 
-    @testutils.skip_if(qpid is None, "Test requires qpid")
     def test_create_consumer_fanout(self):
         self._test_create_consumer(fanout=True)
 
-    @testutils.skip_if(qpid is None, "Test requires qpid")
     def test_create_worker(self):
         self.mock_connection = self.mox.CreateMock(self.orig_connection)
         self.mock_session = self.mox.CreateMock(self.orig_session)
@@ -188,7 +184,6 @@ class RpcQpidTestCase(unittest.TestCase):
                                  )
         connection.close()
 
-    @testutils.skip_if(qpid is None, "Test requires qpid")
     def test_topic_consumer(self):
         self.mock_connection = self.mox.CreateMock(self.orig_connection)
         self.mock_session = self.mox.CreateMock(self.orig_session)
@@ -273,11 +268,9 @@ class RpcQpidTestCase(unittest.TestCase):
                 # that it doesn't mess up other test cases.
                 impl_qpid.Connection.pool.get()
 
-    @testutils.skip_if(qpid is None, "Test requires qpid")
     def test_cast(self):
         self._test_cast(fanout=False)
 
-    @testutils.skip_if(qpid is None, "Test requires qpid")
     def test_fanout_cast(self):
         self._test_cast(fanout=True)
 
@@ -296,7 +289,6 @@ class RpcQpidTestCase(unittest.TestCase):
         MyConnection.pool = rpc_amqp.Pool(FLAGS, MyConnection)
         self.stubs.Set(impl_qpid, 'Connection', MyConnection)
 
-    @testutils.skip_if(qpid is None, "Test requires qpid")
     def test_cast_to_server(self):
         server_params = {'username': 'fake_username',
                          'password': 'fake_password',
@@ -305,7 +297,6 @@ class RpcQpidTestCase(unittest.TestCase):
         self._setup_to_server_tests(server_params)
         self._test_cast(fanout=False, server_params=server_params)
 
-    @testutils.skip_if(qpid is None, "Test requires qpid")
     def test_fanout_cast_to_server(self):
         server_params = {'username': 'fake_username',
                          'password': 'fake_password',
@@ -387,11 +378,9 @@ class RpcQpidTestCase(unittest.TestCase):
                 # that it doesn't mess up other test cases.
                 impl_qpid.Connection.pool.get()
 
-    @testutils.skip_if(qpid is None, "Test requires qpid")
     def test_call(self):
         self._test_call(multi=False)
 
-    @testutils.skip_if(qpid is None, "Test requires qpid")
     def test_multicall(self):
         self._test_call(multi=True)
 

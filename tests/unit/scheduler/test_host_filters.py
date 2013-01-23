@@ -16,7 +16,7 @@ Tests For Scheduler Host Filters.
 """
 
 import stubout
-import unittest
+import testtools
 
 from openstack.common import context
 from openstack.common import jsonutils
@@ -34,7 +34,7 @@ class TestBogusFilter(object):
     pass
 
 
-class ExtraSpecsOpsTestCase(unittest.TestCase):
+class ExtraSpecsOpsTestCase(testtools.TestCase):
     def _do_extra_specs_ops_test(self, value, req, matches):
         assertion = self.assertTrue if matches else self.assertFalse
         assertion(extra_specs_ops.match(value, req))
@@ -220,7 +220,7 @@ class ExtraSpecsOpsTestCase(unittest.TestCase):
             matches=False)
 
 
-class HostFiltersTestCase(unittest.TestCase):
+class HostFiltersTestCase(testtools.TestCase):
     """Test case for host filters."""
 
     def setUp(self):
