@@ -8,4 +8,4 @@ To run tests in virtualenvs (preferred):
 To run tests in the current environment:
 
   sudo pip install -r tools/pip-requires
-  nosetests
+  testr run
