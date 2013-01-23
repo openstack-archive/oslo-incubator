@@ -18,14 +18,13 @@
 Unit Tests for rpc.dispatcher
 """
 
-import testtools
-
 from openstack.common import context
 from openstack.common.rpc import common as rpc_common
 from openstack.common.rpc import dispatcher
+from tests import utils
 
 
-class RpcDispatcherTestCase(testtools.TestCase):
+class RpcDispatcherTestCase(utils.BaseTestCase):
     class API1(object):
         RPC_API_VERSION = '1.0'
 

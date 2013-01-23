@@ -14,9 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import testtools
-
 from openstack.common import iniparser
+from tests import utils
 
 
 class TestParser(iniparser.BaseParser):
@@ -38,7 +37,7 @@ class TestParser(iniparser.BaseParser):
         self.comment_called = True
 
 
-class BaseParserTestCase(testtools.TestCase):
+class BaseParserTestCase(utils.BaseTestCase):
     def setUp(self):
         super(BaseParserTestCase, self).setUp()
         self.parser = iniparser.BaseParser()
@@ -62,7 +61,7 @@ class BaseParserTestCase(testtools.TestCase):
         self._assertParseError("[]")
 
 
-class ParserTestCase(testtools.TestCase):
+class ParserTestCase(utils.BaseTestCase):
     def setUp(self):
         super(ParserTestCase, self).setUp()
         self.parser = TestParser()
@@ -122,7 +121,7 @@ class ParserTestCase(testtools.TestCase):
         self.assertEquals(self.parser.values, {'': {'foo': [' bar ']}})
 
 
-class ExceptionTestCase(testtools.TestCase):
+class ExceptionTestCase(utils.BaseTestCase):
     def test_parseerror(self):
         exc = iniparser.ParseError('test', 42, 'example')
         self.assertEquals(str(exc), "at line 42, test: 'example'")

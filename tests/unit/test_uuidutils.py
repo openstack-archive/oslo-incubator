@@ -15,13 +15,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import testtools
 import uuid
 
 from openstack.common import uuidutils
+from tests import utils
 
 
-class UUIDUtilsTest(testtools.TestCase):
+class UUIDUtilsTest(utils.BaseTestCase):
 
     def test_generate_uuid(self):
         uuid_string = uuidutils.generate_uuid()

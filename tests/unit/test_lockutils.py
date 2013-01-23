@@ -21,17 +21,16 @@ import select
 import shutil
 import tempfile
 import time
-import testtools
 
 import eventlet
 from eventlet import greenpool
 from eventlet import greenthread
 
 from openstack.common import lockutils
-from tests import utils as test_utils
+from tests import utils
 
 
-class TestFileLocks(test_utils.BaseTestCase):
+class TestFileLocks(utils.BaseTestCase):
     def test_concurrent_green_lock_succeeds(self):
         """Verify spawn_n greenthreads with two locks run concurrently."""
         tmpdir = tempfile.mkdtemp()
@@ -66,7 +65,7 @@ class TestFileLocks(test_utils.BaseTestCase):
                 shutil.rmtree(tmpdir)
 
 
-class LockTestCase(test_utils.BaseTestCase):
+class LockTestCase(utils.BaseTestCase):
     def test_synchronized_wrapped_function_metadata(self):
         @lockutils.synchronized('whatever', 'test-')
         def foo():

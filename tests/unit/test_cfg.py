@@ -25,6 +25,7 @@ import fixtures
 from openstack.common.cfg import *
 from tests import utils
 
+
 class ExceptionsTestCase(utils.BaseTestCase):
 
     def test_error(self):

@@ -15,16 +15,16 @@
 #    under the License.
 
 import datetime
-import testtools
 
 from eventlet import greenthread
 import mox
 
 from openstack.common import loopingcall
 from openstack.common import timeutils
+from tests import utils
 
 
-class LoopingCallTestCase(testtools.TestCase):
+class LoopingCallTestCase(utils.BaseTestCase):
 
     def setUp(self):
         super(LoopingCallTestCase, self).setUp()

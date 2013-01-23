@@ -24,7 +24,6 @@ eventlet.monkey_patch()
 
 import contextlib
 import logging
-import testtools
 
 from openstack.common import cfg
 from openstack.common import exception

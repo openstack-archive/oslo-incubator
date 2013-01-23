@@ -15,15 +15,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import testtools
-
 import mock
 
 from openstack.common import exception
 from openstack.common import strutils
+from tests import utils
 
 
-class StrUtilsTest(testtools.TestCase):
+class StrUtilsTest(utils.BaseTestCase):
 
     def test_bool_bool_from_string(self):
         self.assertTrue(strutils.bool_from_string(True))
