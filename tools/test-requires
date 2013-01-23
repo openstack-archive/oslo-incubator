@@ -2,6 +2,7 @@
 distribute>=0.6.24
 
 coverage
+fixtures>=0.3.12
 mock
 mox==0.5.3
 nose
@@ -14,4 +15,5 @@ pylint
 pyzmq>=2.1.11
 setuptools-git>=0.4
 sphinx
+testtools>=0.9.22
 webtest
