@@ -15,14 +15,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import unittest
+import testtools
 
 import mock
 
 from openstack.common import network_utils as utils
 
 
-class NetworkUtilsTest(unittest.TestCase):
+class NetworkUtilsTest(testtools.TestCase):
 
     def test_parse_host_port(self):
         self.assertEqual(('server01', 80),

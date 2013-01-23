@@ -16,7 +16,8 @@
 
 import os
 import tempfile
-import unittest
+
+import testtools
 
 from openstack.common import pastedeploy
 
@@ -41,13 +42,12 @@ class Filter(object):
         self.data = data
 
 
-class PasteTestCase(unittest.TestCase):
+class PasteTestCase(testtools.TestCase):
 
     def setUp(self):
+        super(PasteTestCase, self).setUp()
         self.tempfiles = []
-
-    def tearDown(self):
-        self.remove_tempfiles()
+        self.addCleanup(self.remove_tempfiles)
 
     def create_tempfile(self, contents):
         (fd, path) = tempfile.mkstemp()

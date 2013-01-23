@@ -26,7 +26,7 @@ eventlet.monkey_patch()
 import logging
 import mox
 import stubout
-import unittest
+import testtools
 
 from openstack.common import cfg
 from openstack.common import context
@@ -45,7 +45,7 @@ FLAGS = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
-class RpcQpidTestCase(unittest.TestCase):
+class RpcQpidTestCase(testtools.TestCase):
     """
     Exercise the public API of impl_qpid utilizing mox.
 

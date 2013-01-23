@@ -19,14 +19,14 @@ import shutil
 import StringIO
 import sys
 import tempfile
-import unittest
+import testtools
 
 import stubout
 
 from openstack.common.cfg import *
 
 
-class ExceptionsTestCase(unittest.TestCase):
+class ExceptionsTestCase(testtools.TestCase):
 
     def test_error(self):
         msg = str(Error('foobar'))
@@ -73,7 +73,7 @@ class ExceptionsTestCase(unittest.TestCase):
         self.assertEquals(msg, 'Failed to parse foo: foobar')
 
 
-class BaseTestCase(unittest.TestCase):
+class BaseTestCase(testtools.TestCase):
 
     class TestConfigOpts(ConfigOpts):
         def __call__(self, args=None):
@@ -85,15 +85,14 @@ class BaseTestCase(unittest.TestCase):
                                        default_config_files=[])
 
     def setUp(self):
+        super(BaseTestCase, self).setUp()
         self.conf = self.TestConfigOpts()
 
         self.tempfiles = []
         self.tempdirs = []
+        self.addCleanup(self.remove_tempfiles)
         self.stubs = stubout.StubOutForTesting()
-
-    def tearDown(self):
-        self.remove_tempfiles()
-        self.stubs.UnsetAll()
+        self.addCleanup(self.stubs.UnsetAll)
 
     def create_tempfiles(self, files, ext='.conf'):
         for (basename, contents) in files:
@@ -1573,7 +1572,7 @@ class OptDumpingTestCase(BaseTestCase):
                           ])
 
 
-class ConfigParserTestCase(unittest.TestCase):
+class ConfigParserTestCase(testtools.TestCase):
     def test_no_section(self):
         with tempfile.NamedTemporaryFile() as tmpfile:
             tmpfile.write('foo = bar')

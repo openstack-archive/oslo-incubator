@@ -20,7 +20,7 @@ import shutil
 import StringIO
 import sys
 import tempfile
-import unittest
+import testtools
 
 import stubout
 
@@ -28,13 +28,12 @@ from openstack.common.cfg import *
 from openstack.common import version
 
 
-class BaseTestCase(unittest.TestCase):
+class BaseTestCase(testtools.TestCase):
 
     def setUp(self):
+        super(BaseTestCase, self).setUp()
         self.stubs = stubout.StubOutForTesting()
-
-    def tearDown(self):
-        self.stubs.UnsetAll()
+        self.addCleanup(self.stubs.UnsetAll)
 
 
 class DeferredVersionTestCase(BaseTestCase):

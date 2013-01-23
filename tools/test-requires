@@ -15,4 +15,5 @@ pylint
 pyzmq>=2.1.11
 setuptools-git>=0.4
 sphinx
+testtools>=0.9.22
 webtest

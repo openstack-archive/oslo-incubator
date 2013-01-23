@@ -24,7 +24,7 @@ eventlet.monkey_patch()
 
 import contextlib
 import logging
-import unittest
+import testtools
 
 import stubout
 

@@ -17,13 +17,13 @@
 
 import datetime
 import StringIO
-import unittest
+import testtools
 import xmlrpclib
 
 from openstack.common import jsonutils
 
 
-class JSONUtilsTestCase(unittest.TestCase):
+class JSONUtilsTestCase(testtools.TestCase):
 
     def test_dumps(self):
         self.assertEqual(jsonutils.dumps({'a': 'b'}), '{"a": "b"}')
@@ -36,7 +36,7 @@ class JSONUtilsTestCase(unittest.TestCase):
         self.assertEqual(jsonutils.load(x), {'a': 'b'})
 
 
-class ToPrimitiveTestCase(unittest.TestCase):
+class ToPrimitiveTestCase(testtools.TestCase):
     def test_list(self):
         self.assertEquals(jsonutils.to_primitive([1, 2, 3]), [1, 2, 3])
 

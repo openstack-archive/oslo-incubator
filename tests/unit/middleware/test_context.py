@@ -15,7 +15,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import unittest
+import testtools
 
 import mock
 
@@ -24,7 +24,7 @@ import openstack.common.context
 from openstack.common.middleware import context
 
 
-class ContextMiddlewareTest(unittest.TestCase):
+class ContextMiddlewareTest(testtools.TestCase):
 
     def test_process_request(self):
         req = mock.Mock()
@@ -60,7 +60,7 @@ class ContextMiddlewareTest(unittest.TestCase):
             import_class.assert_called_with(mock.sentinel.arg)
 
 
-class FilterFactoryTest(unittest.TestCase):
+class FilterFactoryTest(testtools.TestCase):
 
     def test_filter_factory(self):
         global_conf = dict(sentinel=mock.sentinel.global_conf)

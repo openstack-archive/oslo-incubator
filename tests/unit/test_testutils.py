@@ -15,12 +15,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import unittest
+import testtools
 
 from openstack.common import testutils
 
 
-class TestUtilsTestCase(unittest.TestCase):
+class TestUtilsTestCase(testtools.TestCase):
 
     @testutils.skip_test('test should be skipped')
     def test_skip_test(self):
