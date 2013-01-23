@@ -23,7 +23,6 @@ import eventlet
 eventlet.monkey_patch()
 
 from openstack.common import cfg
-from openstack.common import testutils
 from tests import utils as test_utils
 
 
@@ -48,6 +47,8 @@ class RpcKombuSslTestCase(test_utils.BaseTestCase):
 
     def setUp(self):
         super(RpcKombuSslTestCase, self).setUp()
+        if kombu is None:
+            self.skipTest("Test requires kombu")
         self.config(kombu_ssl_keyfile=SSL_KEYFILE,
                     kombu_ssl_ca_certs=SSL_CA_CERT,
                     kombu_ssl_certfile=SSL_CERT,
@@ -55,7 +56,6 @@ class RpcKombuSslTestCase(test_utils.BaseTestCase):
                     rabbit_use_ssl=True,
                     fake_rabbit=True)
 
-    @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_ssl_on_extended(self):
         rpc = impl_kombu
         conn = rpc.create_connection(FLAGS, True)

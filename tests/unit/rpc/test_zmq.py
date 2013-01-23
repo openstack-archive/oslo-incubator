@@ -31,7 +31,6 @@ from openstack.common import exception
 from openstack.common.gettextutils import _
 from openstack.common import processutils
 from openstack.common import rpc
-from openstack.common import testutils
 from tests.unit.rpc import common
 
 try:
@@ -51,8 +50,9 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
     TESTCNT = 0
     rpc = impl_zmq
 
-    @testutils.skip_if(not impl_zmq, "ZeroMQ library required")
     def setUp(self, topic='test', topic_nested='nested'):
+        if not impl_zmq:
+            self.skipTest("ZeroMQ library required")
         _RpcZmqBaseTestCase.TESTCNT += 1
         testcnt = _RpcZmqBaseTestCase.TESTCNT
 

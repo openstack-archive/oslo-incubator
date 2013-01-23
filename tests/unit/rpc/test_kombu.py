@@ -33,7 +33,6 @@ from openstack.common import exception
 from openstack.common.fixture import moxstubout
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
-from openstack.common import testutils
 from tests.unit.rpc import common
 from tests import utils
 
@@ -84,8 +83,9 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
     def setUp(self):
         KombuStubs.setUp(self)
         super(RpcKombuTestCase, self).setUp()
+        if kombu is None:
+            self.skipTest("Test requires kombu")
 
-    @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_reusing_connection(self):
         """Test that reusing a connection returns same one."""
         conn_context = self.rpc.create_connection(FLAGS, new=False)
@@ -96,7 +96,6 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         conn_context.close()
         self.assertEqual(conn1, conn2)
 
-    @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_topic_send_receive(self):
         """Test sending to a topic exchange/queue"""
 
@@ -115,7 +114,6 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
 
         self.assertEqual(self.received_message, message)
 
-    @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_topic_send_receive_exchange_name(self):
         """Test sending to a topic exchange/queue with an exchange name"""
 
@@ -135,7 +133,6 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
 
         self.assertEqual(self.received_message, message)
 
-    @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_topic_multiple_queues(self):
         """Test sending to a topic exchange with multiple queues"""
 
@@ -160,7 +157,6 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         self.assertEqual(self.received_message_1, message)
         self.assertEqual(self.received_message_2, message)
 
-    @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_topic_multiple_queues_specify_exchange(self):
         """Test sending to a topic exchange with multiple queues and one
         exchange
@@ -190,7 +186,6 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         self.assertEqual(self.received_message_1, message)
         self.assertEqual(self.received_message_2, message)
 
-    @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_topic_one_queues_multiple_exchange(self):
         """Test sending to a topic exchange with one queues and several
         exchanges
@@ -220,7 +215,6 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         self.assertEqual(self.received_message_1, message)
         self.assertEqual(self.received_message_2, message)
 
-    @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_direct_send_receive(self):
         """Test sending to a direct exchange/queue"""
         conn = self.rpc.create_connection(FLAGS)
@@ -238,7 +232,6 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
 
         self.assertEqual(self.received_message, message)
 
-    @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_cast_interface_uses_default_options(self):
         """Test kombu rpc.cast"""
 
@@ -265,7 +258,6 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
 
         impl_kombu.cast(FLAGS, ctxt, 'fake_topic', {'msg': 'fake'})
 
-    @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_cast_to_server_uses_server_params(self):
         """Test kombu rpc.cast"""
 
@@ -299,12 +291,12 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         impl_kombu.cast_to_server(FLAGS, ctxt, server_params,
                                   'fake_topic', {'msg': 'fake'})
 
-    @testutils.skip_test("kombu memory transport seems buggy with "
-                         "fanout queues as this test passes when "
-                         "you use rabbit (fake_rabbit=False)")
     def test_fanout_send_receive(self):
         """Test sending to a fanout exchange and consuming from 2 queues"""
 
+        self.skipTest("kombu memory transport seems buggy with "
+                      "fanout queues as this test passes when "
+                      "you use rabbit (fake_rabbit=False)")
         conn = self.rpc.create_connection()
         conn2 = self.rpc.create_connection()
         message = 'fanout test message'
@@ -327,7 +319,6 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         conn2.close()
         self.assertEqual(self.received_message, message)
 
-    @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_declare_consumer_errors_will_reconnect(self):
         # Test that any exception with 'timeout' in it causes a
         # reconnection
@@ -357,7 +348,6 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         self.assertEqual(info['called'], 2)
         self.assertTrue(isinstance(result, self.rpc.DirectConsumer))
 
-    @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_declare_consumer_ioerrors_will_reconnect(self):
         """Test that an IOError exception causes a reconnection"""
         info = _raise_exc_stub(self.stubs, 2, self.rpc.DirectConsumer,
@@ -370,7 +360,6 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         self.assertEqual(info['called'], 3)
         self.assertTrue(isinstance(result, self.rpc.DirectConsumer))
 
-    @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_publishing_errors_will_reconnect(self):
         # Test that any exception with 'timeout' in it causes a
         # reconnection when declaring the publisher class and when
@@ -418,7 +407,6 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
 
         self.assertEqual(info['called'], 2)
 
-    @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_iterconsume_errors_will_reconnect(self):
         conn = self.rpc.Connection(FLAGS)
         message = 'reconnect test message'
@@ -439,7 +427,6 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         self.assertEqual(self.received_message, message)
         # Only called once, because our stub goes away during reconnection
 
-    @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_call_exception(self):
         """Test that exception gets passed back properly.
 
@@ -467,7 +454,6 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
             #Traceback should be included in exception message
             self.assertTrue('raise NotImplementedError(value)' in unicode(exc))
 
-    @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_call_converted_exception(self):
         """Test that exception gets passed back properly.
 
@@ -502,7 +488,6 @@ class RpcKombuHATestCase(utils.BaseTestCase):
         KombuStubs.setUp(self)
         self.addCleanup(FLAGS.reset)
 
-    @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_roundrobin_reconnect(self):
         """Test that rabbits are tried in roundrobin at connection failures."""
         self.config(rabbit_hosts=[
@@ -563,7 +548,6 @@ class RpcKombuHATestCase(utils.BaseTestCase):
 
         self.assertEqual(info['attempt'], 5)
 
-    @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_queue_not_declared_ha_if_ha_off(self):
         self.config(rabbit_ha_queues=False)
 
@@ -578,7 +562,6 @@ class RpcKombuHATestCase(utils.BaseTestCase):
         with contextlib.closing(self.rpc.create_connection(FLAGS)) as conn:
             conn.declare_topic_consumer('a_topic', lambda *args: None)
 
-    @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_queue_declared_ha_if_ha_on(self):
         self.config(rabbit_ha_queues=True)
 
