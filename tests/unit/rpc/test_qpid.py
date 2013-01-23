@@ -24,14 +24,13 @@ import eventlet
 eventlet.monkey_patch()
 
 import logging
-import mox
-import stubout
-import testtools
+
+import fixtures
 
 from openstack.common import cfg
 from openstack.common import context
-from openstack.common.fixture import moxstubout
 from openstack.common.rpc import amqp as rpc_amqp
+from tests import utils
 
 try:
     from openstack.common.rpc import impl_qpid
@@ -45,7 +44,7 @@ FLAGS = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
-class RpcQpidTestCase(testtools.TestCase):
+class RpcQpidTestCase(utils.BaseTestCase):
     """
     Exercise the public API of impl_qpid utilizing mox.
 
@@ -68,36 +67,24 @@ class RpcQpidTestCase(testtools.TestCase):
         if qpid is None:
             self.skipTest("Test required qpid")
 
-        mox_fixture = self.useFixture(moxstubout.MoxStubout)
-        self.stubs = mox_fixture.stubs
-        self.mox = mox_fixture.mox
-
         self.mock_connection = None
         self.mock_session = None
         self.mock_sender = None
         self.mock_receiver = None
 
-        if qpid:
-            self.orig_connection = qpid.messaging.Connection
-            self.orig_session = qpid.messaging.Session
-            self.orig_sender = qpid.messaging.Sender
-            self.orig_receiver = qpid.messaging.Receiver
-            qpid.messaging.Connection = lambda *_x, **_y: self.mock_connection
-            qpid.messaging.Session = lambda *_x, **_y: self.mock_session
-            qpid.messaging.Sender = lambda *_x, **_y: self.mock_sender
-            qpid.messaging.Receiver = lambda *_x, **_y: self.mock_receiver
+        self.useFixture(
+            fixtures.MonkeyPatch('qpid.messaging.Connection',
+                                 lambda *_x, **_y: self.mock_connection))
+        self.useFixture(
+            fixtures.MonkeyPatch('qpid.messaging.Session',
+                                 lambda *_x, **_y: self.mock_session))
+        self.useFixture(
+            fixtures.MonkeyPatch('qpid.messaging.Sender',
+                                 lambda *_x, **_y: self.mock_sender))
+        self.useFixture(
+            fixtures.MonekyPatch('qpid.messaging.Receiver',
+                                 lambda *_x, **_y: self.mock_receiver))
         self.addCleanup(self._close_qpid)
-
-    def _close_qpid(self):
-        if qpid:
-            qpid.messaging.Connection = self.orig_connection
-            qpid.messaging.Session = self.orig_session
-            qpid.messaging.Sender = self.orig_sender
-            qpid.messaging.Receiver = self.orig_receiver
-        if impl_qpid:
-            # Need to reset this in case we changed the connection_cls
-            # in self._setup_to_server_tests()
-            impl_qpid.Connection.pool.connection_cls = impl_qpid.Connection
 
     def test_create_connection(self):
         self.mock_connection = self.mox.CreateMock(self.orig_connection)
