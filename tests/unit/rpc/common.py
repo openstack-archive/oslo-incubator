@@ -24,7 +24,6 @@ import time
 
 import eventlet
 from eventlet import greenthread
-import nose
 
 from openstack.common import cfg
 from openstack.common import exception
@@ -65,7 +64,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
 
     def test_call_succeed(self):
         if not self.rpc:
-            raise nose.SkipTest('rpc driver not available.')
+            self.skipTest('rpc driver not available.')
 
         value = 42
         result = self.rpc.call(FLAGS, self.context, self.topic,
@@ -74,7 +73,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
 
     def test_call_succeed_despite_missing_args(self):
         if not self.rpc:
-            raise nose.SkipTest('rpc driver not available.')
+            self.skipTest('rpc driver not available.')
 
         result = self.rpc.call(FLAGS, self.context, self.topic,
                                {"method": "fortytwo"})
@@ -82,7 +81,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
 
     def test_call_succeed_despite_multiple_returns_yield(self):
         if not self.rpc:
-            raise nose.SkipTest('rpc driver not available.')
+            self.skipTest('rpc driver not available.')
 
         value = 42
         result = self.rpc.call(FLAGS, self.context, self.topic,
@@ -92,7 +91,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
 
     def test_multicall_succeed_once(self):
         if not self.rpc:
-            raise nose.SkipTest('rpc driver not available.')
+            self.skipTest('rpc driver not available.')
 
         value = 42
         result = self.rpc.multicall(FLAGS, self.context,
@@ -106,7 +105,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
 
     def test_multicall_three_nones(self):
         if not self.rpc:
-            raise nose.SkipTest('rpc driver not available.')
+            self.skipTest('rpc driver not available.')
 
         value = 42
         result = self.rpc.multicall(FLAGS, self.context,
@@ -120,7 +119,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
 
     def test_multicall_succeed_three_times_yield(self):
         if not self.rpc:
-            raise nose.SkipTest('rpc driver not available.')
+            self.skipTest('rpc driver not available.')
 
         value = 42
         result = self.rpc.multicall(FLAGS, self.context,
@@ -132,7 +131,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
 
     def test_context_passed(self):
         if not self.rpc:
-            raise nose.SkipTest('rpc driver not available.')
+            self.skipTest('rpc driver not available.')
 
         """Makes sure a context is passed through rpc call."""
         value = 42
@@ -154,7 +153,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
         QUEUE = eventlet.queue.Queue()
 
         if not self.rpc:
-            raise nose.SkipTest('rpc driver not available.')
+            self.skipTest('rpc driver not available.')
 
         # We use the nested topic so we don't need QUEUE to be a proper
         # global, and do not keep state outside this test.
@@ -198,7 +197,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
 
     def test_nested_calls(self):
         if not self.rpc:
-            raise nose.SkipTest('rpc driver not available.')
+            self.skipTest('rpc driver not available.')
 
         """Test that we can do an rpc.call inside another call."""
         class Nested(object):
@@ -230,11 +229,11 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
 
     def test_call_timeout(self):
         if not self.rpc:
-            raise nose.SkipTest('rpc driver not available.')
+            self.skipTest('rpc driver not available.')
 
         """Make sure rpc.call will time out."""
         if not self.supports_timeouts:
-            raise nose.SkipTest(_("RPC backend does not support timeouts"))
+            self.skipTest(_("RPC backend does not support timeouts"))
 
         value = 42
         self.assertRaises(rpc_common.Timeout,
@@ -259,7 +258,7 @@ class BaseRpcAMQPTestCase(BaseRpcTestCase):
     def test_proxycallback_handles_exceptions(self):
         """Make sure exceptions unpacking messages don't cause hangs."""
         if not self.rpc:
-            raise nose.SkipTest('rpc driver not available.')
+            self.skipTest('rpc driver not available.')
 
         orig_unpack = rpc_amqp.unpack_context
 
