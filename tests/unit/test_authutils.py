@@ -15,12 +15,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import testtools
-
 from openstack.common import authutils
+from tests import utils
 
 
-class AuthUtilsTest(testtools.TestCase):
+class AuthUtilsTest(utils.BaseTestCase):
 
     def test_auth_str_equal(self):
         self.assertTrue(authutils.auth_str_equal('abc123', 'abc123'))

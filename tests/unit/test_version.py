@@ -20,7 +20,6 @@ import shutil
 import StringIO
 import sys
 import tempfile
-import testtools
 
 from openstack.common.cfg import *
 from openstack.common import version

@@ -18,6 +18,8 @@
 """Common utilities used in testing"""
 
 import subprocess
+
+import fixtures
 import testtools
 
 from openstack.common import cfg
@@ -32,6 +34,7 @@ class BaseTestCase(testtools.TestCase):
         super(BaseTestCase, self).setUp()
         self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
         self.addCleanup(CONF.reset)
+        self.useFixture(fixtures.FakeLogger('openstack.common'))
 
     def config(self, **kw):
         """

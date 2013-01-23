@@ -14,13 +14,12 @@
 #    under the License.
 
 import pkg_resources
-import testtools
 
 from openstack.common import cfg
 from openstack.common.notifier import api as notifier_api
 from openstack.common.plugin import plugin
 from openstack.common.plugin import pluginmanager
-from tests import utils as test_utils
+from tests import utils
 
 
 class SimpleNotifier(object):
@@ -32,13 +31,13 @@ class SimpleNotifier(object):
         self.message_list.append(message)
 
 
-class ManagerTestCase(test_utils.BaseTestCase):
+class ManagerTestCase(utils.BaseTestCase):
     def test_constructs(self):
         manager1 = pluginmanager.PluginManager("testproject", "testservice")
         self.assertNotEqual(manager1, False)
 
 
-class NotifyTestCase(test_utils.BaseTestCase):
+class NotifyTestCase(utils.BaseTestCase):
     """Test case for the plugin notification interface"""
 
     def test_add_notifier(self):
@@ -100,7 +99,7 @@ class MockExtManager():
         self.descriptors.append(descriptor)
 
 
-class APITestCase(test_utils.BaseTestCase):
+class APITestCase(utils.BaseTestCase):
     """Test case for the plugin api extension interface"""
     def test_add_extension(self):
         def mock_load(_s):

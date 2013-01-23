@@ -15,12 +15,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import testtools
-
 from openstack.common import context
+from tests import utils
 
 
-class ContextTest(testtools.TestCase):
+class ContextTest(utils.BaseTestCase):
 
     def test_context(self):
         ctx = context.RequestContext()

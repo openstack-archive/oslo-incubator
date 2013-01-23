@@ -15,15 +15,15 @@
 #    under the License.
 
 import logging
-import testtools
 
 from openstack.common.rpc import matchmaker
+from tests import utils
 
 
 LOG = logging.getLogger(__name__)
 
 
-class _MatchMakerTestCase(testtools.TestCase):
+class _MatchMakerTestCase(object):
     def test_valid_host_matches(self):
         queues = self.driver.queues(self.topic)
         matched_hosts = map(lambda x: x[1], queues)
@@ -41,20 +41,20 @@ class _MatchMakerTestCase(testtools.TestCase):
             self.assertTrue(host in matched_hosts)
 
 
-class MatchMakerFileTestCase(_MatchMakerTestCase):
+class MatchMakerFileTestCase(utils.BaseTestCase, _MatchMakerTestCase):
     def setUp(self):
+        super(MatchMakerFileTestCase, self).setUp()
         self.topic = "test"
         self.hosts = ['hello', 'world', 'foo', 'bar', 'baz']
         ring = {
             self.topic: self.hosts
         }
         self.driver = matchmaker.MatchMakerRing(ring)
-        super(MatchMakerFileTestCase, self).setUp()
 
 
-class MatchMakerLocalhostTestCase(_MatchMakerTestCase):
+class MatchMakerLocalhostTestCase(utils.BaseTestCase, _MatchMakerTestCase):
     def setUp(self):
+        super(MatchMakerLocalhostTestCase, self).setUp()
         self.driver = matchmaker.MatchMakerLocalhost()
         self.topic = "test"
         self.hosts = ['localhost']
-        super(MatchMakerLocalhostTestCase, self).setUp()

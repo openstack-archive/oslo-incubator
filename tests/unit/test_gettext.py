@@ -16,15 +16,15 @@
 #    under the License.
 
 import logging
-import testtools
 
 from openstack.common.gettextutils import _
+from tests import utils
 
 
 LOG = logging.getLogger(__name__)
 
 
-class GettextTest(testtools.TestCase):
+class GettextTest(utils.BaseTestCase):
 
     def test_gettext_does_not_blow_up(self):
         LOG.info(_('test'))

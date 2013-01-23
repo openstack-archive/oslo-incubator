@@ -15,9 +15,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import testtools
-
 from openstack.common import exception
+from tests import utils
 
 
 def good_function():
@@ -32,7 +31,7 @@ def bad_function_exception():
     raise Exception()
 
 
-class WrapExceptionTest(testtools.TestCase):
+class WrapExceptionTest(utils.BaseTestCase):
 
     def test_wrap_exception_good_return(self):
         wrapped = exception.wrap_exception
@@ -47,7 +46,7 @@ class WrapExceptionTest(testtools.TestCase):
         self.assertRaises(Exception, wrapped(bad_function_exception))
 
 
-class ApiErrorTest(testtools.TestCase):
+class ApiErrorTest(utils.BaseTestCase):
 
     def test_without_code(self):
         err = exception.ApiError('fake error')
@@ -62,7 +61,7 @@ class ApiErrorTest(testtools.TestCase):
         self.assertEqual(err.message, 'fake error')
 
 
-class BadStoreUriTest(testtools.TestCase):
+class BadStoreUriTest(utils.BaseTestCase):
 
     def test(self):
         uri = 'http:///etc/passwd'
@@ -72,7 +71,7 @@ class BadStoreUriTest(testtools.TestCase):
         self.assertTrue(reason in str(err.message))
 
 
-class UnknownSchemeTest(testtools.TestCase):
+class UnknownSchemeTest(utils.BaseTestCase):
 
     def test(self):
         scheme = 'http'
@@ -80,7 +79,7 @@ class UnknownSchemeTest(testtools.TestCase):
         self.assertTrue(scheme in str(err.message))
 
 
-class OpenstackExceptionTest(testtools.TestCase):
+class OpenstackExceptionTest(utils.BaseTestCase):
     class TestException(exception.OpenstackException):
         message = '%(test)s'
 
