@@ -15,6 +15,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import calendar
 import datetime
 import unittest
 
@@ -147,6 +148,12 @@ class TimeUtilsTest(unittest.TestCase):
                                             microseconds=123456)
         self.assertAlmostEquals(604859.123456,
                                 timeutils.delta_seconds(before, after))
+
+    def test_iso8601_from_timestamp(self):
+        utcnow = timeutils.utcnow()
+        iso = timeutils.isotime(utcnow)
+        ts = calendar.timegm(utcnow.timetuple())
+        self.assertEqual(iso, timeutils.iso8601_from_timestamp(ts))
 
 
 class TestIso8601Time(unittest.TestCase):
