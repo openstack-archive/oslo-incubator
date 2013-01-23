@@ -121,18 +121,17 @@ class ServiceLauncherTest(utils.BaseTestCase):
         CONF.unregister_opts(notifier_api.notifier_opts)
         # NOTE(markmc): ConfigOpts.log_opt_values() uses CONF.config-file
         CONF(args=[], default_config_files=[])
+        self.addCleanup(CONF.reset)
+        self.addCleanup(CONF.register_opts, notifier_api.notifier_opts)
+        self.addCleanup(self._reap_pid)
 
-    def tearDown(self):
-        CONF.reset()
-        CONF.register_opts(notifier_api.notifier_opts)
+    def _reap_pid(self):
         if self.pid:
             # Make sure all processes are stopped
             os.kill(self.pid, signal.SIGTERM)
 
             # Make sure we reap our test process
             self._reap_test()
-
-        super(ServiceLauncherTest, self).tearDown()
 
     def _reap_test(self):
         pid, status = os.waitpid(self.pid, 0)

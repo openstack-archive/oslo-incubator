@@ -23,6 +23,7 @@ import stubout
 import testtools
 
 from openstack.common import context
+from openstack.common.fixture import moxstubout
 from openstack.common import rpc
 from openstack.common.rpc import proxy
 
@@ -30,13 +31,8 @@ from openstack.common.rpc import proxy
 class RpcProxyTestCase(testtools.TestCase):
 
     def setUp(self):
-        self.stubs = stubout.StubOutForTesting()
         super(RpcProxyTestCase, self).setUp()
-
-    def tearDown(self):
-        self.stubs.UnsetAll()
-        self.stubs.SmartUnsetAll()
-        super(RpcProxyTestCase, self).tearDown()
+        self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
 
     def _test_rpc_method(self, rpc_method, has_timeout=False, has_retval=False,
                          server_params=None, supports_topic_override=True):

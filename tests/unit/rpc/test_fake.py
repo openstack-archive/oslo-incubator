@@ -32,9 +32,8 @@ CONF = cfg.CONF
 
 
 class RpcFakeTestCase(common.BaseRpcTestCase):
-    def setUp(self):
-        self.rpc = impl_fake
-        super(RpcFakeTestCase, self).setUp()
+
+    rpc = impl_fake
 
     def test_non_primitive_raises(self):
         class Foo(object):

@@ -30,6 +30,7 @@ import testtools
 
 from openstack.common import cfg
 from openstack.common import context
+from openstack.common.fixture import moxstubout
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common import testutils
 
@@ -65,8 +66,9 @@ class RpcQpidTestCase(testtools.TestCase):
     def setUp(self):
         super(RpcQpidTestCase, self).setUp()
 
-        self.stubs = stubout.StubOutForTesting()
-        self.mox = mox.Mox()
+        mox_fixture = self.useFixture(moxstubout.MoxStubout)
+        self.stubs = mox_fixture.stubs
+        self.mox = mox_fixture.mox
 
         self.mock_connection = None
         self.mock_session = None
@@ -82,11 +84,9 @@ class RpcQpidTestCase(testtools.TestCase):
             qpid.messaging.Session = lambda *_x, **_y: self.mock_session
             qpid.messaging.Sender = lambda *_x, **_y: self.mock_sender
             qpid.messaging.Receiver = lambda *_x, **_y: self.mock_receiver
+        self.addCleanup(self._close_qpid)
 
-    def tearDown(self):
-        self.mox.UnsetStubs()
-        self.stubs.UnsetAll()
-        self.stubs.SmartUnsetAll()
+    def _close_qpid(self):
         if qpid:
             qpid.messaging.Connection = self.orig_connection
             qpid.messaging.Session = self.orig_session
@@ -96,8 +96,6 @@ class RpcQpidTestCase(testtools.TestCase):
             # Need to reset this in case we changed the connection_cls
             # in self._setup_to_server_tests()
             impl_qpid.Connection.pool.connection_cls = impl_qpid.Connection
-
-        super(RpcQpidTestCase, self).tearDown()
 
     @testutils.skip_if(qpid is None, "Test requires qpid")
     def test_create_connection(self):
