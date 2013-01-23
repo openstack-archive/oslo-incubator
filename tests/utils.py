@@ -17,7 +17,6 @@
 
 """Common utilities used in testing"""
 
-import stubout
 import subprocess
 import testtools
 
