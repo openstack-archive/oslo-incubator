@@ -22,6 +22,7 @@ import subprocess
 import testtools
 
 from openstack.common import cfg
+from openstack.common.fixture import moxstubout
 
 CONF = cfg.CONF
 
@@ -30,13 +31,8 @@ class BaseTestCase(testtools.TestCase):
 
     def setUp(self):
         super(BaseTestCase, self).setUp()
-        self.stubs = stubout.StubOutForTesting()
-
-    def tearDown(self):
-        super(BaseTestCase, self).tearDown()
-        CONF.reset()
-        self.stubs.UnsetAll()
-        self.stubs.SmartUnsetAll()
+        self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
+        self.addCleanup(CONF.reset)
 
     def config(self, **kw):
         """

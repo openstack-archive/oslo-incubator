@@ -33,9 +33,6 @@ class SimpleNotifier(object):
 
 
 class ManagerTestCase(test_utils.BaseTestCase):
-    def tearDown(self):
-        super(ManagerTestCase, self).tearDown()
-
     def test_constructs(self):
         manager1 = pluginmanager.PluginManager("testproject", "testservice")
         self.assertNotEqual(manager1, False)
@@ -43,12 +40,6 @@ class ManagerTestCase(test_utils.BaseTestCase):
 
 class NotifyTestCase(test_utils.BaseTestCase):
     """Test case for the plugin notification interface"""
-    def setUp(self):
-        super(NotifyTestCase, self).setUp()
-
-    def tearDown(self):
-        super(NotifyTestCase, self).tearDown()
-        notifier_api._reset_drivers()
 
     def test_add_notifier(self):
         notifier1 = SimpleNotifier()
@@ -111,9 +102,6 @@ class MockExtManager():
 
 class APITestCase(test_utils.BaseTestCase):
     """Test case for the plugin api extension interface"""
-    def tearDown(self):
-        super(APITestCase, self).tearDown()
-
     def test_add_extension(self):
         def mock_load(_s):
             return TestPluginClass()

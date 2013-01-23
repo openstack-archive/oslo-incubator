@@ -37,10 +37,7 @@ class NotifierTestCase(test_utils.BaseTestCase):
         ]
         self.config(notification_driver=notification_driver)
         self.config(default_publisher_id='publisher')
-
-    def tearDown(self):
-        notifier_api._reset_drivers()
-        super(NotifierTestCase, self).tearDown()
+        self.addCleanup(notifier_api._reset_drivers)
 
     def test_send_notification(self):
         self.notify_called = False
@@ -241,11 +238,7 @@ class MultiNotifierTestCase(test_utils.BaseTestCase):
             raise RuntimeError("Bad notifier.")
 
         self.stubs.Set(log_notifier, 'notify', mock_notify2)
-        notifier_api._reset_drivers()
-
-    def tearDown(self):
-        notifier_api._reset_drivers()
-        super(MultiNotifierTestCase, self).tearDown()
+        self.addCleanup(notifier_api._reset_drivers)
 
     def test_send_notifications_successfully(self):
         notification_driver = [

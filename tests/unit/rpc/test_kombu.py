@@ -30,6 +30,7 @@ import stubout
 
 from openstack.common import cfg
 from openstack.common import exception
+from openstack.common.fixture import moxstubout
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
 from openstack.common import testutils
@@ -69,30 +70,20 @@ def _raise_exc_stub(stubs, times, obj, method, exc_msg,
 class KombuStubs:
     @staticmethod
     def setUp(self):
-        self.stubs = stubout.StubOutForTesting()
+        self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
         if kombu:
             self.config(fake_rabbit=True)
             self.config(rpc_response_timeout=5)
             self.rpc = impl_kombu
+            self.addCleanup(impl_kombu.cleanup)
         else:
             self.rpc = None
-
-    @staticmethod
-    def tearDown(self):
-        self.stubs.UnsetAll()
-        self.stubs.SmartUnsetAll()
-        if kombu:
-            impl_kombu.cleanup()
 
 
 class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
     def setUp(self):
         KombuStubs.setUp(self)
-        common.BaseRpcAMQPTestCase.setUp(self)
-
-    def tearDown(self):
-        common.BaseRpcAMQPTestCase.tearDown(self)
-        KombuStubs.tearDown(self)
+        super(RpcKombuTestCase, self).setUp()
 
     @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_reusing_connection(self):
@@ -507,13 +498,9 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
 
 class RpcKombuHATestCase(utils.BaseTestCase):
     def setUp(self):
-        utils.BaseTestCase.setUp(self)
+        super(RpcKombuHATestCase, self).setUp()
         KombuStubs.setUp(self)
-
-    def tearDown(self):
-        FLAGS.reset()
-        KombuStubs.tearDown(self)
-        utils.BaseTestCase.tearDown(self)
+        self.addCleanup(FLAGS.reset)
 
     @testutils.skip_if(kombu is None, "Test requires kombu")
     def test_roundrobin_reconnect(self):

@@ -41,6 +41,7 @@ LOG = logging.getLogger(__name__)
 
 
 class BaseRpcTestCase(test_utils.BaseTestCase):
+
     def setUp(self, supports_timeouts=True, topic='test',
               topic_nested='nested'):
         super(BaseRpcTestCase, self).setUp()
@@ -53,11 +54,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
         if self.rpc:
             receiver = TestReceiver()
             self.conn = self._create_consumer(receiver, self.topic)
-
-    def tearDown(self):
-        if self.rpc:
-            self.conn.close()
-        super(BaseRpcTestCase, self).tearDown()
+            self.addCleanup(self.conn.close)
 
     def _create_consumer(self, proxy, topic, fanout=False):
         dispatcher = rpc_dispatcher.RpcDispatcher([proxy])

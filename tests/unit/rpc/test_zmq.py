@@ -47,6 +47,7 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
     # TESTCNT needs to be a class var as each run
     # by subclasses must have a unique identifier
     TESTCNT = 0
+    rpc = impl_zmq
 
     @testutils.skip_if(not impl_zmq, "ZeroMQ library required")
     def setUp(self, topic='test', topic_nested='nested'):
@@ -69,6 +70,8 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
             #                  increment to avoid async socket
             #                  closing/wait delays causing races
             #                  between tearDown() and setUp()
+            # TODO(mordred): replace this with testresources once we're on
+            #                testr
             self.config(rpc_zmq_port=9500 + testcnt)
             internal_ipc_dir = "/tmp/openstack-zmq.ipc.test.%s" % testcnt
             self.config(rpc_zmq_ipc_dir=internal_ipc_dir)
@@ -80,12 +83,12 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
             LOG.warning(_("Detected zmq-receiver socket."))
             LOG.warning(_("Assuming nova-rpc-zmq-receiver is running."))
             LOG.warning(_("Using system zmq receiver deamon."))
-
         super(_RpcZmqBaseTestCase, self).setUp(
             topic=topic, topic_nested=topic_nested)
 
-    @testutils.skip_if(not impl_zmq, "ZeroMQ library required")
-    def tearDown(self):
+        self.addCleanup(self._close_reactor)
+
+    def _close_reactor(self):
         if self.reactor:
             self.reactor.close()
 
@@ -93,8 +96,6 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
                 processutils.execute('rm', '-rf', FLAGS.rpc_zmq_ipc_dir)
             except exception.Error:
                 pass
-
-        super(_RpcZmqBaseTestCase, self).tearDown()
 
 
 class RpcZmqBaseTopicTestCase(_RpcZmqBaseTestCase):
