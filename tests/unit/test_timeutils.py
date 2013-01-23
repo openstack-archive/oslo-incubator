@@ -272,3 +272,12 @@ class TestIso8601Time(unittest.TestCase):
         dtn = datetime.datetime(2011, 2, 14, 19, 53, 07)
         naive = timeutils.normalize_time(dtn)
         self.assertTrue(naive < dt)
+
+    def test_will_expire_soon(self):
+        expires = timeutils.utcnow() + datetime.timedelta(minutes=5)
+        self.assertFalse(timeutils.will_expire_soon(expires,
+                                                    stale_duration=120))
+        self.assertTrue(timeutils.will_expire_soon(expires,
+                                                   stale_duration=300))
+        self.assertTrue(timeutils.will_expire_soon(expires,
+                                                   stale_duration=600))

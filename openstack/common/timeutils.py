@@ -162,3 +162,16 @@ def delta_seconds(before, after):
     except AttributeError:
         return ((delta.days * 24 * 3600) + delta.seconds +
                 float(delta.microseconds) / (10 ** 6))
+
+
+def will_expire_soon(expire_date, stale_duration):
+    """
+    Determines if expiration is about to occur.
+
+    :params expire_date: the date of expiration
+    :params stale_duration: minimum seconds to remain before expiration
+
+    :return: True if expiration is within the given duration
+    """
+    soon = (utcnow() + datetime.timedelta(seconds=stale_duration))
+    return normalize_time(expire_date) < soon
