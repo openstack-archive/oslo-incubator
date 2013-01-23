@@ -15,14 +15,12 @@
 Tests For Scheduler Host Filters.
 """
 
-import stubout
-import testtools
-
 from openstack.common import context
 from openstack.common import jsonutils
 from openstack.common.scheduler import filters
 from openstack.common.scheduler.filters import extra_specs_ops
 from tests.unit.scheduler import fake_hosts as fakes
+from tests import utils
 
 
 class TestFilter(filters.BaseHostFilter):
@@ -34,7 +32,7 @@ class TestBogusFilter(object):
     pass
 
 
-class ExtraSpecsOpsTestCase(testtools.TestCase):
+class ExtraSpecsOpsTestCase(utils.BaseTestCase):
     def _do_extra_specs_ops_test(self, value, req, matches):
         assertion = self.assertTrue if matches else self.assertFalse
         assertion(extra_specs_ops.match(value, req))
@@ -220,12 +218,11 @@ class ExtraSpecsOpsTestCase(testtools.TestCase):
             matches=False)
 
 
-class HostFiltersTestCase(testtools.TestCase):
+class HostFiltersTestCase(utils.BaseTestCase):
     """Test case for host filters."""
 
     def setUp(self):
         super(HostFiltersTestCase, self).setUp()
-        self.stubs = stubout.StubOutForTesting()
         self.context = context.RequestContext('fake', 'fake')
         self.json_query = jsonutils.dumps(
             ['and', ['>=', '$free_ram_mb', 1024],
