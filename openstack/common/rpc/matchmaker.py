@@ -19,12 +19,16 @@ return keys for direct exchanges, per (approximate) AMQP parlance.
 """
 
 import contextlib
+import eventlet
 import itertools
 import json
 
 from openstack.common import cfg
+from openstack.common import importutils
 from openstack.common.gettextutils import _
 from openstack.common import log as logging
+
+redis = importutils.try_import('redis')
 
 
 matchmaker_opts = [
@@ -32,6 +36,18 @@ matchmaker_opts = [
     cfg.StrOpt('matchmaker_ringfile',
                default='/etc/nova/matchmaker_ring.json',
                help='Matchmaker ring file (JSON)'),
+    cfg.IntOpt('matchmaker_heartbeat_freq',
+               default='300',
+               help='Heartbeat frequency'),
+    cfg.IntOpt('matchmaker_heartbeat_ttl',
+               default='600',
+               help='Heartbeat time-to-live.'),
+    cfg.StrOpt('matchmaker_redis_host',
+               default='127.0.0.1',
+               help='Host to locate redis'),
+    cfg.IntOpt('matchmaker_redis_port',
+               default=6379,
+               help='Use this port to connect to redis host.'),
 ]
 
 CONF = cfg.CONF
@@ -70,10 +86,13 @@ class Binding(object):
 
 class MatchMakerBase(object):
     """Match Maker Base Class."""
-
     def __init__(self):
         # Array of tuples. Index [2] toggles negation, [3] is last-if-true
         self.bindings = []
+
+    def register(self, key):
+        LOG.warn(_('Matchmaker does not implement registration or '
+                   'heartbeat.'))
 
     def add_binding(self, binding, rule, last=True):
         self.bindings.append((binding, rule, False, last))
@@ -219,6 +238,140 @@ class DirectExchange(Exchange):
     def run(self, key):
         b, e = key.split('.', 1)
         return [(b, e)]
+
+
+class RedisExchange(Exchange):
+    def __init__(self, redis):
+        self.redis = redis
+
+        is_registered_lua = """
+            if not redis.call('exists', ARGV[1]) then
+                redis.call('srem', ARGV[1], ARGV[1])
+                return 0
+            end
+            return 1
+        """
+        # is_registered(topic, host)
+        # - also prunes set member if not registered.
+        self.is_registered = redis.register_script(is_registered_lua)
+
+        #def r(s, t, h):
+        #    print (s, t, h)
+        #self.is_registered = r
+
+        super(RedisExchange, self).__init__()
+
+    def is_registered(self, topic, host):
+        """is_registered: monkey-patched away by __init__"""
+        raise Exception("Monkey-patching failed in RedisExchange.")
+
+
+class RedisTopicExchange(RedisExchange):
+    """
+    Exchange where all topic keys are split, sending to second half.
+    i.e. "compute.host" sends a message to "compute" running on "host"
+    """
+    def run(self, topic):
+        while True:
+            member_name = self.redis.srandmember(topic)
+
+            print "member snagged: %s" % (member_name, )
+
+            if not member_name:
+                # If this happens, there are no
+                # longer any members.
+                break
+
+            if not self.is_registered(topic, member_name):
+                continue
+
+            host = member_name.split('.', 1)[1]
+            return [(member_name, host)]
+        raise MatchMakerException()
+
+
+class RedisFanoutExchange(RedisExchange):
+    """
+    Exchange where all topic keys are split, sending to second half.
+    i.e. "compute.host" sends a message to "compute" running on "host"
+    """
+    def run(self, topic):
+        topic = topic.split('~', 1)[1]
+        hosts = set(self.redis.smembers(topic))
+        good_hosts = set(filter(self.is_registered, hosts))
+        print "fanout - hosts: %s, good_hosts: %s" % (hosts, good_hosts)
+        bad_hosts = hosts - good_hosts
+
+        addresses = map(lambda x: x.split('.', 1)[1], hosts)
+        return zip(hosts, addresses)
+
+
+class MatchMakerRedis(MatchMakerBase):
+    """
+    Match Maker where hosts are loaded from a static hashmap.
+    """
+    def __init__(self):
+        super(MatchMakerRedis, self).__init__()
+        self.hosts = set([])
+        self._heart = None
+        self.host_topic = {}
+
+        self.redis = redis.StrictRedis(
+            host=CONF.matchmaker_redis_host,
+            port=CONF.matchmaker_redis_port)
+        self.add_binding(FanoutBinding(), RedisFanoutExchange(self.redis))
+        self.add_binding(DirectBinding(), DirectExchange())
+        self.add_binding(TopicBinding(), RedisTopicExchange(self.redis))
+
+    def send_heartbeat(self, key):
+        return self.redis.expire(key, CONF.matchmaker_heartbeat_ttl)
+
+    def send_heartbeats(self):
+        for htp in self.host_topic:
+            key, host = htp
+            success = self.send_heartbeat(key + '.' + host)
+            if not success:
+                self.register(self.host_topic[host], host)
+
+    def register(self, key, host):
+        self.hosts.add(host)
+        self.host_topic[(key, host)] = host
+        key_host = '.'.join((key, host))
+
+        with self.redis.pipeline() as pipe:
+            pipe.multi()
+            pipe.sadd(key, key_host)
+
+            # No value is needed, we just
+            # care if it exists. Sets aren't viable
+            # because only keys can expire.
+            pipe.set(key_host, '')
+
+            pipe.execute()
+        self.send_heartbeat(key_host)
+
+    def unregister(self, key, host):
+        del self.host_topic[(key, host)]
+        self.host.remove(host)
+
+        self.redis.srem(key, host)
+        self.redis.delete(key + '.' + host)
+
+    def start_heartbeat(self):
+        if len(self.hosts) == 0:
+            raise MatchMakerException(
+                _("Register before starting heartbeat."))
+
+        def do_heartbeat():
+            while True:
+                self.send_heartbeats()
+                eventlet.sleep(CONF.matchmaker_heartbeat_freq)
+
+        self._heart = eventlet.spawn(do_heartbeat)
+
+    def stop_heartbeat(self):
+        if self._heart:
+            self._heart.kill()  # Captain planet would be upset at this.
 
 
 class MatchMakerRing(MatchMakerBase):

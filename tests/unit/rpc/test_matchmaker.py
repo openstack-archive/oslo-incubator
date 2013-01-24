@@ -18,16 +18,18 @@ import logging
 import unittest
 
 from openstack.common.rpc import matchmaker
+from tests import utils as test_utils
 
 
 LOG = logging.getLogger(__name__)
 
 
-class _MatchMakerTestCase(unittest.TestCase):
+class _MatchMakerTestCase(test_utils.BaseTestCase):
     def test_valid_host_matches(self):
         queues = self.driver.queues(self.topic)
         matched_hosts = map(lambda x: x[1], queues)
 
+        LOG.info("Received result from matchmaker: %s", matched_hosts)
         for host in matched_hosts:
             self.assertTrue(host in self.hosts)
 
@@ -36,9 +38,54 @@ class _MatchMakerTestCase(unittest.TestCase):
         queues = self.driver.queues("fanout~" + self.topic)
         matched_hosts = map(lambda x: x[1], queues)
 
-        LOG.info("Received result from matchmaker: %s", queues)
+        LOG.info("Received result from matchmaker: %s", matched_hosts)
         for host in self.hosts:
             self.assertTrue(host in matched_hosts)
+
+
+class _MatchMakerHeartbeatTestCase(test_utils.BaseTestCase):
+    def test_expires_host(self):
+        """
+        Registers a host, ensures it is registered,
+        then waits for it to expire. Ensures is no
+        longer registered.
+        """
+        self.driver.register(self.topic, self.hosts[0])
+
+        # Raises if doesn't work.
+        self.driver.queues(self.topic)
+        # Timeout is set to 1 second...
+        eventlet.sleep(2)
+
+        assertRaises(MatchMakerException,
+                     self.driver.queues,
+                     self.topic)
+
+    def test_unregister(self):
+        """
+        Registers a host, ensures it is registered,
+        then unregisters and ensures is no
+        longer registered.
+        """
+        self.driver.register(self.topic, self.hosts[0])
+
+        # Raises if it doesn't work...
+        self.driver.queues(self.topic)
+
+        self.driver.unregister(self.topic, self.hosts[0])
+
+        assertRaises(MatchMakerException,
+                     self.driver.queues,
+                     self.topic)
+
+    def test_registers_host(self):
+        """
+        Registers a host, ensures it is registered.
+        """
+        self.driver.register(self.topic, self.hosts[0])
+
+        host = self.driver.queues(self.topic)
+        self.assertIn(host, self.hosts)
 
 
 class MatchMakerFileTestCase(_MatchMakerTestCase):
@@ -58,3 +105,18 @@ class MatchMakerLocalhostTestCase(_MatchMakerTestCase):
         self.topic = "test"
         self.hosts = ['localhost']
         super(MatchMakerLocalhostTestCase, self).setUp()
+
+
+class MatchMakerRedisTestCase(_MatchMakerTestCase):
+    def setUp(self):
+        self.config(matchmaker_heartbeat_ttl=1)
+        #self.config(matchmaker_redis_host='sock')
+        self.driver = matchmaker.MatchMakerRedis()
+        self.topic = "test"
+        self.hosts = map(lambda x: 'mockhost-' + str(x), range(1, 10))
+
+        for h in self.hosts:
+            self.driver.register(self.topic, h)
+        self.driver.start_heartbeat()
+
+        super(MatchMakerRedisTestCase, self).setUp()
