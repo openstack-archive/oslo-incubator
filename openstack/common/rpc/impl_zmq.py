@@ -594,6 +594,9 @@ class Connection(rpc_common.Connection):
         self.reactor = ZmqReactor(conf)
 
     def create_consumer(self, topic, proxy, fanout=False):
+        # Register with matchmaker.
+        _get_matchmaker().register(topic, CONF.rpc_zmq_host)
+
         # Subscription scenarios
         if fanout:
             sock_type = zmq.SUB
@@ -620,6 +623,10 @@ class Connection(rpc_common.Connection):
         self.topics.append(topic)
 
     def close(self):
+        _get_matchmaker().stop_heartbeat()
+        for topic in self.topics:
+            _get_matchmaker().unregister(topic, CONF.rpc_zmq_host)
+
         self.reactor.close()
         self.topics = []
 
@@ -627,6 +634,7 @@ class Connection(rpc_common.Connection):
         self.reactor.wait()
 
     def consume_in_thread(self):
+        _get_matchmaker().start_heartbeat()
         self.reactor.consume_in_thread()
 
 
