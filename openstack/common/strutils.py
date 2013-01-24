@@ -20,6 +20,7 @@ System-level utilities and helper functions.
 """
 
 import logging
+import sys
 
 LOG = logging.getLogger(__name__)
 
@@ -57,3 +58,78 @@ def bool_from_string(subject):
         if subject.strip().lower() in ('true', 'on', 'yes', '1'):
             return True
     return False
+
+
+def ensure_unicode(text, incoming=None, errors='strict'):
+    """
+    Decodes incoming objects using `incoming` if they're
+    not already unicode.
+
+    :param incoming: Text's current encoding
+    :param errors: Errors handling policy. See here for valid
+        values http://docs.python.org/2/library/codecs.html
+    :returns: text or a unicode `incoming` encoded
+                representation of it.
+    """
+    if isinstance(text, unicode):
+        return text
+
+    if not incoming:
+        incoming = (sys.stdin.encoding or
+                    sys.getdefaultencoding())
+
+    # Calling `str` in case text is a non str
+    # object.
+    text = str(text)
+    try:
+        return text.decode(incoming, errors)
+    except UnicodeDecodeError:
+        # Note(flaper87) If we get here, it means that
+        # sys.stdin.encoding / sys.getdefaultencoding
+        # didn't return a suitable encoding to decode
+        # text. This happens mostly when global LANG
+        # var is not set correctly and there's no
+        # default encoding. In this case, most likely
+        # python will use ASCII or ANSI encoders as
+        # default encodings but they won't be capable
+        # of decoding non-ASCII characters.
+        #
+        # Also, UTF-8 is being used since it's an ASCII
+        # extension.
+        return text.decode('utf-8', errors)
+
+
+def ensure_str(text, incoming=None,
+               encoding='utf-8', errors='strict'):
+    """
+    Encodes incoming objects using `encoding`. If
+    incoming is not specified, text is expected to
+    be encoded with current python's default encoding.
+    (`sys.getdefaultencoding`)
+
+    :param incoming: Text's current encoding
+    :param encoding: Expected encoding for text (Default UTF-8)
+    :param errors: Errors handling policy. See here for valid
+        values http://docs.python.org/2/library/codecs.html
+    :returns: text or a bytestring `encoding` encoded
+                representation of it.
+    """
+
+    if not incoming:
+        incoming = (sys.stdin.encoding or
+                    sys.getdefaultencoding())
+
+    if not isinstance(text, basestring):
+        # try to convert `text` to string
+        # This allows this method for receiving
+        # objs that can be converted to string
+        text = str(text)
+
+    if isinstance(text, unicode):
+        return text.encode(encoding, errors)
+    elif text and encoding != incoming:
+        # Decode text before encoding it with `encoding`
+        text = ensure_unicode(text, incoming, errors)
+        return text.encode(encoding, errors)
+
+    return text
