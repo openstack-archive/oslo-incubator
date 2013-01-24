@@ -57,3 +57,43 @@ def bool_from_string(subject):
         if subject.strip().lower() in ('true', 'on', 'yes', '1'):
             return True
     return False
+
+
+def ensure_unicode(text, encoding='utf-8', errors='strict'):
+    """
+    Converts incoming objects to unicode and encodes
+    them using `encoding`.
+
+    :param encoding:    Expected encoding for text
+    :param errors: Errors handling policy.
+    :returns: text or a unicode `encoding` encoded
+                representation of it.
+    """
+    if not isinstance(text, unicode):
+        text = str(text).decode(encoding, errors)
+    return text
+
+
+def ensure_str(text, encoding='utf-8', errors='strict'):
+    """
+    Converts incoming objects to bytestring and encodes
+    them using `encoding`.
+
+    :param encoding:    Expected encoding for text
+    :param errors: Errors handling policy.
+    :returns: text or a bytestring `encoding` encoded
+                representation of it.
+    """
+
+    if not isinstance(text, basestring):
+        # try to convert `text` to string
+        # This allows this method for receiving
+        # objs that can be converted to string
+        text = str(text)
+
+    if isinstance(text, unicode):
+        return text.encode(encoding, errors)
+    elif text and encoding != 'utf-8':
+        return text.decode('utf-8', errors).encode(encoding, errors)
+
+    return text
