@@ -23,8 +23,11 @@ import itertools
 import json
 
 from openstack.common import cfg
+from openstack.common import importutils
 from openstack.common.gettextutils import _
 from openstack.common import log as logging
+
+redis = importutils.try_import('redis')
 
 
 matchmaker_opts = [
@@ -32,6 +35,18 @@ matchmaker_opts = [
     cfg.StrOpt('matchmaker_ringfile',
                default='/etc/nova/matchmaker_ring.json',
                help='Matchmaker ring file (JSON)'),
+    cfg.IntOpt('matchmaker_heartbeat_freq',
+               default='300',
+               help='Heartbeat frequency'),
+    cfg.IntOpt('matchmaker_heartbeat_ttl',
+               default='600',
+               help='Heartbeat time-to-live.'),
+    cfg.StrOpt('matchmaker_redis_host',
+               default='127.0.0.1',
+               help='Host to locate redis'),
+    cfg.IntOpt('matchmaker_redis_port',
+               default=6379,
+               help='Use this port to connect to redis host.'),
 ]
 
 CONF = cfg.CONF
@@ -74,6 +89,10 @@ class MatchMakerBase(object):
     def __init__(self):
         # Array of tuples. Index [2] toggles negation, [3] is last-if-true
         self.bindings = []
+
+    def register(self, key):
+        LOG.warn(_('Matchmaker does not implement registration or '
+                   'heartbeat.'))
 
     def add_binding(self, binding, rule, last=True):
         self.bindings.append((binding, rule, False, last))
@@ -219,6 +238,118 @@ class DirectExchange(Exchange):
     def run(self, key):
         b, e = key.split('.', 1)
         return [(b, e)]
+
+
+class RedisExchange(Exchange):
+    def __init__(self, redis):
+        self.redis = redis
+        super(RedisExchange, self).__init__()
+
+
+class RedisTopicExchange(RedisExchange):
+    """
+    Exchange where all topic keys are split, sending to second half.
+    i.e. "compute.host" sends a message to "compute" running on "host"
+    """
+    def run(self, topic):
+        for i in range(5):  # retries
+            self.redis.multi()
+            member_name = self.redis.srandmember(topic)
+            # Assumes we use self.redis key expiration here.
+            if not self.redis.exists(member):
+                self.redis.srem(topic, member_name)
+                continue
+            host = self.redis.get(member_name)
+            self.redis.exec()
+
+            if member_name:
+                return [(member_name, host)]
+        raise MatchMakerException()
+
+
+class RedisFanoutExchange(RedisExchange):
+    """
+    Exchange where all topic keys are split, sending to second half.
+    i.e. "compute.host" sends a message to "compute" running on "host"
+    """
+    def run(self, topic):
+        hostnames = self.redis.smembers(topic)
+        topics = map(lambda host: topic + '.' + host, hostnames)
+
+        self.redis.multi()
+        ip_response = set(map(self.redis.get, hostnames))
+
+        # Filter empty responses
+        ips = set(ip_response.filter(None, ip_response))
+
+        # Discard hosts with nil response
+        bad_hosts = filter(lambda x: x[1] is not None, zip(hostnames, ip_response))
+        for host in bad_hosts:
+            self.redis.srem(topic, host)
+        self.redis.exec()
+
+        return zip(topics, ips)
+
+
+class MatchMakerRedis(MatchMakerBase):
+    """
+    Match Maker where hosts are loaded from a static hashmap.
+    """
+    def __init__(self):
+        super(MatchMakerRedis, self).__init__()
+        self.hosts = set([])
+        self._heart = None
+
+        self.redis = redis.StrictRedis(
+            host=CONF.matchmaker_redis_host,
+            port=CONF.matchmaker_redis_port)
+
+        self.add_binding(FanoutBinding(), RedisFanoutExchange(self.redis))
+        self.add_binding(DirectBinding(), DirectExchange())
+        self.add_binding(TopicBinding(), RedisTopicExchange(self.redis))
+
+    def send_heartbeat(self, key):
+        return self.redis.expire(key, CONF.matchmaker_heartbeat_ttl)
+
+    def send_heartbeats(self):
+        for htp in self.host_topic:
+            key, host = htp
+            success = self.send_heartbeat(key + '.' + host):
+            if not success:
+                self.register(self.host_topic[host], host)
+
+    def register(self, key, host):
+        self.hosts.add(host)
+        self.host_topic[(key, host)] = host
+
+        self.redis.multi()
+        self.redis.sadd(key, key + '.' + host)
+        self.redis.set(key + '.' + host, '')
+        self.redis.exec()
+        self.send_heartbeat(key + '.' + host)
+
+    def unregister(self, key, host):
+        del self.host_topic[(key, host)]
+        self.host.remove(host)
+
+        self.redis.srem(key, host)
+        self.redis.del(key + '.' + host)
+
+    def start_heartbeat(self):
+        if len(hosts) == 0:
+            raise MatchMakerException(
+                _("Register before starting heartbeat."))
+
+        def do_heartbeat():
+            while True:
+                self.send_heartbeats()
+                eventlet.sleep(CONF.matchmaker_heartbeat_freq)
+
+        self._heart = eventlet.spawn(do_heartbeat)
+
+    def stop_heartbeat(self):
+        if self._heart:
+            self._heart.kill()  # Captain planet would be upset at this.
 
 
 class MatchMakerRing(MatchMakerBase):
