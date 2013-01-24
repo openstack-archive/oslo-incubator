@@ -17,7 +17,6 @@
 
 import mock
 
-from openstack.common import exception
 from openstack.common import strutils
 from tests import utils
 
@@ -73,3 +72,36 @@ class StrUtilsTest(utils.BaseTestCase):
     def test_int_from_bool_as_string(self):
         self.assertEqual(1, strutils.int_from_bool_as_string(True))
         self.assertEqual(0, strutils.int_from_bool_as_string(False))
+
+    def test_safe_decode(self):
+        safe_decode = strutils.safe_decode
+        self.assertRaises(TypeError, safe_decode, True)
+        self.assertEqual(u'ni\xf1o', safe_decode("ni\xc3\xb1o",
+                                                 incoming="utf-8"))
+        self.assertEqual(u"test", safe_decode("dGVzdA==",
+                                              incoming='base64'))
+
+        self.assertEqual(u"strange", safe_decode('\x80strange',
+                                                 errors='ignore'))
+
+        self.assertEqual(u'\xc0', safe_decode('\xc0',
+                                              incoming='iso-8859-1'))
+
+        # Forcing incoming to ascii so it falls back to utf-8
+        self.assertEqual(u'ni\xf1o', safe_decode('ni\xc3\xb1o',
+                                                 incoming='ascii'))
+
+    def test_safe_encode(self):
+        safe_encode = strutils.safe_encode
+        self.assertRaises(TypeError, safe_encode, True)
+        self.assertEqual("ni\xc3\xb1o", safe_encode(u'ni\xf1o',
+                                                    encoding="utf-8"))
+        self.assertEqual("dGVzdA==\n", safe_encode("test",
+                                                   encoding='base64'))
+        self.assertEqual('ni\xf1o', safe_encode("ni\xc3\xb1o",
+                                                encoding="iso-8859-1",
+                                                incoming="utf-8"))
+
+        # Forcing incoming to ascii so it falls back to utf-8
+        self.assertEqual('ni\xc3\xb1o', safe_encode('ni\xc3\xb1o',
+                                                    incoming='ascii'))
