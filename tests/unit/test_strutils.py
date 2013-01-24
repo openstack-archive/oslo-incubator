@@ -73,3 +73,36 @@ class StrUtilsTest(utils.BaseTestCase):
     def test_int_from_bool_as_string(self):
         self.assertEqual(1, strutils.int_from_bool_as_string(True))
         self.assertEqual(0, strutils.int_from_bool_as_string(False))
+
+    def test_ensure_unicode(self):
+        ensure_unicode = strutils.ensure_unicode
+        self.assertEqual(u'True', ensure_unicode(True))
+        self.assertEqual(u'ni\xf1o', ensure_unicode("ni\xc3\xb1o",
+                                                    incoming="utf-8"))
+        self.assertEqual(u"test", ensure_unicode("dGVzdA==",
+                                                 incoming='base64'))
+
+        self.assertEqual(u"strange", ensure_unicode('\x80strange',
+                                                    errors='ignore'))
+
+        self.assertEqual(u'\xc0', ensure_unicode('\xc0',
+                                                 incoming='iso-8859-1'))
+
+        # Forcing incoming to ascii so it falls back to utf-8
+        self.assertEqual(u'ni\xf1o', ensure_unicode('ni\xc3\xb1o',
+                                                    incoming='ascii'))
+
+    def test_ensure_str(self):
+        ensure_str = strutils.ensure_str
+        self.assertEqual("True", ensure_str(True))
+        self.assertEqual("ni\xc3\xb1o", ensure_str(u'ni\xf1o',
+                                                   encoding="utf-8"))
+        self.assertEqual("dGVzdA==\n", ensure_str("test",
+                                                  encoding='base64'))
+        self.assertEqual('ni\xf1o', ensure_str("ni\xc3\xb1o",
+                                               encoding="iso-8859-1",
+                                               incoming="utf-8"))
+
+        # Forcing incoming to ascii so it falls back to utf-8
+        self.assertEqual('ni\xc3\xb1o', ensure_str('ni\xc3\xb1o',
+                                                   incoming='ascii'))
