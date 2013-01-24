@@ -19,6 +19,7 @@
 System-level utilities and helper functions.
 """
 
+import sys
 import logging
 
 LOG = logging.getLogger(__name__)
@@ -57,3 +58,57 @@ def bool_from_string(subject):
         if subject.strip().lower() in ('true', 'on', 'yes', '1'):
             return True
     return False
+
+
+def ensure_unicode(text, incoming=None, errors='strict'):
+    """
+    Decodes incoming objects using `incoming` if they're
+    not already unicode.
+
+    :param incoming: Text's current encoding
+    :param errors: Errors handling policy.
+    :returns: text or a unicode `incoming` encoded
+                representation of it.
+    """
+    if not incoming:
+        incoming = sys.getdefaultencoding()
+
+    if not isinstance(text, unicode):
+        # Calling str() to make sure we'll call
+        # decode on a `str`.
+        text = str(text).decode(incoming, errors)
+    return text
+
+
+def ensure_str(text, incoming=None,
+               encoding="utf-8", errors='strict'):
+    """
+    Encodes incoming objects using `encoding`. If
+    incoming is not specified, text is expected to
+    be encoded with current python's default encoding.
+    (`sys.getdefaultencoding`)
+
+    :param incoming: Text's current encoding
+    :param encoding: Expected encoding for text (Default UTF-8)
+    :param errors: Errors handling policy.
+    :returns: text or a bytestring `encoding` encoded
+                representation of it.
+    """
+
+    default = sys.getdefaultencoding()
+
+    if not incoming:
+        incoming = default
+
+    if not isinstance(text, basestring):
+        # try to convert `text` to string
+        # This allows this method for receiving
+        # objs that can be converted to string
+        text = str(text)
+
+    if isinstance(text, unicode):
+        return text.encode(encoding, errors)
+    elif text and encoding != incoming:
+        return text.decode(incoming, errors).encode(encoding, errors)
+
+    return text
