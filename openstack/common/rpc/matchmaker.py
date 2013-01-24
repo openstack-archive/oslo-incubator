@@ -22,6 +22,7 @@ import contextlib
 import itertools
 import json
 
+import eventlet
 from oslo.config import cfg
 
 from openstack.common.gettextutils import _
@@ -33,6 +34,12 @@ matchmaker_opts = [
     cfg.StrOpt('matchmaker_ringfile',
                default='/etc/nova/matchmaker_ring.json',
                help='Matchmaker ring file (JSON)'),
+    cfg.IntOpt('matchmaker_heartbeat_freq',
+               default='300',
+               help='Heartbeat frequency'),
+    cfg.IntOpt('matchmaker_heartbeat_ttl',
+               default='600',
+               help='Heartbeat time-to-live.'),
 ]
 
 CONF = cfg.CONF
@@ -70,11 +77,72 @@ class Binding(object):
 
 
 class MatchMakerBase(object):
-    """Match Maker Base Class."""
-
+    """
+    Match Maker Base Class.
+    Build off HeartbeatMatchMakerBase if building a
+    heartbeat-capable MatchMaker.
+    """
     def __init__(self):
         # Array of tuples. Index [2] toggles negation, [3] is last-if-true
         self.bindings = []
+
+        self.no_heartbeat_msg = _('Matchmaker does not implement '
+                                  'registration or heartbeat.')
+
+    def register(self, key, host):
+        """
+        Register a host on a backend.
+        Heartbeats, if applicable, may keepalive registration.
+        """
+        LOG.warn(self.no_heartbeat_msg)
+
+    def ack_alive(self, key):
+        """
+        Acknowledge that a host.topic is alive.
+        Used internally for updating heartbeats,
+        but may also be used publically to acknowledge
+        a system is alive (i.e. rpc message successfully
+        sent to host)
+        """
+        LOG.warn(self.no_heartbeat_msg)
+
+    def is_alive(self, topic, host):
+        """
+        Checks if a host is alive.
+        """
+        LOG.warn(self.no_heartbeat_msg)
+
+    def expire(self, topic, host):
+        """
+        Explicitly expire a host's registration.
+        """
+        LOG.warn(self.no_heartbeat_msg)
+
+    def send_heartbeats(self, topic, host):
+        """
+        Send all heartbeats.
+        Use start_heartbeat to spawn a heartbeat greenthread,
+        which loops this method.
+        """
+        LOG.warn(self.no_heartbeat_msg)
+
+    def unregister(self, key, host):
+        """
+        Unregister a topic.
+        """
+        LOG.warn(self.no_heartbeat_msg)
+
+    def start_heartbeat(self):
+        """
+        Spawn heartbeat greenthread.
+        """
+        LOG.warn(self.no_heartbeat_msg)
+
+    def stop_heartbeat(self):
+        """
+        Destroys the heartbeat greenthread.
+        """
+        LOG.warn(self.no_heartbeat_msg)
 
     def add_binding(self, binding, rule, last=True):
         self.bindings.append((binding, rule, False, last))
@@ -97,6 +165,81 @@ class MatchMakerBase(object):
                 if last:
                     return workers
         return workers
+
+
+class HeartbeatMatchMakerBase(MatchMakerBase):
+    """
+    Base for a heart-beat capable MatchMaker.
+    Provides common methods for registering,
+    unregistering, and maintaining heartbeats.
+    """
+    def __init__(self):
+        self.hosts = set()
+        self._heart = None
+        self.host_topic = {}
+
+        super(HeartbeatMatchMakerBase, self).__init__()
+
+    def send_heartbeats(self, topic, host):
+        for htp in self.host_topic:
+            key, host = htp
+            success = self.ack_alive(key + '.' + host)
+            if not success:
+                self.register(self.host_topic[host], host)
+
+    def backend_register(self, key, host):
+        """
+        Implements registration logic.
+        Called by register(self,key,host)
+        """
+        raise NotImplementedError("Must implement backend_register")
+
+    def backend_unregister(self, key, key_host):
+        """
+        Implements de-registration logic.
+        Called by unregister(self,key,host)
+        """
+        raise NotImplementedError("Must implement backend_unregister")
+
+    def register(self, key, host):
+        self.hosts.add(host)
+        self.host_topic[(key, host)] = host
+        key_host = '.'.join((key, host))
+
+        self.backend_register(key, key_host)
+
+        self.ack_alive(key_host)
+
+    def unregister(self, key, host):
+        if (key, host) in self.host_topic:
+            del self.host_topic[(key, host)]
+
+        self.hosts.discard(host)
+        self.backend_unregister(key, '.'.join((key, host)))
+
+        LOG.info(_("Matchmaker unregistered: %s, %s" % (key, host)))
+
+    def start_heartbeat(self):
+        """
+        Implementation of MatchMakerBase.start_heartbeat
+        Launches greenthread looping send_heartbeats(),
+        yielding for CONF.matchmaker_heartbeat_freq seconds
+        between iterations.
+        """
+        if len(self.hosts) == 0:
+            raise MatchMakerException(
+                _("Register before starting heartbeat."))
+
+        def do_heartbeat():
+            while True:
+                self.send_heartbeats()
+                eventlet.sleep(CONF.matchmaker_heartbeat_freq)
+
+        self._heart = eventlet.spawn(do_heartbeat)
+
+    def stop_heartbeat(self):
+        if self._heart:
+            self._heart.kill()
 
 
 class DirectBinding(Binding):
