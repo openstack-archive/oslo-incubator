@@ -17,41 +17,14 @@
 import logging
 
 from openstack.common.rpc import matchmaker
+from tests.unit.rpc import matchmaker_common as common
 from tests import utils
 
 
 LOG = logging.getLogger(__name__)
 
 
-class _MatchMakerDirectedTopicTestCase(object):
-    """Mix-in to test directed topics."""
-    def test_firstval_is_directed_topic(self):
-        matches = self.driver.queues(self.topic)
-        topics = map(lambda x: x[0], matches)
-
-        for topic in topics:
-            self.assertTrue('.' in topic)
-
-
-class _MatchMakerTestCase(_MatchMakerDirectedTopicTestCase):
-    def test_valid_host_matches(self):
-        queues = self.driver.queues(self.topic)
-        matched_hosts = map(lambda x: x[1], queues)
-
-        for host in matched_hosts:
-            self.assertTrue(host in self.hosts)
-
-    def test_fanout_host_matches(self):
-        """For known hosts, see if they're in fanout."""
-        queues = self.driver.queues("fanout~" + self.topic)
-        matched_hosts = map(lambda x: x[1], queues)
-
-        LOG.info("Received result from matchmaker: %s", queues)
-        for host in self.hosts:
-            self.assertTrue(host in matched_hosts)
-
-
-class MatchMakerFileTestCase(utils.BaseTestCase, _MatchMakerTestCase):
+class MatchMakerFileTestCase(utils.BaseTestCase, common._MatchMakerTestCase):
     def setUp(self):
         super(MatchMakerFileTestCase, self).setUp()
         self.topic = "test"
@@ -62,7 +35,8 @@ class MatchMakerFileTestCase(utils.BaseTestCase, _MatchMakerTestCase):
         self.driver = matchmaker.MatchMakerRing(ring)
 
 
-class MatchMakerLocalhostTestCase(utils.BaseTestCase, _MatchMakerTestCase):
+class MatchMakerLocalhostTestCase(utils.BaseTestCase,
+                                  common._MatchMakerTestCase):
     def setUp(self):
         super(MatchMakerLocalhostTestCase, self).setUp()
         self.driver = matchmaker.MatchMakerLocalhost()
@@ -70,7 +44,7 @@ class MatchMakerLocalhostTestCase(utils.BaseTestCase, _MatchMakerTestCase):
         self.hosts = ['localhost']
 
 
-class MatchMakerDirectExchangeTestCase(utils.BaseTestCase,
+class MatchMakerDirectExchangeTestCase(utils.BaseTestCase, common.
                                        _MatchMakerDirectedTopicTestCase):
     """Test lookups against a directed topic."""
     def setUp(self):
