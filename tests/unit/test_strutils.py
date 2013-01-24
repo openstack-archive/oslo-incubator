@@ -74,3 +74,20 @@ class StrUtilsTest(unittest.TestCase):
     def test_int_from_bool_as_string(self):
         self.assertEqual(1, strutils.int_from_bool_as_string(True))
         self.assertEqual(0, strutils.int_from_bool_as_string(False))
+
+    def test_ensure_unicode(self):
+        ensure_unicode = strutils.ensure_unicode
+        self.assertEqual(u'True', ensure_unicode(True))
+        self.assertEqual(u'ni\xf1o', ensure_unicode("ni\xc3\xb1o"))
+        self.assertEqual(u"test", ensure_unicode("dGVzdA==",
+                                                 encoding='base64'))
+        self.assertEqual(u"strange", ensure_unicode('\x80strange',
+                                                    errors='ignore'))
+
+    def test_ensure_str(self):
+        ensure_str = strutils.ensure_str
+        self.assertEqual("True", ensure_str(True))
+        self.assertEqual("ni\xc3\xb1o", ensure_str(u'ni\xf1o'))
+        self.assertEqual("ni\xc3\xb1o", ensure_str("ni\xc3\xb1o"))
+        self.assertEqual("dGVzdA==\n", ensure_str("test",
+                                                  encoding='base64'))
