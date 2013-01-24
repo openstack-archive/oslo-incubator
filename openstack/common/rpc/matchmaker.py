@@ -23,8 +23,11 @@ import itertools
 import json
 
 from openstack.common import cfg
+from openstack.common import importutils
 from openstack.common.gettextutils import _
 from openstack.common import log as logging
+
+redis = importutils.try_import('redis')
 
 
 matchmaker_opts = [
@@ -32,6 +35,12 @@ matchmaker_opts = [
     cfg.StrOpt('matchmaker_ringfile',
                default='/etc/nova/matchmaker_ring.json',
                help='Matchmaker ring file (JSON)'),
+    cfg.StrOpt('matchmaker_redis_host',
+               default='127.0.0.1',
+               help='Host to locate redis'),
+    cfg.IntOpt('matchmaker_redis_port',
+               default=6379,
+               help='Use this port to connect to redis host.'),
 ]
 
 CONF = cfg.CONF
@@ -219,6 +228,73 @@ class DirectExchange(Exchange):
     def run(self, key):
         b, e = key.split('.', 1)
         return [(b, e)]
+
+
+class RedisExchange(Exchange):
+    REDIS = None
+    def __init__(self):
+        if not RedisExchange.REDIS:
+            RedisExchange.REDIS = redis.StrictRedis(
+                host=CONF.matchmaker_redis_host,
+                port=CONF.matchmaker_redis_port)
+        self.redis = RedisExchange.REDIS
+        super(Exchange, self).__init__()
+
+
+class RedisTopicExchange(RedisExchange):
+    """
+    Exchange where all topic keys are split, sending to second half.
+    i.e. "compute.host" sends a message to "compute" running on "host"
+    """
+    def run(self, topic):
+        for i in range(5):  # retries
+            self.redis.multi()
+            member_name = self.redis.srandmember(topic)
+            # Assumes we use self.redis key expiration here.
+            if not self.redis.exists(member):
+                self.redis.srem(topic, member_name)
+                continue
+            host = self.redis.get(member_name)
+            self.redis.exec()
+
+            if member_name:
+                return [(member_name, host)]
+        raise MatchMakerException()
+
+
+class RedisFanoutExchange(RedisExchange):
+    """
+    Exchange where all topic keys are split, sending to second half.
+    i.e. "compute.host" sends a message to "compute" running on "host"
+    """
+    def run(self, topic):
+        hostnames = self.redis.smembers(topic)
+        topics = map(lambda host: topic + '.' + host, hostnames)
+
+        self.redis.multi()
+        ip_response = set(map(self.redis.get, hostnames))
+
+        # Filter empty responses
+        ips = set(ip_response.filter(None, ip_response))
+
+        # Discard hosts with nil response
+        bad_hosts = filter(lambda x: x[1] is not None, zip(hostnames, ip_response))
+        for host in bad_hosts:
+            self.redis.srem(topic, host)
+        self.redis.exec()
+
+        return zip(topics, ips)
+
+
+class MatchMakerRing(MatchMakerBase):
+    """
+    Match Maker where hosts are loaded from a static hashmap.
+    """
+    def __init__(self, ring=None):
+        super(MatchMakerRing, self).__init__()
+        self.add_binding(FanoutBinding(), RedisFanoutExchange(ring))
+        self.add_binding(DirectBinding(), DirectExchange())
+        self.add_binding(TopicBinding(), RedisTopicExchange(ring))
 
 
 class MatchMakerRing(MatchMakerBase):
