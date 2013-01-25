@@ -271,8 +271,7 @@ def get_version_from_git(pre_version):
                     throw_on_error=True).replace('-', '.')
             except Exception:
                 sha = _run_shell_command("git log -n1 --pretty=format:%h")
-                describe = _run_shell_command("git describe --always")
-                revno = describe.rsplit("-", 2)[-2]
+                revno = _run_shell_command("git rev-list HEAD | wc -l")
                 return "%s.a%s.g%s" % (pre_version, revno, sha)
         else:
             return _run_shell_command(
