@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Approved+1: Mark McLoughlin <markmc@redhat.com>
+Code-Review+2: Mark McLoughlin <markmc@redhat.com>
+Code-Review+2: Davanum Srinivas (DIMS) <davanum@gmail.com>
+Code-Review+1: Flavio Percoco Premoli <fpercoco@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Sat, 26 Jan 2013 18:08:48 +0000
+Reviewed-on: https://review.openstack.org/20399
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
