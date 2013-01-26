@@ -1,6 +1,8 @@
 """
  wrapper for pyflakes to ignore gettext based warning:
      "undefined name '_'"
+
+ Synced in from openstack-common
 """
 import sys
 
