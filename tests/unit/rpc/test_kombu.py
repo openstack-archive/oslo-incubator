@@ -98,25 +98,52 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         """Test sending to a topic exchange/queue"""
 
         conn = self.rpc.create_connection(FLAGS)
-        message = 'topic test message'
+        # Checing dictionaly and strings are both acceptable
+        message = {'topic': 'topic test message'}
+        message2 = 'topic test message'
 
-        self.received_message = None
+        self.received_message = []
 
         def _callback(message):
-            self.received_message = message
+            self.received_message.append(message)
 
         conn.declare_topic_consumer('a_topic', _callback)
         conn.topic_send('a_topic', rpc_common.serialize_msg(message))
-        conn.consume(limit=1)
+        conn.consume(limit=2)
         conn.close()
 
-        self.assertEqual(self.received_message, message)
+        self.assertEqual(self.received_message[0], message)
+        self.assertEqual(self.received_message[1], message2)
+
+    def test_duplicate_message_check(self):
+        """Test sending *not-dict* to a topic exchange/queue"""
+
+        conn = self.rpc.create_connection(FLAGS)
+        message = {'args': 'topic test message', '_unique_id': 'aaaabbbbcccc'}
+
+        self.received_message = None
+        cache = rpc_amqp._MsgIdCache()
+        self.exc_raised = False
+
+        def _callback(message):
+            try:
+                cache.check_duplicate_message(message)
+            except rpc_common.DuplicateMessageError:
+                self.exc_raised = True
+
+        conn.declare_topic_consumer('a_topic', _callback)
+        conn.topic_send('a_topic', rpc_common.serialize_msg(message))
+        conn.topic_send('a_topic', rpc_common.serialize_msg(message))
+        conn.consume(limit=2)
+        conn.close()
+
+        self.assertTrue(self.exc_raised)
 
     def test_message_ttl_on_timeout(self):
         """Test message ttl being set by request timeout. The message
         should die on the vine and never arrive."""
         conn = self.rpc.create_connection(FLAGS)
-        message = 'topic test message'
+        message = {'topic': 'topic test message'}
 
         self.received_message = None
 
@@ -134,7 +161,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         """Test sending to a topic exchange/queue with an exchange name"""
 
         conn = self.rpc.create_connection(FLAGS)
-        message = 'topic test message'
+        message = {'topic': 'topic test message'}
 
         self.received_message = None
 
@@ -153,7 +180,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         """Test sending to a topic exchange with multiple queues"""
 
         conn = self.rpc.create_connection(FLAGS)
-        message = 'topic test message'
+        message = {'topic': 'topic test message'}
 
         self.received_message_1 = None
         self.received_message_2 = None
@@ -180,7 +207,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         """
 
         conn = self.rpc.create_connection(FLAGS)
-        message = 'topic test message'
+        message = {'topic': 'topic test message'}
 
         self.received_message_1 = None
         self.received_message_2 = None
@@ -209,7 +236,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         """
 
         conn = self.rpc.create_connection(FLAGS)
-        message = 'topic test message'
+        message = {'topic': 'topic test message'}
 
         self.received_message_1 = None
         self.received_message_2 = None
@@ -234,7 +261,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
     def test_direct_send_receive(self):
         """Test sending to a direct exchange/queue"""
         conn = self.rpc.create_connection(FLAGS)
-        message = 'direct test message'
+        message = {'topic': 'direct test message'}
 
         self.received_message = None
 
@@ -384,7 +411,8 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
                                '__init__', 'foo timeout foo')
 
         conn = self.rpc.Connection(FLAGS)
-        conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', 'msg')
+        msg = {'topic': 'msg'}
+        conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', msg)
 
         self.assertEqual(info['called'], 3)
         self.stubs.UnsetAll()
@@ -393,7 +421,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
                                'send', 'foo timeout foo')
 
         conn = self.rpc.Connection(FLAGS)
-        conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', 'msg')
+        conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', msg)
 
         self.assertEqual(info['called'], 3)
 
@@ -408,7 +436,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         conn = self.rpc.Connection(FLAGS)
         conn.connection_errors = (MyException, )
 
-        conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', 'msg')
+        conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', msg)
 
         self.assertEqual(info['called'], 2)
         self.stubs.UnsetAll()
@@ -419,13 +447,13 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         conn = self.rpc.Connection(FLAGS)
         conn.connection_errors = (MyException, )
 
-        conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', 'msg')
+        conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', msg)
 
         self.assertEqual(info['called'], 2)
 
     def test_iterconsume_errors_will_reconnect(self):
         conn = self.rpc.Connection(FLAGS)
-        message = 'reconnect test message'
+        message = {'topic': 'reconnect test message'}
 
         self.received_message = None
 
