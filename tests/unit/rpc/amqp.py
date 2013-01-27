@@ -81,6 +81,11 @@ class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
         def fake_notify_send(_conn, topic, msg):
             self.test_msg = msg
 
+        def remove_msg_id_nc(msg):
+            oslo_msg = jsonutils.loads(msg['oslo.message'])
+            oslo_msg.pop('_msg_id_nc')
+            msg['oslo.message'] = jsonutils.dumps(oslo_msg)
+
         self.stubs.Set(self.rpc.Connection, 'notify_send', fake_notify_send)
 
         self.rpc.notify(FLAGS, self.context, 'notifications.info', raw_msg,
@@ -100,6 +105,8 @@ class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
         }
         self.rpc.notify(FLAGS, self.context, 'notifications.info', raw_msg,
                         envelope=True)
+        remove_msg_id_nc(self.test_msg)
+        remove_msg_id_nc(msg)
         self.assertEqual(self.test_msg, msg)
 
         # Make sure envelopes are still on notifications, even if turned off
@@ -107,6 +114,7 @@ class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
         self.stubs.Set(rpc_common, '_SEND_RPC_ENVELOPE', False)
         self.rpc.notify(FLAGS, self.context, 'notifications.info', raw_msg,
                         envelope=True)
+        remove_msg_id_nc(self.test_msg)
         self.assertEqual(self.test_msg, msg)
 
     def test_single_reply_queue_on_has_ids(

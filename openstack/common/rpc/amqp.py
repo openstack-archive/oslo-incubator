@@ -25,6 +25,7 @@ Specifically, this includes impl_kombu and impl_qpid.  impl_carrot also uses
 AMQP, but is deprecated and predates this code.
 """
 
+import collections
 import inspect
 import sys
 import uuid
@@ -302,6 +303,45 @@ def pack_context(msg, context):
     msg.update(context_d)
 
 
+class _DuplicateMsgIdCache(object):
+    """Base class for ProxyCallback, MulticallWaiter and
+    MulticallProxyWaiter.
+    """
+
+    # NOTE: This value is considered can be a configuration item, but
+    #       it is not necessary to change its value in most cases,
+    #       so let this value as static for now.
+    DUP_MSG_CHECK_SIZE = 512
+
+    def __init__(self, **kwargs):
+        self.prev_msgids = collections.deque([],
+                                             maxlen=self.DUP_MSG_CHECK_SIZE)
+        # NOTE: This indicates _DuplicateMsgIdCache calls other inheritances
+        #       in case child class has multiple super classes.
+        if type(self).mro()[-2] != _DuplicateMsgIdCache:
+            super(_DuplicateMsgIdCache, self).__init__(**kwargs)
+
+    def check_duplicated_message(self, message_data):
+        """AMQP consumers may read same message twice when exceptions occur
+           before ack is returned. This method prevents doing it.
+        """
+        if '_msg_id' in message_data:
+            msg_id = message_data['_msg_id']
+        elif '_msg_id_nc' in message_data:
+            # Removing _msg_id_nc since it is currently used only for
+            # checking duplicated message.
+            msg_id = message_data.pop('_msg_id_nc')
+        else:
+            # Expecting msg_id is None in case using old version of producer.
+            msg_id = None
+
+        duplicated = msg_id in self.prev_msgids
+        if not duplicated and msg_id:
+            self.prev_msgids.append(msg_id)
+        if duplicated:
+            raise rpc_common.DuplicatedMessageError(msg_id=msg_id)
+
+
 class _ThreadPoolWithWait(object):
     """Base class for a delayed invocation manager used by
     the Connection class to start up green threads
@@ -340,7 +380,7 @@ class CallbackWrapper(_ThreadPoolWithWait):
         self.pool.spawn_n(self.callback, message_data)
 
 
-class ProxyCallback(_ThreadPoolWithWait):
+class ProxyCallback(_DuplicateMsgIdCache, _ThreadPoolWithWait):
     """Calls methods on a proxy object based on method and args."""
 
     def __init__(self, conf, proxy, connection_pool):
@@ -368,6 +408,7 @@ class ProxyCallback(_ThreadPoolWithWait):
         if hasattr(local.store, 'context'):
             del local.store.context
         rpc_common._safe_log(LOG.debug, _('received %s'), message_data)
+        self.check_duplicated_message(message_data)
         ctxt = unpack_context(self.conf, message_data)
         method = message_data.get('method')
         args = message_data.get('args', {})
@@ -411,7 +452,7 @@ class ProxyCallback(_ThreadPoolWithWait):
                        connection_pool=self.connection_pool)
 
 
-class MulticallProxyWaiter(object):
+class MulticallProxyWaiter(_DuplicateMsgIdCache):
     def __init__(self, conf, msg_id, timeout, connection_pool):
         self._msg_id = msg_id
         self._timeout = timeout or conf.rpc_response_timeout
@@ -422,6 +463,7 @@ class MulticallProxyWaiter(object):
         self._dataqueue = queue.LightQueue()
         # Add this caller to the reply proxy's call_waiters
         self._reply_proxy.add_call_waiter(self, self._msg_id)
+        super(MulticallProxyWaiter, self).__init__()
 
     def put(self, data):
         self._dataqueue.put(data)
@@ -435,6 +477,7 @@ class MulticallProxyWaiter(object):
 
     def _process_data(self, data):
         result = None
+        self.check_duplicated_message(data)
         if data['failure']:
             failure = data['failure']
             result = rpc_common.deserialize_remote_exception(self._conf,
@@ -470,7 +513,7 @@ class MulticallProxyWaiter(object):
 
 
 #TODO(pekowski): Remove MulticallWaiter() in Havana.
-class MulticallWaiter(object):
+class MulticallWaiter(_DuplicateMsgIdCache):
     def __init__(self, conf, connection, timeout):
         self._connection = connection
         self._iterator = connection.iterconsume(timeout=timeout or
@@ -479,6 +522,7 @@ class MulticallWaiter(object):
         self._done = False
         self._got_ending = False
         self._conf = conf
+        super(MulticallWaiter, self).__init__()
 
     def done(self):
         if self._done:
@@ -490,6 +534,7 @@ class MulticallWaiter(object):
 
     def __call__(self, data):
         """The consume() callback will call this.  Store the result."""
+        self.check_duplicated_message(data)
         if data['failure']:
             failure = data['failure']
             self._result = rpc_common.deserialize_remote_exception(self._conf,
@@ -572,9 +617,20 @@ def call(conf, context, topic, msg, timeout, connection_pool):
     return rv[-1]
 
 
+def _add_msg_id_nc(msg):
+    """Add _msg_id_nc for non-call rpc message sendings."""
+    if isinstance(msg, dict):
+        msg_id_nc = uuid.uuid4().hex
+        msg.update({'_msg_id_nc': msg_id_nc})
+        LOG.debug(_('MSG_ID_NC is %s.') % (msg_id_nc))
+    else:
+        LOG.warning(_('Cannot update _msg_id_nc to %s.') % msg)
+
+
 def cast(conf, context, topic, msg, connection_pool):
     """Sends a message on a topic without waiting for a response."""
     LOG.debug(_('Making asynchronous cast on %s...'), topic)
+    _add_msg_id_nc(msg)
     pack_context(msg, context)
     with ConnectionContext(conf, connection_pool) as conn:
         conn.topic_send(topic, rpc_common.serialize_msg(msg))
@@ -583,6 +639,7 @@ def cast(conf, context, topic, msg, connection_pool):
 def fanout_cast(conf, context, topic, msg, connection_pool):
     """Sends a message on a fanout exchange without waiting for a response."""
     LOG.debug(_('Making asynchronous fanout cast...'))
+    _add_msg_id_nc(msg)
     pack_context(msg, context)
     with ConnectionContext(conf, connection_pool) as conn:
         conn.fanout_send(topic, rpc_common.serialize_msg(msg))
@@ -590,6 +647,7 @@ def fanout_cast(conf, context, topic, msg, connection_pool):
 
 def cast_to_server(conf, context, server_params, topic, msg, connection_pool):
     """Sends a message on a topic to a specific server."""
+    _add_msg_id_nc(msg)
     pack_context(msg, context)
     with ConnectionContext(conf, connection_pool, pooled=False,
                            server_params=server_params) as conn:
@@ -599,6 +657,7 @@ def cast_to_server(conf, context, server_params, topic, msg, connection_pool):
 def fanout_cast_to_server(conf, context, server_params, topic, msg,
                           connection_pool):
     """Sends a message on a fanout exchange to a specific server."""
+    _add_msg_id_nc(msg)
     pack_context(msg, context)
     with ConnectionContext(conf, connection_pool, pooled=False,
                            server_params=server_params) as conn:
@@ -610,6 +669,7 @@ def notify(conf, context, topic, msg, connection_pool, envelope):
     LOG.debug(_('Sending %(event_type)s on %(topic)s'),
               dict(event_type=msg.get('event_type'),
                    topic=topic))
+    _add_msg_id_nc(msg)
     pack_context(msg, context)
     with ConnectionContext(conf, connection_pool) as conn:
         if envelope:
