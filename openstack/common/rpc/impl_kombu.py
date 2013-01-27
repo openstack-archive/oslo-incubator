@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import collections
 import functools
 import itertools
 import socket
@@ -89,6 +90,12 @@ kombu_opts = [
                 help='use H/A queues in RabbitMQ (x-ha-policy: all).'
                      'You need to wipe RabbitMQ database when '
                      'changing this option.'),
+    cfg.IntOpt('rabbit_dup_msg_check_cache_size',
+               default=5,
+               help='The size of the cache for duplicate message checking.'
+                    'The cache holds duplicate message check IDs. Duplicate '
+                    'messages are possible in a RabbitMQ HA failover '
+                    'situation'),
 
 ]
 
@@ -128,6 +135,8 @@ class ConsumerBase(object):
         self.tag = str(tag)
         self.kwargs = kwargs
         self.queue = None
+        maxlen = kwargs.get('conf').rabbit_dup_msg_check_cache_size
+        self.dup_check_cache = collections.deque([], maxlen=maxlen)
         self.reconnect(channel)
 
     def reconnect(self, channel):
@@ -159,11 +168,24 @@ class ConsumerBase(object):
         if not callback:
             raise ValueError("No callback defined")
 
+        def is_repeated_message(dup_check_id):
+            """Consumers may read same message twice when exceptions occur
+            before ack is returned. This method prevents doing it.
+            """
+            repeated = dup_check_id in self.dup_check_cache
+            if not repeated and dup_check_id:
+                self.dup_check_cache.append(dup_check_id)
+            return True if repeated else False
+
         def _callback(raw_message):
             message = self.channel.message_to_python(raw_message)
             try:
                 msg = rpc_common.deserialize_msg(message.payload)
-                callback(msg)
+                mid = msg.pop('_dup_check_id', None)
+                if is_repeated_message(mid):
+                    LOG.info(_('Found %s is duplicated. Skip it...') % mid)
+                else:
+                    callback(msg)
                 message.ack()
             except Exception:
                 LOG.exception(_("Failed to process message... skipping it."))
@@ -209,6 +231,7 @@ class DirectConsumer(ConsumerBase):
                                              name=msg_id,
                                              exchange=exchange,
                                              routing_key=msg_id,
+                                             conf=conf,
                                              **options)
 
 
@@ -246,6 +269,7 @@ class TopicConsumer(ConsumerBase):
                                             name=name or topic,
                                             exchange=exchange,
                                             routing_key=topic,
+                                            conf=conf,
                                             **options)
 
 
@@ -279,6 +303,7 @@ class FanoutConsumer(ConsumerBase):
                                              name=queue_name,
                                              exchange=exchange,
                                              routing_key=topic,
+                                             conf=conf,
                                              **options)
 
 
@@ -304,6 +329,10 @@ class Publisher(object):
 
     def send(self, msg, timeout=None):
         """Send a message"""
+        # NOTE: this id is used not to handle same message twice.
+        dup_check_id = uuid.uuid4().hex
+        msg.update({'_dup_check_id': dup_check_id})
+        LOG.debug(_('DUP_CHECK_ID is %s') % dup_check_id)
         if timeout:
             #
             # AMQP TTL is in milliseconds when set in the header.
