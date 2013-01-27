@@ -81,6 +81,11 @@ class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
         def fake_notify_send(_conn, topic, msg):
             self.test_msg = msg
 
+        def remove_unique_id(msg):
+            oslo_msg = jsonutils.loads(msg['oslo.message'])
+            oslo_msg.pop('_unique_id')
+            msg['oslo.message'] = jsonutils.dumps(oslo_msg)
+
         self.stubs.Set(self.rpc.Connection, 'notify_send', fake_notify_send)
 
         self.rpc.notify(FLAGS, self.context, 'notifications.info', raw_msg,
@@ -100,6 +105,8 @@ class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
         }
         self.rpc.notify(FLAGS, self.context, 'notifications.info', raw_msg,
                         envelope=True)
+        remove_unique_id(self.test_msg)
+        remove_unique_id(msg)
         self.assertEqual(self.test_msg, msg)
 
         # Make sure envelopes are still on notifications, even if turned off
@@ -107,6 +114,7 @@ class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
         self.stubs.Set(rpc_common, '_SEND_RPC_ENVELOPE', False)
         self.rpc.notify(FLAGS, self.context, 'notifications.info', raw_msg,
                         envelope=True)
+        remove_unique_id(self.test_msg)
         self.assertEqual(self.test_msg, msg)
 
     def test_single_reply_queue_on_has_ids(
@@ -233,3 +241,27 @@ class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
         self.config(amqp_rpc_single_reply_queue=True)
         self.test_multithreaded_resp_routing()
         self.config(amqp_rpc_single_reply_queue=False)
+
+    def test_duplicate_message_check(self):
+        """Test sending *not-dict* to a topic exchange/queue"""
+
+        conn = self.rpc.create_connection(FLAGS)
+        message = {'args': 'topic test message', '_unique_id': 'aaaabbbbcccc'}
+
+        self.received_message = None
+        cache = rpc_amqp._MsgIdCache()
+        self.exc_raised = False
+
+        def _callback(message):
+            try:
+                cache.check_duplicate_message(message)
+            except rpc_common.DuplicateMessageError:
+                self.exc_raised = True
+
+        conn.declare_topic_consumer('a_topic', _callback)
+        conn.topic_send('a_topic', rpc_common.serialize_msg(message))
+        conn.topic_send('a_topic', rpc_common.serialize_msg(message))
+        conn.consume(limit=2)
+        conn.close()
+
+        self.assertTrue(self.exc_raised)
