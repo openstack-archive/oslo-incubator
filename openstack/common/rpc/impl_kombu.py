@@ -89,6 +89,11 @@ kombu_opts = [
                 help='use H/A queues in RabbitMQ (x-ha-policy: all).'
                      'You need to wipe RabbitMQ database when '
                      'changing this option.'),
+    cfg.IntOpt('rabbit_prev_msgid_size',
+               default=5,
+               help='The size for storing previous duplicated_check_id. '
+                    'This number is used not to process same message twice. '
+                    'This is necessary only when rabbit_ha_queues=True.'),
 
 ]
 
@@ -128,6 +133,7 @@ class ConsumerBase(object):
         self.tag = str(tag)
         self.kwargs = kwargs
         self.queue = None
+        self.prev_msgids = []
         self.reconnect(channel)
 
     def reconnect(self, channel):
@@ -159,11 +165,29 @@ class ConsumerBase(object):
         if not callback:
             raise ValueError("No callback defined")
 
+        def is_repeated_message(msg_id):
+            """In case of using Mirroed Queue and any exceptions occur
+            before ack is returned, Consumers reads same message twice and
+            try to handle the message twice. This method prevents doing it.
+            """
+            use_ha = self.kwargs.get('queue_arguments', {}).get('x-ha-policy')
+            repeated = use_ha and msg_id in self.prev_msgids
+            if not repeated and msg_id:
+                self.prev_msgids.append(msg_id)
+                if (len(self.prev_msgids) >
+                        self.kwargs.get('conf').rabbit_prev_msgid_size):
+                    del self.prev_msgids[0]
+            return True if repeated else False
+
         def _callback(raw_message):
             message = self.channel.message_to_python(raw_message)
             try:
                 msg = rpc_common.deserialize_msg(message.payload)
-                callback(msg)
+                mid = message.payload.get('duplicated_check_id')
+                if is_repeated_message(mid):
+                    LOG.info(_('Found %s is duplicated. Skip it...') % mid)
+                else:
+                    callback(message.payload)
                 message.ack()
             except Exception:
                 LOG.exception(_("Failed to process message... skipping it."))
@@ -209,6 +233,7 @@ class DirectConsumer(ConsumerBase):
                                              name=msg_id,
                                              exchange=exchange,
                                              routing_key=msg_id,
+                                             conf=conf,
                                              **options)
 
 
@@ -246,6 +271,7 @@ class TopicConsumer(ConsumerBase):
                                             name=name or topic,
                                             exchange=exchange,
                                             routing_key=topic,
+                                            conf=conf,
                                             **options)
 
 
@@ -279,6 +305,7 @@ class FanoutConsumer(ConsumerBase):
                                              name=queue_name,
                                              exchange=exchange,
                                              routing_key=topic,
+                                             conf=conf,
                                              **options)
 
 
@@ -304,6 +331,10 @@ class Publisher(object):
 
     def send(self, msg):
         """Send a message"""
+        # NOTE: this id is used not to handle same message twice.
+        check_id = uuid.uuid4().hex
+        msg.update({'duplicated_check_id': check_id})
+        LOG.debug(_('CHECK_ID is %s') % check_id)
         self.producer.publish(msg)
 
 
