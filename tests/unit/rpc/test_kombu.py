@@ -96,7 +96,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         """Test sending to a topic exchange/queue"""
 
         conn = self.rpc.create_connection(FLAGS)
-        message = 'topic test message'
+        message = {'args': 'topic test message'}
 
         self.received_message = None
 
@@ -114,7 +114,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         """Test message ttl being set by request timeout. The message
         should die on the vine and never arrive."""
         conn = self.rpc.create_connection(FLAGS)
-        message = 'topic test message'
+        message = {'args': 'topic test message'}
 
         self.received_message = None
 
@@ -132,7 +132,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         """Test sending to a topic exchange/queue with an exchange name"""
 
         conn = self.rpc.create_connection(FLAGS)
-        message = 'topic test message'
+        message = {'args': 'topic test message'}
 
         self.received_message = None
 
@@ -151,7 +151,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         """Test sending to a topic exchange with multiple queues"""
 
         conn = self.rpc.create_connection(FLAGS)
-        message = 'topic test message'
+        message = {'args': 'topic test message'}
 
         self.received_message_1 = None
         self.received_message_2 = None
@@ -178,7 +178,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         """
 
         conn = self.rpc.create_connection(FLAGS)
-        message = 'topic test message'
+        message = {'args': 'topic test message'}
 
         self.received_message_1 = None
         self.received_message_2 = None
@@ -207,7 +207,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         """
 
         conn = self.rpc.create_connection(FLAGS)
-        message = 'topic test message'
+        message = {'args': 'topic test message'}
 
         self.received_message_1 = None
         self.received_message_2 = None
@@ -232,7 +232,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
     def test_direct_send_receive(self):
         """Test sending to a direct exchange/queue"""
         conn = self.rpc.create_connection(FLAGS)
-        message = 'direct test message'
+        message = {'args': 'direct test message'}
 
         self.received_message = None
 
@@ -382,7 +382,8 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
                                '__init__', 'foo timeout foo')
 
         conn = self.rpc.Connection(FLAGS)
-        conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', 'msg')
+        msg = {'args': 'msg'}
+        conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', msg)
 
         self.assertEqual(info['called'], 3)
         self.stubs.UnsetAll()
@@ -391,7 +392,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
                                'send', 'foo timeout foo')
 
         conn = self.rpc.Connection(FLAGS)
-        conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', 'msg')
+        conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', msg)
 
         self.assertEqual(info['called'], 3)
 
@@ -406,7 +407,7 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         conn = self.rpc.Connection(FLAGS)
         conn.connection_errors = (MyException, )
 
-        conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', 'msg')
+        conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', msg)
 
         self.assertEqual(info['called'], 2)
         self.stubs.UnsetAll()
@@ -417,13 +418,13 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         conn = self.rpc.Connection(FLAGS)
         conn.connection_errors = (MyException, )
 
-        conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', 'msg')
+        conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', msg)
 
         self.assertEqual(info['called'], 2)
 
     def test_iterconsume_errors_will_reconnect(self):
         conn = self.rpc.Connection(FLAGS)
-        message = 'reconnect test message'
+        message = {'args': 'reconnect test message'}
 
         self.received_message = None
 

@@ -318,14 +318,22 @@ class BaseRpcAMQPTestCase(BaseRpcTestCase):
         }
         self.rpc.notify(FLAGS, self.context, 'notifications.info', raw_msg,
                         envelope=True)
-        self.assertEqual(self.test_msg, msg)
 
-        # Make sure envelopes are still on notifications, even if turned off
-        # for general messages.
+        def assert_equal_if_envelope(msg1, msg2):
+            """In case envelop=True, _msg_id_nc has to be removed."""
+            msg1_key = jsonutils.loads(msg1['oslo.message'])
+            msg1_key.pop('_msg_id_nc')
+            msg2_key = jsonutils.loads(msg2['oslo.message'])
+            msg2_key.pop('_msg_id_nc')
+            self.assertEqual(msg1_key, msg2_key)
+            self.assertEqual(msg1['oslo.version'], msg2['oslo.version'])
+
+        assert_equal_if_envelope(self.test_msg, msg)
+
         self.stubs.Set(rpc_common, '_SEND_RPC_ENVELOPE', False)
         self.rpc.notify(FLAGS, self.context, 'notifications.info', raw_msg,
                         envelope=True)
-        self.assertEqual(self.test_msg, msg)
+        assert_equal_if_envelope(self.test_msg, msg)
 
 
 class TestReceiver(object):

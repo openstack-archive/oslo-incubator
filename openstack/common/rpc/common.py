@@ -124,6 +124,10 @@ class Timeout(RPCException):
     message = _("Timeout while waiting on RPC response.")
 
 
+class DuplicatedMessageError(RPCException):
+    message = _("Found duplicated message(%(msg_id)s). Skipping it..")
+
+
 class InvalidRPCConnectionReuse(RPCException):
     message = _("Invalid reuse of an RPC connection.")
 
