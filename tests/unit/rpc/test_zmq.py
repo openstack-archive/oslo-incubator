@@ -23,6 +23,7 @@ eventlet.monkey_patch()
 
 import logging
 import os
+import socket
 
 import fixtures
 
@@ -44,17 +45,23 @@ LOG = logging.getLogger(__name__)
 FLAGS = cfg.CONF
 
 
+def get_unused_port():
+    """
+    Returns an unused port on localhost.
+    """
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(('localhost', 0))
+    addr, port = s.getsockname()
+    s.close()
+    return port
+
+
 class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
-    # TESTCNT needs to be a class var as each run
-    # by subclasses must have a unique identifier
-    TESTCNT = 0
     rpc = impl_zmq
 
     def setUp(self, topic='test', topic_nested='nested'):
         if not impl_zmq:
             self.skipTest("ZeroMQ library required")
-        _RpcZmqBaseTestCase.TESTCNT += 1
-        testcnt = _RpcZmqBaseTestCase.TESTCNT
 
         self.reactor = None
         self.rpc = impl_zmq
@@ -74,7 +81,7 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
             #                  between tearDown() and setUp()
             # TODO(mordred): replace this with testresources once we're on
             #                testr
-            self.config(rpc_zmq_port=9500 + testcnt)
+            self.config(rpc_zmq_port=get_unused_port())
             internal_ipc_dir = self.useFixture(fixtures.TempDir()).path
             self.config(rpc_zmq_ipc_dir=internal_ipc_dir)
 
