@@ -19,7 +19,6 @@
 
 import os.path
 import StringIO
-import testtools
 import urllib
 
 import mock
@@ -27,6 +26,7 @@ import urllib2
 
 from openstack.common import jsonutils
 from openstack.common import policy
+from tests import utils
 
 
 class TestException(Exception):
@@ -35,7 +35,7 @@ class TestException(Exception):
         self.kwargs = kwargs
 
 
-class RulesTestCase(testtools.TestCase):
+class RulesTestCase(utils.BaseTestCase):
     def test_init_basic(self):
         rules = policy.Rules()
 
@@ -105,7 +105,7 @@ class RulesTestCase(testtools.TestCase):
         self.assertEqual(str(rules), exemplar)
 
 
-class PolicySetAndResetTestCase(testtools.TestCase):
+class PolicySetAndResetTestCase(utils.BaseTestCase):
 
     def setUp(self):
         super(PolicySetAndResetTestCase, self).setUp()
@@ -138,7 +138,7 @@ class FakeCheck(policy.BaseCheck):
         return (target, creds)
 
 
-class CheckFunctionTestCase(testtools.TestCase):
+class CheckFunctionTestCase(utils.BaseTestCase):
 
     def setUp(self):
         super(CheckFunctionTestCase, self).setUp()
@@ -185,7 +185,7 @@ class CheckFunctionTestCase(testtools.TestCase):
             self.fail("policy.check() failed to raise requested exception")
 
 
-class FalseCheckTestCase(testtools.TestCase):
+class FalseCheckTestCase(utils.BaseTestCase):
     def test_str(self):
         check = policy.FalseCheck()
 
@@ -197,7 +197,7 @@ class FalseCheckTestCase(testtools.TestCase):
         self.assertEqual(check('target', 'creds'), False)
 
 
-class TrueCheckTestCase(testtools.TestCase):
+class TrueCheckTestCase(utils.BaseTestCase):
     def test_str(self):
         check = policy.TrueCheck()
 
@@ -214,7 +214,7 @@ class CheckForTest(policy.Check):
         pass
 
 
-class CheckTestCase(testtools.TestCase):
+class CheckTestCase(utils.BaseTestCase):
     def test_init(self):
         check = CheckForTest('kind', 'match')
 
@@ -227,7 +227,7 @@ class CheckTestCase(testtools.TestCase):
         self.assertEqual(str(check), 'kind:match')
 
 
-class NotCheckTestCase(testtools.TestCase):
+class NotCheckTestCase(utils.BaseTestCase):
     def test_init(self):
         check = policy.NotCheck('rule')
 
@@ -253,7 +253,7 @@ class NotCheckTestCase(testtools.TestCase):
         rule.assert_called_once_with('target', 'cred')
 
 
-class OrCheckTestCase(testtools.TestCase):
+class OrCheckTestCase(utils.BaseTestCase):
     def test_init(self):
         check = policy.OrCheck(['rule1', 'rule2'])
 
@@ -295,7 +295,7 @@ class OrCheckTestCase(testtools.TestCase):
         rules[1].assert_called_once_with('target', 'cred')
 
 
-class ParseCheckTestCase(testtools.TestCase):
+class ParseCheckTestCase(utils.BaseTestCase):
     def test_false(self):
         result = policy._parse_check('!')
 
@@ -338,7 +338,7 @@ class ParseCheckTestCase(testtools.TestCase):
         policy._checks[None].assert_called_once_with('spam', 'handler')
 
 
-class ParseListRuleTestCase(testtools.TestCase):
+class ParseListRuleTestCase(utils.BaseTestCase):
     def test_empty(self):
         result = policy._parse_list_rule([])
 
@@ -408,7 +408,7 @@ class ParseListRuleTestCase(testtools.TestCase):
                          '((rule1 and rule2) or (rule3 and rule4))')
 
 
-class ParseTokenizeTestCase(testtools.TestCase):
+class ParseTokenizeTestCase(utils.BaseTestCase):
     @mock.patch.object(policy, '_parse_check', lambda x: x)
     def test_tokenize(self):
         exemplar = ("(( ( ((() And)) or ) (check:%(miss)s) not)) "
@@ -428,7 +428,7 @@ class ParseTokenizeTestCase(testtools.TestCase):
         self.assertEqual(result, expected)
 
 
-class ParseStateMetaTestCase(testtools.TestCase):
+class ParseStateMetaTestCase(utils.BaseTestCase):
     def test_reducer(self):
         @policy.reducer('a', 'b', 'c')
         @policy.reducer('d', 'e', 'f')
@@ -462,7 +462,7 @@ class ParseStateMetaTestCase(testtools.TestCase):
                 self.fail("Unrecognized reducer discovered")
 
 
-class ParseStateTestCase(testtools.TestCase):
+class ParseStateTestCase(utils.BaseTestCase):
     def test_init(self):
         state = policy.ParseState()
 
@@ -627,7 +627,7 @@ class ParseStateTestCase(testtools.TestCase):
         self.assertEqual(result, [('check', 'not check')])
 
 
-class ParseTextRuleTestCase(testtools.TestCase):
+class ParseTextRuleTestCase(utils.BaseTestCase):
     def test_empty(self):
         result = policy._parse_text_rule('')
 
@@ -653,7 +653,7 @@ class ParseTextRuleTestCase(testtools.TestCase):
         mock_parse_tokenize.assert_called_once_with('test rule')
 
 
-class ParseRuleTestCase(testtools.TestCase):
+class ParseRuleTestCase(utils.BaseTestCase):
     @mock.patch.object(policy, '_parse_text_rule', return_value='text rule')
     @mock.patch.object(policy, '_parse_list_rule', return_value='list rule')
     def test_parse_rule_string(self, mock_parse_list_rule,
@@ -674,7 +674,7 @@ class ParseRuleTestCase(testtools.TestCase):
         mock_parse_list_rule.assert_called_once_with([['a'], ['list']])
 
 
-class CheckRegisterTestCase(testtools.TestCase):
+class CheckRegisterTestCase(utils.BaseTestCase):
     @mock.patch.object(policy, '_checks', {})
     def test_register_check(self):
         class TestCheck(policy.Check):
@@ -693,7 +693,7 @@ class CheckRegisterTestCase(testtools.TestCase):
         self.assertEqual(policy._checks, dict(spam=TestCheck))
 
 
-class RuleCheckTestCase(testtools.TestCase):
+class RuleCheckTestCase(utils.BaseTestCase):
     @mock.patch.object(policy, '_rules', {})
     def test_rule_missing(self):
         check = policy.RuleCheck('rule', 'spam')
@@ -717,7 +717,7 @@ class RuleCheckTestCase(testtools.TestCase):
         policy._rules['spam'].assert_called_once_with('target', 'creds')
 
 
-class RoleCheckTestCase(testtools.TestCase):
+class RoleCheckTestCase(utils.BaseTestCase):
     def test_accept(self):
         check = policy.RoleCheck('role', 'sPaM')
 
@@ -729,7 +729,7 @@ class RoleCheckTestCase(testtools.TestCase):
         self.assertEqual(check('target', dict(roles=[])), False)
 
 
-class HttpCheckTestCase(testtools.TestCase):
+class HttpCheckTestCase(utils.BaseTestCase):
     def decode_post_data(self, post_data):
         result = {}
         for item in post_data.split('&'):
@@ -775,7 +775,7 @@ class HttpCheckTestCase(testtools.TestCase):
         ))
 
 
-class GenericCheckTestCase(testtools.TestCase):
+class GenericCheckTestCase(utils.BaseTestCase):
     def test_no_cred(self):
         check = policy.GenericCheck('name', '%(name)s')
 

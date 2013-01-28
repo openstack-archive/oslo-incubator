@@ -15,28 +15,30 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import testtools
-
 import mock
 
-from openstack.common import network_utils as utils
+from openstack.common import network_utils
+from tests import utils
 
 
-class NetworkUtilsTest(testtools.TestCase):
+class NetworkUtilsTest(utils.BaseTestCase):
 
     def test_parse_host_port(self):
         self.assertEqual(('server01', 80),
-                         utils.parse_host_port('server01:80'))
+                         network_utils.parse_host_port('server01:80'))
         self.assertEqual(('server01', None),
-                         utils.parse_host_port('server01'))
+                         network_utils.parse_host_port('server01'))
         self.assertEqual(('server01', 1234),
-                         utils.parse_host_port('server01', default_port=1234))
+                         network_utils.parse_host_port('server01',
+                         default_port=1234))
         self.assertEqual(('::1', 80),
-                         utils.parse_host_port('[::1]:80'))
+                         network_utils.parse_host_port('[::1]:80'))
         self.assertEqual(('::1', None),
-                         utils.parse_host_port('[::1]'))
+                         network_utils.parse_host_port('[::1]'))
         self.assertEqual(('::1', 1234),
-                         utils.parse_host_port('[::1]', default_port=1234))
+                         network_utils.parse_host_port('[::1]',
+                         default_port=1234))
         self.assertEqual(('2001:db8:85a3::8a2e:370:7334', 1234),
-                         utils.parse_host_port('2001:db8:85a3::8a2e:370:7334',
-                                               default_port=1234))
+                         network_utils.parse_host_port(
+                             '2001:db8:85a3::8a2e:370:7334',
+                             default_port=1234))

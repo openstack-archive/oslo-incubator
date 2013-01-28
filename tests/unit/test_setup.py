@@ -20,12 +20,12 @@ import sys
 from tempfile import mkstemp
 
 import fixtures
-import testtools
 
 from openstack.common.setup import *
+from tests import utils
 
 
-class EmailTestCase(testtools.TestCase):
+class EmailTestCase(utils.BaseTestCase):
 
     def test_str_dict_replace(self):
         string = 'Johnnie T. Hozer'
@@ -34,7 +34,7 @@ class EmailTestCase(testtools.TestCase):
                          canonicalize_emails(string, mapping))
 
 
-class MailmapTestCase(testtools.TestCase):
+class MailmapTestCase(utils.BaseTestCase):
 
     def setUp(self):
         super(MailmapTestCase, self).setUp()
@@ -60,7 +60,7 @@ class MailmapTestCase(testtools.TestCase):
                          parse_mailmap(self.mailmap))
 
 
-class ParseRequirementsTest(testtools.TestCase):
+class ParseRequirementsTest(utils.BaseTestCase):
 
     def setUp(self):
         super(ParseRequirementsTest, self).setUp()

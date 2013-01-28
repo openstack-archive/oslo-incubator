@@ -14,12 +14,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import testtools
-
 from openstack.common.cliutils import *
+from tests import utils
 
 
-class ValidateArgsTest(testtools.TestCase):
+class ValidateArgsTest(utils.BaseTestCase):
 
     def test_lambda_no_args(self):
         validate_args(lambda: None)

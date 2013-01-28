@@ -14,12 +14,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import testtools
-
 from openstack.common import excutils
+from tests import utils
 
 
-class SaveAndReraiseTest(testtools.TestCase):
+class SaveAndReraiseTest(utils.BaseTestCase):
 
     def test_save_and_reraise_exception(self):
         e = None

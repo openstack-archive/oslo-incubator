@@ -15,16 +15,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import testtools
-
 import os
 import shutil
 import tempfile
 
 from openstack.common import fileutils
+from tests import utils
 
 
-class EnsureTree(testtools.TestCase):
+class EnsureTree(utils.BaseTestCase):
     def test_ensure_tree(self):
         tmpdir = tempfile.mkdtemp()
         try:

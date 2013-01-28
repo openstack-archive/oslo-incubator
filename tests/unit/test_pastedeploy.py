@@ -18,9 +18,9 @@ import os
 import tempfile
 
 import fixtures
-import testtools
 
 from openstack.common import pastedeploy
+from tests import utils
 
 
 class App(object):
@@ -43,7 +43,7 @@ class Filter(object):
         self.data = data
 
 
-class PasteTestCase(testtools.TestCase):
+class PasteTestCase(utils.BaseTestCase):
 
     def setUp(self):
         super(PasteTestCase, self).setUp()

@@ -20,12 +20,12 @@ import datetime
 
 import iso8601
 import mock
-import testtools
 
 from openstack.common import timeutils
+from tests import utils
 
 
-class TimeUtilsTest(testtools.TestCase):
+class TimeUtilsTest(utils.BaseTestCase):
 
     def setUp(self):
         super(TimeUtilsTest, self).setUp()
@@ -155,7 +155,7 @@ class TimeUtilsTest(testtools.TestCase):
         self.assertEqual(iso, timeutils.iso8601_from_timestamp(ts))
 
 
-class TestIso8601Time(testtools.TestCase):
+class TestIso8601Time(utils.BaseTestCase):
 
     def _instaneous(self, timestamp, yr, mon, day, hr, min, sec, micro):
         self.assertEquals(timestamp.year, yr)
