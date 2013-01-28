@@ -425,8 +425,9 @@ class Connection(object):
             nxt_receiver = self.session.next_receiver(timeout=timeout)
             try:
                 self._lookup_consumer(nxt_receiver).consume()
-            except Exception:
-                LOG.exception(_("Error processing message.  Skipping it."))
+            except Exception, exc:
+                LOG.exception(_("Error processing message.  Skipping it. Exception: %s") % 
+                              str(exc))
 
         for iteration in itertools.count(0):
             if limit and iteration >= limit:
@@ -486,8 +487,19 @@ class Connection(object):
         """Send a 'direct' message"""
         self.publisher_send(DirectPublisher, msg_id, msg)
 
-    def topic_send(self, topic, msg):
+    def topic_send(self, topic, msg, timeout=None):
         """Send a 'topic' message"""
+        #
+        # We want to create a message with attributes, e.g. a TTL. We
+        # don't really need to keep 'msg' in its JSON format any longer
+        # so let's create an actual qpid message here and get some
+        # value-add on the go.
+        #
+        # WARNING: Request timeout happens to be in the same units as
+        # qpid's TTL (seconds). If this changes in the future, then this
+        # will need to be altered accordingly.
+        #
+        qpid_message = qpid_messaging.Message(content=msg, ttl=timeout)
         self.publisher_send(TopicPublisher, topic, msg)
 
     def fanout_send(self, topic, msg):

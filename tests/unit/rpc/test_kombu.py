@@ -24,6 +24,7 @@ eventlet.monkey_patch()
 
 import contextlib
 import logging
+import time
 
 from openstack.common import cfg
 from openstack.common import exception
@@ -108,6 +109,25 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
         conn.close()
 
         self.assertEqual(self.received_message, message)
+
+    def test_message_ttl_on_timeout(self):
+        """Test message ttl being set by request timeout. The message
+        should die on the vine and never arrive."""
+        conn = self.rpc.create_connection(FLAGS)
+        message = 'topic test message'
+
+        self.received_message = None
+
+        def _callback(message):
+            self.received_message = message
+            self.fail("should not have received this message")
+
+        conn.declare_topic_consumer('a_topic', _callback)
+        conn.topic_send('a_topic', rpc_common.serialize_msg(message), 1)
+        time.sleep(3)
+        conn.iterconsume(1, 1)
+
+        conn.close()
 
     def test_topic_send_receive_exchange_name(self):
         """Test sending to a topic exchange/queue with an exchange name"""
