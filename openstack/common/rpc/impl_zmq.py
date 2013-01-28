@@ -90,7 +90,7 @@ def _serialize(data):
     Error if a developer passes us bad data.
     """
     try:
-        return str(jsonutils.dumps(data, ensure_ascii=True))
+        return jsonutils.dumps(data, ensure_ascii=True)
     except TypeError:
         LOG.error(_("JSON serialization failed."))
         raise
@@ -220,8 +220,7 @@ class ZmqClient(object):
     def cast(self, msg_id, topic, data, serialize=True, force_envelope=False):
         if serialize:
             data = rpc_common.serialize_msg(data, force_envelope)
-        self.outq.send([str(msg_id), str(topic), str('cast'),
-                        _serialize(data)])
+        self.outq.send(map(bytes, (msg_id, topic, 'cast', _serialize(data))))
 
     def close(self):
         self.outq.close()
@@ -446,7 +445,7 @@ class ZmqProxy(ZmqBaseReactor):
             msg_id = inside[-1]['args']['msg_id']
             response = inside[-1]['args']['response']
             LOG.debug(_("->response->%s"), response)
-            data = [str(msg_id), _serialize(response)]
+            data = map(bytes, (msg_id, _serialize(response)))
         else:
             sock_type = zmq.PUSH
 
