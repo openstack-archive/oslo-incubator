@@ -20,14 +20,17 @@
 
    Filters which commands a service is allowed to run as another user.
 
-   To use this with oslo, you should set the following in oslo.conf:
+   To use this with oslo, you should set the following in
+   oslo.conf:
    rootwrap_config=/etc/oslo/rootwrap.conf
 
-   You also need to let the oslo user run oslo-rootwrap as root in sudoers:
-   oslo ALL = (root) NOPASSWD: /usr/bin/oslo-rootwrap /etc/oslo/rootwrap.conf *
+   You also need to let the oslo user run oslo-rootwrap
+   as root in sudoers:
+   oslo ALL = (root) NOPASSWD: /usr/bin/oslo-rootwrap
+                                   /etc/oslo/rootwrap.conf *
 
-   Service packaging should deploy .filters files only on nodes where they are
-   needed, to avoid allowing more than is necessary.
+   Service packaging should deploy .filters files only on nodes where
+   they are needed, to avoid allowing more than is necessary.
 """
 
 import ConfigParser
