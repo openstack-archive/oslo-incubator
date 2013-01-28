@@ -26,11 +26,8 @@ import contextlib
 import logging
 import testtools
 
-import stubout
-
 from openstack.common import cfg
 from openstack.common import exception
-from openstack.common.fixture import moxstubout
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
 from tests.unit.rpc import common
@@ -69,7 +66,6 @@ def _raise_exc_stub(stubs, times, obj, method, exc_msg,
 class KombuStubs:
     @staticmethod
     def setUp(self):
-        self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
         if kombu:
             self.config(fake_rabbit=True)
             self.config(rpc_response_timeout=5)

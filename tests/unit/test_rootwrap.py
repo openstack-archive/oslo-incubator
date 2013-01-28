@@ -18,19 +18,17 @@ import ConfigParser
 import logging
 import logging.handlers
 import os
-import stubout
 import subprocess
-import testtools
 
 from openstack.common.rootwrap import filters
 from openstack.common.rootwrap import wrapper
+from tests import utils
 
 
-class RootwrapTestCase(testtools.TestCase):
+class RootwrapTestCase(utils.BaseTestCase):
 
     def setUp(self):
         super(RootwrapTestCase, self).setUp()
-        self.stubs = stubout.StubOutForTesting()
         self.filters = [
             filters.RegExpFilter("/bin/ls", "root", 'ls', '/[a-z]+'),
             filters.CommandFilter("/usr/bin/foo_bar_not_exist", "root"),

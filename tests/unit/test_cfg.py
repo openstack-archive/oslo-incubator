@@ -21,14 +21,12 @@ import sys
 import tempfile
 
 import fixtures
-import stubout
-import testtools
 
 from openstack.common.cfg import *
-from openstack.common.fixture import moxstubout
+from tests import utils
 
 
-class ExceptionsTestCase(testtools.TestCase):
+class ExceptionsTestCase(utils.BaseTestCase):
 
     def test_error(self):
         msg = str(Error('foobar'))
@@ -75,7 +73,7 @@ class ExceptionsTestCase(testtools.TestCase):
         self.assertEquals(msg, 'Failed to parse foo: foobar')
 
 
-class BaseTestCase(testtools.TestCase):
+class BaseTestCase(utils.BaseTestCase):
 
     class TestConfigOpts(ConfigOpts):
         def __call__(self, args=None):
@@ -92,7 +90,6 @@ class BaseTestCase(testtools.TestCase):
         self.conf = self.TestConfigOpts()
 
         self.tempdirs = []
-        self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
 
     def create_tempfiles(self, files, ext='.conf'):
         tempfiles = []
@@ -1567,7 +1564,7 @@ class OptDumpingTestCase(BaseTestCase):
                           ])
 
 
-class ConfigParserTestCase(testtools.TestCase):
+class ConfigParserTestCase(utils.BaseTestCase):
     def test_no_section(self):
         with tempfile.NamedTemporaryFile() as tmpfile:
             tmpfile.write('foo = bar')
