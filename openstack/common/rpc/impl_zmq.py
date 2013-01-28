@@ -321,21 +321,22 @@ class ConsumerBase(object):
             return [result]
 
     def process(self, style, target, proxy, ctx, data):
+        data.setdefault('version', None)
+        data.setdefault('args', {})
+
         # Method starting with - are
         # processed internally. (non-valid method name)
-        method = data['method']
+        method = data.get('method')
+        if not method:
+            LOG.error(_("RPC message did not include method."))
+            return
 
         # Internal method
         # uses internal context for safety.
-        if data['method'][0] == '-':
-            # For reply / process_reply
-            method = method[1:]
-            if method == 'reply':
-                self.private_ctx.reply(ctx, proxy, **data['args'])
+        if method == '-reply':
+            self.private_ctx.reply(ctx, proxy, **data['args'])
             return
 
-        data.setdefault('version', None)
-        data.setdefault('args', {})
         proxy.dispatch(ctx, data['version'],
                        data['method'], **data['args'])
 
