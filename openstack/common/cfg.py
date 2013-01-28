@@ -1294,7 +1294,34 @@ class ConfigOpts(collections.Mapping):
         :param group: an option OptGroup object or group name
         :raises: NoSuchOptError, NoSuchGroupError
         """
+        conf_snapshot = {'__default__': self._opts.keys()}
+        for group_name, group_obj in self._groups.iteritems():
+            conf_snapshot[group_name] = group_obj._opts.keys()
+
+        group_name = None
+        if isinstance(group, basestring):
+            group_name = group
+        elif isinstance(group, OptGroup):
+            group_name = group.name
+        conf_snapshot.setdefault(group_name or '__default__', []).append(name)
+
         __import__(module_str)
+
+        temp = [opt_obj['opt'] for opt_name, opt_obj in self._opts.items()
+                if opt_name not in conf_snapshot['__default__']]
+        self.unregister_opts(temp)
+
+        invalid_group_names = [x for x in self._groups.keys()
+                               if x not in conf_snapshot]
+        for group_name in invalid_group_names:
+            del self._groups[group_name]
+
+        for group_name, group_obj in self._groups.iteritems():
+            group_items = group_obj._opts.items()
+            temp = [opt_obj['opt'] for opt_name, opt_obj in group_items
+                    if opt_name not in conf_snapshot[group_name]]
+            self.unregister_opts(temp, group_name)
+
         self._get_opt_info(name, group)
 
     @__clear_cache

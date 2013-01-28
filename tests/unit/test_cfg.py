@@ -1221,12 +1221,15 @@ class ImportOptTestCase(BaseTestCase):
         self.assertFalse(hasattr(CONF, 'blaa'))
         CONF.import_opt('blaa', 'tests.testmods.blaa_opt')
         self.assertTrue(hasattr(CONF, 'blaa'))
+        self.assertFalse(hasattr(CONF, 'blaablaa'))
 
     def test_import_opt_in_group(self):
         self.assertFalse(hasattr(CONF, 'bar'))
         CONF.import_opt('foo', 'tests.testmods.bar_foo_opt', group='bar')
         self.assertTrue(hasattr(CONF, 'bar'))
         self.assertTrue(hasattr(CONF.bar, 'foo'))
+        self.assertFalse(hasattr(CONF.bar, 'baz'))
+        self.assertFalse('quz' in CONF._groups)
 
     def test_import_opt_import_errror(self):
         self.assertRaises(ImportError, CONF.import_opt,
@@ -1234,7 +1237,7 @@ class ImportOptTestCase(BaseTestCase):
 
     def test_import_opt_no_such_opt(self):
         self.assertRaises(NoSuchOptError, CONF.import_opt,
-                          'blaablaa', 'tests.testmods.blaa_opt')
+                          'blaablaablaa', 'tests.testmods.blaa_opt')
 
     def test_import_opt_no_such_group(self):
         self.assertRaises(NoSuchGroupError, CONF.import_opt,
