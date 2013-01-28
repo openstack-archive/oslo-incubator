@@ -82,7 +82,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
             fixtures.MonkeyPatch('qpid.messaging.Sender',
                                  lambda *_x, **_y: self.mock_sender))
         self.useFixture(
-            fixtures.MonekyPatch('qpid.messaging.Receiver',
+            fixtures.MonkeyPatch('qpid.messaging.Receiver',
                                  lambda *_x, **_y: self.mock_receiver))
         self.addCleanup(self._close_qpid)
 
