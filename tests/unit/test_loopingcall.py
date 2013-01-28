@@ -15,7 +15,7 @@
 #    under the License.
 
 import datetime
-import unittest
+import testtools
 
 from eventlet import greenthread
 import mox
@@ -24,9 +24,10 @@ from openstack.common import loopingcall
 from openstack.common import timeutils
 
 
-class LoopingCallTestCase(unittest.TestCase):
+class LoopingCallTestCase(testtools.TestCase):
 
     def setUp(self):
+        super(LoopingCallTestCase, self).setUp()
         self.num_runs = 0
 
     def test_return_true(self):

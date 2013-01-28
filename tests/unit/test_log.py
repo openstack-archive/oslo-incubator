@@ -201,13 +201,10 @@ class LegacyFormatterTestCase(test_utils.BaseTestCase):
         self.handler = logging.StreamHandler(self.stream)
         self.handler.setFormatter(log.LegacyFormatter())
         self.log.logger.addHandler(self.handler)
+        self.addCleanup(self.log.logger.removeHandler, self.handler)
         self.level = self.log.logger.getEffectiveLevel()
         self.log.logger.setLevel(logging.DEBUG)
-
-    def tearDown(self):
-        self.log.logger.setLevel(self.level)
-        self.log.logger.removeHandler(self.handler)
-        super(LegacyFormatterTestCase, self).tearDown()
+        self.addCleanup(self.log.logger.setLevel, self.level)
 
     def test_uncontextualized_log(self):
         self.log.info("foo")

@@ -24,12 +24,13 @@ eventlet.monkey_patch()
 import logging
 import os
 
+import fixtures
+
 from openstack.common import cfg
 from openstack.common import exception
 from openstack.common.gettextutils import _
 from openstack.common import processutils
 from openstack.common import rpc
-from openstack.common import testutils
 from tests.unit.rpc import common
 
 try:
@@ -47,9 +48,11 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
     # TESTCNT needs to be a class var as each run
     # by subclasses must have a unique identifier
     TESTCNT = 0
+    rpc = impl_zmq
 
-    @testutils.skip_if(not impl_zmq, "ZeroMQ library required")
     def setUp(self, topic='test', topic_nested='nested'):
+        if not impl_zmq:
+            self.skipTest("ZeroMQ library required")
         _RpcZmqBaseTestCase.TESTCNT += 1
         testcnt = _RpcZmqBaseTestCase.TESTCNT
 
@@ -69,32 +72,26 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
             #                  increment to avoid async socket
             #                  closing/wait delays causing races
             #                  between tearDown() and setUp()
+            # TODO(mordred): replace this with testresources once we're on
+            #                testr
             self.config(rpc_zmq_port=9500 + testcnt)
-            internal_ipc_dir = "/tmp/openstack-zmq.ipc.test.%s" % testcnt
+            internal_ipc_dir = self.useFixture(fixtures.TempDir()).path
             self.config(rpc_zmq_ipc_dir=internal_ipc_dir)
 
             LOG.info(_("Running internal zmq receiver."))
             reactor = impl_zmq.ZmqProxy(FLAGS)
+            self.addCleanup(self._close_reactor)
             reactor.consume_in_thread()
         else:
             LOG.warning(_("Detected zmq-receiver socket."))
             LOG.warning(_("Assuming nova-rpc-zmq-receiver is running."))
             LOG.warning(_("Using system zmq receiver deamon."))
-
         super(_RpcZmqBaseTestCase, self).setUp(
             topic=topic, topic_nested=topic_nested)
 
-    @testutils.skip_if(not impl_zmq, "ZeroMQ library required")
-    def tearDown(self):
+    def _close_reactor(self):
         if self.reactor:
             self.reactor.close()
-
-            try:
-                processutils.execute('rm', '-rf', FLAGS.rpc_zmq_ipc_dir)
-            except exception.Error:
-                pass
-
-        super(_RpcZmqBaseTestCase, self).tearDown()
 
 
 class RpcZmqBaseTopicTestCase(_RpcZmqBaseTestCase):

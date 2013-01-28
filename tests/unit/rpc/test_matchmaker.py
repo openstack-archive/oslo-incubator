@@ -15,7 +15,7 @@
 #    under the License.
 
 import logging
-import unittest
+import testtools
 
 from openstack.common.rpc import matchmaker
 
@@ -23,7 +23,7 @@ from openstack.common.rpc import matchmaker
 LOG = logging.getLogger(__name__)
 
 
-class _MatchMakerTestCase(unittest.TestCase):
+class _MatchMakerTestCase(testtools.TestCase):
     def test_valid_host_matches(self):
         queues = self.driver.queues(self.topic)
         matched_hosts = map(lambda x: x[1], queues)

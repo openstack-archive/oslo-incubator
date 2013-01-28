@@ -16,7 +16,7 @@
 #    under the License.
 
 import eventlet
-import unittest
+import testtools
 
 from openstack.common import local
 
@@ -26,7 +26,7 @@ class Dict(dict):
     pass
 
 
-class LocalStoreTestCase(unittest.TestCase):
+class LocalStoreTestCase(testtools.TestCase):
     v1 = Dict(a='1')
     v2 = Dict(a='2')
     v3 = Dict(a='3')

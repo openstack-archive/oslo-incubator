@@ -16,7 +16,7 @@
 #    under the License.
 
 import logging
-import unittest
+import testtools
 
 from openstack.common.gettextutils import _
 
@@ -24,7 +24,7 @@ from openstack.common.gettextutils import _
 LOG = logging.getLogger(__name__)
 
 
-class GettextTest(unittest.TestCase):
+class GettextTest(testtools.TestCase):
 
     def test_gettext_does_not_blow_up(self):
         LOG.info(_('test'))

@@ -20,13 +20,13 @@ import logging.handlers
 import os
 import stubout
 import subprocess
-import unittest
+import testtools
 
 from openstack.common.rootwrap import filters
 from openstack.common.rootwrap import wrapper
 
 
-class RootwrapTestCase(unittest.TestCase):
+class RootwrapTestCase(testtools.TestCase):
 
     def setUp(self):
         super(RootwrapTestCase, self).setUp()

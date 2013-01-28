@@ -21,14 +21,13 @@ import select
 import shutil
 import tempfile
 import time
-import unittest
+import testtools
 
 import eventlet
 from eventlet import greenpool
 from eventlet import greenthread
 
 from openstack.common import lockutils
-from openstack.common import testutils
 from tests import utils as test_utils
 
 

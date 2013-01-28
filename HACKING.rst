@@ -65,9 +65,9 @@ Example::
   import random
   import StringIO
   import time
-  import unittest
 
   import eventlet
+  import testtools
   import webob.exc
 
   import nova.api.ec2
