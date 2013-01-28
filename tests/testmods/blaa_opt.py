@@ -19,3 +19,4 @@ from openstack.common import cfg
 CONF = cfg.CONF
 
 CONF.register_opt(cfg.StrOpt('blaa'))
+CONF.register_opt(cfg.StrOpt('blaablaa'))
