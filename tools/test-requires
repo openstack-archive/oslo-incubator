@@ -3,6 +3,7 @@ distribute>=0.6.24
 
 coverage
 fixtures>=0.3.12
+m2crypto
 mock
 mox==0.5.3
 nose
