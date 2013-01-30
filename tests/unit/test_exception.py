@@ -88,7 +88,8 @@ class OpenstackExceptionTest(utils.BaseTestCase):
         err = self.TestException(test=test_message)
         self.assertEqual(err._error_string, test_message)
 
-    def test_error_forating_error_string(self):
+    def test_error_formating_error_string(self):
+        self.stubs.Set(exception, '_FATAL_EXCEPTION_FORMAT_ERRORS', False)
         err = self.TestException(lol='U mad brah')
         self.assertEqual(err._error_string, self.TestException.message)
 
