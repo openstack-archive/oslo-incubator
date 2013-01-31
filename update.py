@@ -150,6 +150,10 @@ def _copy_file(path, dest, base):
              '\"openstack\.common',
              '\"' + base + '.openstack.common')
 
+    _replace(dest,
+             'possible_topdir, "oslo",$',
+             'possible_topdir, "' + base + '",')
+
 
 def _copy_pyfile(path, base, dest_dir):
     _copy_file(path, _dest_path(path, base, dest_dir), base)
