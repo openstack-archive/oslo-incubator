@@ -154,6 +154,17 @@ class TimeUtilsTest(utils.BaseTestCase):
         ts = calendar.timegm(utcnow.timetuple())
         self.assertEqual(iso, timeutils.iso8601_from_timestamp(ts))
 
+    def test_is_soon(self):
+        expires = timeutils.utcnow() + datetime.timedelta(minutes=5)
+        self.assertFalse(timeutils.is_soon(expires, 120))
+        self.assertTrue(timeutils.is_soon(expires, 300))
+        self.assertTrue(timeutils.is_soon(expires, 600))
+
+        with mock.patch('datetime.datetime') as datetime_mock:
+            datetime_mock.utcnow.return_value = self.skynet_self_aware_time
+            expires = timeutils.utcnow()
+            self.assertTrue(timeutils.is_soon(expires, 0))
+
 
 class TestIso8601Time(utils.BaseTestCase):
 
@@ -278,9 +289,3 @@ class TestIso8601Time(utils.BaseTestCase):
         dtn = datetime.datetime(2011, 2, 14, 19, 53, 07)
         naive = timeutils.normalize_time(dtn)
         self.assertTrue(naive < dt)
-
-    def test_is_soon(self):
-        expires = timeutils.utcnow() + datetime.timedelta(minutes=5)
-        self.assertFalse(timeutils.is_soon(expires, 120))
-        self.assertTrue(timeutils.is_soon(expires, 300))
-        self.assertTrue(timeutils.is_soon(expires, 600))
