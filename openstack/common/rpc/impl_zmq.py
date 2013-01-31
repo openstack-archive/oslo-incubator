@@ -218,6 +218,11 @@ class ZmqClient(object):
         self.outq = ZmqSocket(addr, socket_type, bind=bind)
 
     def cast(self, msg_id, topic, data, serialize=True, force_envelope=False):
+        msg_id = 0
+        msg = data[-1]
+        if 'msg_id' in msg.get('args', {}):
+            msg_id = msg['args']['msg_id']
+
         if serialize:
             data = rpc_common.serialize_msg(data, force_envelope)
         self.outq.send(map(bytes, (msg_id, topic, 'cast', _serialize(data))))
@@ -435,16 +440,8 @@ class ZmqProxy(ZmqBaseReactor):
 
         LOG.debug(_("CONSUMER GOT %s"), ' '.join(map(pformat, data)))
 
-        # Handle zmq_replies magic
-        if topic.startswith('fanout~'):
+        if topic.startswith('fanout~') or topic.startswith('zmq_replies'):
             sock_type = zmq.PUB
-        elif topic.startswith('zmq_replies'):
-            sock_type = zmq.PUB
-            inside = rpc_common.deserialize_msg(_deserialize(in_msg))
-            msg_id = inside[-1]['args']['msg_id']
-            response = inside[-1]['args']['response']
-            LOG.debug(_("->response->%s"), response)
-            data = map(bytes, (msg_id, _serialize(response)))
         else:
             sock_type = zmq.PUSH
 
@@ -661,10 +658,12 @@ def _call(addr, context, msg_id, topic, msg, timeout=None,
             msg = msg_waiter.recv()
             LOG.debug(_("Received message: %s"), msg)
             LOG.debug(_("Unpacking response"))
-            responses = _deserialize(msg[-1])
+            responses = _deserialize(msg[-1])[-1]['args']['response']
         # ZMQError trumps the Timeout error.
         except zmq.ZMQError:
             raise RPCException("ZMQ Socket Error")
+        except IndexError, KeyError:
+            raise RPCException(_("RPC Message Invalid."))
         finally:
             if 'msg_waiter' in vars():
                 msg_waiter.close()
