@@ -17,7 +17,6 @@
 import os
 import pprint
 import socket
-import string
 import sys
 import types
 import uuid
@@ -780,18 +779,5 @@ def _get_ctxt():
 def _get_matchmaker():
     global matchmaker
     if not matchmaker:
-        # rpc_zmq_matchmaker should be set to a 'module.Class'
-        mm_path = CONF.rpc_zmq_matchmaker.split('.')
-        mm_module = '.'.join(mm_path[:-1])
-        mm_class = mm_path[-1]
-
-        # Only initialize a class.
-        if mm_path[-1][0] not in string.ascii_uppercase:
-            LOG.error(_("Matchmaker could not be loaded.\n"
-                      "rpc_zmq_matchmaker is not a class."))
-            raise RPCException(_("Error loading Matchmaker."))
-
-        mm_impl = importutils.import_module(mm_module)
-        mm_constructor = getattr(mm_impl, mm_class)
-        matchmaker = mm_constructor()
+        matchmaker = importutils.import_object(CONF.rpc_zmq_matchmaker)
     return matchmaker
