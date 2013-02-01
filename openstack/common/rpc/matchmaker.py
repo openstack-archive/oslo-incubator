@@ -211,14 +211,14 @@ class LocalhostExchange(Exchange):
 class DirectExchange(Exchange):
     """
     Exchange where all topic keys are split, sending to second half.
-    i.e. "compute.host" sends a message to "compute" running on "host"
+    i.e. "compute.host" sends a message to "compute.host" running on "host"
     """
     def __init__(self):
         super(Exchange, self).__init__()
 
     def run(self, key):
-        b, e = key.split('.', 1)
-        return [(b, e)]
+        e = key.split('.', 1)[1]
+        return [(key, e)]
 
 
 class MatchMakerRing(MatchMakerBase):

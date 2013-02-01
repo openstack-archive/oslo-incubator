@@ -23,7 +23,17 @@ from tests import utils
 LOG = logging.getLogger(__name__)
 
 
-class _MatchMakerTestCase(object):
+class _MatchMakerDirectedTopicTestCase(object):
+    """Mix-in to test directed topics."""
+    def test_firstval_is_directed_topic(self):
+        matches = self.driver.queues(self.topic)
+        topics = map(lambda x: x[0], matches)
+
+        for topic in topics:
+            self.assertTrue('.' in topic)
+
+
+class _MatchMakerTestCase(_MatchMakerDirectedTopicTestCase):
     def test_valid_host_matches(self):
         queues = self.driver.queues(self.topic)
         matched_hosts = map(lambda x: x[1], queues)
@@ -57,4 +67,14 @@ class MatchMakerLocalhostTestCase(utils.BaseTestCase, _MatchMakerTestCase):
         super(MatchMakerLocalhostTestCase, self).setUp()
         self.driver = matchmaker.MatchMakerLocalhost()
         self.topic = "test"
+        self.hosts = ['localhost']
+
+
+class MatchMakerDirectExchangeTestCase(utils.BaseTestCase,
+                                       _MatchMakerDirectedTopicTestCase):
+    """Test lookups against a directed topic."""
+    def setUp(self):
+        super(MatchMakerDirectExchangeTestCase, self).setUp()
+        self.driver = matchmaker.MatchMakerLocalhost()
+        self.topic = "test.localhost"
         self.hosts = ['localhost']
