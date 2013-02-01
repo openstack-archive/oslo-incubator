@@ -140,7 +140,8 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
                                             "args": {"value": value}})
         self.assertEqual(self.context.to_dict(), result)
 
-    def _test_cast(self, method, value, args=None, fanout=False):
+    def _test_cast(self, method, value, args=None, fanout=False,
+                   topic_nested=None):
         """Test casts by pushing items through a channeled queue.
 
            @param: method a reference to a method returning a value
@@ -148,6 +149,8 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
            @param: args optional dictionary arguments to method
            @param: fanout boolean for use of rpc fanout method
         """
+        topic_nested = topic_nested or self.topic_nested
+
         # Not a true global, but capitalized so
         # it is clear it is leaking scope into Nested()
         QUEUE = eventlet.queue.Queue()
@@ -163,7 +166,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
                 QUEUE.put(method(*args, **kwargs))
 
         nested = Nested()
-        conn = self._create_consumer(nested, self.topic_nested, fanout)
+        conn = self._create_consumer(nested, topic_nested, fanout)
 
         rpc_method = (self.rpc.cast, self.rpc.fanout_cast)[fanout]
 
@@ -173,7 +176,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
             msg['args'].update(args)
 
         rpc_method(FLAGS, self.context,
-                   self.topic_nested,
+                   topic_nested,
                    msg)
 
         try:
