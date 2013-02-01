@@ -69,6 +69,7 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
         self.config(rpc_zmq_bind_address='127.0.0.1')
         self.config(rpc_zmq_host='127.0.0.1')
         self.config(rpc_response_timeout=5)
+        self.rpc._get_matchmaker(host='127.0.0.1')
 
         # We'll change this if we detect no daemon running.
         ipc_dir = FLAGS.rpc_zmq_ipc_dir
@@ -116,5 +117,5 @@ class RpcZmqDirectTopicTestCase(_RpcZmqBaseTestCase):
     """
     def setUp(self):
         super(RpcZmqDirectTopicTestCase, self).setUp(
-            topic='test.localhost',
-            topic_nested='nested.localhost')
+            topic='test.127.0.0.1',
+            topic_nested='nested.127.0.0.1')
