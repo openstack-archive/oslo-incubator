@@ -127,3 +127,12 @@ class RpcZmqDirectTopicTestCase(_RpcZmqBaseTestCase):
         super(RpcZmqDirectTopicTestCase, self).setUp(
             topic='test.127.0.0.1',
             topic_nested='nested.127.0.0.1')
+
+    def test_cast_wrong_direct_topic_failure(self):
+        try:
+            self._test_cast(common.TestReceiver.echo, 42, {"value": 42},
+                            fanout=False, topic_nested='nested.localhost')
+        except Exception:
+            return
+        self.expectFailure("Message should not have been consumed.",
+                           self.assertTrue, True)
