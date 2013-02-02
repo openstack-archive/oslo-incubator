@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Code-Review+2: Mark McLoughlin <markmc@redhat.com>
+Approved+1: Russell Bryant <rbryant@redhat.com>
+Code-Review+2: Russell Bryant <rbryant@redhat.com>
+Code-Review+1: Raymond Pekowski <pekowski@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Sat, 02 Feb 2013 16:21:56 +0000
+Reviewed-on: https://review.openstack.org/20629
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
