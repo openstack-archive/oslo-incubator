@@ -24,6 +24,7 @@ import testtools
 
 from openstack.common import cfg
 from openstack.common.fixture import moxstubout
+from openstack.common import exception
 
 CONF = cfg.CONF
 
@@ -36,6 +37,13 @@ class BaseTestCase(testtools.TestCase):
         self.addCleanup(CONF.reset)
         self.useFixture(fixtures.FakeLogger('openstack.common'))
         self.useFixture(fixtures.Timeout(30, True))
+        self.stubs.Set(exception, '_FATAL_EXCEPTION_FORMAT_ERRORS', True)
+
+    def tearDown(self):
+        super(BaseTestCase, self).tearDown()
+        CONF.reset()
+        self.stubs.UnsetAll()
+        self.stubs.SmartUnsetAll()
 
     def config(self, **kw):
         """
