@@ -29,7 +29,6 @@ from sqlalchemy import DateTime, Integer
 
 from openstack.common import context
 from openstack.common import exception
-from openstack.common.db import common as common_db
 from openstack.common.db.sqlalchemy import models
 from openstack.common.db.sqlalchemy import session
 from openstack.common import testutils
@@ -118,7 +117,7 @@ class SessionErrorWrapperTestCase(test_utils.BaseTestCase):
 
         tbl2 = TmpTable()
         tbl2.update({'foo': 10})
-        self.assertRaises(common_db.DBDuplicateEntry, tbl2.save)
+        self.assertRaises(session.DBDuplicateEntry, tbl2.save)
 
     def test_execute_wrapper(self):
         _session = session.get_session()
@@ -131,5 +130,5 @@ class SessionErrorWrapperTestCase(test_utils.BaseTestCase):
             method = _session.query(TmpTable).\
                             filter_by(foo=10).\
                             update
-            self.assertRaises(common_db.DBDuplicateEntry,
+            self.assertRaises(session.DBDuplicateEntry,
                               method, {'foo': 20})
