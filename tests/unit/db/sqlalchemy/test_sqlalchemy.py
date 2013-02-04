@@ -17,11 +17,6 @@
 """Unit tests for SQLAlchemy specific code."""
 
 from eventlet import db_pool
-try:
-    import MySQLdb
-    HAS_MYSQLDB = True
-except ImportError:
-    HAS_MYSQLDB = False
 
 from sqlalchemy import Column, MetaData, Table, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
@@ -29,8 +24,11 @@ from sqlalchemy import DateTime, Integer
 
 from openstack.common.db.sqlalchemy import models
 from openstack.common.db.sqlalchemy import session
+from openstack.common import importutils
 from openstack.common import testutils
 from tests import utils as test_utils
+
+MySQLdb = importutils.try_import('MySQLdb')
 
 
 class TestException(Exception):
@@ -38,7 +36,7 @@ class TestException(Exception):
 
 
 class DbPoolTestCase(test_utils.BaseTestCase):
-    @testutils.skip_if(not HAS_MYSQLDB, "Required module MySQLdb missing.")
+    @testutils.skip_if(MySQLdb is None, "Required module MySQLdb missing.")
     def setUp(self):
         super(DbPoolTestCase, self).setUp()
         self.config(sql_dbpool_enable=True)
