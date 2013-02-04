@@ -317,9 +317,11 @@ _ENGINE = None
 _MAKER = None
 
 
-def set_defaults(**kwargs):
+def set_defaults(sql_connection, sqlite_db):
     """Set defaults for configuration variables."""
-    cfg.set_defaults(sql_opts, **kwargs)
+    cfg.set_defaults(sql_opts,
+                     sql_connection=sql_connection,
+                     sqlite_db=sqlite_db)
 
 
 def get_session(autocommit=True, expire_on_commit=False):
