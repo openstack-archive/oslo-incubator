@@ -25,6 +25,12 @@ import os
 import subprocess
 import sys
 
+# NOTE(mtreinish) by default the root directory of the project isn't included
+# in the python path. This adds the tools directory's parent to the python
+# path
+parentdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+os.sys.path.insert(0, parentdir)
+
 from openstack.common import cfg
 
 
