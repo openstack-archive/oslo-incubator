@@ -15,7 +15,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import openstack.common.db.sqlalchemy.models as models
+from openstack.common.db.sqlalchemy import models
 from tests import utils as test_utils
 
 
