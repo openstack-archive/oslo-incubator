@@ -27,13 +27,12 @@ from sqlalchemy import Column, MetaData, Table, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import DateTime, Integer
 
-from openstack.common import exception
 from openstack.common.db.sqlalchemy import models
 from openstack.common.db.sqlalchemy import session
 from tests import utils as test_utils
 
 
-class TestException(exception.OpenstackException):
+class TestException(Exception):
     pass
 
 
