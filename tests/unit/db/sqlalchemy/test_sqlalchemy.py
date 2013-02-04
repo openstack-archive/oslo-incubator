@@ -27,7 +27,6 @@ from sqlalchemy import Column, MetaData, Table, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import DateTime, Integer
 
-from openstack.common import context
 from openstack.common import exception
 from openstack.common.db.sqlalchemy import models
 from openstack.common.db.sqlalchemy import session
@@ -46,7 +45,6 @@ class DbPoolTestCase(test_utils.BaseTestCase):
         self.config(sql_dbpool_enable=True)
         self.user_id = 'fake'
         self.project_id = 'fake'
-        self.context = context.RequestContext(self.user_id, self.project_id)
 
     def test_db_pool_option(self):
         self.config(sql_idle_timeout=11, sql_min_pool_size=21,
