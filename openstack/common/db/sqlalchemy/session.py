@@ -258,7 +258,6 @@ import sqlalchemy.orm
 from sqlalchemy.pool import NullPool, StaticPool
 from sqlalchemy.sql.expression import literal_column
 
-import openstack.common.db.common as db_common
 from openstack.common import cfg
 import openstack.common.log as logging
 from openstack.common.gettextutils import _
@@ -338,6 +337,25 @@ def get_session(autocommit=True, expire_on_commit=False):
     return session
 
 
+class DBError(Exception):
+    """Wraps an implementation specific exception."""
+    def __init__(self, inner_exception=None):
+        self.inner_exception = inner_exception
+        super(DBError, self).__init__(str(inner_exception))
+
+
+class DBDuplicateEntry(DBError):
+    """Wraps an implementation specific exception."""
+    def __init__(self, columns=[], inner_exception=None):
+        self.columns = columns
+        super(DBDuplicateEntry, self).__init__(inner_exception)
+
+
+class InvalidUnicodeParameter(Exception):
+    message = _("Invalid Parameter: "
+                "Unicode is not supported by the current database.")
+
+
 # note(boris-42): In current versions of DB backends unique constraint
 # violation messages follow the structure:
 #
@@ -391,7 +409,7 @@ def raise_if_duplicate_entry_error(integrity_error, engine_name):
         columns = columns.strip().split(", ")
     else:
         columns = get_columns_from_uniq_cons_or_name(columns)
-    raise db_common.DBDuplicateEntry(columns, integrity_error)
+    raise DBDuplicateEntry(columns, integrity_error)
 
 
 def wrap_db_error(f):
@@ -399,7 +417,7 @@ def wrap_db_error(f):
         try:
             return f(*args, **kwargs)
         except UnicodeEncodeError:
-            raise db_common.InvalidUnicodeParameter()
+            raise InvalidUnicodeParameter()
         # note(boris-42): We should catch unique constraint violation and
         # wrap it by our own DBDuplicateEntry exception. Unique constraint
         # violation is wrapped by IntegrityError.
@@ -410,10 +428,10 @@ def wrap_db_error(f):
             # means we should get names of columns, which values violate
             # unique constraint, from error message.
             raise_if_duplicate_entry_error(e, get_engine().name)
-            raise db_common.DBError(e)
+            raise DBError(e)
         except Exception, e:
             LOG.exception(_('DB exception wrapped.'))
-            raise db_common.DBError(e)
+            raise DBError(e)
     _wrap.func_name = f.func_name
     return _wrap
 
@@ -577,7 +595,7 @@ def create_engine(sql_connection):
 class Query(sqlalchemy.orm.query.Query):
     """Subclass of sqlalchemy.query with soft_delete() method."""
     def soft_delete(self, synchronize_session='evaluate'):
-        return self.update({'deleted': True,
+        return self.update({'deleted': literal_column('id'),
                             'updated_at': literal_column('updated_at'),
                             'deleted_at': timeutils.utcnow()},
                            synchronize_session=synchronize_session)

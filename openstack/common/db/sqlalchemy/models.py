@@ -22,7 +22,7 @@
 SQLAlchemy models.
 """
 
-from sqlalchemy import Column, Boolean
+from sqlalchemy import Column, Integer
 from sqlalchemy import DateTime
 from sqlalchemy.orm import object_mapper
 
@@ -94,10 +94,10 @@ class ModelBase(object):
 
 class SoftDeleteMixin(object):
     deleted_at = Column(DateTime)
-    deleted = Column(Boolean, default=False)
+    deleted = Column(Integer, default=0)
 
     def soft_delete(self, session=None):
         """Mark this object as deleted."""
-        self.deleted = True
+        self.deleted = self.id
         self.deleted_at = timeutils.utcnow()
         self.save(session=session)
