@@ -17,7 +17,7 @@
 
 import unittest
 
-import openstack.common.db.sqlalchemy.models as models
+from openstack.common.db.sqlalchemy import models
 from openstack.common import testutils
 
 
