@@ -246,12 +246,6 @@ import time
 
 from eventlet import db_pool
 from eventlet import greenthread
-try:
-    import MySQLdb
-    from MySQLdb.constants import CLIENT as mysql_client_constants
-except ImportError:
-    MySQLdb = None
-    mysql_client_constants = None
 from sqlalchemy.exc import DisconnectionError, OperationalError, IntegrityError
 import sqlalchemy.interfaces
 import sqlalchemy.orm
@@ -259,10 +253,14 @@ from sqlalchemy.pool import NullPool, StaticPool
 from sqlalchemy.sql.expression import literal_column
 
 from openstack.common import cfg
+from openstack.common import importutils
 from openstack.common import log as logging
 from openstack.common.gettextutils import _
 from openstack.common import timeutils
 
+MySQLdb = importutils.try_import('MySQLdb')
+if MySQLdb is not None:
+    from MySQLdb.constants import CLIENT as mysql_client_constants
 
 sql_opts = [
     cfg.StrOpt('sql_connection',
