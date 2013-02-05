@@ -42,7 +42,8 @@ import xmlrpclib
 from openstack.common import timeutils
 
 
-def to_primitive(value, convert_instances=False, level=0):
+def to_primitive(value, convert_instances=False, convert_datetime=True,
+                 level=0):
     """Convert a complex object into primitives.
 
     Handy for JSON serialization. We can optionally handle instances,
@@ -94,29 +95,34 @@ def to_primitive(value, convert_instances=False, level=0):
             o = []
             for v in value:
                 o.append(to_primitive(v, convert_instances=convert_instances,
+                                      convert_datetime=convert_datetime,
                                       level=level))
             return o
         elif isinstance(value, dict):
             o = {}
             for k, v in value.iteritems():
                 o[k] = to_primitive(v, convert_instances=convert_instances,
+                                    convert_datetime=convert_datetime,
                                     level=level)
             return o
-        elif isinstance(value, datetime.datetime):
+        elif convert_datetime and isinstance(value, datetime.datetime):
             return timeutils.strtime(value)
         elif hasattr(value, 'iteritems'):
             return to_primitive(dict(value.iteritems()),
                                 convert_instances=convert_instances,
+                                convert_datetime=convert_datetime,
                                 level=level + 1)
         elif hasattr(value, '__iter__'):
             return to_primitive(list(value),
                                 convert_instances=convert_instances,
+                                convert_datetime=convert_datetime,
                                 level=level)
         elif convert_instances and hasattr(value, '__dict__'):
             # Likely an instance of something. Watch for cycles.
             # Ignore class member vars.
             return to_primitive(value.__dict__,
                                 convert_instances=convert_instances,
+                                convert_datetime=convert_datetime,
                                 level=level + 1)
         else:
             return value
