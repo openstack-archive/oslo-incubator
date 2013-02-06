@@ -33,6 +33,14 @@ class VersionInfo(object):
         self.version = None
         self._cached_version = None
 
+    def __str__(self):
+        """Make the VersionInfo object behave like a string."""
+        return self.version_string
+
+    def __repr__(self):
+        """Include the name."""
+        return "VersionInfo(%s:%s)" % (self.package, self.version_string())
+
     def _get_version_from_pkg_resources(self):
         """Get the version of the package from the pkg_resources record
         associated with the package."""
