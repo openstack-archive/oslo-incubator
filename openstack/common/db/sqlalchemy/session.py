@@ -248,9 +248,8 @@ from eventlet import db_pool
 from eventlet import greenthread
 try:
     import MySQLdb
-    HAS_MYSQLDB = True
 except ImportError:
-    HAS_MYSQLDB = None
+    MySQLdb = None
 from sqlalchemy.exc import DisconnectionError, OperationalError, IntegrityError
 import sqlalchemy.interfaces
 import sqlalchemy.orm
@@ -504,7 +503,7 @@ def create_engine(sql_connection):
         if CONF.sql_connection == "sqlite://":
             engine_args["poolclass"] = StaticPool
             engine_args["connect_args"] = {'check_same_thread': False}
-    elif all((CONF.sql_dbpool_enable, HAS_MYSQLDB,
+    elif all((CONF.sql_dbpool_enable, MySQLdb,
               "mysql" in connection_dict.drivername)):
         LOG.info(_("Using mysql/eventlet db_pool."))
         # MySQLdb won't accept 'None' in the password field
