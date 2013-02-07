@@ -17,8 +17,6 @@
 
 """Common utilities used in testing"""
 
-import subprocess
-
 import fixtures
 import testtools
 
@@ -27,6 +25,11 @@ from openstack.common.fixture import moxstubout
 from openstack.common import exception
 
 CONF = cfg.CONF
+
+
+class TestingException(Exception):
+    """Exception class used for tests only."""
+    pass
 
 
 class BaseTestCase(testtools.TestCase):
