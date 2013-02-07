@@ -266,7 +266,7 @@ class BaseRpcAMQPTestCase(BaseRpcTestCase):
 
         def fake_unpack_context(*args, **kwargs):
             info['unpacked'] = True
-            raise test.TestingException('moo')
+            raise test_utils.TestingException('moo')
 
         self.stubs.Set(rpc_amqp, 'unpack_context', fake_unpack_context)
 
