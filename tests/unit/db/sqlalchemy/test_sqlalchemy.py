@@ -16,8 +16,7 @@
 
 """Unit tests for SQLAlchemy specific code."""
 
-from eventlet import db_pool
-
+import sqlalchemy
 from sqlalchemy import Column, MetaData, Table, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import DateTime, Integer
@@ -44,32 +43,47 @@ class DbPoolTestCase(test_utils.BaseTestCase):
         self.project_id = 'fake'
 
     def test_db_pool_option(self):
-        self.config(sql_idle_timeout=11, sql_min_pool_size=21,
-                    sql_max_pool_size=42)
+        # test that pool options are passed to engine creation
+        self.config(sql_idle_timeout=11, sql_max_pool_size=42,
+                    sql_max_overflow=5)
 
-        info = {}
+        def _create_engine(*args, **kwargs):
+            e = test_utils.TestingException("engine")
+            e.engine_args = args
+            e.engine_kwargs = kwargs
+            raise e
 
-        class FakeConnectionPool(db_pool.ConnectionPool):
-            def __init__(self, mod_name, **kwargs):
-                info['module'] = mod_name
-                info['kwargs'] = kwargs
-                super(FakeConnectionPool, self).__init__(mod_name,
-                                                         **kwargs)
-
-            def connect(self, *args, **kwargs):
-                raise TestException()
-
-        self.stubs.Set(db_pool, 'ConnectionPool',
-                       FakeConnectionPool)
+        self.stubs.Set(sqlalchemy, 'create_engine', _create_engine)
 
         sql_connection = 'mysql://user:pass@127.0.0.1/nova'
-        self.assertRaises(TestException, session.create_engine,
-                          sql_connection)
 
-        self.assertEqual(info['module'], MySQLdb)
-        self.assertEqual(info['kwargs']['max_idle'], 11)
-        self.assertEqual(info['kwargs']['min_size'], 21)
-        self.assertEqual(info['kwargs']['max_size'], 42)
+        try:
+            session.create_engine(sql_connection)
+            self.fail("no test exception")
+        except test_utils.TestingException as e:
+            self.assertEqual(sql_connection, e.engine_args[0])
+            self.assertEqual(42, e.engine_kwargs['pool_size'])
+            self.assertEqual(5, e.engine_kwargs['max_overflow'])
+            self.assertEqual(11, e.engine_kwargs['pool_recycle'])
+
+    def test_conn_options(self):
+        def fake_connect(**kwargs):
+            e = test_utils.TestingException("connect")
+            e.conn_args = kwargs
+            raise e
+
+        self.stubs.Set(MySQLdb, 'connect', fake_connect)
+
+        sql_connection = 'mysql://user:pass@127.0.0.1/nova'
+
+        try:
+            session.create_engine(sql_connection)
+            self.fail("no test exception")
+        except test_utils.TestingException as e:
+            self.assertEqual('pass', e.conn_args['passwd'])
+            self.assertEqual('127.0.0.1', e.conn_args['host'])
+            self.assertEqual('nova', e.conn_args['db'])
+            self.assertEqual('user', e.conn_args['user'])
 
 
 BASE = declarative_base()
