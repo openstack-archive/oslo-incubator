@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Code-Review+2: Russell Bryant <rbryant@redhat.com>
+Approved+1: Doug Hellmann <doug.hellmann@dreamhost.com>
+Code-Review+2: Doug Hellmann <doug.hellmann@dreamhost.com>
+Code-Review+1: Davanum Srinivas (DIMS) <davanum@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 08 Feb 2013 15:58:59 +0000
+Reviewed-on: https://review.openstack.org/21006
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
