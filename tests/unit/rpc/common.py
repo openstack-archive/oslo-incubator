@@ -21,6 +21,7 @@ Unit Tests for remote procedure calls shared between all implementations
 
 import logging
 import time
+import uuid
 
 import eventlet
 from eventlet import greenthread
@@ -314,18 +315,22 @@ class BaseRpcAMQPTestCase(BaseRpcTestCase):
         # Now turn it on for notifications
         msg = {
             'oslo.version': rpc_common._RPC_ENVELOPE_VERSION,
-            'oslo.message': jsonutils.dumps(raw_msg),
+            'oslo.message': jsonutils.dumps(raw_msg)
         }
         self.rpc.notify(FLAGS, self.context, 'notifications.info', raw_msg,
                         envelope=True)
-        self.assertEqual(self.test_msg, msg)
+        for k, v in msg.items():
+            self.assertIn(k, self.test_msg)
+            self.assertEqual(v, self.test_msg[k])
 
         # Make sure envelopes are still on notifications, even if turned off
         # for general messages.
         self.stubs.Set(rpc_common, '_SEND_RPC_ENVELOPE', False)
         self.rpc.notify(FLAGS, self.context, 'notifications.info', raw_msg,
                         envelope=True)
-        self.assertEqual(self.test_msg, msg)
+        for k, v in msg.items():
+            self.assertIn(k, self.test_msg)
+            self.assertEqual(v, self.test_msg[k])
 
 
 class TestReceiver(object):
