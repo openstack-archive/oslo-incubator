@@ -82,6 +82,51 @@ ZMQ_CTX = None  # ZeroMQ Context, must be global.
 matchmaker = None  # memoized matchmaker object
 
 
+def _monkey_patch_socket_init(self, context, socket_type):
+    super(Socket, self).__init__(context, socket_type)
+
+    self._eventlet_send_event = _BlockedThread()
+    self._eventlet_recv_event = _BlockedThread()
+    self._eventlet_send_lock = _QueueLock()
+    self._eventlet_recv_lock = _QueueLock()
+
+    def event(fd):
+        # Some events arrived at the zmq socket. This may mean
+        # there's a message that can be read or there's space for
+        # a message to be written.
+        send_wake = self._eventlet_send_event.wake()
+        recv_wake = self._eventlet_recv_event.wake()
+        if not send_wake and not recv_wake:
+            # if no waiting send or recv thread was woken up, then
+            # force the zmq socket's events to be processed to
+            # avoid repeated wakeups
+            _Socket_getsockopt(self, EVENTS)
+
+    hub = hubs.get_hub()
+    self._eventlet_listener = hub.add(hub.READ, self.getsockopt(FD), event)
+
+
+def _monkey_patch_socket_getsockopt(self, option):
+    result = _Socket_getsockopt(self, option)
+    if option == EVENTS:
+        # Getting the events causes the zmq socket to process
+        # events which may mean a msg can be sent or received. If
+        # there is a greenthread blocked and waiting for events,
+        # it will miss the edge-triggered read event, so wake it
+        # up.
+        if (result & POLLOUT):
+            self._eventlet_send_event.wake()
+        if (result & POLLIN):
+            self._eventlet_recv_event.wake()
+    return result
+
+
+# Workaround zeromq spurious wakeup bug in older eventlet releases.
+if eventlet.version_info < (0, 12, 0):
+    eventlet.green.zmq.Socket.__init__ = _monkey_patch_socket_init
+    eventlet.green.zmq.Socket.getsockopt = _monkey_patch_socket_getsockopt
+
+
 def _serialize(data):
     """
     Serialization wrapper
