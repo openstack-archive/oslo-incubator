@@ -542,7 +542,9 @@ class ZmqReactor(ZmqBaseReactor):
 
         msg_id, topic, style, in_msg = data
 
-        ctx, request = rpc_common.deserialize_msg(_deserialize(in_msg))
+        rpc_envelope = _deserialize(in_msg)
+        rpc_common.verify_envelope(rpc_envelope)
+        ctx, request = rpc_common.deserialize_msg(rpc_envelope)
         ctx = RpcContext.unmarshal(ctx)
 
         proxy = self.proxies[sock]

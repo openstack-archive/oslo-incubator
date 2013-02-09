@@ -17,9 +17,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import collections
 import copy
 import sys
 import traceback
+import uuid
 
 from openstack.common import cfg
 from openstack.common.gettextutils import _
@@ -45,25 +47,34 @@ This version number applies to the message envelope that is used in the
 serialization done inside the rpc layer.  See serialize_msg() and
 deserialize_msg().
 
-The current message format (version 2.0) is very simple.  It is:
+The current message format (version 3.0) is very simple.  It is:
 
     {
         'oslo.version': <RPC Envelope Version as a String>,
-        'oslo.message': <Application Message Payload, JSON encoded>
+        'oslo.message': <Sub-Envelope Payload, JSON encoded>
+    }
+
+The sub-envelope payload is a dictionary:
+
+    {
+        'id': <UUID>,
+        'message': <Application Message Payload, JSON encoded>
     }
 
 Message format version '1.0' is just considered to be the messages we sent
 without a message envelope.
 
-So, the current message envelope just includes the envelope version.  It may
-eventually contain additional information, such as a signature for the message
-payload.
+Message format version '2.0' sent oslo.message containing a JSON encoded
+Application Message Payload without any sub-envelope.
 
-We will JSON encode the application message payload.  The message envelope,
+The message format is intended eventually contain additional information,
+such as a signature for the message payload.
+
+We will JSON encode the application message payload.  The message,
 which includes the JSON encoded application message body, will be passed down
 to the messaging libraries as a dict.
 '''
-_RPC_ENVELOPE_VERSION = '2.0'
+_RPC_ENVELOPE_VERSION = '3.0'
 
 _VERSION_KEY = 'oslo.version'
 _MESSAGE_KEY = 'oslo.message'
@@ -71,6 +82,10 @@ _MESSAGE_KEY = 'oslo.message'
 
 # TODO(russellb) Turn this on after Grizzly.
 _SEND_RPC_ENVELOPE = False
+
+SEEN_MSGS = collections.deque([]),
+            maxlen=self.DUP_MSG_CHECK_SIZE)
+DUP_MSG_CHECK_SIZE = 512  # Arbitrary - make configurable.
 
 
 class RPCException(Exception):
@@ -122,6 +137,10 @@ class Timeout(RPCException):
     waiting for a response from the remote side.
     """
     message = _("Timeout while waiting on RPC response.")
+
+
+class DuplicatedMessageError(RPCException):
+     message = _("Received replayed message(%(msg_id)s). Ignoring.")
 
 
 class InvalidRPCConnectionReuse(RPCException):
@@ -418,10 +437,16 @@ def serialize_msg(raw_msg, force_envelope=False):
     if not _SEND_RPC_ENVELOPE and not force_envelope:
         return raw_msg
 
+    """Make an RPC message envelope"""
+    sub_envelope = {
+        'id': uuid.uuid4().hex,
+        'message': raw_msg
+    }
+
     # NOTE(russellb) See the docstring for _RPC_ENVELOPE_VERSION for more
     # information about this format.
     msg = {_VERSION_KEY: _RPC_ENVELOPE_VERSION,
-           _MESSAGE_KEY: jsonutils.dumps(raw_msg)}
+           _MESSAGE_KEY: jsonutils.dumps(sub_envelope)}
 
     return msg
 
@@ -467,4 +492,14 @@ def deserialize_msg(msg):
 
     raw_msg = jsonutils.loads(msg[_MESSAGE_KEY])
 
-    return raw_msg
+    return raw_msg['message']
+
+
+def verify_envelope(rpc_envelope, force_envelope=False):
+    """Verify RPC message envelope"""
+    if not _SEND_RPC_ENVELOPE and not force_envelope:
+        return
+
+    msg_hash = sha256(sub_envelope)
+    if msg_hash in SEEN_MSGS:
+        raise rpc_common.DuplicatedMessageError(msg_hash)
