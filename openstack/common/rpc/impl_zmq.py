@@ -220,7 +220,7 @@ class ZmqClient(object):
         msg_id = msg_id or 0
 
         if serialize:
-            data = rpc_common.serialize_msg(data, force_envelope)
+            data[1] = rpc_common.serialize_msg(data[1], force_envelope)
         self.outq.send(map(bytes, (msg_id, topic, 'cast', _serialize(data))))
 
     def close(self):
@@ -542,9 +542,11 @@ class ZmqReactor(ZmqBaseReactor):
 
         msg_id, topic, style, in_msg = data
 
-        ctx, request = rpc_common.deserialize_msg(_deserialize(in_msg))
-        ctx = RpcContext.unmarshal(ctx)
+        ctx, raw_msg = _deserialize(in_msg)
+        rpc_common.verify_envelope(raw_msg)
+        request = rpc_common.deserialize_msg(raw_msg)
 
+        ctx = RpcContext.unmarshal(ctx)
         proxy = self.proxies[sock]
 
         self.pool.spawn_n(self.process, style, topic,

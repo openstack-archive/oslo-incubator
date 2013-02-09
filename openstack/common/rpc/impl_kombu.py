@@ -163,6 +163,7 @@ class ConsumerBase(object):
         def _callback(raw_message):
             message = self.channel.message_to_python(raw_message)
             try:
+                rpc_common.verify_envelope(message.payload)
                 msg = rpc_common.deserialize_msg(message.payload)
                 callback(msg)
                 message.ack()

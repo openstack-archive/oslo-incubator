@@ -17,9 +17,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import collections
 import copy
+import hashlib
 import sys
 import traceback
+import uuid
 
 from openstack.common import cfg
 from openstack.common.gettextutils import _
@@ -45,25 +48,34 @@ This version number applies to the message envelope that is used in the
 serialization done inside the rpc layer.  See serialize_msg() and
 deserialize_msg().
 
-The current message format (version 2.0) is very simple.  It is:
+The current message format (version 3.0) is very simple.  It is:
 
     {
         'oslo.version': <RPC Envelope Version as a String>,
-        'oslo.message': <Application Message Payload, JSON encoded>
+        'oslo.message': <Sub-Envelope Payload, JSON encoded>
+    }
+
+The sub-envelope payload is a dictionary:
+
+    {
+        'id': <UUID>,
+        'message': <Application Message Payload, JSON encoded>
     }
 
 Message format version '1.0' is just considered to be the messages we sent
 without a message envelope.
 
-So, the current message envelope just includes the envelope version.  It may
-eventually contain additional information, such as a signature for the message
-payload.
+Message format version '2.0' sent oslo.message containing a JSON encoded
+Application Message Payload without any sub-envelope.
 
-We will JSON encode the application message payload.  The message envelope,
+The message format is intended eventually contain additional information,
+such as a signature for the message payload.
+
+We will JSON encode the application message payload.  The message,
 which includes the JSON encoded application message body, will be passed down
 to the messaging libraries as a dict.
 '''
-_RPC_ENVELOPE_VERSION = '2.0'
+_RPC_ENVELOPE_VERSION = '3.0'
 
 _VERSION_KEY = 'oslo.version'
 _MESSAGE_KEY = 'oslo.message'
@@ -71,6 +83,9 @@ _MESSAGE_KEY = 'oslo.message'
 
 # TODO(russellb) Turn this on after Grizzly.
 _SEND_RPC_ENVELOPE = False
+
+DUP_MSG_CHECK_SIZE = 512  # Arbitrary - make configurable.
+SEEN_MSGS = collections.deque([], maxlen=DUP_MSG_CHECK_SIZE)
 
 
 class RPCException(Exception):
@@ -122,6 +137,10 @@ class Timeout(RPCException):
     waiting for a response from the remote side.
     """
     message = _("Timeout while waiting on RPC response.")
+
+
+class DuplicatedMessageError(RPCException):
+    message = _("Received replayed message(%(msg_id)s). Ignoring.")
 
 
 class InvalidRPCConnectionReuse(RPCException):
@@ -415,13 +434,25 @@ def version_is_compatible(imp_version, version):
 
 
 def serialize_msg(raw_msg, force_envelope=False):
+    msg_identifier = uuid.uuid4().hex
+
+    # TODO(ewindisch): remove once envelopes are enabled.
+    if isinstance(raw_msg, dict):
+        raw_msg['_envelope_params'] = {'id': msg_identifier}
+
     if not _SEND_RPC_ENVELOPE and not force_envelope:
         return raw_msg
+
+    """Make an RPC message envelope"""
+    sub_envelope = {
+        'id': msg_identifier,
+        'message': raw_msg
+    }
 
     # NOTE(russellb) See the docstring for _RPC_ENVELOPE_VERSION for more
     # information about this format.
     msg = {_VERSION_KEY: _RPC_ENVELOPE_VERSION,
-           _MESSAGE_KEY: jsonutils.dumps(raw_msg)}
+           _MESSAGE_KEY: jsonutils.dumps(sub_envelope)}
 
     return msg
 
@@ -450,13 +481,8 @@ def deserialize_msg(msg):
     #    This case covers return values from rpc.call() from before message
     #    envelopes were used.  (messages to call a method were always a dict)
 
-    if not isinstance(msg, dict):
-        # See #2 above.
-        return msg
-
-    base_envelope_keys = (_VERSION_KEY, _MESSAGE_KEY)
-    if not all(map(lambda key: key in msg, base_envelope_keys)):
-        #  See #1.b above.
+    if not has_envelope(msg):
+        # See #1.b and #2 above.
         return msg
 
     # At this point we think we have the message envelope
@@ -467,4 +493,37 @@ def deserialize_msg(msg):
 
     raw_msg = jsonutils.loads(msg[_MESSAGE_KEY])
 
-    return raw_msg
+    if 'message' in raw_msg:
+        return raw_msg['message']
+    else:
+        # For compatibility with envelope version 2.
+        return raw_msg
+
+
+def verify_envelope(msg):
+    """Verify RPC message envelope
+       May raise DuplicatedMessageError.
+    """
+    duplicate_key = None
+    if has_envelope(msg):
+        duplicate_key = hashlib.sha256(rpc_envelope)
+    elif isinstance(msg, dict) and '_envelope_params' in msg:
+        duplicate_key = msg['_envelope_params'].get('id')
+
+    if not duplicate_key:
+        return
+    if duplicate_key in SEEN_MSGS:
+        raise DuplicatedMessageError(duplicate_key)
+    SEEN_MSGS.append(duplicate_key)
+
+
+def has_envelope(msg):
+    """Returns true if the message has an envelope."""
+    if not isinstance(msg, dict):
+        return False
+
+    base_envelope_keys = (_VERSION_KEY, _MESSAGE_KEY)
+    if not all(map(lambda key: key in msg, base_envelope_keys)):
+        return False
+
+    return True

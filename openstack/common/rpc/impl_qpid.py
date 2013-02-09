@@ -127,6 +127,7 @@ class ConsumerBase(object):
         """Fetch the message and pass it to the callback object"""
         message = self.receiver.fetch()
         try:
+            rpc_common.verify_envelope(message.content)
             msg = rpc_common.deserialize_msg(message.content)
             self.callback(msg)
         except Exception:
