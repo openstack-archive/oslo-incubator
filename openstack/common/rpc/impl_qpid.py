@@ -126,6 +126,7 @@ class ConsumerBase(object):
     def consume(self):
         """Fetch the message and pass it to the callback object"""
         message = self.receiver.fetch()
+        rpc_common.verify_envelope(message.content)
         try:
             msg = rpc_common.deserialize_msg(message.content)
             self.callback(msg)

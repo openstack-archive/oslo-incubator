@@ -140,7 +140,8 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
                                             "args": {"value": value}})
         self.assertEqual(self.context.to_dict(), result)
 
-    def _test_cast(self, method, value, args=None, fanout=False):
+    def _test_cast(self, method, value, args=None, fanout=False,
+            force_envelope=False):
         """Test casts by pushing items through a channeled queue.
 
            @param: method a reference to a method returning a value
@@ -174,7 +175,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
 
         rpc_method(FLAGS, self.context,
                    self.topic_nested,
-                   msg)
+                   msg, force_envelope=force_envelope)
 
         try:
             # If it does not succeed in 2 seconds, give up and assume
@@ -194,6 +195,12 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
 
     def test_cast_success_despite_missing_args(self):
         self._test_cast(TestReceiver.fortytwo, 42, fanout=True)
+
+    def test_cast_with_envelope_success(self):
+        self._test_cast(TestReceiver.echo, 42, {"value": 42}, fanout=False)
+
+    def test_fanout_with_envelope_success(self):
+        self._test_cast(TestReceiver.echo, 42, {"value": 42}, fanout=True)
 
     def test_nested_calls(self):
         if not self.rpc:
