@@ -242,15 +242,10 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         msg = {'foo': 'bar'}
         self.assertEqual(msg, rpc_common.serialize_msg(msg))
 
-    def test_serialize_msg_v2(self):
+    def test_serialize_msg_v3(self):
         self.stubs.Set(rpc_common, '_SEND_RPC_ENVELOPE', True)
         msg = {'foo': 'bar'}
-        s_msg = {'oslo.version': rpc_common._RPC_ENVELOPE_VERSION,
-                 'oslo.message': jsonutils.dumps(msg)}
         serialized = rpc_common.serialize_msg(msg)
-
-        self.assertEqual(s_msg, rpc_common.serialize_msg(msg))
-
         self.assertEqual(msg, rpc_common.deserialize_msg(serialized))
 
     def test_deserialize_msg_no_envelope(self):

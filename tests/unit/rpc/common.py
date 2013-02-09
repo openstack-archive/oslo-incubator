@@ -21,6 +21,7 @@ Unit Tests for remote procedure calls shared between all implementations
 
 import logging
 import time
+import uuid
 
 import eventlet
 from eventlet import greenthread
@@ -314,7 +315,8 @@ class BaseRpcAMQPTestCase(BaseRpcTestCase):
         # Now turn it on for notifications
         msg = {
             'oslo.version': rpc_common._RPC_ENVELOPE_VERSION,
-            'oslo.message': jsonutils.dumps(raw_msg),
+            'oslo.message': {'id': uuid.uuid4().hex,
+                             'message': jsonutils.dumps(raw_msg)}
         }
         self.rpc.notify(FLAGS, self.context, 'notifications.info', raw_msg,
                         envelope=True)
