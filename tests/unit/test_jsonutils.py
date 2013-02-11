@@ -143,3 +143,29 @@ class ToPrimitiveTestCase(utils.BaseTestCase):
         self.assertTrue(ret[0].startswith(u"<module 'datetime' from "))
         self.assertTrue(ret[1].startswith('<function foo at 0x'))
         self.assertEquals(ret[2], '<built-in function dir>')
+
+    def test_depth(self):
+        class LevelsGenerator(object):
+            def __init__(self, levels):
+                self._levels = levels
+
+            def iteritems(self):
+                if self._levels == 0:
+                    return iter([])
+                else:
+                    return iter([(0, LevelsGenerator(self._levels - 1))])
+
+        l4_obj = LevelsGenerator(4)
+
+        json_l2 = {0: {0: '?'}}
+        json_l3 = {0: {0: {0: '?'}}}
+        json_l4 = {0: {0: {0: {0: '?'}}}}
+
+        ret = jsonutils.to_primitive(l4_obj, max_depth=2)
+        self.assertEquals(ret, json_l2)
+
+        ret = jsonutils.to_primitive(l4_obj, max_depth=3)
+        self.assertEquals(ret, json_l3)
+
+        ret = jsonutils.to_primitive(l4_obj, max_depth=4)
+        self.assertEquals(ret, json_l4)
