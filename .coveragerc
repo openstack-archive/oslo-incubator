@@ -1,0 +1,6 @@
+[run]
+branch = True
+source = openstack
+
+[report]
+ignore-errors = True
