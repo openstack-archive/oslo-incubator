@@ -44,7 +44,7 @@ from openstack.common import timeutils
 
 
 def to_primitive(value, convert_instances=False, convert_datetime=True,
-                 level=0):
+                 level=0, max_depth=3):
     """Convert a complex object into primitives.
 
     Handy for JSON serialization. We can optionally handle instances,
@@ -80,7 +80,7 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
     if getattr(value, '__module__', None) == 'mox':
         return 'mock'
 
-    if level > 3:
+    if level > max_depth:
         return '?'
 
     # The try block may not be necessary after the class check above,
@@ -89,7 +89,8 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
         recursive = functools.partial(to_primitive,
                                       convert_instances=convert_instances,
                                       convert_datetime=convert_datetime,
-                                      level=level)
+                                      level=level,
+                                      max_depth=max_depth)
         # It's not clear why xmlrpclib created their own DateTime type, but
         # for our purposes, make it a datetime type which is explicitly
         # handled
