@@ -201,11 +201,12 @@ class FanoutRingExchange(RingExchange):
 
 class LocalhostExchange(Exchange):
     """Exchange where all direct topics are local."""
-    def __init__(self):
+    def __init__(self, host='localhost'):
+        self.host = host
         super(Exchange, self).__init__()
 
     def run(self, key):
-        return [(key.split('.')[0] + '.localhost', 'localhost')]
+        return [('.'.join((key.split('.')[0], self.host)), self.host)]
 
 
 class DirectExchange(Exchange):
@@ -237,11 +238,11 @@ class MatchMakerLocalhost(MatchMakerBase):
     Match Maker where all bare topics resolve to localhost.
     Useful for testing.
     """
-    def __init__(self):
+    def __init__(self, host='localhost'):
         super(MatchMakerLocalhost, self).__init__()
-        self.add_binding(FanoutBinding(), LocalhostExchange())
+        self.add_binding(FanoutBinding(), LocalhostExchange(host))
         self.add_binding(DirectBinding(), DirectExchange())
-        self.add_binding(TopicBinding(), LocalhostExchange())
+        self.add_binding(TopicBinding(), LocalhostExchange(host))
 
 
 class MatchMakerStub(MatchMakerBase):
