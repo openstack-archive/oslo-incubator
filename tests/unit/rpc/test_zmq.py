@@ -28,10 +28,8 @@ import socket
 import fixtures
 
 from openstack.common import cfg
-from openstack.common import exception
 from openstack.common.gettextutils import _
-from openstack.common import processutils
-from openstack.common import rpc
+from openstack.common.rpc import common as rpc_common
 from tests.unit.rpc import common
 
 try:
@@ -108,6 +106,15 @@ class RpcZmqBaseTopicTestCase(_RpcZmqBaseTestCase):
     without any .host appended. Stresses the matchmaker.
     """
     pass
+
+
+class RpcZmqEnvelopeEnabledTestCase(_RpcZmqBaseTestCase):
+    """
+    This sends messages with envelopes enabled.
+    """
+    def setUp(self):
+        super(RpcZmqEnvelopeEnabledTestCase, self).setUp()
+        self.stubs.Set(rpc_common, '_SEND_RPC_ENVELOPE', True)
 
 
 class RpcZmqDirectTopicTestCase(_RpcZmqBaseTestCase):
