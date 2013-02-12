@@ -7,9 +7,9 @@
 import sys
 
 import pyflakes.checker
-from pyflakes.scripts import pyflakes
+import pyflakes.api
 
 if __name__ == "__main__":
     orig_builtins = set(pyflakes.checker._MAGIC_GLOBALS)
     pyflakes.checker._MAGIC_GLOBALS = orig_builtins | set(['_'])
-    sys.exit(pyflakes.main())
+    sys.exit(pyflakes.api.main())
