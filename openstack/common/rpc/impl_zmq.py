@@ -16,6 +16,7 @@
 
 import os
 import pprint
+import re
 import socket
 import sys
 import types
@@ -424,7 +425,8 @@ class ZmqProxy(ZmqBaseReactor):
 
     def __init__(self, conf):
         super(ZmqProxy, self).__init__(conf)
-
+        self.badchars = re.compile(r'[\0%s]' % re.escape(''.join(
+                                   [os.path.sep, os.path.altsep or ''])))
         self.topic_proxy = {}
 
     def consume(self, sock):
@@ -447,6 +449,13 @@ class ZmqProxy(ZmqBaseReactor):
                 LOG.info(_("Creating proxy for topic: %s"), topic)
 
                 try:
+                    # The topic is received over the network,
+                    # don't trust this input.
+                    if self.badchars.match(topic) is not None:
+                        emsg = _("Topic contained dangerous characters.")
+                        LOG.warn(emsg)
+                        raise RPCException(emsg)
+
                     out_sock = ZmqSocket("ipc://%s/zmq_topic_%s" %
                                          (ipc_dir, topic),
                                          sock_type, bind=True)
