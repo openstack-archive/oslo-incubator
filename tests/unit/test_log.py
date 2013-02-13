@@ -1,10 +1,7 @@
 import cStringIO
-import exceptions
 import logging
 import StringIO
-import subprocess
 import sys
-import textwrap
 
 from openstack.common import cfg
 from openstack.common import context
@@ -225,25 +222,28 @@ class ExceptionLoggingTestCase(test_utils.BaseTestCase):
     """Test that Exceptions are logged"""
 
     def test_excepthook_logs_exception(self):
-        code = textwrap.dedent("""
-        import sys
-        from openstack.common import log as logging
+        product_name = 'somename'
+        exc_log = log.getLogger(product_name)
 
-        logging.setup('somename')
-        raise Exception('Some error happened')
-        """)
+        stream = cStringIO.StringIO()
+        handler = logging.StreamHandler(stream)
+        handler.setFormatter(log.LegacyFormatter())
+        exc_log.logger.addHandler(handler)
+        self.addCleanup(exc_log.logger.removeHandler, handler)
+        excepthook = log._create_logging_excepthook(product_name)
 
-        child = subprocess.Popen([
-            sys.executable, "-"],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
+        try:
+            raise Exception('Some error happened')
+        except Exception:
+            excepthook(*sys.exc_info())
 
-        (out, err) = child.communicate(input=code)
+        expected_string = "CRITICAL somename [-] Some error happened"
+        self.assertTrue(expected_string in stream.getvalue(),
+                        msg="Exception is not logged")
 
-        self.assertTrue(
-            "CRITICAL somename [-] Some error happened" in err,
-            msg="Exception is not logged")
+    def test_excepthook_installed(self):
+        log.setup("test_excepthook_installed")
+        self.assertTrue(sys.excepthook != sys.__excepthook__)
 
 
 class FancyRecordTestCase(test_utils.BaseTestCase):
