@@ -26,6 +26,8 @@ import contextlib
 import logging
 import time
 
+import mock
+
 from openstack.common import cfg
 from openstack.common import exception
 from openstack.common.rpc import amqp as rpc_amqp
@@ -494,6 +496,38 @@ class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
             self.assertTrue(value in unicode(exc))
             #Traceback should be included in exception message
             self.assertTrue('exception.ApiError' in unicode(exc))
+
+    def test_create_worker(self):
+        meth = 'declare_topic_consumer'
+        with mock.patch.object(self.rpc.Connection, meth) as p:
+            conn = self.rpc.create_connection(FLAGS)
+            conn.create_worker(
+                'topic.name',
+                lambda *a, **k: (a, k),
+                'pool.name',
+            )
+            p.assert_called_with(
+                'topic.name',
+                mock.ANY,  # the proxy
+                'pool.name',
+            )
+
+    def test_join_consumer_pool(self):
+        meth = 'declare_topic_consumer'
+        with mock.patch.object(self.rpc.Connection, meth) as p:
+            conn = self.rpc.create_connection(FLAGS)
+            conn.join_consumer_pool(
+                callback=lambda *a, **k: (a, k),
+                pool_name='pool.name',
+                topic='topic.name',
+                exchange_name='exchange.name',
+            )
+            p.assert_called_with(
+                callback=mock.ANY,  # the callback wrapper
+                queue_name='pool.name',
+                exchange_name='exchange.name',
+                topic='topic.name',
+            )
 
 
 class RpcKombuHATestCase(utils.BaseTestCase):

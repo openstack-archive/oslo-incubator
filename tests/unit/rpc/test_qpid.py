@@ -184,6 +184,36 @@ class RpcQpidTestCase(utils.BaseTestCase):
                                  )
         connection.close()
 
+    def test_join_consumer_pool(self):
+        self.mock_connection = self.mox.CreateMock(self.orig_connection)
+        self.mock_session = self.mox.CreateMock(self.orig_session)
+        self.mock_receiver = self.mox.CreateMock(self.orig_receiver)
+
+        self.mock_connection.opened().AndReturn(False)
+        self.mock_connection.open()
+        self.mock_connection.session().AndReturn(self.mock_session)
+        expected_address = (
+            'exchange-name/impl_qpid_test ; {"node": {"x-declare": '
+            '{"auto-delete": true, "durable": true}, "type": "topic"}, '
+            '"create": "always", "link": {"x-declare": {"auto-delete": '
+            'true, "exclusive": false, "durable": false}, "durable": '
+            'true, "name": "impl.qpid.test.consumer.pool"}}')
+        self.mock_session.receiver(expected_address).AndReturn(
+            self.mock_receiver)
+        self.mock_receiver.capacity = 1
+        self.mock_connection.close()
+
+        self.mox.ReplayAll()
+
+        connection = impl_qpid.create_connection(FLAGS)
+        connection.join_consumer_pool(
+            callback=lambda *_x, **_y: None,
+            pool_name='impl.qpid.test.consumer.pool',
+            topic="impl_qpid_test",
+            exchange_name='exchange-name',
+        )
+        connection.close()
+
     def test_topic_consumer(self):
         self.mock_connection = self.mox.CreateMock(self.orig_connection)
         self.mock_session = self.mox.CreateMock(self.orig_session)
