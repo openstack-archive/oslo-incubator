@@ -22,8 +22,6 @@ import contextlib
 import os
 import sys
 
-import zmq
-
 # If ../oslo/__init__.py exists, add ../ to Python search path, so that
 # it will override what happens to be installed in /usr/(local/)lib/python...
 POSSIBLE_TOPDIR = os.path.normpath(os.path.join(os.path.abspath(sys.argv[0]),
@@ -36,7 +34,6 @@ from openstack.common import cfg
 from openstack.common import log as logging
 from openstack.common import rpc
 from openstack.common.rpc import impl_zmq
-from openstack.common import processutils as utils
 
 CONF = cfg.CONF
 CONF.register_opts(rpc.rpc_opts)
