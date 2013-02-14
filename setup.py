@@ -67,6 +67,9 @@ setuptools.setup(
     entry_points={
         "openstack.common.scheduler.filters": filters,
         "openstack.common.tests.fakes.weights": weights,
+        'paste.filter_factory': [
+            'cors=openstack.common.middleware.cors:filter_factory',
+        ]
     },
     namespace_packages=['openstack'],
 )
