@@ -1,0 +1,11 @@
+Verified+2: Jenkins
+Code-Review+1: Vish Ishaya <vishvananda@gmail.com>
+Code-Review+2: Jason Kölker <jason@koelker.net>
+Approved+1: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+1: Raymond Pekowski <pekowski@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Thu, 14 Feb 2013 17:11:10 +0000
+Reviewed-on: https://review.openstack.org/20240
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
