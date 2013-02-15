@@ -83,10 +83,11 @@ class GitLogsTest(utils.BaseTestCase):
         super(GitLogsTest, self).setUp()
         temp_path = self.useFixture(fixtures.TempDir()).path
         self.useFixture(DiveDir(temp_path))
-        self.useFixture(fixtures.MonkeyPatch("os.path.isdir",
-                                             lambda path: path == ".git"))
 
     def test_write_git_changelog(self):
+        exist_files = [".git", ".mailmap"]
+        self.useFixture(fixtures.MonkeyPatch("os.path.exists",
+                                             lambda path: path in exist_files))
         self.useFixture(fixtures.FakePopen(lambda _: {
             "stdout": StringIO.StringIO("Author: Foo Bar <email@bar.com>\n")
         }))
@@ -102,6 +103,9 @@ class GitLogsTest(utils.BaseTestCase):
         author_old = "Foo Foo <email@foo.com>"
         author_new = "Bar Bar <email@bar.com>"
 
+        exist_files = [".git", "AUTHORS.in"]
+        self.useFixture(fixtures.MonkeyPatch("os.path.exists",
+                                             lambda path: path in exist_files))
         self.useFixture(fixtures.FakePopen(lambda proc_args: {
             "stdout": StringIO.StringIO(
                 author_new
