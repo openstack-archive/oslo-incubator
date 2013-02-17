@@ -246,13 +246,13 @@ import time
 
 from eventlet import db_pool
 from eventlet import greenthread
+from oslo.config import cfg
 from sqlalchemy.exc import DisconnectionError, OperationalError, IntegrityError
 import sqlalchemy.interfaces
 import sqlalchemy.orm
 from sqlalchemy.pool import NullPool, StaticPool
 from sqlalchemy.sql.expression import literal_column
 
-from openstack.common import cfg
 from openstack.common import importutils
 from openstack.common import log as logging
 from openstack.common.gettextutils import _

@@ -21,7 +21,8 @@ import copy
 import sys
 import traceback
 
-from openstack.common import cfg
+from oslo.config import cfg
+
 from openstack.common.gettextutils import _
 from openstack.common import importutils
 from openstack.common import jsonutils

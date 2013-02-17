@@ -28,8 +28,8 @@ import time
 
 import eventlet
 import logging as std_logging
+from oslo.config import cfg
 
-from openstack.common import cfg
 from openstack.common import eventlet_backdoor
 from openstack.common.gettextutils import _
 from openstack.common import importutils

@@ -17,24 +17,24 @@
 
 """Utility methods for working with WSGI servers."""
 
-import datetime
-import errno
 import eventlet
-import eventlet.wsgi
-
 eventlet.patcher.monkey_patch(all=False, socket=True)
 
-import routes
-import routes.middleware
+import datetime
+import errno
 import socket
 import sys
 import time
+
+import eventlet.wsgi
+from oslo.config import cfg
+import routes
+import routes.middleware
 import webob.dec
 import webob.exc
 from xml.dom import minidom
 from xml.parsers import expat
 
-from openstack.common import cfg
 from openstack.common import exception
 from openstack.common.gettextutils import _
 from openstack.common import jsonutils

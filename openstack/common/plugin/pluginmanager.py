@@ -15,7 +15,8 @@
 
 import pkg_resources
 
-from openstack.common import cfg
+from oslo.config import cfg
+
 from openstack.common.gettextutils import _
 from openstack.common import log as logging
 from openstack.common.notifier import api as notifier_api
