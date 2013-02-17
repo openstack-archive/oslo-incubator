@@ -20,9 +20,9 @@
 import subprocess
 
 import fixtures
+from oslo.config import cfg
 import testtools
 
-from openstack.common import cfg
 from openstack.common.fixture import moxstubout
 from openstack.common import exception
 

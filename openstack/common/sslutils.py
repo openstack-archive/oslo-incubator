@@ -17,7 +17,8 @@
 import os
 import ssl
 
-from openstack.common import cfg
+from oslo.config import cfg
+
 from openstack.common.gettextutils import _
 
 

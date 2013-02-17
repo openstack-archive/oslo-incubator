@@ -24,8 +24,8 @@ import time
 
 import eventlet
 from eventlet import greenthread
+from oslo.config import cfg
 
-from openstack.common import cfg
 from openstack.common import exception
 from openstack.common.gettextutils import _
 from openstack.common import jsonutils

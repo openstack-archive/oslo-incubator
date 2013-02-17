@@ -29,8 +29,8 @@ import fixtures
 import time
 import testtools
 import mox
+from oslo.config import cfg
 
-from openstack.common import cfg
 from openstack.common import context
 from openstack.common.rpc import amqp as rpc_amqp
 from tests import utils

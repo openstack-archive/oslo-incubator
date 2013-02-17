@@ -15,17 +15,18 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import mock
 import os
-import routes
 import socket
 import ssl
 import urllib2
+
+import mock
+from oslo.config import cfg
+import routes
 import webob
 
 from openstack.common import exception
 from openstack.common import wsgi
-from openstack.common import cfg
 from tests import utils
 
 TEST_VAR_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__),

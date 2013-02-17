@@ -20,7 +20,8 @@ Unit Tests for 'common' functons used through rpc code.
 import logging
 import sys
 
-from openstack.common import cfg
+from oslo.config import cfg
+
 from openstack.common import exception
 from openstack.common import importutils
 from openstack.common import jsonutils
