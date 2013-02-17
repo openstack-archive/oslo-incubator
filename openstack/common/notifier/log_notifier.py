@@ -13,8 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo.config import cfg
 
-from openstack.common import cfg
 from openstack.common import jsonutils
 from openstack.common import log as logging
 

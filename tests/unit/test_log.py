@@ -3,7 +3,8 @@ import logging
 import StringIO
 import sys
 
-from openstack.common import cfg
+from oslo.config import cfg
+
 from openstack.common import context
 from openstack.common import jsonutils
 from openstack.common import log

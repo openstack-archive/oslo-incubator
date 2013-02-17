@@ -21,7 +21,8 @@ import StringIO
 import sys
 import tempfile
 
-from openstack.common.cfg import *
+from oslo.config.cfg import *
+
 from openstack.common import version
 from tests import utils
 

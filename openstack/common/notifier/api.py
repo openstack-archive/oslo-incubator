@@ -15,7 +15,8 @@
 
 import uuid
 
-from openstack.common import cfg
+from oslo.config import cfg
+
 from openstack.common import context
 from openstack.common.gettextutils import _
 from openstack.common import importutils

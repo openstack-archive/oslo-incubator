@@ -25,8 +25,8 @@ import time
 import weakref
 
 from eventlet import semaphore
+from oslo.config import cfg
 
-from openstack.common import cfg
 from openstack.common import fileutils
 from openstack.common.gettextutils import _
 from openstack.common import local

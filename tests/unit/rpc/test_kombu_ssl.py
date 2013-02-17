@@ -22,7 +22,8 @@ Unit Tests for remote procedure calls using kombu + ssl
 import eventlet
 eventlet.monkey_patch()
 
-from openstack.common import cfg
+from oslo.config import cfg
+
 from tests import utils as test_utils
 
 

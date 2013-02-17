@@ -13,7 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from openstack.common import cfg
+from oslo.config import cfg
+
 from openstack.common import context
 from openstack.common import log
 from openstack.common.notifier import api as notifier_api

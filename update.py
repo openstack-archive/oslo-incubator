@@ -62,11 +62,7 @@ import re
 import shutil
 import sys
 
-try:
-    from openstack.common import cfg
-except:
-    sys.stderr.write("Try running update.sh")
-    raise
+from oslo.config import cfg
 
 opts = [
     cfg.ListOpt('modules',
