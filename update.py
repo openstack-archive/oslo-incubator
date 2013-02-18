@@ -134,6 +134,15 @@ def _copy_file(path, dest, base):
 
     _replace(dest, 'oslo', base)
 
+    # Restore the imports for modules that are part of the oslo
+    # namespace package. We can't just do something like 'oslo\..+'
+    # because there are default configuration settings like
+    # "oslo.sqlite" that we want to have changed to "nova.sqlite" by
+    # the above call.
+    for oslo_module in ['config']:
+        _replace(dest, base + '.' + oslo_module,
+                 'oslo.' + oslo_module)
+
     _replace(dest,
              '^( *)from openstack.common',
              r'\1from ' + base + '.openstack.common')
