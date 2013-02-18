@@ -42,6 +42,14 @@ class DiveDir(fixtures.Fixture):
         self.addCleanup(os.chdir, self.old_path)
 
 
+class FakePopen(fixtures.FakePopen):
+
+    def __call__(self, args, bufsize=0, executable=None, stdin=None,
+                 stdout=None, stderr=None, cwd=None):
+        return super(FakePopen, self).__call__(args, bufsize, executable,
+                                               stdin, stdout, stderr)
+
+
 class EmailTestCase(utils.BaseTestCase):
 
     def test_str_dict_replace(self):
@@ -88,7 +96,7 @@ class GitLogsTest(utils.BaseTestCase):
         exist_files = [".git", ".mailmap"]
         self.useFixture(fixtures.MonkeyPatch("os.path.exists",
                                              lambda path: path in exist_files))
-        self.useFixture(fixtures.FakePopen(lambda _: {
+        self.useFixture(FakePopen(lambda _: {
             "stdout": StringIO.StringIO("Author: Foo Bar <email@bar.com>\n")
         }))
         with open(".mailmap", "w") as mm_fh:
@@ -106,7 +114,7 @@ class GitLogsTest(utils.BaseTestCase):
         exist_files = [".git", "AUTHORS.in"]
         self.useFixture(fixtures.MonkeyPatch("os.path.exists",
                                              lambda path: path in exist_files))
-        self.useFixture(fixtures.FakePopen(lambda proc_args: {
+        self.useFixture(FakePopen(lambda proc_args: {
             "stdout": StringIO.StringIO(
                 author_new
                 if proc_args["args"][2].startswith("git log")
