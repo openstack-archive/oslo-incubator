@@ -84,41 +84,51 @@ class GitLogsTest(utils.BaseTestCase):
         temp_path = self.useFixture(fixtures.TempDir()).path
         self.useFixture(DiveDir(temp_path))
 
+    @staticmethod
+    def _root_dir():
+        root_dir = os.path.dirname(openstack.common.setup.__file__)
+        root_dir = os.path.dirname(root_dir)
+        root_dir = os.path.dirname(root_dir)
+        return root_dir
+
     def test_write_git_changelog(self):
-        exist_files = [".git", ".mailmap"]
+        root_dir = self._root_dir()
+        exist_files = [os.path.join(root_dir, f) for f in ".git", ".mailmap"]
         self.useFixture(fixtures.MonkeyPatch("os.path.exists",
                                              lambda path: path in exist_files))
         self.useFixture(fixtures.FakePopen(lambda _: {
             "stdout": StringIO.StringIO("Author: Foo Bar <email@bar.com>\n")
         }))
-        with open(".mailmap", "w") as mm_fh:
+        with open(os.path.join(root_dir, ".mailmap"), "w") as mm_fh:
             mm_fh.write("Foo Bar <email@foo.com> <email@bar.com>\n")
 
         write_git_changelog()
 
-        with open("ChangeLog", "r") as ch_fh:
+        with open(os.path.join(root_dir, "ChangeLog"), "r") as ch_fh:
             self.assertTrue("email@foo.com" in ch_fh.read())
 
     def test_generate_authors(self):
         author_old = "Foo Foo <email@foo.com>"
         author_new = "Bar Bar <email@bar.com>"
 
-        exist_files = [".git", "AUTHORS.in"]
+        root_dir = self._root_dir()
+        exist_files = [os.path.join(root_dir, f) for f in ".git", ".mailmap"]
         self.useFixture(fixtures.MonkeyPatch("os.path.exists",
                                              lambda path: path in exist_files))
         self.useFixture(fixtures.FakePopen(lambda proc_args: {
             "stdout": StringIO.StringIO(
                 author_new
-                if proc_args["args"][2].startswith("git log")
+                if proc_args["args"][2].startswith(
+                    "git --git-dir=%s log" % os.path.join(root_dir, '.git'))
                 else "")
         }))
 
-        with open("AUTHORS.in", "w") as auth_fh:
+        with open(os.path.join(root_dir, "AUTHORS.in"), "w") as auth_fh:
             auth_fh.write(author_old)
 
         generate_authors()
 
-        with open("AUTHORS", "r") as auth_fh:
+        with open(os.path.join(root_dir, "AUTHORS"), "r") as auth_fh:
             authors = auth_fh.read()
             self.assertTrue(author_old in authors)
             self.assertTrue(author_new in authors)
