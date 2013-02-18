@@ -32,7 +32,7 @@ from oslo.config import cfg
 from openstack.common import exception
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
-from tests.unit.rpc import common
+from tests.unit.rpc import amqp
 from tests import utils
 
 try:
@@ -77,7 +77,7 @@ class KombuStubs:
             self.rpc = None
 
 
-class RpcKombuTestCase(common.BaseRpcAMQPTestCase):
+class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
     def setUp(self):
         KombuStubs.setUp(self)
         super(RpcKombuTestCase, self).setUp()
