@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Code-Review+1: Jay Pipes <jaypipes@gmail.com>
+Code-Review+1: Kiall Mac Innes <kiall@hp.com>
+Approved+1: Russell Bryant <rbryant@redhat.com>
+Code-Review+2: Russell Bryant <rbryant@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 19 Feb 2013 01:40:14 +0000
+Reviewed-on: https://review.openstack.org/19721
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
