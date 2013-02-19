@@ -163,8 +163,13 @@ class ConsumerBase(object):
         def _callback(raw_message):
             message = self.channel.message_to_python(raw_message)
             try:
-                msg = rpc_common.deserialize_msg(message.payload)
-                callback(msg)
+                if '\0' in message.payload:
+                    msg = unflatten_envelope(message.payload.split('\0'))
+                else:
+                    msg = message.payload
+
+                raw_msg = rpc_common.deserialize_msg(msg)
+                callback(raw_msg)
             except Exception:
                 LOG.exception(_("Failed to process message... skipping it."))
             finally:
@@ -306,6 +311,10 @@ class Publisher(object):
 
     def send(self, msg, timeout=None):
         """Send a message"""
+        if isinstance(msg, dict) and rpc_common._VERSION_KEY in msg:
+            # Fast-serialize envelopes to avoid Kombu's JSON serialization.
+            msg = '\0'.join(reduce(lambda x, y: x + y, rpc_envelope.items()))
+
         if timeout:
             #
             # AMQP TTL is in milliseconds when set in the header.
