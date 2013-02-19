@@ -110,10 +110,16 @@ class InstallVenv(object):
             print "venv already exists..."
             pass
 
-    def pip_install(self, *args):
-        self.run_command(['tools/with_venv.sh',
-                         'pip', 'install', '--upgrade'] + list(args),
-                         redirect_output=False)
+    def pip_install(self, timeout=60, retries=10, sleep=5, *args):
+        for i in range(retries):
+            try:
+                self.run_command(['tools/with_venv.sh',
+                                  'pip', 'install', '--upgrade',
+                                  '--timeout=%d' % timeout] + list(args),
+                                 redirect_output=False)
+                break
+            except Exception:
+                time.sleep(sleep)
 
     def install_dependencies(self):
         print 'Installing dependencies with pip (this can take a while)...'
