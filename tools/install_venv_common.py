@@ -21,22 +21,38 @@ virtual environments.
 Synced in from openstack-common
 """
 
+__all__ = ['main']
+
 import argparse
 import os
 import subprocess
 import sys
 
+from oslo.config import cfg
+
+
+def print_help(venv):
+    help = """
+    Development environment setup is complete.
+
+    This project's development uses virtualenv to track and manage Python
+    dependencies while in development and testing.
+
+    To activate the virtualenv for the extent of your current shell
+    session you can run:
+
+    $ source %s/bin/activate
+    """
+    print help % (venv)
+
 
 class InstallVenv(object):
 
-    def __init__(self, root, venv, pip_requires, test_requires, py_version,
-                 project):
+    def __init__(self, root, venv, requirements, test_requirements):
         self.root = root
         self.venv = venv
-        self.pip_requires = pip_requires
-        self.test_requires = test_requires
-        self.py_version = py_version
-        self.project = project
+        self.requirements = requirements
+        self.test_requirements = test_requirements
 
     def die(self, message, *args):
         print >> sys.stderr, message % args
@@ -67,18 +83,6 @@ class InstallVenv(object):
         return self.run_command_with_code(cmd, redirect_output,
                                           check_exit_code)[0]
 
-    def get_distro(self):
-        if (os.path.exists('/etc/fedora-release') or
-                os.path.exists('/etc/redhat-release')):
-            return Fedora(self.root, self.venv, self.pip_requires,
-                          self.test_requires, self.py_version, self.project)
-        else:
-            return Distro(self.root, self.venv, self.pip_requires,
-                          self.test_requires, self.py_version, self.project)
-
-    def check_dependencies(self):
-        self.get_distro().install_virtualenv()
-
     def create_virtualenv(self, no_site_packages=True):
         """Creates the virtual environment and installs PIP.
 
@@ -93,41 +97,22 @@ class InstallVenv(object):
             else:
                 self.run_command(['virtualenv', '-q', self.venv])
             print 'done.'
-            print 'Installing pip in venv...',
-            if not self.run_command(['tools/with_venv.sh', 'easy_install',
-                                    'pip>1.0']).strip():
-                self.die("Failed to install pip.")
-            print 'done.'
         else:
             print "venv already exists..."
             pass
 
     def pip_install(self, *args):
-        self.run_command(['tools/with_venv.sh',
-                         'pip', 'install', '--upgrade'] + list(args),
+        self.run_command([os.path.join(self.venv, 'bin', 'pip'),
+                         'install', '--upgrade'] + list(args),
                          redirect_output=False)
 
     def install_dependencies(self):
         print 'Installing dependencies with pip (this can take a while)...'
 
-        # First things first, make sure our venv has the latest pip and
-        # distribute.
-        # NOTE: we keep pip at version 1.1 since the most recent version causes
-        # the .venv creation to fail. See:
-        # https://bugs.launchpad.net/nova/+bug/1047120
-        self.pip_install('pip==1.1')
-        self.pip_install('distribute')
-
-        # Install greenlet by hand - just listing it in the requires file does
-        # not
-        # get it installed in the right order
-        self.pip_install('greenlet')
-
-        self.pip_install('-r', self.pip_requires)
-        self.pip_install('-r', self.test_requires)
-
-    def post_process(self):
-        self.get_distro().post_process()
+        if self.requirements:
+            self.pip_install('-r', self.requirements)
+        if self.test_requirements:
+            self.pip_install('-r', self.test_requirements)
 
     def parse_args(self, argv):
         """Parses command-line arguments."""
@@ -139,81 +124,35 @@ class InstallVenv(object):
         return parser.parse_args(argv[1:])
 
 
-class Distro(InstallVenv):
+def main():
 
-    def check_cmd(self, cmd):
-        return bool(self.run_command(['which', cmd],
-                    check_exit_code=False).strip())
+    root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
-    def install_virtualenv(self):
-        if self.check_cmd('virtualenv'):
-            return
+    if os.environ.get('tools_path'):
+        root = os.environ['tools_path']
+    venv = os.path.join(root, '.venv')
+    if os.environ.get('venv'):
+        venv = os.environ['venv']
 
-        if self.check_cmd('easy_install'):
-            print 'Installing virtualenv via easy_install...',
-            if self.run_command(['easy_install', 'virtualenv']):
-                print 'Succeeded'
-                return
-            else:
-                print 'Failed'
+    requirements = None
+    test_requirements = None
+    if os.path.exists('requirements.txt'):
+        requirements = 'requirements.txt'
+    else:
+        pip_requires = os.path.join(root, 'tools', 'pip-requires')
+        if os.path.exists(pip_requires):
+            requirements = pip_requires
+    if os.path.exists('test-requirements.txt'):
+        test_requirements = 'test-requirements.txt'
+    else:
+        test_requires = os.path.join(root, 'tools', 'test-requires')
+        if os.path.exists(test_requires):
+            test_requirements = test_requires
+    install = InstallVenv(root, venv, requirements, test_requirements)
+    options = install.parse_args(sys.argv)
+    install.create_virtualenv(no_site_packages=options.no_site_packages)
+    install.install_dependencies()
+    print_help(venv)
 
-        self.die('ERROR: virtualenv not found.\n\n%s development'
-                 ' requires virtualenv, please install it using your'
-                 ' favorite package management tool' % self.project)
-
-    def post_process(self):
-        """Any distribution-specific post-processing gets done here.
-
-        In particular, this is useful for applying patches to code inside
-        the venv.
-        """
-        pass
-
-
-class Fedora(Distro):
-    """This covers all Fedora-based distributions.
-
-    Includes: Fedora, RHEL, CentOS, Scientific Linux
-    """
-
-    def check_pkg(self, pkg):
-        return self.run_command_with_code(['rpm', '-q', pkg],
-                                          check_exit_code=False)[1] == 0
-
-    def yum_install(self, pkg, **kwargs):
-        print "Attempting to install '%s' via yum" % pkg
-        self.run_command(['sudo', 'yum', 'install', '-y', pkg], **kwargs)
-
-    def apply_patch(self, originalfile, patchfile):
-        self.run_command(['patch', originalfile, patchfile])
-
-    def install_virtualenv(self):
-        if self.check_cmd('virtualenv'):
-            return
-
-        if not self.check_pkg('python-virtualenv'):
-            self.yum_install('python-virtualenv', check_exit_code=False)
-
-        super(Fedora, self).install_virtualenv()
-
-    def post_process(self):
-        """Workaround for a bug in eventlet.
-
-        This currently affects RHEL6.1, but the fix can safely be
-        applied to all RHEL and Fedora distributions.
-
-        This can be removed when the fix is applied upstream.
-
-        Nova: https://bugs.launchpad.net/nova/+bug/884915
-        Upstream: https://bitbucket.org/which_linden/eventlet/issue/89
-        """
-
-        # Install "patch" program if it's not there
-        if not self.check_pkg('patch'):
-            self.yum_install('patch')
-
-        # Apply the eventlet patch
-        self.apply_patch(os.path.join(self.venv, 'lib', self.py_version,
-                                      'site-packages',
-                                      'eventlet/green/subprocess.py'),
-                         'contrib/redhat-eventlet.patch')
+if __name__ == '__main__':
+    main()
