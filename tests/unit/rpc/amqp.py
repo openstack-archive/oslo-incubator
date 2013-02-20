@@ -100,14 +100,18 @@ class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
         }
         self.rpc.notify(FLAGS, self.context, 'notifications.info', raw_msg,
                         envelope=True)
-        self.assertEqual(self.test_msg, msg)
+        for k, v in msg.items():
+            self.assertIn(k, self.test_msg)
+            self.assertEqual(self.test_msg[k], v)
 
         # Make sure envelopes are still on notifications, even if turned off
         # for general messages.
         self.stubs.Set(rpc_common, '_SEND_RPC_ENVELOPE', False)
         self.rpc.notify(FLAGS, self.context, 'notifications.info', raw_msg,
                         envelope=True)
-        self.assertEqual(self.test_msg, msg)
+        for k, v in msg.items():
+            self.assertIn(k, self.test_msg)
+            self.assertEqual(self.test_msg[k], v)
 
     def test_single_reply_queue_on_has_ids(
             self, single_reply_queue_for_callee_off=False):
