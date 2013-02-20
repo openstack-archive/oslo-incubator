@@ -1,0 +1,13 @@
+Verified+2: Jenkins
+Code-Review+1: Dolph Mathews <dolph.mathews@gmail.com>
+Code-Review+1: Joe Heck <heckj@mac.com>
+Approved+1: Jason Kölker <jason@koelker.net>
+Code-Review+2: Jason Kölker <jason@koelker.net>
+Code-Review+1: Giampaolo Lauria <lauria@us.ibm.com>
+Code-Review+1: Matthew Treinish <treinish@linux.vnet.ibm.com>
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 20 Feb 2013 00:37:40 +0000
+Reviewed-on: https://review.openstack.org/22368
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
