@@ -250,38 +250,8 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
                  'oslo.message': jsonutils.dumps(msg)}
         serialized = rpc_common.serialize_msg(msg)
 
-        for k, v in s_msg.items():
-            self.assertIn(k, serialized)
-            self.assertEqual(serialized[k], v)
+        self.assertEqual(s_msg, rpc_common.serialize_msg(msg))
 
-        self.assertEqual(msg, rpc_common.deserialize_msg(serialized))
-
-    def test_serialize_msg_v2_1(self):
-        self.stubs.Set(rpc_common, '_SEND_RPC_ENVELOPE', True)
-        msg = {'foo': 'bar'}
-        s_msg = {'oslo.version': rpc_common._RPC_ENVELOPE_VERSION,
-                 'oslo.message': jsonutils.dumps(msg),
-                 'oslo.nonce': ''}
-        serialized = rpc_common.serialize_msg(msg)
-
-        for k, v in s_msg.items():
-            self.assertIn(k, serialized)
-
-            if k == 'oslo.nonce':
-                # This key's value is set by serialize_msg
-                re_uuid = re.compile(r'[0-9a-f]{32}$', re.I)
-                self.assertTrue(re_uuid.match(serialized[k]))
-                continue
-
-            self.assertEqual(serialized[k], v)
-
-        self.assertEqual(msg, rpc_common.deserialize_msg(serialized))
-
-    def test_serialize_msg_v2_1(self):
-        self.stubs.Set(rpc_common, '_SEND_RPC_ENVELOPE', True)
-        msg = {'foo': 'bar'}
-        serialized = rpc_common.serialize_msg(msg)
-        self.assertIn('oslo.nonce', serialized)
         self.assertEqual(msg, rpc_common.deserialize_msg(serialized))
 
     def test_deserialize_msg_no_envelope(self):
