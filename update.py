@@ -132,7 +132,8 @@ def _copy_file(path, dest, base):
 
     shutil.copy2(path, dest)
 
-    _replace(dest, 'oslo', base)
+    if 'rpc/' not in dest:
+        _replace(dest, 'oslo', base)
 
     # Restore the imports for modules that are part of the oslo
     # namespace package. We can't just do something like 'oslo\..+'
