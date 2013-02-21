@@ -24,8 +24,8 @@ __all__ = ['main']
 
 import sys
 
-import pyflakes.checker
 import pyflakes.api
+import pyflakes.checker
 
 
 def main():

@@ -32,8 +32,7 @@ from oslo.config import cfg
 
 
 def print_help(venv):
-    help = """
-    Development environment setup is complete.
+    help = """Development environment setup is complete.
 
     This project's development uses virtualenv to track and manage Python
     dependencies while in development and testing.
