@@ -61,9 +61,9 @@ def excluded(self, filename):
     """Check if options.exclude contains a pattern that matches filename."""
     basename = os.path.basename(filename)
     return any((pep8.filename_match(filename, self.options.exclude,
-                               default=False),
+                                    default=False),
                 pep8.filename_match(basename, self.options.exclude,
-                               default=False)))
+                                    default=False)))
 
 
 def input_dir(self, dirname):
@@ -99,10 +99,10 @@ def import_normalize(line):
     # handle "from x import y as z" to "import x.y as z"
     split_line = line.split()
     if ("import" in line and line.startswith("from ") and "," not in line and
-           split_line[2] == "import" and split_line[3] != "*" and
-           split_line[1] != "__future__" and
-           (len(split_line) == 4 or
-           (len(split_line) == 6 and split_line[4] == "as"))):
+            split_line[2] == "import" and split_line[3] != "*" and
+            split_line[1] != "__future__" and
+            (len(split_line) == 4 or
+            (len(split_line) == 6 and split_line[4] == "as"))):
         return "import %s.%s" % (split_line[1], split_line[3])
     else:
         return line
@@ -202,7 +202,7 @@ def openstack_import_module_only(logical_line):
                 valid = True
                 if parent:
                     parent_mod = __import__(parent, globals(), locals(),
-                        [mod], -1)
+                                            [mod], -1)
                     valid = inspect.ismodule(getattr(parent_mod, mod))
                 else:
                     __import__(mod, globals(), locals(), [], -1)
@@ -211,11 +211,13 @@ def openstack_import_module_only(logical_line):
                     if added:
                         sys.path.pop()
                         added = False
-                        return logical_line.find(mod), ("O304: No "
-                            "relative imports. '%s' is a relative import"
+                        return logical_line.find(mod), (
+                            "O304: No relative imports. '%s'"
+                            " is a relative import"
                             % logical_line)
-                    return logical_line.find(mod), ("O302: import only "
-                        "modules. '%s' does not import a module"
+                    return logical_line.find(mod), (
+                        "O302: import only modules. '%s'"
+                        " does not import a module"
                         % logical_line)
 
         except (ImportError, NameError) as exc:
@@ -227,8 +229,8 @@ def openstack_import_module_only(logical_line):
                 name = logical_line.split()[1]
                 if name not in _missingImport:
                     if VERBOSE_MISSING_IMPORT != 'False':
-                        print >> sys.stderr, ("ERROR: import '%s' in %s "
-                                              "failed: %s" %
+                        print >> sys.stderr, (
+                            "ERROR: import '%s' in %s failed: %s" %
                             (name, pep8.current_file, exc))
                     _missingImport.add(name)
                 added = False
@@ -241,8 +243,8 @@ def openstack_import_module_only(logical_line):
                 # TODO(jogo): handle "from x import *, by checking all
                 #           "objects in x"
                 return
-            return logical_line.find(mod), ("O303: Invalid import, "
-                "%s" % mod)
+            return logical_line.find(mod), (
+                "O303: Invalid import, %s" % mod)
 
     split_line = logical_line.split()
     if (", " not in logical_line and
@@ -263,7 +265,7 @@ def openstack_import_module_only(logical_line):
 
 
 def openstack_import_alphabetical(logical_line, blank_lines, previous_logical,
-                             indent_level, previous_indent_level):
+                                  indent_level, previous_indent_level):
     r"""Check for imports in alphabetical order.
 
     HACKING guide recommendation for imports:
@@ -301,7 +303,7 @@ def openstack_import_no_db_in_virt(logical_line, filename):
 
 def in_docstring_position(previous_logical):
     return (previous_logical.startswith("def ") or
-        previous_logical.startswith("class "))
+            previous_logical.startswith("class "))
 
 
 def openstack_docstring_start_space(physical_line, previous_logical):
@@ -403,13 +405,13 @@ def openstack_no_cr(physical_line):
 
 
 FORMAT_RE = re.compile("%(?:"
-                            "%|"           # Ignore plain percents
-                            "(\(\w+\))?"   # mapping key
-                            "([#0 +-]?"    # flag
-                             "(?:\d+|\*)?"  # width
-                             "(?:\.\d+)?"   # precision
-                             "[hlL]?"       # length mod
-                             "\w))")        # type
+                       "%|"           # Ignore plain percents
+                       "(\(\w+\))?"   # mapping key
+                       "([#0 +-]?"    # flag
+                       "(?:\d+|\*)?"  # width
+                       "(?:\.\d+)?"   # precision
+                       "[hlL]?"       # length mod
+                       "\w))")        # type
 
 
 class LocalizationError(Exception):
@@ -449,31 +451,31 @@ def check_i18n():
                     break
 
             if not format_string:
-                raise LocalizationError(start,
-                    "O701: Empty localization string")
+                raise LocalizationError(
+                    start, "O701: Empty localization string")
             if token_type != tokenize.OP:
-                raise LocalizationError(start,
-                    "O701: Invalid localization call")
+                raise LocalizationError(
+                    start, "O701: Invalid localization call")
             if text != ")":
                 if text == "%":
-                    raise LocalizationError(start,
-                        "O702: Formatting operation should be outside"
+                    raise LocalizationError(
+                        start, "O702: Formatting operation should be outside"
                         " of localization method call")
                 elif text == "+":
-                    raise LocalizationError(start,
-                        "O702: Use bare string concatenation instead"
+                    raise LocalizationError(
+                        start, "O702: Use bare string concatenation instead"
                         " of +")
                 else:
-                    raise LocalizationError(start,
-                        "O702: Argument to _ must be just a string")
+                    raise LocalizationError(
+                        start, "O702: Argument to _ must be just a string")
 
             format_specs = FORMAT_RE.findall(format_string)
             positional_specs = [(key, spec) for key, spec in format_specs
-                                            if not key and spec]
+                                if not key and spec]
             # not spec means %%, key means %(smth)s
             if len(positional_specs) > 1:
-                raise LocalizationError(start,
-                    "O703: Multiple positional placeholders")
+                raise LocalizationError(
+                    start, "O703: Multiple positional placeholders")
 
 
 def openstack_localization_strings(logical_line, tokens):
@@ -513,7 +515,7 @@ def openstack_not_in(logical_line):
             split_line[1] == 'not' and split_line[3] == 'in' and not
             split_line[2].startswith('(')):
                 yield (logical_line.find('not'), "O901: Use the 'not in' "
-                        "operator for collection membership evaluation")
+                       "operator for collection membership evaluation")
 
 current_file = ""
 
@@ -550,7 +552,7 @@ def once_git_check_commit_title():
     #Get title of most recent commit
 
     subp = subprocess.Popen(['git', 'log', '--no-merges', '--pretty=%s', '-1'],
-            stdout=subprocess.PIPE)
+                            stdout=subprocess.PIPE)
     title = subp.communicate()[0]
     if subp.returncode:
         raise Exception("git log failed with code %s" % subp.returncode)
@@ -572,7 +574,7 @@ def once_git_check_commit_title():
         error = True
     if len(title.decode('utf-8')) > 72:
         print ("O802: git commit title ('%s') should be under 50 chars"
-                % title.strip())
+               % title.strip())
         error = True
     return error
 
@@ -604,6 +606,9 @@ def main():
     # we need to kill this doctring otherwise the self tests fail
     pep8.imports_on_separate_lines.__doc__ = \
         imports_on_separate_lines_O301_compliant
+    # By default, nobody in the project wants E125. If someone adds an ignore
+    # arg, it will override this
+    sys.argv.insert(1, "--ignore=E125")
 
     try:
         pep8._main()
@@ -611,7 +616,7 @@ def main():
     finally:
         if len(_missingImport) > 0:
             print >> sys.stderr, ("%i imports missing in this test environment"
-                    % len(_missingImport))
+                                  % len(_missingImport))
 
 if __name__ == '__main__':
     main()
