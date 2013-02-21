@@ -81,6 +81,10 @@ opts = [
 ]
 
 
+COPIED_MODULES = []
+DEPMODS_INSPECTED = []
+
+
 def _parse_args(argv):
     conf = cfg.ConfigOpts()
     conf.register_cli_opts(opts)
@@ -165,7 +169,38 @@ def _copy_pyfile(path, base, dest_dir):
     _copy_file(path, _dest_path(path, base, dest_dir), base)
 
 
+def _copy_dependent_mods(path, base, dest_dir):
+    global DEPMODS_INSPECTED
+    if path in DEPMODS_INSPECTED:
+        return
+    DEPMODS_INSPECTED.append(path)
+
+    imp = re.compile(
+        r'^(?:from|import).*openstack\.common\.?(\w*)'
+        r'\s*(?:import)*\s*(\w+)(?:\s+as.*)*$')
+
+    with open(path, 'r') as file:
+        for line in file:
+            m = imp.match(line)
+            if m:
+                filtered = [e for e in m.groups() if e != 'import' and e != '']
+                mod = '.'.join(filtered)
+
+                # Strip out classes/functions from import.
+                if '.' in mod:
+                    mod_path = _mod_to_path('openstack.common.%s' % mod)
+                    if not (os.path.isdir(mod) or os.path.isfile(mod)):
+                        mod = mod.split('.')[:-1][0]
+
+                _copy_module(mod, base, dest_dir)
+
+
 def _copy_module(mod, base, dest_dir):
+    global COPIED_MODULES
+    if mod in COPIED_MODULES:
+        return
+    COPIED_MODULES.append(mod)
+
     print ("Copying openstack.common.%s under the %s module in %s" %
            (mod, base, dest_dir))
 
@@ -178,6 +213,7 @@ def _copy_module(mod, base, dest_dir):
     mod_path = _mod_to_path('openstack.common.%s' % mod)
     mod_file = '%s.py' % mod_path
     if os.path.isfile(mod_file):
+        _copy_dependent_mods(mod_file, base, dest_dir)
         _copy_pyfile(mod_file, base, dest_dir)
     elif os.path.isdir(mod_path):
         dest = os.path.join(dest_dir, _mod_to_path(base),
@@ -185,7 +221,10 @@ def _copy_module(mod, base, dest_dir):
         _make_dirs(dest)
         sources = filter(lambda x: x[-3:] == '.py', os.listdir(mod_path))
         for s in sources:
-            _copy_pyfile(os.path.join(mod_path, s), base, dest_dir)
+            # Bring in dependencies.
+            s_path = os.path.join(mod_path, s)
+            _copy_dependent_mods(s_path, base, dest_dir)
+            _copy_pyfile(s_path, base, dest_dir)
 
     globs_to_copy = [
         os.path.join('bin', 'oslo-' + mod + '*'),
@@ -195,6 +234,8 @@ def _copy_module(mod, base, dest_dir):
 
     for matches in [glob.glob(g) for g in globs_to_copy]:
         for match in matches:
+            _copy_dependent_mods(match, base, dest_dir)
+
             dest = os.path.join(dest_dir, match.replace('oslo', base))
             print "Copying %s to %s" % (match, dest)
             _copy_file(match, dest, base)
