@@ -279,19 +279,25 @@ def _get_version_from_git(pre_version):
     revision if there is one, or tag plus number of additional revisions
     if the current revision has no tag."""
 
-    if os.path.exists('.git'):
-        if pre_version:
-            try:
-                return _run_shell_command(
-                    "git describe --exact-match",
-                    throw_on_error=True).replace('-', '.')
-            except Exception:
-                sha = _run_shell_command("git log -n1 --pretty=format:%h")
-                return "%s.a%s.g%s" % (pre_version, _get_revno(), sha)
-        else:
+    parent_dir = os.getcwd()
+    while True:
+        if os.path.exists(os.path.join(parent_dir, '.git')):
+            break
+        parent_dir, child = os.path.split(parent_dir)
+        if not child:   # reached to root dir
+            return None
+
+    if pre_version:
+        try:
             return _run_shell_command(
-                "git describe --always").replace('-', '.')
-    return None
+                "git describe --exact-match",
+                throw_on_error=True).replace('-', '.')
+        except Exception:
+            sha = _run_shell_command("git log -n1 --pretty=format:%h")
+            return "%s.a%s.g%s" % (pre_version, _get_revno(), sha)
+    else:
+        return _run_shell_command(
+            "git describe --always").replace('-', '.')
 
 
 def _get_version_from_pkg_info(package_name):
