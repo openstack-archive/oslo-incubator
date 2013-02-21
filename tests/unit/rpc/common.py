@@ -19,9 +19,9 @@
 Unit Tests for remote procedure calls shared between all implementations
 """
 
+import datetime
 import logging
 import time
-import datetime
 
 import eventlet
 from eventlet import greenthread

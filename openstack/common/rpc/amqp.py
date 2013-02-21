@@ -32,18 +32,18 @@ import uuid
 
 from eventlet import greenpool
 from eventlet import pools
-from eventlet import semaphore
 from eventlet import queue
+from eventlet import semaphore
 
-# TODO(pekowsk): Remove import cfg and below comment in Havana.
-# This import should no longer be needed when the amqp_rpc_single_reply_queue
-# option is removed.
-from oslo.config import cfg
 from openstack.common import excutils
 from openstack.common.gettextutils import _
 from openstack.common import local
 from openstack.common import log as logging
 from openstack.common.rpc import common as rpc_common
+# TODO(pekowsk): Remove import cfg and below comment in Havana.
+# This import should no longer be needed when the amqp_rpc_single_reply_queue
+# option is removed.
+from oslo.config import cfg
 
 # TODO(pekowski): Remove this option in Havana.
 amqp_opts = [
@@ -196,8 +196,9 @@ class ReplyProxy(ConnectionContext):
         msg_id = message_data.pop('_msg_id', None)
         waiter = self._call_waiters.get(msg_id)
         if not waiter:
-            LOG.warn(_('no calling threads waiting for msg_id : %s'
-                       ', message : %s') % (msg_id, message_data))
+            LOG.warn(_('no calling threads waiting for msg_id :'
+                       ' %(id)s, message : %(data)s') %
+                     dict(id=msg_id, data=message_data))
         else:
             waiter.put(message_data)
 

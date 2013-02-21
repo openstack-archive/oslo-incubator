@@ -24,20 +24,21 @@ import eventlet
 eventlet.monkey_patch()
 
 import logging
+import time
 
 import fixtures
-import time
-import testtools
 import mox
 from oslo.config import cfg
+import testtools
 
 from openstack.common import context
 from openstack.common.rpc import amqp as rpc_amqp
-from tests import utils
 from openstack.common.rpc import common as rpc_common
+from tests import utils
 
 try:
     import qpid
+
     from openstack.common.rpc import impl_qpid
 except ImportError:
     qpid = None

@@ -23,6 +23,10 @@ from openstack.common import periodic_task
 from tests import utils
 
 
+class AServiceException(Exception):
+    pass
+
+
 class AService(periodic_task.PeriodicTasks):
 
     def __init__(self):
@@ -35,7 +39,7 @@ class AService(periodic_task.PeriodicTasks):
     @periodic_task.periodic_task
     def crashit(self, context):
         self.called['urg'] = True
-        raise Exception('urg')
+        raise AServiceException('urg')
 
     @periodic_task.periodic_task(ticks_between_runs=1)
     def doit_with_kwargs_odd(self, context):
@@ -61,6 +65,6 @@ class PeriodicTasksTestCase(utils.BaseTestCase):
 
     def test_raises(self):
         serv = AService()
-        self.assertRaises(Exception,
+        self.assertRaises(AServiceException,
                           serv.run_periodic_tasks,
                           None, raise_on_error=True)
