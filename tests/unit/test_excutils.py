@@ -18,6 +18,10 @@ from openstack.common import excutils
 from tests import utils
 
 
+class SaveException(Exception):
+    pass
+
+
 class SaveAndReraiseTest(utils.BaseTestCase):
 
     def test_save_and_reraise_exception(self):
@@ -25,11 +29,11 @@ class SaveAndReraiseTest(utils.BaseTestCase):
         msg = 'foo'
         try:
             try:
-                raise Exception(msg)
-            except:
+                raise SaveException(msg)
+            except SaveException:
                 with excutils.save_and_reraise_exception():
                     pass
-        except Exception, _e:
+        except SaveException, _e:
             e = _e
 
         self.assertEqual(str(e), msg)
@@ -39,11 +43,11 @@ class SaveAndReraiseTest(utils.BaseTestCase):
         msg = 'second exception'
         try:
             try:
-                raise Exception('dropped')
-            except:
+                raise SaveException('dropped')
+            except SaveException:
                 with excutils.save_and_reraise_exception():
-                    raise Exception(msg)
-        except Exception, _e:
+                    raise SaveException(msg)
+        except SaveException, _e:
             e = _e
 
         self.assertEqual(str(e), msg)

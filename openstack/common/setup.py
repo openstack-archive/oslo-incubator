@@ -198,9 +198,9 @@ def get_cmdclass():
     # enable setup.py to build the documentation, otherwise,
     # just ignore it
     try:
-        from sphinx.setup_command import BuildDoc
+        from sphinx import setup_command
 
-        class LocalBuildDoc(BuildDoc):
+        class LocalBuildDoc(setup_command.BuildDoc):
 
             builders = ['html', 'man']
 
@@ -245,7 +245,7 @@ def get_cmdclass():
                     self.project = self.distribution.get_name()
                     self.version = self.distribution.get_version()
                     self.release = self.distribution.get_version()
-                    BuildDoc.run(self)
+                    setup_command.BuildDoc.run(self)
 
         class LocalBuildLatex(LocalBuildDoc):
             builders = ['latex']
