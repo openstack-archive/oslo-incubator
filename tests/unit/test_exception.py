@@ -19,6 +19,10 @@ from openstack.common import exception
 from tests import utils
 
 
+class BadFunctionException(Exception):
+    pass
+
+
 def good_function():
     return "Is Bueno!"
 
@@ -28,7 +32,7 @@ def bad_function_error():
 
 
 def bad_function_exception():
-    raise Exception()
+    raise BadFunctionException()
 
 
 class WrapExceptionTest(utils.BaseTestCase):
@@ -43,7 +47,8 @@ class WrapExceptionTest(utils.BaseTestCase):
 
     def test_wrap_exception_throws_exception(self):
         wrapped = exception.wrap_exception
-        self.assertRaises(Exception, wrapped(bad_function_exception))
+        self.assertRaises(BadFunctionException,
+                          wrapped(bad_function_exception))
 
 
 class ApiErrorTest(utils.BaseTestCase):
