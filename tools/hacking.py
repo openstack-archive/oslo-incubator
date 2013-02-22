@@ -253,6 +253,8 @@ def openstack_import_module_only(logical_line):
             split_line[1] != "__future__"):
         if is_import_exception(split_line[1]):
             return
+        if 'openstack.common.gettextutils import _' in logical_line:
+            return
         if "from" == split_line[0]:
             rval = import_module_check(split_line[3], parent=split_line[1])
         else:
