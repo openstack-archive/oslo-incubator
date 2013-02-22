@@ -109,34 +109,3 @@ def wrap_exception(f):
     return _wrap
 
 
-class OpenstackException(Exception):
-    """
-    Base Exception
-
-    To correctly use this class, inherit from it and define
-    a 'message' property. That message will get printf'd
-    with the keyword arguments provided to the constructor.
-    """
-    message = "An unknown exception occurred"
-
-    def __init__(self, **kwargs):
-        try:
-            self._error_string = self.message % kwargs
-
-        except Exception as e:
-            if _FATAL_EXCEPTION_FORMAT_ERRORS:
-                raise e
-            else:
-                # at least get the core message out if something happened
-                self._error_string = self.message
-
-    def __str__(self):
-        return self._error_string
-
-
-class MalformedRequestBody(OpenstackException):
-    message = "Malformed message body: %(reason)s"
-
-
-class InvalidContentType(OpenstackException):
-    message = "Invalid content type %(content_type)s"

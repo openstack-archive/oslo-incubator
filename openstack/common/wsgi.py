@@ -35,7 +35,6 @@ import webob.exc
 from xml.dom import minidom
 from xml.parsers import expat
 
-from openstack.common import exception
 from openstack.common.gettextutils import _
 from openstack.common import jsonutils
 from openstack.common import log as logging
@@ -62,6 +61,39 @@ def run_server(application, port):
     """Run a WSGI server with the given application."""
     sock = eventlet.listen(('0.0.0.0', port))
     eventlet.wsgi.server(sock, application)
+
+
+class OpenstackException(Exception):
+    """
+    Base Exception
+
+    To correctly use this class, inherit from it and define
+    a 'message' property. That message will get printf'd
+    with the keyword arguments provided to the constructor.
+    """
+    message = "An unknown exception occurred"
+
+    def __init__(self, **kwargs):
+        try:
+            self._error_string = self.message % kwargs
+
+        except Exception as e:
+            if _FATAL_EXCEPTION_FORMAT_ERRORS:
+                raise e
+            else:
+                # at least get the core message out if something happened
+                self._error_string = self.message
+
+    def __str__(self):
+        return self._error_string
+
+
+class MalformedRequestBody(OpenstackException):
+    message = "Malformed message body: %(reason)s"
+
+
+class InvalidContentType(OpenstackException):
+    message = "Invalid content type %(content_type)s"
 
 
 class Service(service.Service):
