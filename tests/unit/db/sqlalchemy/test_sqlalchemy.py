@@ -20,17 +20,10 @@ from sqlalchemy import Column, MetaData, Table, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import DateTime, Integer
 
+from openstack.common.db import exception as db_exc
 from openstack.common.db.sqlalchemy import models
 from openstack.common.db.sqlalchemy import session
-from openstack.common import importutils
 from tests import utils as test_utils
-
-MySQLdb = importutils.try_import('MySQLdb')
-
-
-class TestException(Exception):
-    pass
-
 
 BASE = declarative_base()
 _TABLE_NAME = '__tmp__test__tmp__'
@@ -72,7 +65,7 @@ class SessionErrorWrapperTestCase(test_utils.BaseTestCase):
 
         tbl2 = TmpTable()
         tbl2.update({'foo': 10})
-        self.assertRaises(session.DBDuplicateEntry, tbl2.save)
+        self.assertRaises(db_exc.DBDuplicateEntry, tbl2.save)
 
     def test_execute_wrapper(self):
         _session = session.get_session()
@@ -85,5 +78,5 @@ class SessionErrorWrapperTestCase(test_utils.BaseTestCase):
             method = _session.query(TmpTable).\
                 filter_by(foo=10).\
                 update
-            self.assertRaises(session.DBDuplicateEntry,
+            self.assertRaises(db_exc.DBDuplicateEntry,
                               method, {'foo': 20})
