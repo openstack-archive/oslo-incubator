@@ -27,9 +27,6 @@ This module provides a few things:
 
     2) Wrappers around loads() and dumps().  The dumps() wrapper will
     automatically use to_primitive() for you if needed.
-
-    3) This sets up anyjson to use the loads() and dumps() wrappers if anyjson
-    is available.
 '''
 
 
@@ -135,13 +132,3 @@ def loads(s):
 
 def load(s):
     return json.load(s)
-
-
-try:
-    import anyjson
-except ImportError:
-    pass
-else:
-    anyjson._modules.append((__name__, 'dumps', TypeError,
-                                       'loads', ValueError, 'load'))
-    anyjson.force_implementation(__name__)
