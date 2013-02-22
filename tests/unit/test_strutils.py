@@ -17,7 +17,6 @@
 
 import mock
 
-from openstack.common import exception
 from openstack.common import strutils
 from tests import utils
 

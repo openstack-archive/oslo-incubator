@@ -29,10 +29,10 @@ import time
 import mock
 from oslo.config import cfg
 
-from openstack.common import exception
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
 from tests.unit.rpc import amqp
+from tests.unit.rpc import common as tests_common
 from tests import utils
 
 try:
@@ -479,7 +479,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         """
         value = "This is the exception message"
         # The use of ApiError is an arbitrary choice here ...
-        self.assertRaises(exception.ApiError,
+        self.assertRaises(tests_common.ApiError,
                           self.rpc.call,
                           FLAGS,
                           self.context,
@@ -492,10 +492,10 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
                           {"method": "fail_converted",
                            "args": {"value": value}})
             self.fail("should have thrown Exception")
-        except exception.ApiError as exc:
+        except tests_common.ApiError as exc:
             self.assertTrue(value in unicode(exc))
             #Traceback should be included in exception message
-            self.assertTrue('exception.ApiError' in unicode(exc))
+            self.assertTrue('ApiError' in unicode(exc))
 
     def test_create_worker(self):
         meth = 'declare_topic_consumer'

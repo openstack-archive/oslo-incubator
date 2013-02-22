@@ -22,11 +22,11 @@ import sys
 
 from oslo.config import cfg
 
-from openstack.common import exception
 from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import rpc
 from openstack.common.rpc import common as rpc_common
+from openstack.common import wsgi
 from tests import utils as test_utils
 
 
@@ -64,12 +64,12 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
 
     def test_serialize_remote_custom_exception(self):
         def raise_custom_exception():
-            raise exception.OpenstackException()
+            raise wsgi.OpenstackException()
 
         expected = {
             'class': 'OpenstackException',
-            'module': 'openstack.common.exception',
-            'message': exception.OpenstackException.message,
+            'module': 'openstack.common.wsgi',
+            'message': wsgi.OpenstackException.message,
         }
 
         try:
@@ -100,14 +100,14 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
     def test_deserialize_remote_custom_exception(self):
         failure = {
             'class': 'OpenstackException',
-            'module': 'openstack.common.exception',
-            'message': exception.OpenstackException.message,
+            'module': 'openstack.common.wsgi',
+            'message': wsgi.OpenstackException.message,
             'tb': ['raise OpenstackException'],
         }
         serialized = jsonutils.dumps(failure)
 
         after_exc = rpc_common.deserialize_remote_exception(FLAGS, serialized)
-        self.assertTrue(isinstance(after_exc, exception.OpenstackException))
+        self.assertTrue(isinstance(after_exc, wsgi.OpenstackException))
         self.assertTrue('An unknown' in unicode(after_exc))
         #assure the traceback was added
         self.assertTrue('raise OpenstackException' in unicode(after_exc))

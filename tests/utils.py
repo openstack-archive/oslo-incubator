@@ -24,7 +24,7 @@ from oslo.config import cfg
 import testtools
 
 from openstack.common.fixture import moxstubout
-from openstack.common import exception
+from openstack.common import wsgi
 
 CONF = cfg.CONF
 
@@ -37,7 +37,8 @@ class BaseTestCase(testtools.TestCase):
         self.addCleanup(CONF.reset)
         self.useFixture(fixtures.FakeLogger('openstack.common'))
         self.useFixture(fixtures.Timeout(30, True))
-        self.stubs.Set(exception, '_FATAL_EXCEPTION_FORMAT_ERRORS', True)
+
+        self.stubs.Set(wsgi, '_FATAL_EXCEPTION_FORMAT_ERRORS', True)
 
     def tearDown(self):
         super(BaseTestCase, self).tearDown()

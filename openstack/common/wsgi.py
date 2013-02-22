@@ -35,12 +35,13 @@ import webob.exc
 from xml.dom import minidom
 from xml.parsers import expat
 
-from openstack.common import exception
 from openstack.common.gettextutils import _
 from openstack.common import jsonutils
 from openstack.common import log as logging
 from openstack.common import service
 from openstack.common import sslutils
+
+_FATAL_EXCEPTION_FORMAT_ERRORS = False
 
 socket_opts = [
     cfg.IntOpt('backlog',
@@ -62,6 +63,39 @@ def run_server(application, port):
     """Run a WSGI server with the given application."""
     sock = eventlet.listen(('0.0.0.0', port))
     eventlet.wsgi.server(sock, application)
+
+
+class OpenstackException(Exception):
+    """
+    Base Exception
+
+    To correctly use this class, inherit from it and define
+    a 'message' property. That message will get printf'd
+    with the keyword arguments provided to the constructor.
+    """
+    message = "An unknown exception occurred"
+
+    def __init__(self, **kwargs):
+        try:
+            self._error_string = self.message % kwargs
+
+        except Exception as e:
+            if _FATAL_EXCEPTION_FORMAT_ERRORS:
+                raise e
+            else:
+                # at least get the core message out if something happened
+                self._error_string = self.message
+
+    def __str__(self):
+        return self._error_string
+
+
+class MalformedRequestBody(OpenstackException):
+    message = "Malformed message body: %(reason)s"
+
+
+class InvalidContentType(OpenstackException):
+    message = "Invalid content type %(content_type)s"
 
 
 class Service(service.Service):
@@ -328,7 +362,7 @@ class Request(webob.Request):
                                  self.default_request_content_types)
 
         if content_type not in allowed_content_types:
-            raise exception.InvalidContentType(content_type=content_type)
+            raise InvalidContentType(content_type=content_type)
         return content_type
 
 
@@ -367,10 +401,10 @@ class Resource(object):
 
         try:
             action, action_args, accept = self.deserialize_request(request)
-        except exception.InvalidContentType:
+        except InvalidContentType:
             msg = _("Unsupported Content-Type")
             return webob.exc.HTTPUnsupportedMediaType(explanation=msg)
-        except exception.MalformedRequestBody:
+        except MalformedRequestBody:
             msg = _("Malformed request body")
             return webob.exc.HTTPBadRequest(explanation=msg)
 
@@ -602,7 +636,7 @@ class ResponseSerializer(object):
         try:
             return self.body_serializers[content_type]
         except (KeyError, TypeError):
-            raise exception.InvalidContentType(content_type=content_type)
+            raise InvalidContentType(content_type=content_type)
 
 
 class RequestHeadersDeserializer(ActionDispatcher):
@@ -661,7 +695,7 @@ class RequestDeserializer(object):
 
         try:
             content_type = request.get_content_type()
-        except exception.InvalidContentType:
+        except InvalidContentType:
             LOG.debug(_("Unrecognized Content-Type provided in request"))
             raise
 
@@ -671,7 +705,7 @@ class RequestDeserializer(object):
 
         try:
             deserializer = self.get_body_deserializer(content_type)
-        except exception.InvalidContentType:
+        except InvalidContentType:
             LOG.debug(_("Unable to deserialize body as provided Content-Type"))
             raise
 
@@ -681,7 +715,7 @@ class RequestDeserializer(object):
         try:
             return self.body_deserializers[content_type]
         except (KeyError, TypeError):
-            raise exception.InvalidContentType(content_type=content_type)
+            raise InvalidContentType(content_type=content_type)
 
     def get_expected_content_type(self, request):
         return request.best_match_content_type(self.supported_content_types)
@@ -723,7 +757,7 @@ class JSONDeserializer(TextDeserializer):
             return jsonutils.loads(datastring)
         except ValueError:
             msg = _("cannot understand JSON")
-            raise exception.MalformedRequestBody(reason=msg)
+            raise MalformedRequestBody(reason=msg)
 
     def default(self, datastring):
         return {'body': self._from_json(datastring)}
@@ -747,7 +781,7 @@ class XMLDeserializer(TextDeserializer):
             return {node.nodeName: self._from_xml_node(node, plurals)}
         except expat.ExpatError:
             msg = _("cannot understand XML")
-            raise exception.MalformedRequestBody(reason=msg)
+            raise MalformedRequestBody(reason=msg)
 
     def _from_xml_node(self, node, listnames):
         """Convert a minidom node to a simple Python type.
