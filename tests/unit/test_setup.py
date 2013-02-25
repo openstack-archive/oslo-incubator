@@ -15,6 +15,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import io
 import os
 import sys
 import StringIO
@@ -84,32 +85,56 @@ class GitLogsTest(utils.BaseTestCase):
         temp_path = self.useFixture(fixtures.TempDir()).path
         self.useFixture(DiveDir(temp_path))
 
+    @staticmethod
+    def _root_dir():
+        # NOTE(yamahata): get root direcotry of repository
+        # __file__ = $ROOT/tests/unit/test_setup.py
+        # => $ROOT/tests/unit => $ROOT/tests => $ROOT
+        root_dir = os.path.dirname(__file__)
+        root_dir = os.path.dirname(root_dir)
+        root_dir = os.path.dirname(root_dir)
+        return root_dir
+
     def test_write_git_changelog(self):
-        exist_files = [".git", ".mailmap"]
-        self.useFixture(fixtures.MonkeyPatch("os.path.exists",
-                                             lambda path: path in exist_files))
+        root_dir = self._root_dir()
+        exist_files = [os.path.join(root_dir, f) for f in ".git", ".mailmap"]
+        self.useFixture(fixtures.MonkeyPatch(
+            "os.path.exists",
+            lambda path: os.path.abspath(path) in exist_files))
         self.useFixture(fixtures.FakePopen(lambda _: {
             "stdout": StringIO.StringIO("Author: Foo Bar <email@bar.com>\n")
         }))
-        with open(".mailmap", "w") as mm_fh:
-            mm_fh.write("Foo Bar <email@foo.com> <email@bar.com>\n")
+
+        builtin_open = open
+
+        def _fake_open(name, mode):
+            if name.endswith('.mailmap'):
+                # StringIO.StringIO doesn't have __exit__ (at least python 2.6)
+                return io.BytesIO("Foo Bar <email@foo.com> <email@bar.com>\n")
+            return builtin_open(name, mode)
+        self.useFixture(fixtures.MonkeyPatch("__builtin__.open", _fake_open))
 
         write_git_changelog()
 
-        with open("ChangeLog", "r") as ch_fh:
+        with open(os.path.join(root_dir, "ChangeLog"), "r") as ch_fh:
             self.assertTrue("email@foo.com" in ch_fh.read())
 
     def test_generate_authors(self):
         author_old = "Foo Foo <email@foo.com>"
         author_new = "Bar Bar <email@bar.com>"
 
-        exist_files = [".git", "AUTHORS.in"]
-        self.useFixture(fixtures.MonkeyPatch("os.path.exists",
-                                             lambda path: path in exist_files))
+        root_dir = self._root_dir()
+        exist_files = [os.path.join(root_dir, ".git"),
+                       os.path.abspath("AUTHORS.in")]
+        self.useFixture(fixtures.MonkeyPatch(
+            "os.path.exists",
+            lambda path: os.path.abspath(path) in exist_files))
+
+        git_log_cmd = "git --git-dir=%s log" % os.path.join(root_dir, '.git')
         self.useFixture(fixtures.FakePopen(lambda proc_args: {
             "stdout": StringIO.StringIO(
                 author_new
-                if proc_args["args"][2].startswith("git log")
+                if proc_args["args"][2].startswith(git_log_cmd)
                 else "")
         }))
 
