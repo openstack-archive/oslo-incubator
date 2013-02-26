@@ -41,6 +41,7 @@ from openstack.common import jsonutils
 from openstack.common import log as logging
 from openstack.common import service
 from openstack.common import sslutils
+from openstack.common import xmlutils
 
 socket_opts = [
     cfg.IntOpt('backlog',
@@ -743,7 +744,7 @@ class XMLDeserializer(TextDeserializer):
         plurals = set(self.metadata.get('plurals', {}))
 
         try:
-            node = minidom.parseString(datastring).childNodes[0]
+            node = xmlutils.safe_minidom_parse_string(datastring).childNodes[0]
             return {node.nodeName: self._from_xml_node(node, plurals)}
         except expat.ExpatError:
             msg = _("cannot understand XML")
