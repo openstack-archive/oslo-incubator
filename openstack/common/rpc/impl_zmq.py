@@ -785,7 +785,7 @@ def fanout_cast(conf, context, topic, msg, **kwargs):
     _multi_send(_cast, context, 'fanout~' + str(topic), msg, **kwargs)
 
 
-def notify(conf, context, topic, msg, **kwargs):
+def notify(conf, context, topic, msg, envelope):
     """
     Send notification event.
     Notifications are sent to topic-priority.
@@ -794,8 +794,7 @@ def notify(conf, context, topic, msg, **kwargs):
     # NOTE(ewindisch): dot-priority in rpc notifier does not
     # work with our assumptions.
     topic = topic.replace('.', '-')
-    kwargs['envelope'] = kwargs.get('envelope', True)
-    cast(conf, context, topic, msg, **kwargs)
+    cast(conf, context, topic, msg, envelope=envelope)
 
 
 def cleanup():
