@@ -25,17 +25,20 @@ import datetime
 import iso8601
 
 
-TIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
+# ISO 8601 extended time format with microseconds
+ISO8601_UTC_TIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
+TIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
 PERFECT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%f"
 
 
-def isotime(at=None):
+def isotime(at=None, timestr=TIME_FORMAT):
     """Stringify time in ISO 8601 format"""
     if not at:
         at = utcnow()
-    str = at.strftime(TIME_FORMAT)
-    tz = at.tzinfo.tzname(None) if at.tzinfo else 'UTC'
-    str += ('Z' if tz == 'UTC' else tz)
+    str = at.strftime(timestr)
+    if timestr != ISO8601_UTC_TIME_FORMAT:
+        tz = at.tzinfo.tzname(None) if at.tzinfo else 'UTC'
+        str += ('Z' if tz == 'UTC' else tz)
     return str
 
 

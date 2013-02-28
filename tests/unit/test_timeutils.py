@@ -30,7 +30,10 @@ class TimeUtilsTest(utils.BaseTestCase):
     def setUp(self):
         super(TimeUtilsTest, self).setUp()
         self.skynet_self_aware_time_str = '1997-08-29T06:14:00Z'
+        self.skynet_self_aware_time_ms_str = '1997-08-29T06:14:00.000123Z'
         self.skynet_self_aware_time = datetime.datetime(1997, 8, 29, 6, 14, 0)
+        self.skynet_self_aware_ms_time = datetime.datetime(
+            1997, 8, 29, 6, 14, 0, 123)
         self.one_minute_before = datetime.datetime(1997, 8, 29, 6, 13, 0)
         self.one_minute_after = datetime.datetime(1997, 8, 29, 6, 15, 0)
         self.skynet_self_aware_time_perfect_str = '1997-08-29T06:14:00.000000'
@@ -44,11 +47,23 @@ class TimeUtilsTest(utils.BaseTestCase):
             dt = timeutils.isotime()
             self.assertEqual(dt, self.skynet_self_aware_time_str)
 
+    def test_isotimei_micro_second_precision(self):
+        with mock.patch('datetime.datetime') as datetime_mock:
+            datetime_mock.utcnow.return_value = self.skynet_self_aware_ms_time
+            dt = timeutils.isotime(timestr=timeutils.ISO8601_UTC_TIME_FORMAT)
+            self.assertEqual(dt, self.skynet_self_aware_time_ms_str)
+
     def test_parse_isotime(self):
         expect = timeutils.parse_isotime(self.skynet_self_aware_time_str)
         skynet_self_aware_time_utc = self.skynet_self_aware_time.replace(
             tzinfo=iso8601.iso8601.UTC)
         self.assertEqual(skynet_self_aware_time_utc, expect)
+
+    def test_parse_isotime_micro_second_precision(self):
+        expect = timeutils.parse_isotime(self.skynet_self_aware_time_ms_str)
+        skynet_self_aware_time_ms_utc = self.skynet_self_aware_ms_time.replace(
+            tzinfo=iso8601.iso8601.UTC)
+        self.assertEqual(skynet_self_aware_time_ms_utc, expect)
 
     def test_strtime(self):
         expect = timeutils.strtime(self.skynet_self_aware_time_perfect)
