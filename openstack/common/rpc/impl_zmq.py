@@ -793,7 +793,7 @@ def notify(conf, context, topic, msg, **kwargs):
     """
     # NOTE(ewindisch): dot-priority in rpc notifier does not
     # work with our assumptions.
-    topic.replace('.', '-')
+    topic = topic.replace('.', '-')
     kwargs['envelope'] = kwargs.get('envelope', True)
     cast(conf, context, topic, msg, **kwargs)
 
