@@ -55,6 +55,7 @@ the modules to copy and the base destination module
 Obviously, the first way is the easiest!
 """
 
+import functools
 import glob
 import os
 import os.path
@@ -169,23 +170,26 @@ def _copy_module(mod, base, dest_dir):
     print ("Copying openstack.common.%s under the %s module in %s" %
            (mod, base, dest_dir))
 
+    copy_pyfile = functools.partial(_copy_pyfile,
+                                    base=base, dest_dir=dest_dir)
+
     if '.' in mod:
         path = _mod_to_path('openstack.common')
         for d in mod.split('.')[:-1]:
             path = os.path.join(path, d)
-            _copy_pyfile(os.path.join(path, '__init__.py'), base, dest_dir)
+            copy_pyfile(os.path.join(path, '__init__.py'))
 
     mod_path = _mod_to_path('openstack.common.%s' % mod)
     mod_file = '%s.py' % mod_path
     if os.path.isfile(mod_file):
-        _copy_pyfile(mod_file, base, dest_dir)
+        copy_pyfile(mod_file)
     elif os.path.isdir(mod_path):
         dest = os.path.join(dest_dir, _mod_to_path(base),
                             'openstack', 'common', mod)
         _make_dirs(dest)
         sources = filter(lambda x: x[-3:] == '.py', os.listdir(mod_path))
         for s in sources:
-            _copy_pyfile(os.path.join(mod_path, s), base, dest_dir)
+            copy_pyfile(os.path.join(mod_path, s))
 
     globs_to_copy = [
         os.path.join('bin', 'oslo-' + mod + '*'),
