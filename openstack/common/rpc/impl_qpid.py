@@ -415,7 +415,7 @@ class Connection(object):
 
         def _error_callback(exc):
             if isinstance(exc, qpid_exceptions.Empty):
-                LOG.exception(_('Timed out waiting for RPC response: %s') %
+                LOG.debug(_('Timed out waiting for RPC response: %s') %
                               str(exc))
                 raise rpc_common.Timeout()
             else:
