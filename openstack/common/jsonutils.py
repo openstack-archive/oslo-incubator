@@ -85,8 +85,6 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
         return 'mock'
 
     if level > max_depth:
-        LOG.error(_('Max serialization depth exceeded on object: %d %s'),
-                  level, value)
         return '?'
 
     # The try block may not be necessary after the class check above,
