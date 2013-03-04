@@ -732,6 +732,7 @@ def _call(addr, context, topic, msg, timeout=None,
     return responses[-1]
 
 
+@rpc_common.exceptions_logged
 def _multi_send(method, context, topic, msg, timeout=None,
                 envelope=False, _msg_id=None):
     """
@@ -750,7 +751,7 @@ def _multi_send(method, context, topic, msg, timeout=None,
         LOG.warn(_("No matchmaker results. Not casting."))
         # While not strictly a timeout, callers know how to handle
         # this exception and a timeout isn't too big a lie.
-        raise rpc_common.Timeout, "No match from matchmaker."
+        raise rpc_common.Timeout(_("No match from matchmaker."))
 
     # This supports brokerless fanout (addresses > 1)
     for queue in queues:
