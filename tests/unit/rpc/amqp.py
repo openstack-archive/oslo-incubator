@@ -265,3 +265,22 @@ class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
         conn.close()
 
         self.assertTrue(self.exc_raised)
+
+    def test_exceptions_logged(self):
+        """Tests that the openstack.common.rpc.common.exception_logged
+        decorator is applied to the appropriate funcs"""
+        file_name = 'openstack/common/rpc/common.py'
+        self._test_decorator(rpc_amqp.call, 'rpc_amqp.call', 'normal_inner',
+                             file_name)
+        self._test_decorator(rpc_amqp.cast, 'rpc_amqp.cast', 'normal_inner',
+                             file_name)
+        self._test_decorator(rpc_amqp.fanout_cast, 'rpc_amqp.fanout_cast',
+                             'normal_inner', file_name)
+        self._test_decorator(rpc_amqp.cast_to_server,
+                             'rpc_amqp.cast_to_server', 'server_inner',
+                             file_name)
+        self._test_decorator(rpc_amqp.fanout_cast_to_server,
+                             'rpc_amqp.fanout_cast_to_server', 'server_inner',
+                             file_name)
+        self._test_decorator(rpc_amqp.notify, 'rpc_amqp.notify',
+                             'normal_inner', file_name)

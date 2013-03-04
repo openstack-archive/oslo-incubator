@@ -495,3 +495,55 @@ def deserialize_msg(msg):
     raw_msg = jsonutils.loads(msg[_MESSAGE_KEY])
 
     return raw_msg
+
+
+def exceptions_logged(method):
+    """
+    Decorator for all rpc call, cast, and fanout methods.
+
+    If an exception occurs while performing the rpc call, it'll log it along
+    with the topic and method that was being called. This is to help openstack
+    admins more easily debug production deploys.
+
+    The method being decorated must start with the parameters:
+        conf/addr, context, server_params, topic, msg
+    or:
+        conf/addr, context, topic, msg
+
+    We only read 'msg' and 'topic' so as long as they are in order, we're all
+    good.
+    """
+    def common_inner(topic, msg, *args, **kwargs):
+        try:
+            return method(*args, **kwargs)
+        except Exception as exc:
+            detail_dict = {'method': '', 'topic': topic, 'exc': str(exc)}
+            detail_dict.update(msg)
+            details = (_(
+                'Topic: "%(topic)s" - Method: "%(method)s" - '
+                'Exception: "%(exc)s"') % detail_dict)
+            LOG.debug(_(
+                'RPC call Exception: %s' % details))
+            raise
+
+    def normal_inner(conf, context, topic, msg, *args, **kwargs):
+        return common_inner(topic, msg, conf, context, topic, msg,
+                            *args, **kwargs)
+
+    def server_inner(conf, context, server_params, topic, msg,
+                     *args, **kwargs):
+        return common_inner(topic, msg, conf, context, server_params, topic,
+                            msg, *args, **kwargs)
+    # Choose which inner to return
+    err_msg = "exceptions logged decorator, won't work with: %s" % (method)
+    argnames = method.func_code.co_varnames
+    assert(len(argnames) > 4, err_msg)
+    assert(len(argnames) > 4, err_msg)
+    if argnames[2] == 'server_params':
+        assert(argnames[3] == 'topic', err_msg)
+        assert(argnames[4] == 'msg', err_msg)
+        return server_inner
+    else:
+        assert(argnames[2] == 'topic', err_msg)
+        assert(argnames[3] == 'msg', err_msg)
+        return normal_inner
