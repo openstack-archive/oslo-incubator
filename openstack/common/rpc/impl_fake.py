@@ -130,6 +130,7 @@ def check_serialize(msg):
     json.dumps(msg)
 
 
+@rpc_common.exceptions_logged
 def multicall(conf, context, topic, msg, timeout=None):
     """Make a call that returns multiple times."""
 
@@ -149,6 +150,7 @@ def multicall(conf, context, topic, msg, timeout=None):
         return consumer.call(context, version, method, args, timeout)
 
 
+@rpc_common.exceptions_logged
 def call(conf, context, topic, msg, timeout=None):
     """Sends a message on a topic and wait for a response."""
     rv = multicall(conf, context, topic, msg, timeout)
@@ -159,6 +161,7 @@ def call(conf, context, topic, msg, timeout=None):
     return rv[-1]
 
 
+@rpc_common.exceptions_logged
 def cast(conf, context, topic, msg):
     check_serialize(msg)
     try:
@@ -167,6 +170,7 @@ def cast(conf, context, topic, msg):
         pass
 
 
+@rpc_common.exceptions_logged
 def notify(conf, context, topic, msg, envelope):
     check_serialize(msg)
 
@@ -175,6 +179,7 @@ def cleanup():
     pass
 
 
+@rpc_common.exceptions_logged
 def fanout_cast(conf, context, topic, msg):
     """Cast to all consumers of a topic"""
     check_serialize(msg)
