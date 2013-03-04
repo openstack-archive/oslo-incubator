@@ -62,6 +62,23 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
         conn.consume_in_thread()
         return conn
 
+    def _test_decorator(self, func, real_name, decorator_name='inner', file_name=''):
+        """
+        Tests that 'func' has a decorator from 'file_name' applied to it.
+
+        :param func: We'll check if this function is decorated
+        :param real_name: The human readable name of the function for
+                          debugging output
+        :param decorator_name: The name of the decorator replacement func we
+                               expect func to have
+        :param file_name: if passed, will check that the decorator file name
+                          contains file_name
+        """
+        self.assertEqual(decorator_name, func.func_name, "For func: %s" % real_name)
+        if file_name not in func.func_code.co_filename:
+            self.fail("The decorator for %s isn't from the %s file" %
+                      (real_name, file_name))
+
     def test_call_succeed(self):
         if not self.rpc:
             self.skipTest('rpc driver not available.')

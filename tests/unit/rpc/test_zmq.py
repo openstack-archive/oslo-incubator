@@ -136,3 +136,12 @@ class RpcZmqDirectTopicTestCase(_RpcZmqBaseTestCase):
             return
         self.expectFailure("Message should not have been consumed.",
                            self.assertTrue, True)
+
+
+class RpcZmqMisc(_RpcZmqBaseTestCase):
+
+    def test_exceptions_logged(self):
+        """Tests that the openstack.common.rpc.common.exception_logged
+        decorator is applied to the appropriate funcs"""
+        self._test_decorator(impl_zmq._multi_send, 'impl_zmq._multi_send',
+            'normal_inner', 'openstack/common/rpc/common.py')

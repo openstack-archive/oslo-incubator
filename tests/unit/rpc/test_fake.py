@@ -44,3 +44,18 @@ class RpcFakeTestCase(common.BaseRpcTestCase):
                           'foo', {'x': Foo()})
         self.assertRaises(TypeError, self.rpc.call, CONF, self.context,
                           'foo', {'x': Foo()})
+
+    def test_exceptions_logged(self):
+        """Tests that the openstack.common.rpc.common.exception_logged
+        decorator is applied to the appropriate funcs"""
+        self._test_decorator(impl_fake.multicall, 'impl_fake.multicall',
+            'normal_inner', 'openstack/common/rpc/common.py')
+        self._test_decorator(impl_fake.call, 'impl_fake.call', 'normal_inner',
+            'openstack/common/rpc/common.py')
+        self._test_decorator(impl_fake.cast, 'impl_fake.cast', 'normal_inner',
+            'openstack/common/rpc/common.py')
+        self._test_decorator(impl_fake.notify, 'impl_fake.notify',
+            'normal_inner', 'openstack/common/rpc/common.py')
+        self._test_decorator(impl_fake.fanout_cast, 'impl_fake.fanout_cast',
+            'normal_inner', 'openstack/common/rpc/common.py')
+
