@@ -53,7 +53,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
 
         try:
             raise_exception()
-        except Exception as exc:
+        except Exception:
             failure = rpc_common.serialize_remote_exception(sys.exc_info())
 
         failure = jsonutils.loads(failure)
@@ -74,7 +74,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
 
         try:
             raise_custom_exception()
-        except Exception as exc:
+        except Exception:
             failure = rpc_common.serialize_remote_exception(sys.exc_info())
 
         failure = jsonutils.loads(failure)
@@ -205,7 +205,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         e = None
         try:
             rpc_common.catch_client_exception([ValueError], naughty, 'a')
-        except rpc_common.ClientException, e:
+        except rpc_common.ClientException as e:
             pass
 
         self.assertTrue(isinstance(e, rpc_common.ClientException))
@@ -218,7 +218,6 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         def naughty():
             raise FooException()
 
-        e = None
         self.assertRaises(FooException,
                           rpc_common.catch_client_exception,
                           [ValueError], naughty)
@@ -313,3 +312,59 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
                                      'method': 'run_service_api_method'},
                          'dest_cell_name': 'cell!0001'}}
         rpc_common._safe_log(logger_method, 'foo', data)
+
+
+class TestRPCExceptionLogging(test_utils.BaseTestCase):
+    """
+    If an rpc call raises an exception, the log should contain the exception,
+    and the topic and rpc method name
+    """
+
+    def setUp(self):
+        super(TestRPCExceptionLogging, self).setUp()
+        self.topic = 'taboo'
+        self.method = 'hairy_spider'
+        self.msg = {'method': self.method}
+        self.exception = rpc_common.Timeout('The spider got you')
+        self.expected_log_message = (
+                'RPC call Exception: Topic: "taboo" - Method: "hairy_spider"'
+                ' - Exception: "The spider got you"')
+        self.received_log_message = 'NOT CALLED'
+        self.stubs.Set(rpc_common.LOG, 'exception', self._fake_exception_log)
+
+    def tearDown(self):
+        self.assertEqual(self.expected_log_message, self.received_log_message)
+        super(TestRPCExceptionLogging, self).tearDown()
+
+    def _fake_exception_log(self, msg):
+        self.received_log_message = msg
+
+    def test_exceptions_logged_decorator(self):
+        @rpc_common.exceptions_logged
+        def fake_method(
+                conf, context, topic, msg, *args, **kwargs):
+            self.assertEqual('conf', conf)
+            self.assertEqual('context', context)
+            self.assertEqual(self.topic, topic)
+            self.assertEqual(self.msg, msg)
+            raise self.exception
+        try:
+            fake_method('conf', 'context', self.topic, self.msg)
+        except rpc_common.Timeout:
+            pass
+
+    def test_server_exceptions_logged_decorator(self):
+        @rpc_common.server_exceptions_logged
+        def fake_method(
+                conf, context, server_params, topic, msg, *args, **kwargs):
+            self.assertEqual('conf', conf)
+            self.assertEqual('context', context)
+            self.assertEqual('server_params', server_params)
+            self.assertEqual(self.topic, topic)
+            self.assertEqual(self.msg, msg)
+            raise self.exception
+        try:
+            fake_method('conf', 'context', 'server_params', self.topic,
+                        self.msg)
+        except rpc_common.Timeout:
+            pass
