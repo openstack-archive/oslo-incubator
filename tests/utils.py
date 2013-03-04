@@ -36,7 +36,7 @@ class BaseTestCase(testtools.TestCase):
         self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
         self.addCleanup(CONF.reset)
         self.useFixture(fixtures.FakeLogger('openstack.common'))
-        self.useFixture(fixtures.Timeout(30, True))
+        #self.useFixture(fixtures.Timeout(0, True))
         self.stubs.Set(exception, '_FATAL_EXCEPTION_FORMAT_ERRORS', True)
 
     def tearDown(self):

@@ -637,7 +637,6 @@ class Connection(rpc_common.Connection):
         _get_matchmaker().start_heartbeat()
         self.reactor.consume_in_thread()
 
-
 def _cast(addr, context, topic, msg, timeout=None, envelope=False,
           _msg_id=None):
     timeout_cast = timeout or CONF.rpc_cast_timeout
@@ -732,6 +731,7 @@ def _call(addr, context, topic, msg, timeout=None,
     return responses[-1]
 
 
+@rpc_common.exceptions_logged
 def _multi_send(method, context, topic, msg, timeout=None,
                 envelope=False, _msg_id=None):
     """
@@ -750,7 +750,7 @@ def _multi_send(method, context, topic, msg, timeout=None,
         LOG.warn(_("No matchmaker results. Not casting."))
         # While not strictly a timeout, callers know how to handle
         # this exception and a timeout isn't too big a lie.
-        raise rpc_common.Timeout, "No match from matchmaker."
+        raise rpc_common.Timeout(_("No match from matchmaker."))
 
     # This supports brokerless fanout (addresses > 1)
     for queue in queues:
@@ -764,7 +764,6 @@ def _multi_send(method, context, topic, msg, timeout=None,
             return
         return method(_addr, context, _topic, msg, timeout,
                       envelope)
-
 
 def create_connection(conf, new=True):
     return Connection(conf)

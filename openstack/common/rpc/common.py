@@ -495,3 +495,59 @@ def deserialize_msg(msg):
     raw_msg = jsonutils.loads(msg[_MESSAGE_KEY])
 
     return raw_msg
+
+def exceptions_logged(method):
+    """
+    Decorator for all rpc call, cast, and fanout methods.
+
+    If an exception occurs while performing the rpc call, it'll log it along
+    with the topic and method that was being called. This is to help openstack
+    admins more easily debug production deploys.
+
+    The method being decorated must start with the parameters:
+        conf/addr, context, server_params, topic, msg
+
+    We only read 'msg' and 'topic' so as long as they are in order, we're all
+    good.
+    """
+    def inner(conf, context, topic, msg, *args, **kwargs):
+        try:
+            return method(conf, context, topic, msg, *args, **kwargs)
+        except Exception as exc:
+            detail_dict = {'method': '', 'topic': '', 'exc': str(exc)}
+            detail_dict.update(msg)
+            details = (_(
+                    'Topic: "%(topic)s" - Method: "%(method)s" - '
+                    'Exception: "%(exc)s"') % detail_dict)
+            LOG.exception(_(
+                'RPC call Exception: %s' % details))
+            raise
+    return inner
+
+def server_exceptions_logged(method):
+    """
+    Decorator for all rpc call, cast, and fanout methods.
+
+    If an exception occurs while performing the rpc call, it'll log it along
+    with the topic and method that was being called. This is to help openstack
+    admins more easily debug production deploys.
+
+    The method being decorated must start with the parameters:
+        conf/addr, context, server_params, topic, msg
+
+    We only read 'msg' and 'topic' so as long as they are in order, we're all
+    good.
+    """
+    def inner(conf, context, topic, msg, *args, **kwargs):
+        try:
+            return method(conf, context, topic, msg, *args, **kwargs)
+        except Exception as exc:
+            detail_dict = {'method': '', 'topic': '', 'exc': str(exc)}
+            detail_dict.update(msg)
+            details = (_(
+                    'Topic: "%(topic)s" - Method: "%(method)s" - '
+                    'Exception: "%(exc)s"') % detail_dict)
+            LOG.exception(_(
+                'RPC call Exception: %s' % details))
+            raise
+    return inner

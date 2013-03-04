@@ -604,6 +604,7 @@ def multicall(conf, context, topic, msg, timeout, connection_pool):
     return wait_msg
 
 
+@rpc_common.exceptions_logged
 def call(conf, context, topic, msg, timeout, connection_pool):
     """Sends a message on a topic and wait for a response."""
     rv = multicall(conf, context, topic, msg, timeout, connection_pool)
@@ -614,6 +615,7 @@ def call(conf, context, topic, msg, timeout, connection_pool):
     return rv[-1]
 
 
+@rpc_common.exceptions_logged
 def cast(conf, context, topic, msg, connection_pool):
     """Sends a message on a topic without waiting for a response."""
     LOG.debug(_('Making asynchronous cast on %s...'), topic)
@@ -623,6 +625,7 @@ def cast(conf, context, topic, msg, connection_pool):
         conn.topic_send(topic, rpc_common.serialize_msg(msg))
 
 
+@rpc_common.exceptions_logged
 def fanout_cast(conf, context, topic, msg, connection_pool):
     """Sends a message on a fanout exchange without waiting for a response."""
     LOG.debug(_('Making asynchronous fanout cast...'))
@@ -632,6 +635,7 @@ def fanout_cast(conf, context, topic, msg, connection_pool):
         conn.fanout_send(topic, rpc_common.serialize_msg(msg))
 
 
+@rpc_common.server_exceptions_logged
 def cast_to_server(conf, context, server_params, topic, msg, connection_pool):
     """Sends a message on a topic to a specific server."""
     _add_unique_id(msg)
@@ -641,6 +645,7 @@ def cast_to_server(conf, context, server_params, topic, msg, connection_pool):
         conn.topic_send(topic, rpc_common.serialize_msg(msg))
 
 
+@rpc_common.server_exceptions_logged
 def fanout_cast_to_server(conf, context, server_params, topic, msg,
                           connection_pool):
     """Sends a message on a fanout exchange to a specific server."""
@@ -651,6 +656,7 @@ def fanout_cast_to_server(conf, context, server_params, topic, msg,
         conn.fanout_send(topic, rpc_common.serialize_msg(msg))
 
 
+@rpc_common.exceptions_logged
 def notify(conf, context, topic, msg, connection_pool, envelope):
     """Sends a notification event on a topic."""
     LOG.debug(_('Sending %(event_type)s on %(topic)s'),
