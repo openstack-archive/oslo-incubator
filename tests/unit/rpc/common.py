@@ -24,12 +24,10 @@ import time
 import datetime
 
 import eventlet
-from eventlet import greenthread
 from oslo.config import cfg
 
 from openstack.common import exception
 from openstack.common.gettextutils import _
-from openstack.common import jsonutils
 from openstack.common.rpc import common as rpc_common
 from openstack.common.rpc import dispatcher as rpc_dispatcher
 from tests import utils as test_utils
@@ -231,10 +229,10 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
         self.assertEqual(value, result)
 
     def test_call_timeout(self):
+        """Make sure rpc.call will time out."""
         if not self.rpc:
             self.skipTest('rpc driver not available.')
 
-        """Make sure rpc.call will time out."""
         if not self.supports_timeouts:
             self.skipTest(_("RPC backend does not support timeouts"))
 
@@ -252,7 +250,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
                            "args": {"value": value}},
                           timeout=1)
             self.fail("should have thrown Timeout")
-        except rpc_common.Timeout as exc:
+        except rpc_common.Timeout:
             pass
 
     def test_multithreaded_resp_routing(self):
@@ -295,7 +293,7 @@ def rpc_wrapper(callid, func, *args):
     """
     try:
         ret = func(*args)
-    except rpc_common.Timeout as exc:
+    except rpc_common.Timeout:
         synced_echo_call.wait(callid)
         ret = None
     return ret
