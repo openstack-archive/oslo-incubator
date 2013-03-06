@@ -169,6 +169,36 @@ class ExtraSpecsOpsTestCase(utils.BaseTestCase):
             req='<in> 11 <in>',
             matches=False)
 
+    def test_extra_specs_matches_with_op_is(self):
+        self._do_extra_specs_ops_test(
+            value=True,
+            req='<is> True',
+            matches=True)
+
+    def test_extra_specs_matches_with_op_is2(self):
+        self._do_extra_specs_ops_test(
+            value=False,
+            req='<is> False',
+            matches=True)
+
+    def test_extra_specs_fails_with_op_is(self):
+        self._do_extra_specs_ops_test(
+            value=True,
+            req='<is> False',
+            matches=False)
+
+    def test_extra_specs_fails_with_op_is2(self):
+        self._do_extra_specs_ops_test(
+            value=False,
+            req='<is> True',
+            matches=False)
+
+    def test_extra_specs_fails_with_op_is3(self):
+        self._do_extra_specs_ops_test(
+            value=False,
+            req='<is> Nonsense',
+            matches=False)
+
     def test_extra_specs_matches_with_op_or(self):
         self._do_extra_specs_ops_test(
             value='12',
