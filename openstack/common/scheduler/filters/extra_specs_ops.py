@@ -22,6 +22,7 @@ import operator
 #   it is ignored.
 _op_methods = {'=': lambda x, y: float(x) >= float(y),
                '<in>': lambda x, y: y in x,
+               '<is>': lambda x, y: unicode(x) == unicode(y),
                '==': lambda x, y: float(x) == float(y),
                '!=': lambda x, y: float(x) != float(y),
                '>=': lambda x, y: float(x) >= float(y),
