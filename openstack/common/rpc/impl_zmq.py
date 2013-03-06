@@ -25,6 +25,7 @@ import eventlet
 import greenlet
 from oslo.config import cfg
 
+from openstack.common import excutils
 from openstack.common.gettextutils import _
 from openstack.common import importutils
 from openstack.common import jsonutils
@@ -91,8 +92,8 @@ def _serialize(data):
     try:
         return jsonutils.dumps(data, ensure_ascii=True)
     except TypeError:
-        LOG.error(_("JSON serialization failed."))
-        raise
+        with excutils.save_and_reraise_exception():
+            LOG.error(_("JSON serialization failed."))
 
 
 def _deserialize(data):
@@ -511,9 +512,9 @@ class ZmqProxy(ZmqBaseReactor):
                               ipc_dir, run_as_root=True)
                 utils.execute('chmod', '750', ipc_dir, run_as_root=True)
             except utils.ProcessExecutionError:
-                LOG.error(_("Could not create IPC directory %s") %
-                          (ipc_dir, ))
-                raise
+                with excutils.save_and_reraise_exception():
+                    LOG.error(_("Could not create IPC directory %s") %
+                              (ipc_dir, ))
 
         try:
             self.register(consumption_proxy,
@@ -521,9 +522,9 @@ class ZmqProxy(ZmqBaseReactor):
                           zmq.PULL,
                           out_bind=True)
         except zmq.ZMQError:
-            LOG.error(_("Could not create ZeroMQ receiver daemon. "
-                        "Socket may already be in use."))
-            raise
+            with excutils.save_and_reraise_exception():
+                LOG.error(_("Could not create ZeroMQ receiver daemon. "
+                            "Socket may already be in use."))
 
         super(ZmqProxy, self).consume_in_thread()
 
