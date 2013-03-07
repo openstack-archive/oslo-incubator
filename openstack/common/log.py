@@ -113,11 +113,11 @@ log_opts = [
     cfg.StrOpt('logging_context_format_string',
                default='%(asctime)s.%(msecs)03d %(levelname)s %(name)s '
                        '[%(request_id)s %(user)s %(tenant)s] %(instance)s'
-                       '%(message)s',
+                       ' %(message)s',
                help='format string to use for log messages with context'),
     cfg.StrOpt('logging_default_format_string',
                default='%(asctime)s.%(msecs)03d %(process)d %(levelname)s '
-                       '%(name)s [-] %(instance)s%(message)s',
+                       '%(name)s [-] %(instance)s %(message)s',
                help='format string to use for log messages without context'),
     cfg.StrOpt('logging_debug_format_suffix',
                default='%(funcName)s %(pathname)s:%(lineno)d',
@@ -241,11 +241,10 @@ class ContextAdapter(logging.LoggerAdapter):
             extra.update(_dictify_context(context))
 
         instance = kwargs.pop('instance', None)
-        instance_extra = ''
         if instance:
             instance_extra = CONF.instance_format % instance
         else:
-            instance_uuid = kwargs.pop('instance_uuid', None)
+            instance_uuid = kwargs.pop('instance_uuid', 'Unknown')
             if instance_uuid:
                 instance_extra = (CONF.instance_uuid_format
                                   % {'uuid': instance_uuid})
