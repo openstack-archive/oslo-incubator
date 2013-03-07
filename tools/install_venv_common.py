@@ -185,7 +185,7 @@ class Fedora(Distro):
         self.run_command(['sudo', 'yum', 'install', '-y', pkg], **kwargs)
 
     def apply_patch(self, originalfile, patchfile):
-        self.run_command(['patch', originalfile, patchfile])
+        self.run_command(['patch', '-N', originalfile, patchfile])
 
     def install_virtualenv(self):
         if self.check_cmd('virtualenv'):
