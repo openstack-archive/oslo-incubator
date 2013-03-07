@@ -238,7 +238,8 @@ class ExceptionLoggingTestCase(test_utils.BaseTestCase):
         except Exception:
             excepthook(*sys.exc_info())
 
-        expected_string = "CRITICAL somename [-] Some error happened"
+        expected_string = ("CRITICAL somename [-] [instance: Unknown] "
+                           "Some error happened")
         self.assertTrue(expected_string in stream.getvalue(),
                         msg="Exception is not logged")
 
