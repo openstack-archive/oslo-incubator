@@ -443,8 +443,10 @@ class ProxyCallback(_ThreadPoolWithWait):
                        connection_pool=self.connection_pool,
                        log_failure=False)
         except Exception:
+            # sys.exc_info() is deleted by LOG.exception().
+            exc_info = sys.exc_info()
             LOG.exception(_('Exception during message handling'))
-            ctxt.reply(None, sys.exc_info(),
+            ctxt.reply(None, exc_info,
                        connection_pool=self.connection_pool)
 
 
