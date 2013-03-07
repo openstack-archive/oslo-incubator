@@ -241,14 +241,13 @@ class ContextAdapter(logging.LoggerAdapter):
             extra.update(_dictify_context(context))
 
         instance = kwargs.pop('instance', None)
-        instance_extra = ''
         if instance:
             instance_extra = CONF.instance_format % instance
         else:
-            instance_uuid = kwargs.pop('instance_uuid', None)
-            if instance_uuid:
-                instance_extra = (CONF.instance_uuid_format
-                                  % {'uuid': instance_uuid})
+            instance_uuid = kwargs.pop('instance_uuid', 'Unknown')
+
+        instance_extra = (CONF.instance_uuid_format
+                          % {'uuid': instance_uuid})
         extra.update({'instance': instance_extra})
 
         extra.update({"project": self.project})
