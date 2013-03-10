@@ -24,6 +24,7 @@ from openstack.common import context
 from openstack.common import lockutils
 from openstack.common import rpc
 from openstack.common.rpc import proxy
+from openstack.common.rpc import common as rpc_common
 from tests import utils
 
 
@@ -32,7 +33,7 @@ class RpcProxyTestCase(utils.BaseTestCase):
     def _test_rpc_method(self, rpc_method, has_timeout=False, has_retval=False,
                          server_params=None, supports_topic_override=True):
         topic = 'fake_topic'
-        timeout = 123
+        timeout = None
         rpc_proxy = proxy.RpcProxy(topic, '1.0')
         ctxt = context.RequestContext('fake_user', 'fake_project')
         msg = {'method': 'fake_method', 'args': {'x': 'y'}}
@@ -51,6 +52,20 @@ class RpcProxyTestCase(utils.BaseTestCase):
             if has_retval:
                 return expected_retval
 
+        def _fake_rpc_method_timeout(*args, **kwargs):
+            rpc._check_for_lock()
+            self.fake_args = args
+            self.fake_kwargs = kwargs
+            raise rpc_common.Timeout("The spider got you")
+
+        def _check_args(context, topic, msg, timeout=None):
+            expected_args = [context, topic, msg]
+            if server_params:
+                expected_args.insert(1, server_params)
+            if has_timeout:
+                expected_args.append(timeout)
+            self.assertEqual(tuple(expected_args), self.fake_args)
+
         self.stubs.Set(rpc, rpc_method, _fake_rpc_method)
 
         args = [ctxt, msg]
@@ -60,41 +75,44 @@ class RpcProxyTestCase(utils.BaseTestCase):
         # Base method usage
         retval = getattr(rpc_proxy, rpc_method)(*args)
         self.assertEqual(retval, expected_retval)
-        expected_args = [ctxt, topic, expected_msg]
-        if server_params:
-            expected_args.insert(1, server_params)
-        for arg, expected_arg in zip(self.fake_args, expected_args):
-            self.assertEqual(arg, expected_arg)
+        _check_args(ctxt, topic, expected_msg)
 
         # overriding the version
         retval = getattr(rpc_proxy, rpc_method)(*args, version='1.1')
         self.assertEqual(retval, expected_retval)
         new_msg = copy.deepcopy(expected_msg)
         new_msg['version'] = '1.1'
-        expected_args = [ctxt, topic, new_msg]
-        if server_params:
-            expected_args.insert(1, server_params)
-        for arg, expected_arg in zip(self.fake_args, expected_args):
-            self.assertEqual(arg, expected_arg)
+        _check_args(ctxt, topic, new_msg)
 
         if has_timeout:
-            # set a timeout
-            retval = getattr(rpc_proxy, rpc_method)(ctxt, msg, timeout=timeout)
+            # Set a timeout
+            retval = getattr(rpc_proxy, rpc_method)(ctxt, msg, timeout=42)
             self.assertEqual(retval, expected_retval)
-            expected_args = [ctxt, topic, expected_msg, timeout]
-            for arg, expected_arg in zip(self.fake_args, expected_args):
-                self.assertEqual(arg, expected_arg)
+            _check_args(ctxt, topic, expected_msg, timeout=42)
+
+            # Make it timeout and check that the exception is written as
+            # expected
+            self.stubs.Set(rpc, rpc_method, _fake_rpc_method_timeout)
+            try:
+                getattr(rpc_proxy, rpc_method)(*args, timeout=42)
+                self.fail("This should have raised a Timeout exception")
+            except rpc_common.Timeout as exc:
+                self.assertEqual(exc.info, 'The spider got you')
+                self.assertEqual(exc.topic, 'fake_topic')
+                self.assertEqual(exc.method, 'fake_method')
+                self.assertEqual(
+                    u'Timeout while waiting on RPC response - '
+                     'topic: "fake_topic", RPC method: "fake_method" '
+                     'info: "The spider got you"', unicode(exc))
+            _check_args(ctxt, topic, expected_msg, timeout=42)
+            self.stubs.Set(rpc, rpc_method, _fake_rpc_method)
 
         if supports_topic_override:
             # set a topic
             new_topic = 'foo.bar'
             retval = getattr(rpc_proxy, rpc_method)(*args, topic=new_topic)
             self.assertEqual(retval, expected_retval)
-            expected_args = [ctxt, new_topic, expected_msg]
-            if server_params:
-                expected_args.insert(1, server_params)
-            for arg, expected_arg in zip(self.fake_args, expected_args):
-                self.assertEqual(arg, expected_arg)
+            _check_args(ctxt, new_topic, expected_msg)
 
     def test_call(self):
         self._test_rpc_method('call', has_timeout=True, has_retval=True)
