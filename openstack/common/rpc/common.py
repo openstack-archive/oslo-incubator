@@ -122,7 +122,25 @@ class Timeout(RPCException):
     This exception is raised if the rpc_response_timeout is reached while
     waiting for a response from the remote side.
     """
-    message = _("Timeout while waiting on RPC response.")
+    message = _('Timeout while waiting on RPC response - '
+                'topic: "%(topic)s", RPC method: "%(method)s" '
+                'info: "%(info)s"')
+
+    def __init__(self, info=None, topic=None, method=None):
+        """
+        :param info: Extra info to convey to the user
+        :param topic: The topic that the rpc call was sent to
+        :param rpc_method_name: The name of the rpc method being
+                                called
+        """
+        self.info = info
+        self.topic = topic
+        self.method = method
+        super(Timeout, self).__init__(
+            None,
+            info=info or _('<unknown>'),
+            topic=topic or _('<unknown>'),
+            method=method or _('<unknown>'))
 
 
 class DuplicateMessageError(RPCException):
