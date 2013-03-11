@@ -1,4 +1,4 @@
-# Copyright 2012 Intel Inc, OpenStack LLC.
+# Copyright 2012 Intel Inc, OpenStack Foundation.
 # All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
