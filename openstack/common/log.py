@@ -196,18 +196,21 @@ def _get_binary_name():
 
 
 def _get_log_file_path(binary=None):
-    logfile = CONF.log_file
-    logdir = CONF.log_dir
+    if CONF.log_file and not CONF.log_dir:
+        return CONF.log_file
 
-    if logfile and not logdir:
-        return logfile
+    # Ensure that the log directory exists
+    if CONF.log_dir and not os.path.exists(CONF.log_dir):
+        sys.stderr.write(_('Log directory %s does not exist, aborting.')
+                         % CONF.log_dir)
+        sys.exit(1)
 
-    if logfile and logdir:
-        return os.path.join(logdir, logfile)
+    if CONF.log_file and CONF.log_dir:
+        return os.path.join(CONF.log_dir, CONF.log_file)
 
-    if logdir:
+    if CONF.log_dir:
         binary = binary or _get_binary_name()
-        return '%s.log' % (os.path.join(logdir, binary),)
+        return '%s.log' % (os.path.join(CONF.log_dir, binary),)
 
 
 class ContextAdapter(logging.LoggerAdapter):

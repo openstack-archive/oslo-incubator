@@ -1,5 +1,6 @@
 import cStringIO
 import logging
+import os
 import StringIO
 import sys
 
@@ -70,9 +71,14 @@ class LoggerTestCase(test_utils.BaseTestCase):
                      'info', 'debug', 'log', 'audit'):
             self.assertRaises(AttributeError, getattr, log, func)
 
+    def test_dir_missing_abort(self):
+        self.config(log_dir='/tmp/no/such/path')
+        self.assertRaises(SystemExit, log.setup, 'Directory check')
+
 
 class LogHandlerTestCase(test_utils.BaseTestCase):
     def test_log_path_logdir(self):
+        self.stubs.Set(os.path, 'exists', lambda x: True)
         self.config(log_dir='/some/path', log_file=None)
         self.assertEquals(log._get_log_file_path(binary='foo-bar'),
                           '/some/path/foo-bar.log')
@@ -87,6 +93,7 @@ class LogHandlerTestCase(test_utils.BaseTestCase):
         self.assertTrue(log._get_log_file_path(binary='foo-bar') is None)
 
     def test_log_path_logfile_overrides_logdir(self):
+        self.stubs.Set(os.path, 'exists', lambda x: True)
         self.config(log_dir='/some/other/path',
                     log_file='/some/path/foo-bar.log')
         self.assertEquals(log._get_log_file_path(binary='foo-bar'),
