@@ -326,7 +326,15 @@ def _create_logging_excepthook(product_name):
 def setup(product_name):
     """Setup logging."""
     if CONF.log_config:
-        logging.config.fileConfig(CONF.log_config)
+        try:
+            # Check for file existence and access
+            # Exception msg, if any, will contain the error
+            os.stat(CONF.log_config)
+            logging.config.fileConfig(CONF.log_config)
+        except Exception as e:
+            raise RuntimeError(_("Unable to process specified "
+                                 "logging config file: %s. %s")
+                                 % (CONF.log_config, e))
     else:
         _setup_logging_from_conf()
     sys.excepthook = _create_logging_excepthook(product_name)
