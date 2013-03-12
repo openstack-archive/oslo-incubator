@@ -328,7 +328,7 @@ def setup(product_name):
     if CONF.log_config:
         logging.config.fileConfig(CONF.log_config)
     else:
-        _setup_logging_from_conf(product_name)
+        _setup_logging_from_conf()
     sys.excepthook = _create_logging_excepthook(product_name)
 
 
@@ -362,8 +362,8 @@ def _find_facility_from_conf():
     return facility
 
 
-def _setup_logging_from_conf(product_name):
-    log_root = getLogger(product_name).logger
+def _setup_logging_from_conf():
+    log_root = getLogger(None).logger
     for handler in log_root.handlers:
         log_root.removeHandler(handler)
 
