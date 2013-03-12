@@ -401,7 +401,8 @@ def _setup_logging_from_conf(product_name):
         if CONF.log_format:
             handler.setFormatter(logging.Formatter(fmt=CONF.log_format,
                                                    datefmt=datefmt))
-        handler.setFormatter(LegacyFormatter(datefmt=datefmt))
+        else:
+            handler.setFormatter(LegacyFormatter(datefmt=datefmt))
 
     if CONF.debug:
         log_root.setLevel(logging.DEBUG)
