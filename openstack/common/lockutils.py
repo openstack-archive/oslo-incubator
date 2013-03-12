@@ -107,10 +107,10 @@ class _InterProcessLock(object):
 
 class _WindowsLock(_InterProcessLock):
     def trylock(self):
-        msvcrt.locking(self.lockfile, msvcrt.LK_NBLCK, 1)
+        msvcrt.locking(self.lockfile.fileno(), msvcrt.LK_NBLCK, 1)
 
     def unlock(self):
-        msvcrt.locking(self.lockfile, msvcrt.LK_UNLCK, 1)
+        msvcrt.locking(self.lockfile.fileno(), msvcrt.LK_UNLCK, 1)
 
 
 class _PosixLock(_InterProcessLock):
