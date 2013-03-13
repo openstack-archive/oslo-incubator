@@ -25,7 +25,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Oslo'
-copyright = u'2012, OpenStack, LLC'
+copyright = u'2012, OpenStack Foundation'
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
 add_function_parentheses = True
