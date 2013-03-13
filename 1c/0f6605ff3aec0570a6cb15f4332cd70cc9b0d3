@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Approved+1: Mark McLoughlin <markmc@redhat.com>
+Code-Review+2: Mark McLoughlin <markmc@redhat.com>
+Code-Review+1: Doug Hellmann <doug.hellmann@dreamhost.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 13 Mar 2013 23:25:31 +0000
+Reviewed-on: https://review.openstack.org/24368
+Project: openstack/oslo-incubator
+Branch: refs/heads/stable/grizzly
