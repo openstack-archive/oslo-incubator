@@ -68,7 +68,11 @@ from oslo.config import cfg
 opts = [
     cfg.ListOpt('modules',
                 default=[],
-                help='The list of modules to copy from openstack-common'),
+                help='The list of modules to copy from oslo-incubator '
+                     '(deprecated in favor of --module)'),
+    cfg.MultiStrOpt('module',
+                    default=[],
+                    help='The list of modules to copy from oslo-incubator'),
     cfg.StrOpt('base',
                default=None,
                help='The base module to hold the copy of openstack.common'),
@@ -229,7 +233,7 @@ def main(argv):
         print >> sys.stderr, "A valid destination dir is required"
         sys.exit(1)
 
-    if not conf.modules:
+    if not conf.module and not conf.modules:
         print >> sys.stderr, "A list of modules to copy is required"
         sys.exit(1)
 
@@ -240,7 +244,7 @@ def main(argv):
     _create_module_init(conf.base, dest_dir)
     _create_module_init(conf.base, dest_dir, 'common')
 
-    for mod in conf.modules:
+    for mod in conf.module + conf.modules:
         _copy_module(mod, conf.base, dest_dir)
 
 
