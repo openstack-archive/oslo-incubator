@@ -79,6 +79,7 @@ class Service(service.Service):
         self._port = port
         self._host = host
         self._backlog = backlog if backlog else CONF.backlog
+        self._socket = self._get_socket(host, port, self._backlog)
         super(Service, self).__init__(threads)
 
     def _get_socket(self, host, port, backlog):
@@ -129,7 +130,6 @@ class Service(service.Service):
 
         """
         super(Service, self).start()
-        self._socket = self._get_socket(self._host, self._port, self._backlog)
         self.tg.add_thread(self._run, self.application, self._socket)
 
     @property
