@@ -295,11 +295,18 @@ class InternalContext(object):
     def reply(self, ctx, proxy,
               msg_id=None, context=None, topic=None, msg=None):
         """Reply to a casted call."""
-        # Our real method is curried into msg['args']
+        # NOTE(ewindisch): context kwarg exists for Grizzly compat.
+        #                  this may be able to be removed earlier than
+        #                  'I' if ConsumerBase.process were refactored.
+        child_ctx = ctx
 
-        child_ctx = RpcContext.unmarshal(msg[0])
+        if type(msg) is list:
+            payload = msg[-1]
+        else:
+            payload = msg
+
         response = ConsumerBase.normalize_reply(
-            self._get_response(child_ctx, proxy, topic, msg[1]),
+            self._get_response(ctx, proxy, topic, payload),
             ctx.replies)
 
         LOG.debug(_("Sending reply"))
@@ -685,8 +692,8 @@ def _call(addr, context, topic, msg, timeout=None,
         'method': '-reply',
         'args': {
             'msg_id': msg_id,
-            'context': mcontext,
             'topic': reply_topic,
+            # TODO(ewindisch): safe to remove mcontext in I.
             'msg': [mcontext, msg]
         }
     }
