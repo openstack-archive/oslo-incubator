@@ -87,11 +87,11 @@ logging_cli_opts = [
                metavar='PATH',
                deprecated_name='logfile',
                help='(Optional) Name of log file to output to. '
-                    'If not set, logging will go to stdout.'),
+                    'If no default is set, logging will go to stdout.'),
     cfg.StrOpt('log-dir',
                deprecated_name='logdir',
-               help='(Optional) The directory to keep log files in '
-                    '(will be prepended to --log-file)'),
+               help='(Optional) The base directory used for relative '
+                    '--log-file paths'),
     cfg.BoolOpt('use-syslog',
                 default=False,
                 help='Use syslog for logging.'),
