@@ -26,7 +26,7 @@ class ModelBaseTest(test_utils.BaseTestCase):
                         '__setitem__',
                         '__iter__',
                         'get',
-                        'next',
+                        '__next__',
                         'update',
                         'iteritems')
         for method in dict_methods:
@@ -41,7 +41,7 @@ class ModelBaseTest(test_utils.BaseTestCase):
         mb = models.ModelBase()
         h = {'a': '1', 'b': '2'}
         mb.update(h)
-        for key in h.keys():
+        for key in list(h.keys()):
             self.assertEqual(mb[key], h[key])
 
     def test_modelbase_iteritems(self):
@@ -49,7 +49,7 @@ class ModelBaseTest(test_utils.BaseTestCase):
         mb = models.ModelBase()
         h = {'a': '1', 'b': '2'}
         mb.update(h)
-        for key, value in mb.iteritems():
+        for key, value in list(mb.items()):
             self.assertEqual(h[key], value)
 
     def test_modelbase_iter(self):
