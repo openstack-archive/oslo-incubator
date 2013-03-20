@@ -24,7 +24,6 @@ eventlet.monkey_patch()
 
 from oslo.config import cfg
 
-from openstack.common import rpc
 from openstack.common.rpc import impl_fake
 from tests.unit.rpc import common
 

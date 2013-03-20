@@ -22,7 +22,6 @@ import copy
 
 from openstack.common import context
 from openstack.common import lockutils
-from openstack.common.fixture import moxstubout
 from openstack.common import rpc
 from openstack.common.rpc import proxy
 from tests import utils

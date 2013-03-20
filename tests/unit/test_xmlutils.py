@@ -14,8 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import datetime
-import StringIO
 from xml.dom import minidom
 
 from openstack.common import xmlutils
