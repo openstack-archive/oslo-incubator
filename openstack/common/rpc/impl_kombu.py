@@ -90,6 +90,9 @@ kombu_opts = [
                 help='use H/A queues in RabbitMQ (x-ha-policy: all).'
                      'You need to wipe RabbitMQ database when '
                      'changing this option.'),
+    cfg.BoolOpt('rabbit_auto_delete_topics',
+                default=False,
+                help='use auto_delete exchanges and queues in RabbitMQ')
 
 ]
 
@@ -235,7 +238,7 @@ class TopicConsumer(ConsumerBase):
         # Default options
         options = {'durable': conf.rabbit_durable_queues,
                    'queue_arguments': _get_queue_arguments(conf),
-                   'auto_delete': False,
+                   'auto_delete': conf.rabbit_auto_delete_topics,
                    'exclusive': False}
         options.update(kwargs)
         exchange_name = exchange_name or rpc_amqp.get_control_exchange(conf)
@@ -340,7 +343,7 @@ class TopicPublisher(Publisher):
         Kombu options may be passed as keyword args to override defaults
         """
         options = {'durable': conf.rabbit_durable_queues,
-                   'auto_delete': False,
+                   'auto_delete': conf.rabbit_auto_delete_topics,
                    'exclusive': False}
         options.update(kwargs)
         exchange_name = rpc_amqp.get_control_exchange(conf)
