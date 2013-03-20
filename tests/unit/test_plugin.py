@@ -110,8 +110,6 @@ class APITestCase(utils.BaseTestCase):
         self.stubs.Set(pkg_resources, 'iter_entry_points',
                        mock_iter_entry_points)
 
-        stubLoaded = False
-
         mgr = MockExtManager()
         plugmgr = pluginmanager.PluginManager("testproject", "testservice")
         plugmgr.load_plugins()

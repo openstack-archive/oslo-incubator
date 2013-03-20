@@ -115,7 +115,7 @@ class ToPrimitiveTestCase(utils.BaseTestCase):
 
         # If the cycle isn't caught, to_primitive() will eventually result in
         # an exception due to excessive recursion depth.
-        p = jsonutils.to_primitive(x)
+        jsonutils.to_primitive(x)
 
     def test_instance(self):
         class MysteryClass(object):

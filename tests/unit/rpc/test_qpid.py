@@ -478,9 +478,6 @@ class RpcQpidTestCase(utils.BaseTestCase):
                 # that it doesn't mess up other test cases.
                 impl_qpid.Connection.pool.get()
 
-    def test_call(self):
-        self._test_call(multi=False)
-
     def test_call_with_timeout(self):
         """A little more indepth for a timeout test. Specifically we are
         looking to simulate the event sent to qpid dying on the vine due

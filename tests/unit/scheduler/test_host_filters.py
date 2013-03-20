@@ -418,7 +418,6 @@ class HostFiltersTestCase(utils.BaseTestCase):
                                                'local_gb': 200},
                              'scheduler_hints': {'query': json_query}}
         capabilities = {'enabled': True}
-        service = {'disabled': True}
         host = fakes.FakeHostState('host1',
                                    {'free_ram_mb': 1024,
                                     'free_disk_mb': 200 * 1024,

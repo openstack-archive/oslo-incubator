@@ -14,17 +14,17 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from openstack.common.cliutils import *
+from openstack.common import cliutils
 from tests import utils
 
 
 class ValidateArgsTest(utils.BaseTestCase):
 
     def test_lambda_no_args(self):
-        validate_args(lambda: None)
+        cliutils.validate_args(lambda: None)
 
     def _test_lambda_with_args(self, *args, **kwargs):
-        validate_args(lambda x, y: None, *args, **kwargs)
+        cliutils.validate_args(lambda x, y: None, *args, **kwargs)
 
     def test_lambda_positional_args(self):
         self._test_lambda_with_args(1, 2)
@@ -36,16 +36,19 @@ class ValidateArgsTest(utils.BaseTestCase):
         self._test_lambda_with_args(1, y=2)
 
     def test_lambda_missing_args1(self):
-        self.assertRaises(MissingArgs, self._test_lambda_with_args)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_lambda_with_args)
 
     def test_lambda_missing_args2(self):
-        self.assertRaises(MissingArgs, self._test_lambda_with_args, 1)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_lambda_with_args, 1)
 
     def test_lambda_missing_args3(self):
-        self.assertRaises(MissingArgs, self._test_lambda_with_args, y=2)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_lambda_with_args, y=2)
 
     def _test_lambda_with_default(self, *args, **kwargs):
-        validate_args(lambda x, y, z=3: None, *args, **kwargs)
+        cliutils.validate_args(lambda x, y, z=3: None, *args, **kwargs)
 
     def test_lambda_positional_args_with_default(self):
         self._test_lambda_with_default(1, 2)
@@ -66,27 +69,30 @@ class ValidateArgsTest(utils.BaseTestCase):
         self._test_lambda_with_default(1, y=2, z=3)
 
     def test_lambda_with_default_missing_args1(self):
-        self.assertRaises(MissingArgs, self._test_lambda_with_default)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_lambda_with_default)
 
     def test_lambda_with_default_missing_args2(self):
-        self.assertRaises(MissingArgs, self._test_lambda_with_default, 1)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_lambda_with_default, 1)
 
     def test_lambda_with_default_missing_args3(self):
-        self.assertRaises(MissingArgs, self._test_lambda_with_default, y=2)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_lambda_with_default, y=2)
 
     def test_lambda_with_default_missing_args4(self):
-        self.assertRaises(MissingArgs,
+        self.assertRaises(cliutils.MissingArgs,
                           self._test_lambda_with_default, y=2, z=3)
 
     def test_function_no_args(self):
         def func():
             pass
-        validate_args(func)
+        cliutils.validate_args(func)
 
     def _test_function_with_args(self, *args, **kwargs):
         def func(x, y):
             pass
-        validate_args(func, *args, **kwargs)
+        cliutils.validate_args(func, *args, **kwargs)
 
     def test_function_positional_args(self):
         self._test_function_with_args(1, 2)
@@ -98,18 +104,20 @@ class ValidateArgsTest(utils.BaseTestCase):
         self._test_function_with_args(1, y=2)
 
     def test_function_missing_args1(self):
-        self.assertRaises(MissingArgs, self._test_function_with_args)
+        self.assertRaises(cliutils.MissingArgs, self._test_function_with_args)
 
     def test_function_missing_args2(self):
-        self.assertRaises(MissingArgs, self._test_function_with_args, 1)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_function_with_args, 1)
 
     def test_function_missing_args3(self):
-        self.assertRaises(MissingArgs, self._test_function_with_args, y=2)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_function_with_args, y=2)
 
     def _test_function_with_default(self, *args, **kwargs):
         def func(x, y, z=3):
             pass
-        validate_args(func, *args, **kwargs)
+        cliutils.validate_args(func, *args, **kwargs)
 
     def test_function_positional_args_with_default(self):
         self._test_function_with_default(1, 2)
@@ -130,29 +138,32 @@ class ValidateArgsTest(utils.BaseTestCase):
         self._test_function_with_default(1, y=2, z=3)
 
     def test_function_with_default_missing_args1(self):
-        self.assertRaises(MissingArgs, self._test_function_with_default)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_function_with_default)
 
     def test_function_with_default_missing_args2(self):
-        self.assertRaises(MissingArgs, self._test_function_with_default, 1)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_function_with_default, 1)
 
     def test_function_with_default_missing_args3(self):
-        self.assertRaises(MissingArgs, self._test_function_with_default, y=2)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_function_with_default, y=2)
 
     def test_function_with_default_missing_args4(self):
-        self.assertRaises(MissingArgs,
+        self.assertRaises(cliutils.MissingArgs,
                           self._test_function_with_default, y=2, z=3)
 
     def test_bound_method_no_args(self):
         class Foo:
             def bar(self):
                 pass
-        validate_args(Foo().bar)
+        cliutils.validate_args(Foo().bar)
 
     def _test_bound_method_with_args(self, *args, **kwargs):
         class Foo:
             def bar(self, x, y):
                 pass
-        validate_args(Foo().bar, *args, **kwargs)
+        cliutils.validate_args(Foo().bar, *args, **kwargs)
 
     def test_bound_method_positional_args(self):
         self._test_bound_method_with_args(1, 2)
@@ -164,19 +175,22 @@ class ValidateArgsTest(utils.BaseTestCase):
         self._test_bound_method_with_args(1, y=2)
 
     def test_bound_method_missing_args1(self):
-        self.assertRaises(MissingArgs, self._test_bound_method_with_args)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_bound_method_with_args)
 
     def test_bound_method_missing_args2(self):
-        self.assertRaises(MissingArgs, self._test_bound_method_with_args, 1)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_bound_method_with_args, 1)
 
     def test_bound_method_missing_args3(self):
-        self.assertRaises(MissingArgs, self._test_bound_method_with_args, y=2)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_bound_method_with_args, y=2)
 
     def _test_bound_method_with_default(self, *args, **kwargs):
         class Foo:
             def bar(self, x, y, z=3):
                 pass
-        validate_args(Foo().bar, *args, **kwargs)
+        cliutils.validate_args(Foo().bar, *args, **kwargs)
 
     def test_bound_method_positional_args_with_default(self):
         self._test_bound_method_with_default(1, 2)
@@ -197,30 +211,32 @@ class ValidateArgsTest(utils.BaseTestCase):
         self._test_bound_method_with_default(1, y=2, z=3)
 
     def test_bound_method_with_default_missing_args1(self):
-        self.assertRaises(MissingArgs, self._test_bound_method_with_default)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_bound_method_with_default)
 
     def test_bound_method_with_default_missing_args2(self):
-        self.assertRaises(MissingArgs, self._test_bound_method_with_default, 1)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_bound_method_with_default, 1)
 
     def test_bound_method_with_default_missing_args3(self):
-        self.assertRaises(MissingArgs,
+        self.assertRaises(cliutils.MissingArgs,
                           self._test_bound_method_with_default, y=2)
 
     def test_bound_method_with_default_missing_args4(self):
-        self.assertRaises(MissingArgs,
+        self.assertRaises(cliutils.MissingArgs,
                           self._test_bound_method_with_default, y=2, z=3)
 
     def test_unbound_method_no_args(self):
         class Foo:
             def bar(self):
                 pass
-        validate_args(Foo.bar, Foo())
+        cliutils.validate_args(Foo.bar, Foo())
 
     def _test_unbound_method_with_args(self, *args, **kwargs):
         class Foo:
             def bar(self, x, y):
                 pass
-        validate_args(Foo.bar, Foo(), *args, **kwargs)
+        cliutils.validate_args(Foo.bar, Foo(), *args, **kwargs)
 
     def test_unbound_method_positional_args(self):
         self._test_unbound_method_with_args(1, 2)
@@ -232,20 +248,22 @@ class ValidateArgsTest(utils.BaseTestCase):
         self._test_unbound_method_with_args(1, y=2)
 
     def test_unbound_method_missing_args1(self):
-        self.assertRaises(MissingArgs, self._test_unbound_method_with_args)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_unbound_method_with_args)
 
     def test_unbound_method_missing_args2(self):
-        self.assertRaises(MissingArgs, self._test_unbound_method_with_args, 1)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_unbound_method_with_args, 1)
 
     def test_unbound_method_missing_args3(self):
-        self.assertRaises(MissingArgs,
+        self.assertRaises(cliutils.MissingArgs,
                           self._test_unbound_method_with_args, y=2)
 
     def _test_unbound_method_with_default(self, *args, **kwargs):
         class Foo:
             def bar(self, x, y, z=3):
                 pass
-        validate_args(Foo.bar, Foo(), *args, **kwargs)
+        cliutils.validate_args(Foo.bar, Foo(), *args, **kwargs)
 
     def test_unbound_method_positional_args_with_default(self):
         self._test_unbound_method_with_default(1, 2)
@@ -257,18 +275,19 @@ class ValidateArgsTest(utils.BaseTestCase):
         self._test_unbound_method_with_default(1, y=2)
 
     def test_unbound_method_with_default_missing_args1(self):
-        self.assertRaises(MissingArgs, self._test_unbound_method_with_default)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_unbound_method_with_default)
 
     def test_unbound_method_with_default_missing_args2(self):
-        self.assertRaises(MissingArgs,
+        self.assertRaises(cliutils.MissingArgs,
                           self._test_unbound_method_with_default, 1)
 
     def test_unbound_method_with_default_missing_args3(self):
-        self.assertRaises(MissingArgs,
+        self.assertRaises(cliutils.MissingArgs,
                           self._test_unbound_method_with_default, y=2)
 
     def test_unbound_method_with_default_missing_args4(self):
-        self.assertRaises(MissingArgs,
+        self.assertRaises(cliutils.MissingArgs,
                           self._test_unbound_method_with_default, y=2, z=3)
 
     def test_class_method_no_args(self):
@@ -276,14 +295,14 @@ class ValidateArgsTest(utils.BaseTestCase):
             @classmethod
             def bar(cls):
                 pass
-        validate_args(Foo.bar)
+        cliutils.validate_args(Foo.bar)
 
     def _test_class_method_with_args(self, *args, **kwargs):
         class Foo:
             @classmethod
             def bar(cls, x, y):
                 pass
-        validate_args(Foo.bar, *args, **kwargs)
+        cliutils.validate_args(Foo.bar, *args, **kwargs)
 
     def test_class_method_positional_args(self):
         self._test_class_method_with_args(1, 2)
@@ -295,20 +314,23 @@ class ValidateArgsTest(utils.BaseTestCase):
         self._test_class_method_with_args(1, y=2)
 
     def test_class_method_missing_args1(self):
-        self.assertRaises(MissingArgs, self._test_class_method_with_args)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_class_method_with_args)
 
     def test_class_method_missing_args2(self):
-        self.assertRaises(MissingArgs, self._test_class_method_with_args, 1)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_class_method_with_args, 1)
 
     def test_class_method_missing_args3(self):
-        self.assertRaises(MissingArgs, self._test_class_method_with_args, y=2)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_class_method_with_args, y=2)
 
     def _test_class_method_with_default(self, *args, **kwargs):
         class Foo:
             @classmethod
             def bar(cls, x, y, z=3):
                 pass
-        validate_args(Foo.bar, *args, **kwargs)
+        cliutils.validate_args(Foo.bar, *args, **kwargs)
 
     def test_class_method_positional_args_with_default(self):
         self._test_class_method_with_default(1, 2)
@@ -320,17 +342,19 @@ class ValidateArgsTest(utils.BaseTestCase):
         self._test_class_method_with_default(1, y=2)
 
     def test_class_method_with_default_missing_args1(self):
-        self.assertRaises(MissingArgs, self._test_class_method_with_default)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_class_method_with_default)
 
     def test_class_method_with_default_missing_args2(self):
-        self.assertRaises(MissingArgs, self._test_class_method_with_default, 1)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_class_method_with_default, 1)
 
     def test_class_method_with_default_missing_args3(self):
-        self.assertRaises(MissingArgs,
+        self.assertRaises(cliutils.MissingArgs,
                           self._test_class_method_with_default, y=2)
 
     def test_class_method_with_default_missing_args4(self):
-        self.assertRaises(MissingArgs,
+        self.assertRaises(cliutils.MissingArgs,
                           self._test_class_method_with_default, y=2, z=3)
 
     def test_static_method_no_args(self):
@@ -338,14 +362,14 @@ class ValidateArgsTest(utils.BaseTestCase):
             @staticmethod
             def bar():
                 pass
-        validate_args(Foo.bar)
+        cliutils.validate_args(Foo.bar)
 
     def _test_static_method_with_args(self, *args, **kwargs):
         class Foo:
             @staticmethod
             def bar(x, y):
                 pass
-        validate_args(Foo.bar, *args, **kwargs)
+        cliutils.validate_args(Foo.bar, *args, **kwargs)
 
     def test_static_method_positional_args(self):
         self._test_static_method_with_args(1, 2)
@@ -357,20 +381,23 @@ class ValidateArgsTest(utils.BaseTestCase):
         self._test_static_method_with_args(1, y=2)
 
     def test_static_method_missing_args1(self):
-        self.assertRaises(MissingArgs, self._test_static_method_with_args)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_static_method_with_args)
 
     def test_static_method_missing_args2(self):
-        self.assertRaises(MissingArgs, self._test_static_method_with_args, 1)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_static_method_with_args, 1)
 
     def test_static_method_missing_args3(self):
-        self.assertRaises(MissingArgs, self._test_static_method_with_args, y=2)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_static_method_with_args, y=2)
 
     def _test_static_method_with_default(self, *args, **kwargs):
         class Foo:
             @staticmethod
             def bar(x, y, z=3):
                 pass
-        validate_args(Foo.bar, *args, **kwargs)
+        cliutils.validate_args(Foo.bar, *args, **kwargs)
 
     def test_static_method_positional_args_with_default(self):
         self._test_static_method_with_default(1, 2)
@@ -382,16 +409,17 @@ class ValidateArgsTest(utils.BaseTestCase):
         self._test_static_method_with_default(1, y=2)
 
     def test_static_method_with_default_missing_args1(self):
-        self.assertRaises(MissingArgs, self._test_static_method_with_default)
+        self.assertRaises(cliutils.MissingArgs,
+                          self._test_static_method_with_default)
 
     def test_static_method_with_default_missing_args2(self):
-        self.assertRaises(MissingArgs,
+        self.assertRaises(cliutils.MissingArgs,
                           self._test_static_method_with_default, 1)
 
     def test_static_method_with_default_missing_args3(self):
-        self.assertRaises(MissingArgs,
+        self.assertRaises(cliutils.MissingArgs,
                           self._test_static_method_with_default, y=2)
 
     def test_static_method_with_default_missing_args4(self):
-        self.assertRaises(MissingArgs,
+        self.assertRaises(cliutils.MissingArgs,
                           self._test_static_method_with_default, y=2, z=3)
