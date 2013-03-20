@@ -32,6 +32,7 @@ from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import processutils as utils
 from openstack.common.rpc import common as rpc_common
+from functools import reduce
 
 zmq = importutils.try_import('eventlet.green.zmq')
 
@@ -153,7 +154,7 @@ class ZmqSocket(object):
         """Get socket type as string."""
         t_enum = ('PUSH', 'PULL', 'PUB', 'SUB', 'REP', 'REQ', 'ROUTER',
                   'DEALER')
-        return dict(map(lambda t: (getattr(zmq, t), t), t_enum))[self.type]
+        return dict([(getattr(zmq, t), t) for t in t_enum])[self.type]
 
     def subscribe(self, msg_filter):
         """Subscribe."""
@@ -222,14 +223,14 @@ class ZmqClient(object):
         msg_id = msg_id or 0
 
         if not (envelope or rpc_common._SEND_RPC_ENVELOPE):
-            self.outq.send(map(bytes,
-                           (msg_id, topic, 'cast', _serialize(data))))
+            self.outq.send(list(list(map(bytes,
+                           (msg_id, topic, 'cast', _serialize(data))))))
             return
 
         rpc_envelope = rpc_common.serialize_msg(data[1], envelope)
-        zmq_msg = reduce(lambda x, y: x + y, rpc_envelope.items())
-        self.outq.send(map(bytes,
-                       (msg_id, topic, 'impl_zmq_v2', data[0]) + zmq_msg))
+        zmq_msg = reduce(lambda x, y: x + y, list(list(rpc_envelope.items())))
+        self.outq.send(list(list(map(bytes,
+                       (msg_id, topic, 'impl_zmq_v2', data[0]) + zmq_msg))))
 
     def close(self):
         self.outq.close()
@@ -281,7 +282,7 @@ class InternalContext(object):
         except greenlet.GreenletExit:
             # ignore these since they are just from shutdowns
             pass
-        except rpc_common.ClientException, e:
+        except rpc_common.ClientException as e:
             LOG.debug(_("Expected exception during message handling (%s)") %
                       e._exc_info[1])
             return {'exc':
@@ -406,7 +407,7 @@ class ZmqBaseReactor(ConsumerBase):
             while True:
                 self.consume(sock)
 
-        for k in self.proxies.keys():
+        for k in list(self.proxies.keys()):
             self.threads.append(
                 self.pool.spawn(_consume, k)
             )
@@ -548,8 +549,8 @@ def unflatten_envelope(packenv):
     h = {}
     try:
         while True:
-            k = i.next()
-            h[k] = i.next()
+            k = next(i)
+            h[k] = next(i)
     except StopIteration:
         return h
 
@@ -737,7 +738,7 @@ def _call(addr, context, topic, msg, timeout=None,
     # One effect of this is that we're checking all
     # responses for Exceptions.
     for resp in responses:
-        if isinstance(resp, types.DictType) and 'exc' in resp:
+        if isinstance(resp, dict) and 'exc' in resp:
             raise rpc_common.deserialize_remote_exception(CONF, resp['exc'])
 
     return responses[-1]

@@ -323,7 +323,7 @@ class RingExchange(Exchange):
             fh.close()
 
         self.ring0 = {}
-        for k in self.ring.keys():
+        for k in list(self.ring.keys()):
             self.ring0[k] = itertools.cycle(self.ring[k])
 
     def _ring_has(self, key):
@@ -362,7 +362,7 @@ class FanoutRingExchange(RingExchange):
                   "see ringfile") % (nkey, )
             )
             return []
-        return map(lambda x: (key + '.' + x, x), self.ring[nkey])
+        return [(key + '.' + x, x) for x in self.ring[nkey]]
 
 
 class LocalhostExchange(Exchange):

@@ -88,7 +88,7 @@ class RPCException(Exception):
                 # kwargs doesn't match a variable in the message
                 # log the issue and the kwargs
                 LOG.exception(_('Exception in string format operation'))
-                for name, value in kwargs.iteritems():
+                for name, value in list(kwargs.items()):
                     LOG.error("%s: %s" % (name, value))
                 # at least get the core message out if something happened
                 message = self.message
@@ -262,7 +262,7 @@ def _safe_log(log_func, msg, msg_data):
                 for elem in arg[:-1]:
                     d = d[elem]
                 d[arg[-1]] = '<SANITIZED>'
-            except KeyError, e:
+            except KeyError as e:
                 LOG.info(_('Failed to sanitize %(item)s. Key error %(err)s'),
                          {'item': arg,
                           'err': e})
@@ -285,7 +285,7 @@ def serialize_remote_exception(failure_info, log_failure=True):
     tb = traceback.format_exception(*failure_info)
     failure = failure_info[1]
     if log_failure:
-        LOG.error(_("Returning exception %s to caller"), unicode(failure))
+        LOG.error(_("Returning exception %s to caller"), str(failure))
         LOG.error(tb)
 
     kwargs = {}
@@ -295,7 +295,7 @@ def serialize_remote_exception(failure_info, log_failure=True):
     data = {
         'class': str(failure.__class__.__name__),
         'module': str(failure.__class__.__module__),
-        'message': unicode(failure),
+        'message': str(failure),
         'tb': tb,
         'args': failure.args,
         'kwargs': kwargs
@@ -405,7 +405,7 @@ class ClientException(Exception):
 def catch_client_exception(exceptions, func, *args, **kwargs):
     try:
         return func(*args, **kwargs)
-    except Exception, e:
+    except Exception as e:
         if type(e) in exceptions:
             raise ClientException()
         else:
@@ -482,7 +482,7 @@ def deserialize_msg(msg):
         return msg
 
     base_envelope_keys = (_VERSION_KEY, _MESSAGE_KEY)
-    if not all(map(lambda key: key in msg, base_envelope_keys)):
+    if not all([key in msg for key in base_envelope_keys]):
         #  See #1.b above.
         return msg
 

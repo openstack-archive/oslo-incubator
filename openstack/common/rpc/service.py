@@ -22,6 +22,7 @@ from openstack.common import log as logging
 from openstack.common import rpc
 from openstack.common.rpc import dispatcher as rpc_dispatcher
 from openstack.common import service
+import collections
 
 
 LOG = logging.getLogger(__name__)
@@ -59,7 +60,8 @@ class Service(service.Service):
 
         # Hook to allow the manager to do other initializations after
         # the rpc connection is created.
-        if callable(getattr(self.manager, 'initialize_service_hook', None)):
+        if isinstance(getattr(self.manager, 'initialize_service_hook', None),
+                      collections.Callable):
             self.manager.initialize_service_hook(self)
 
         # Consume from all consumers in a thread

@@ -176,7 +176,7 @@ class ConsumerBase(object):
         """Cancel the consuming from the queue, if it has started"""
         try:
             self.queue.cancel(self.tag)
-        except KeyError, e:
+        except KeyError as e:
             # NOTE(comstud): Kludge to get around a amqplib bug
             if str(e) != "u'%s'" % self.tag:
                 raise
@@ -428,7 +428,7 @@ class Connection(object):
                 'virtual_host': self.conf.rabbit_virtual_host,
             }
 
-            for sp_key, value in server_params.iteritems():
+            for sp_key, value in list(server_params.items()):
                 p_key = server_params_to_kombu_params.get(sp_key, sp_key)
                 params[p_key] = value
 
@@ -520,7 +520,7 @@ class Connection(object):
                 return
             except (IOError, self.connection_errors) as e:
                 pass
-            except Exception, e:
+            except Exception as e:
                 # NOTE(comstud): Unfortunately it's possible for amqplib
                 # to return an error not covered by its transport
                 # connection_errors in the case of a timeout waiting for
@@ -561,10 +561,10 @@ class Connection(object):
         while True:
             try:
                 return method(*args, **kwargs)
-            except (self.connection_errors, socket.timeout, IOError), e:
+            except (self.connection_errors, socket.timeout, IOError) as e:
                 if error_callback:
                     error_callback(e)
-            except Exception, e:
+            except Exception as e:
                 # NOTE(comstud): Unfortunately it's possible for amqplib
                 # to return an error not covered by its transport
                 # connection_errors in the case of a timeout waiting for
@@ -611,7 +611,7 @@ class Connection(object):
 
         def _declare_consumer():
             consumer = consumer_cls(self.conf, self.channel, topic, callback,
-                                    self.consumer_num.next())
+                                    next(self.consumer_num))
             self.consumers.append(consumer)
             return consumer
 
@@ -717,7 +717,7 @@ class Connection(object):
         it = self.iterconsume(limit=limit)
         while True:
             try:
-                it.next()
+                next(it)
             except StopIteration:
                 return
 

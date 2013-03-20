@@ -83,8 +83,8 @@ class RedisFanoutExchange(RedisExchange):
     def run(self, topic):
         topic = topic.split('~', 1)[1]
         hosts = self.redis.smembers(topic)
-        good_hosts = filter(
-            lambda host: self.matchmaker.is_alive(topic, host), hosts)
+        good_hosts = [host for host in hosts
+                      if self.matchmaker.is_alive(topic, host)]
 
         return [(x, x.split('.', 1)[1]) for x in good_hosts]
 
