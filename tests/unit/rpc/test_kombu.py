@@ -434,8 +434,8 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         conn.declare_direct_consumer('a_direct', _callback)
         conn.direct_send('a_direct', rpc_common.serialize_msg(message))
 
-        info = _raise_exc_stub(self.stubs, 1, conn.connection,
-                               'drain_events', 'foo timeout foo')
+        _raise_exc_stub(self.stubs, 1, conn.connection,
+                        'drain_events', 'foo timeout foo')
         conn.consume(limit=1)
         conn.close()
 
@@ -591,7 +591,7 @@ class RpcKombuHATestCase(utils.BaseTestCase):
 
         self.stubs.Set(kombu.connection, 'BrokerConnection', MyConnection)
 
-        conn = self.rpc.Connection(FLAGS)
+        self.rpc.Connection(FLAGS)
 
         self.assertEqual(info['attempt'], 5)
 

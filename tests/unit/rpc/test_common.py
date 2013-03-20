@@ -53,7 +53,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
 
         try:
             raise_exception()
-        except Exception as exc:
+        except Exception:
             failure = rpc_common.serialize_remote_exception(sys.exc_info())
 
         failure = jsonutils.loads(failure)
@@ -74,7 +74,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
 
         try:
             raise_custom_exception()
-        except Exception as exc:
+        except Exception:
             failure = rpc_common.serialize_remote_exception(sys.exc_info())
 
         failure = jsonutils.loads(failure)
@@ -218,7 +218,6 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         def naughty():
             raise FooException()
 
-        e = None
         self.assertRaises(FooException,
                           rpc_common.catch_client_exception,
                           [ValueError], naughty)
