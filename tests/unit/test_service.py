@@ -24,10 +24,8 @@ import signal
 import time
 import traceback
 
-from eventlet import greenthread
 from oslo.config import cfg
 
-from openstack.common.gettextutils import _
 from openstack.common import log as logging
 from openstack.common.notifier import api as notifier_api
 from openstack.common import service

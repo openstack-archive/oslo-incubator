@@ -20,7 +20,6 @@ from openstack.common import log
 from openstack.common.notifier import api as notifier_api
 from openstack.common.notifier import log_notifier
 from openstack.common.notifier import no_op_notifier
-from openstack.common.notifier import rabbit_notifier
 from openstack.common import rpc
 from tests import utils as test_utils
 

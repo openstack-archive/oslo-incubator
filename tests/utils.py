@@ -17,8 +17,6 @@
 
 """Common utilities used in testing"""
 
-import subprocess
-
 import fixtures
 from oslo.config import cfg
 import testtools

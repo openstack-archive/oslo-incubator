@@ -23,11 +23,7 @@ Unit Tests for remote procedure calls using qpid
 import eventlet
 eventlet.monkey_patch()
 
-import logging
-
 import fixtures
-import time
-import testtools
 import mox
 from oslo.config import cfg
 

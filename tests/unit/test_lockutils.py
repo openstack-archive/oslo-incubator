@@ -14,13 +14,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import errno
 import fcntl
 import os
-import select
 import shutil
 import tempfile
-import time
 
 import eventlet
 from eventlet import greenpool

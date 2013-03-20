@@ -24,7 +24,6 @@ eventlet.monkey_patch()
 
 import contextlib
 import logging
-import time
 
 import mock
 from oslo.config import cfg

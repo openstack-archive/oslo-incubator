@@ -17,11 +17,9 @@
 
 import os
 import socket
-import ssl
 import urllib2
 
 import mock
-from oslo.config import cfg
 import routes
 import webob
 

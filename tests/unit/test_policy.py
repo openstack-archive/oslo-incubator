@@ -17,7 +17,6 @@
 
 """Test of Policy Engine"""
 
-import os.path
 import StringIO
 import urllib
 

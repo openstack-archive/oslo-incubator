@@ -14,8 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo.config import cfg
-
 from openstack.common import log as logging
 from tests import utils as test_utils
 
