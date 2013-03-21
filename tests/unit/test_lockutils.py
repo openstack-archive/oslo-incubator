@@ -128,7 +128,7 @@ class LockTestCase(utils.BaseTestCase):
             if os.path.exists(tempdir):
                 shutil.rmtree(tempdir)
 
-    def test_synchronized_externally(self):
+    def _do_test_synchronized_externally(self):
         """We can lock across multiple processes"""
         tempdir = tempfile.mkdtemp()
         self.config(lock_path=tempdir)
@@ -162,6 +162,7 @@ class LockTestCase(utils.BaseTestCase):
             # Check if we were able to open all files
             self.assertEqual(50, count)
 
+        handles_dir = tempfile.mkdtemp()
         try:
             children = []
             for n in range(50):
@@ -177,5 +178,26 @@ class LockTestCase(utils.BaseTestCase):
                 if pid:
                     self.assertEqual(0, status)
         finally:
-            if os.path.exists(tempdir):
-                shutil.rmtree(tempdir, ignore_errors=True)
+            if os.path.exists(handles_dir):
+                shutil.rmtree(handles_dir, ignore_errors=True)
+
+    def test_synchronized_externally(self):
+        lock_dir = tempfile.mkdtemp()
+        self.config(lock_path=lock_dir)
+
+        try:
+            self._do_test_synchronized_externally()
+        finally:
+            if os.path.exists(lock_dir):
+                shutil.rmtree(lock_dir, ignore_errors=True)
+
+    def test_synchronized_externally_lock_dir_not_exist(self):
+        lock_dir = tempfile.mkdtemp()
+        os.rmdir(lock_dir)
+        self.config(lock_path=lock_dir)
+
+        try:
+            self._do_test_synchronized_externally()
+        finally:
+            if os.path.exists(lock_dir):
+                shutil.rmtree(lock_dir, ignore_errors=True)
