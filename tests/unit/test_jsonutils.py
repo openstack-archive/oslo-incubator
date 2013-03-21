@@ -144,6 +144,17 @@ class ToPrimitiveTestCase(utils.BaseTestCase):
         self.assertTrue(ret[1].startswith('<function foo at 0x'))
         self.assertEquals(ret[2], '<built-in function dir>')
 
+    def test_no_good_strings(self):
+        bad_strings = {
+            "\xC1": u"\xC1",
+            "\xC1\xC3\x9F": u"\xC1\xC3\x9F",
+            "\xED\xA0\x80": u"\xED\xA0\x80",
+            "\xFF": u"\xFF",
+            "\xE7": u"\xE7",
+        }
+        for base, expected in bad_strings.items():
+            self.assertEquals(jsonutils.to_primitive(base), expected)
+
     def test_depth(self):
         class LevelsGenerator(object):
             def __init__(self, levels):

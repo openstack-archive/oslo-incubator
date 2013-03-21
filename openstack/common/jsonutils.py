@@ -99,6 +99,10 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
 
         if isinstance(value, (list, tuple)):
             return [recursive(v) for v in value]
+        elif isinstance(value, str) and not isinstance(value, unicode):
+            # Ensure binary objects are in unicode (but only in python2.X)
+            # Aka try: unicode('\xe7')
+            return value.decode('unicode-escape')
         elif isinstance(value, dict):
             return dict((k, recursive(v)) for k, v in value.iteritems())
         elif convert_datetime and isinstance(value, datetime.datetime):
