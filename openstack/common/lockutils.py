@@ -67,13 +67,13 @@ class _InterProcessLock(object):
     so lock files must be accessed only using this abstraction.
     """
 
-    def __init__(self, name):
+    def __init__(self, name, no_wait=False):
         self.lockfile = None
         self.fname = name
+        self.no_wait = no_wait
 
     def __enter__(self):
         self.lockfile = open(self.fname, 'w')
-
         while True:
             try:
                 # Using non-blocking locks since green threads are not
@@ -84,6 +84,8 @@ class _InterProcessLock(object):
                 return self
             except IOError, e:
                 if e.errno in (errno.EACCES, errno.EAGAIN):
+                    if self.no_wait:
+                        raise
                     # external locks synchronise things like iptables
                     # updates - give it some time to prevent busy spinning
                     time.sleep(0.01)
@@ -131,7 +133,8 @@ else:
 _semaphores = weakref.WeakValueDictionary()
 
 
-def synchronized(name, lock_file_prefix, external=False, lock_path=None):
+def synchronized(name, lock_file_prefix, external=False, lock_path=None,
+                 no_wait=False):
     """Synchronization decorator.
 
     Decorating a method like so::
@@ -165,6 +168,8 @@ def synchronized(name, lock_file_prefix, external=False, lock_path=None):
     The lock_path keyword argument is used to specify a special location for
     external lock files to live. If nothing is set, then CONF.lock_path is
     used as a default.
+
+    If the no_wait flag is True then an exception will be returned
     """
 
     def wrap(f):
@@ -218,7 +223,8 @@ def synchronized(name, lock_file_prefix, external=False, lock_path=None):
                                                       lock_file_name)
 
                         try:
-                            lock = InterProcessLock(lock_file_path)
+                            lock = InterProcessLock(name=lock_file_path,
+                                                    no_wait=no_wait)
                             with lock:
                                 LOG.debug(_('Got file lock "%(lock)s" at '
                                             '%(path)s for method '
@@ -227,6 +233,14 @@ def synchronized(name, lock_file_prefix, external=False, lock_path=None):
                                            'path': lock_file_path,
                                            'method': f.__name__})
                                 retval = f(*args, **kwargs)
+                        except IOError:
+                            LOG.debug(_('File "%(lock)s" is locked at '
+                                        '%(path)s for method '
+                                        '"%(method)s"...'),
+                                      {'lock': name,
+                                       'path': lock_file_path,
+                                       'method': f.__name__})
+                            raise
                         finally:
                             LOG.debug(_('Released file lock "%(lock)s" at '
                                         '%(path)s for method "%(method)s"...'),
