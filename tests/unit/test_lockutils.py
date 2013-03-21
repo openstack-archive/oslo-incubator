@@ -1,28 +1,30 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
-#    Copyright 2011 Justin Santa Barbara
+# Copyright 2011 Justin Santa Barbara
 #
-#    Licensed under the Apache License, Version 2.0 (the "License"); you may
-#    not use this file except in compliance with the License. You may obtain
-#    a copy of the License at
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
 #
-#         http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-#    License for the specific language governing permissions and limitations
-#    under the License.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
 
 import fcntl
 import os
 import shutil
 import tempfile
+import time
 
 import eventlet
 from eventlet import greenpool
 from eventlet import greenthread
 
+from openstack.common import exception
 from openstack.common import lockutils
 from tests import utils
 
@@ -195,3 +197,33 @@ class LockTestCase(utils.BaseTestCase):
         finally:
             if os.path.exists(lock_dir):
                 shutil.rmtree(lock_dir, ignore_errors=True)
+
+    def test_synchronized_externally_no_wait(self):
+        """We can lock across multiple processes"""
+        tempdir = tempfile.mkdtemp()
+        self.config(lock_path=tempdir)
+
+        @lockutils.synchronized('external', 't-', external=True, no_wait=True)
+        def lock_files():
+            time.sleep(1)
+
+        children = []
+        for n in range(3):
+            pid = os.fork()
+            if pid:
+                children.append(pid)
+            else:
+                try:
+                    lock_files()
+                except exception.ResourceUnavailable:
+                    os._exit(2)
+                os._exit(0)
+
+        ok = 0
+        for i, child in enumerate(children):
+            (pid, status) = os.waitpid(child, 0)
+            if status == 0:
+                ok += 1
+        self.assertEqual(1, ok)
+        if os.path.exists(tempdir):
+            shutil.rmtree(tempdir, ignore_errors=True)
