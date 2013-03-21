@@ -221,7 +221,7 @@ class ZmqClient(object):
     def cast(self, msg_id, topic, data, envelope=False):
         msg_id = msg_id or 0
 
-        if not (envelope or rpc_common._SEND_RPC_ENVELOPE):
+        if not envelope:
             self.outq.send(map(bytes,
                            (msg_id, topic, 'cast', _serialize(data))))
             return

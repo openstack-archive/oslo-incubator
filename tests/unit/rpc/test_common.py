@@ -238,13 +238,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         self.assertRaises(rpc_common.ClientException, naughty)
         self.assertRaises(ValueError, really_naughty)
 
-    def test_serialize_msg_v1(self):
-        self.stubs.Set(rpc_common, '_SEND_RPC_ENVELOPE', False)
-        msg = {'foo': 'bar'}
-        self.assertEqual(msg, rpc_common.serialize_msg(msg))
-
     def test_serialize_msg_v2(self):
-        self.stubs.Set(rpc_common, '_SEND_RPC_ENVELOPE', True)
         msg = {'foo': 'bar'}
         s_msg = {'oslo.version': rpc_common._RPC_ENVELOPE_VERSION,
                  'oslo.message': jsonutils.dumps(msg)}
