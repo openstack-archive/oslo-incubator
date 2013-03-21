@@ -140,3 +140,7 @@ class MalformedRequestBody(OpenstackException):
 
 class InvalidContentType(OpenstackException):
     message = "Invalid content type %(content_type)s"
+
+
+class ResourceUnavailable(OpenstackException):
+    message = _('Requested resource is not available')
