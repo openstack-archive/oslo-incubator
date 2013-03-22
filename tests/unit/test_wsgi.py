@@ -464,6 +464,25 @@ class ServerTest(utils.BaseTestCase):
             listen_patcher.stop()
             server_patcher.stop()
 
+    def test_run_server_with_kwargs(self):
+        listen_patcher = mock.patch('eventlet.listen')
+        server_patcher = mock.patch('eventlet.wsgi.server')
+
+        listen_mock = listen_patcher.start()
+        server_mock = server_patcher.start()
+        log_format = '%(client_ip)s'
+        try:
+            listen_mock.return_value = mock.sentinel.sock
+            wsgi.run_server(mock.sentinel.application,
+                            mock.sentinel.port,
+                            log_format=log_format)
+            server_mock.assert_called_with(mock.sentinel.sock,
+                                           mock.sentinel.application,
+                                           log_format=log_format)
+        finally:
+            listen_patcher.stop()
+            server_patcher.stop()
+
 
 class WSGIServerTest(utils.BaseTestCase):
 
