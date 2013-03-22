@@ -91,30 +91,11 @@ class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
                         envelope=False)
         self.assertEqual(self.test_msg, raw_msg)
 
-        # Envelopes enabled, but not enabled for notifications
-        self.stubs.Set(rpc_common, '_SEND_RPC_ENVELOPE', True)
-        self.rpc.notify(FLAGS, self.context, 'notifications.info', raw_msg,
-                        envelope=False)
-        self.assertEqual(self.test_msg, raw_msg)
-
         # Now turn it on for notifications
-        msg = {
-            'oslo.version': rpc_common._RPC_ENVELOPE_VERSION,
-            'oslo.message': jsonutils.dumps(raw_msg),
-        }
         self.rpc.notify(FLAGS, self.context, 'notifications.info', raw_msg,
                         envelope=True)
-        remove_unique_id(self.test_msg)
-        remove_unique_id(msg)
-        self.assertEqual(self.test_msg, msg)
-
-        # Make sure envelopes are still on notifications, even if turned off
-        # for general messages.
-        self.stubs.Set(rpc_common, '_SEND_RPC_ENVELOPE', False)
-        self.rpc.notify(FLAGS, self.context, 'notifications.info', raw_msg,
-                        envelope=True)
-        remove_unique_id(self.test_msg)
-        self.assertEqual(self.test_msg, msg)
+        # Make sure the msg envelope was applied
+        self.assertTrue('oslo.version' in self.test_msg)
 
     def test_single_reply_queue_on_has_ids(
             self, single_reply_queue_for_callee_off=False):

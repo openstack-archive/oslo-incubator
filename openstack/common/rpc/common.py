@@ -70,10 +70,6 @@ _VERSION_KEY = 'oslo.version'
 _MESSAGE_KEY = 'oslo.message'
 
 
-# TODO(russellb) Turn this on after Grizzly.
-_SEND_RPC_ENVELOPE = False
-
-
 class RPCException(Exception):
     message = _("An unknown RPC related exception occurred.")
 
@@ -441,10 +437,7 @@ def version_is_compatible(imp_version, version):
     return True
 
 
-def serialize_msg(raw_msg, force_envelope=False):
-    if not _SEND_RPC_ENVELOPE and not force_envelope:
-        return raw_msg
-
+def serialize_msg(raw_msg):
     # NOTE(russellb) See the docstring for _RPC_ENVELOPE_VERSION for more
     # information about this format.
     msg = {_VERSION_KEY: _RPC_ENVELOPE_VERSION,

@@ -125,15 +125,6 @@ class RpcZmqBaseTopicTestCase(_RpcZmqBaseTestCase):
     pass
 
 
-class RpcZmqEnvelopeEnabledTestCase(_RpcZmqBaseTestCase):
-    """
-    This sends messages with envelopes enabled.
-    """
-    def setUp(self):
-        super(RpcZmqEnvelopeEnabledTestCase, self).setUp()
-        self.stubs.Set(rpc_common, '_SEND_RPC_ENVELOPE', True)
-
-
 class RpcZmqDirectTopicTestCase(_RpcZmqBaseTestCase):
     """
     Test communication directly to a host,
