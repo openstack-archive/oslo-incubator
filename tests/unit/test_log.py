@@ -1,7 +1,9 @@
 import cStringIO
 import logging
+import os
 import StringIO
 import sys
+import tempfile
 
 from oslo.config import cfg
 
@@ -377,3 +379,49 @@ class LogConfigOptsTestCase(test_utils.BaseTestCase):
         logdir = '/some/other/path/'
         CONF(['--logdir', logdir])
         self.assertEquals(CONF.log_dir, logdir)
+
+
+class LogConfigTestCase(test_utils.BaseTestCase):
+
+    minimal_config = """[loggers]
+keys=root
+
+[formatters]
+keys=
+
+[handlers]
+keys=
+
+[logger_root]
+handlers=
+"""
+
+    def _create_tempfile(self, basename, contents, ext='.conf'):
+        (fd, path) = tempfile.mkstemp(prefix=basename, suffix=ext)
+        try:
+            os.write(fd, contents)
+        finally:
+            os.close(fd)
+        return path
+
+    def test_log_config_ok(self):
+        log_config = self._create_tempfile('logging', self.minimal_config)
+        self.config(log_config=log_config)
+        log.setup('test_log_config')
+
+    def test_log_config_not_exist(self):
+        log_config = self._create_tempfile('logging', self.minimal_config)
+        os.remove(log_config)
+        self.config(log_config=log_config)
+        self.assertRaises(log.LogConfigError, log.setup, 'test_log_config')
+
+    def test_log_config_invalid(self):
+        log_config = self._create_tempfile('logging', self.minimal_config[5:])
+        self.config(log_config=log_config)
+        self.assertRaises(log.LogConfigError, log.setup, 'test_log_config')
+
+    def test_log_config_unreadable(self):
+        log_config = self._create_tempfile('logging', self.minimal_config)
+        os.chmod(log_config, 0)
+        self.config(log_config=log_config)
+        self.assertRaises(log.LogConfigError, log.setup, 'test_log_config')
