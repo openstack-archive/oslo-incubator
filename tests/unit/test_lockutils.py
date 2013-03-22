@@ -127,18 +127,15 @@ class LockTestCase(utils.BaseTestCase):
 
     def test_synchronized_externally(self):
         """We can lock across multiple processes"""
-        tempdir = tempfile.mkdtemp()
-        self.config(lock_path=tempdir)
+        lock_dir = tempfile.mkdtemp()
+        self.config(lock_path=lock_dir)
 
         @lockutils.synchronized('external', 'test-', external=True)
-        def lock_files(tempdir):
-            if not os.path.exists(tempdir):
-                os.makedirs(tempdir)
-
+        def lock_files(handles_dir):
             # Open some files we can use for locking
             handles = []
             for n in range(50):
-                path = os.path.join(tempdir, ('file-%s' % n))
+                path = os.path.join(handles_dir, ('file-%s' % n))
                 handles.append(open(path, 'w'))
 
             # Loop over all the handles and try locking the file
@@ -159,6 +156,7 @@ class LockTestCase(utils.BaseTestCase):
             # Check if we were able to open all files
             self.assertEqual(50, count)
 
+        handles_dir = tempfile.mkdtemp()
         try:
             children = []
             for n in range(50):
@@ -166,13 +164,17 @@ class LockTestCase(utils.BaseTestCase):
                 if pid:
                     children.append(pid)
                 else:
-                    lock_files(tempdir)
-                    os._exit(0)
+                    try:
+                        lock_files(handles_dir)
+                    finally:
+                        os._exit(0)
 
             for i, child in enumerate(children):
                 (pid, status) = os.waitpid(child, 0)
                 if pid:
                     self.assertEqual(0, status)
         finally:
-            if os.path.exists(tempdir):
-                shutil.rmtree(tempdir, ignore_errors=True)
+            if os.path.exists(handles_dir):
+                shutil.rmtree(handles_dir, ignore_errors=True)
+            if os.path.exists(lock_dir):
+                shutil.rmtree(lock_dir, ignore_errors=True)
