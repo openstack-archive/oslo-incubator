@@ -186,8 +186,6 @@ class LockTestCase(utils.BaseTestCase):
                 shutil.rmtree(lock_dir, ignore_errors=True)
 
     def test_synchronized_externally_lock_dir_not_exist(self):
-        self.skipTest('bug #1107950')
-
         lock_dir = tempfile.mkdtemp()
         os.rmdir(lock_dir)
         self.config(lock_path=lock_dir)
