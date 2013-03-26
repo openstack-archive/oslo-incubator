@@ -88,9 +88,6 @@ class NotifierTestCase(test_utils.BaseTestCase):
         self.assertEqual(self.mock_notify, True)
         self.assertEqual(self.envelope, envelope)
 
-    def test_rabbit_notifier(self):
-        self._test_rpc_notify('openstack.common.notifier.rabbit_notifier')
-
     def test_rpc_notifier(self):
         self._test_rpc_notify('openstack.common.notifier.rpc_notifier')
 
@@ -102,9 +99,9 @@ class NotifierTestCase(test_utils.BaseTestCase):
                           notifier_api.notify, ctxt, 'publisher_id',
                           'event_type', 'not a priority', dict(a=3))
 
-    def test_rabbit_priority_queue(self):
+    def test_rpc_priority_queue(self):
         self.stubs.Set(cfg.CONF, 'notification_driver',
-                       ['openstack.common.notifier.rabbit_notifier'])
+                       ['openstack.common.notifier.rpc_notifier'])
         self.stubs.Set(cfg.CONF, 'notification_topics',
                        ['testnotify', ])
 
