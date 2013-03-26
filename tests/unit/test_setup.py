@@ -23,7 +23,7 @@ from tempfile import mkstemp
 
 import fixtures
 
-from openstack.common.setup import *
+from openstack.common import setup
 from tests import utils
 
 
@@ -49,7 +49,7 @@ class EmailTestCase(utils.BaseTestCase):
         string = 'Johnnie T. Hozer'
         mapping = {'T.': 'The'}
         self.assertEqual('Johnnie The Hozer',
-                         canonicalize_emails(string, mapping))
+                         setup.canonicalize_emails(string, mapping))
 
 
 class MailmapTestCase(utils.BaseTestCase):
@@ -63,19 +63,19 @@ class MailmapTestCase(utils.BaseTestCase):
         with open(self.mailmap, 'w') as mm_fh:
             mm_fh.write("Foo Bar <email@foo.com> Foo Bar <email@bar.com>\n")
         self.assertEqual({'<email@bar.com>': '<email@foo.com>'},
-                         parse_mailmap(self.mailmap))
+                         setup.parse_mailmap(self.mailmap))
 
     def test_mailmap_with_firstname(self):
         with open(self.mailmap, 'w') as mm_fh:
             mm_fh.write("Foo <email@foo.com> Foo <email@bar.com>\n")
         self.assertEqual({'<email@bar.com>': '<email@foo.com>'},
-                         parse_mailmap(self.mailmap))
+                         setup.parse_mailmap(self.mailmap))
 
     def test_mailmap_with_noname(self):
         with open(self.mailmap, 'w') as mm_fh:
             mm_fh.write("<email@foo.com> <email@bar.com>\n")
         self.assertEqual({'<email@bar.com>': '<email@foo.com>'},
-                         parse_mailmap(self.mailmap))
+                         setup.parse_mailmap(self.mailmap))
 
 
 class GitLogsTest(utils.BaseTestCase):
@@ -114,7 +114,7 @@ class GitLogsTest(utils.BaseTestCase):
             return builtin_open(name, mode)
         self.useFixture(fixtures.MonkeyPatch("__builtin__.open", _fake_open))
 
-        write_git_changelog()
+        setup.write_git_changelog()
 
         with open(os.path.join(root_dir, "ChangeLog"), "r") as ch_fh:
             self.assertTrue("email@foo.com" in ch_fh.read())
@@ -156,7 +156,7 @@ class GitLogsTest(utils.BaseTestCase):
         with open("AUTHORS.in", "w") as auth_fh:
             auth_fh.write(author_old)
 
-        generate_authors()
+        setup.generate_authors()
 
         with open("AUTHORS", "r") as auth_fh:
             authors = auth_fh.read()
@@ -168,7 +168,7 @@ class GitLogsTest(utils.BaseTestCase):
 class GetCmdClassTest(utils.BaseTestCase):
 
     def test_get_cmdclass(self):
-        cmdclass = get_cmdclass()
+        cmdclass = setup.get_cmdclass()
 
         self.assertTrue("sdist" in cmdclass)
         build_sphinx = cmdclass.get("build_sphinx")
@@ -204,31 +204,31 @@ class ParseRequirementsTest(utils.BaseTestCase):
         with open(self.tmp_file, 'w') as fh:
             fh.write("foo\nbar")
         self.assertEqual(['foo', 'bar'],
-                         parse_requirements([self.tmp_file]))
+                         setup.parse_requirements([self.tmp_file]))
 
     def test_parse_requirements_with_git_egg_url(self):
         with open(self.tmp_file, 'w') as fh:
             fh.write("-e git://foo.com/zipball#egg=bar")
-        self.assertEqual(['bar'], parse_requirements([self.tmp_file]))
+        self.assertEqual(['bar'], setup.parse_requirements([self.tmp_file]))
 
     def test_parse_requirements_with_http_egg_url(self):
         with open(self.tmp_file, 'w') as fh:
             fh.write("https://foo.com/zipball#egg=bar")
-        self.assertEqual(['bar'], parse_requirements([self.tmp_file]))
+        self.assertEqual(['bar'], setup.parse_requirements([self.tmp_file]))
 
     def test_parse_requirements_removes_index_lines(self):
         with open(self.tmp_file, 'w') as fh:
             fh.write("-f foobar")
-        self.assertEqual([], parse_requirements([self.tmp_file]))
+        self.assertEqual([], setup.parse_requirements([self.tmp_file]))
 
     def test_parse_requirements_removes_argparse(self):
         with open(self.tmp_file, 'w') as fh:
             fh.write("argparse")
         if sys.version_info >= (2, 7):
-            self.assertEqual([], parse_requirements([self.tmp_file]))
+            self.assertEqual([], setup.parse_requirements([self.tmp_file]))
 
     def test_get_requirement_from_file_empty(self):
-        actual = get_reqs_from_files([])
+        actual = setup.get_reqs_from_files([])
         self.assertEqual([], actual)
 
 
@@ -244,11 +244,11 @@ class ParseDependencyLinksTest(utils.BaseTestCase):
             fh.write("http://test.com\n")
         self.assertEqual(
             ["http://test.com"],
-            parse_dependency_links([self.tmp_file]))
+            setup.parse_dependency_links([self.tmp_file]))
 
     def test_parse_dependency_with_git_egg_url(self):
         with open(self.tmp_file, "w") as fh:
             fh.write("-e git://foo.com/zipball#egg=bar")
         self.assertEqual(
             ["git://foo.com/zipball#egg=bar"],
-            parse_dependency_links([self.tmp_file]))
+            setup.parse_dependency_links([self.tmp_file]))

@@ -33,7 +33,6 @@ class RpcProxyTestCase(utils.BaseTestCase):
     def _test_rpc_method(self, rpc_method, has_timeout=False, has_retval=False,
                          server_params=None, supports_topic_override=True):
         topic = 'fake_topic'
-        timeout = None
         rpc_proxy = proxy.RpcProxy(topic, '1.0')
         ctxt = context.RequestContext('fake_user', 'fake_project')
         msg = {'method': 'fake_method', 'args': {'x': 'y'}}

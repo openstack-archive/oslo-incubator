@@ -47,7 +47,7 @@ class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
 
         def fake_unpack_context(*args, **kwargs):
             info['unpacked'] = True
-            raise test.TestingException('moo')
+            raise Exception('moo')
 
         self.stubs.Set(rpc_amqp, 'unpack_context', fake_unpack_context)
 
@@ -144,7 +144,7 @@ class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
                 FLAGS, self.context, self.topic,
                 {"method": "echo", "args": {"value": value}},
                 timeout=1)
-        except rpc_common.Timeout as exc:
+        except rpc_common.Timeout:
             # expect a timeout in this case
             if single_reply_queue_for_callee_off:
                 result = 42

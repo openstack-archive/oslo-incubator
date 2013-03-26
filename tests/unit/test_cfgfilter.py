@@ -14,9 +14,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo.config.cfg import *
+from oslo.config import cfg
 
-from openstack.common.cfgfilter import *
+from openstack.common import cfgfilter
 from tests import utils
 
 
@@ -24,11 +24,11 @@ class ConfigFilterTestCase(utils.BaseTestCase):
 
     def setUp(self):
         super(ConfigFilterTestCase, self).setUp()
-        self.conf = ConfigOpts()
-        self.fconf = ConfigFilter(self.conf)
+        self.conf = cfg.ConfigOpts()
+        self.fconf = cfgfilter.ConfigFilter(self.conf)
 
     def test_register_opt_default(self):
-        self.fconf.register_opt(StrOpt('foo', default='bar'))
+        self.fconf.register_opt(cfg.StrOpt('foo', default='bar'))
 
         self.assertEquals(self.fconf.foo, 'bar')
         self.assertEquals(self.fconf['foo'], 'bar')
@@ -37,7 +37,7 @@ class ConfigFilterTestCase(utils.BaseTestCase):
         self.assertEquals(len(self.fconf), 1)
 
     def test_register_opt_none_default(self):
-        self.fconf.register_opt(StrOpt('foo'))
+        self.fconf.register_opt(cfg.StrOpt('foo'))
 
         self.assertTrue(self.fconf.foo is None)
         self.assertTrue(self.fconf['foo'] is None)
@@ -46,7 +46,8 @@ class ConfigFilterTestCase(utils.BaseTestCase):
         self.assertEquals(len(self.fconf), 1)
 
     def test_register_grouped_opt_default(self):
-        self.fconf.register_opt(StrOpt('foo', default='bar'), group='blaa')
+        self.fconf.register_opt(cfg.StrOpt('foo', default='bar'),
+                                group='blaa')
 
         self.assertEquals(self.fconf.blaa.foo, 'bar')
         self.assertEquals(self.fconf['blaa']['foo'], 'bar')
@@ -58,7 +59,7 @@ class ConfigFilterTestCase(utils.BaseTestCase):
         self.assertEquals(len(self.fconf.blaa), 1)
 
     def test_register_grouped_opt_none_default(self):
-        self.fconf.register_opt(StrOpt('foo'), group='blaa')
+        self.fconf.register_opt(cfg.StrOpt('foo'), group='blaa')
 
         self.assertTrue(self.fconf.blaa.foo is None)
         self.assertTrue(self.fconf['blaa']['foo'] is None)
@@ -70,9 +71,9 @@ class ConfigFilterTestCase(utils.BaseTestCase):
         self.assertEquals(len(self.fconf.blaa), 1)
 
     def test_register_group(self):
-        group = OptGroup('blaa')
+        group = cfg.OptGroup('blaa')
         self.fconf.register_group(group)
-        self.fconf.register_opt(StrOpt('foo'), group=group)
+        self.fconf.register_opt(cfg.StrOpt('foo'), group=group)
 
         self.assertTrue(self.fconf.blaa.foo is None)
         self.assertTrue(self.fconf['blaa']['foo'] is None)
@@ -86,33 +87,33 @@ class ConfigFilterTestCase(utils.BaseTestCase):
     def test_unknown_opt(self):
         self.assertFalse('foo' in self.fconf)
         self.assertEquals(len(self.fconf), 0)
-        self.assertRaises(NoSuchOptError, getattr, self.fconf, 'foo')
+        self.assertRaises(cfg.NoSuchOptError, getattr, self.fconf, 'foo')
 
     def test_blocked_opt(self):
-        self.conf.register_opt(StrOpt('foo'))
+        self.conf.register_opt(cfg.StrOpt('foo'))
 
         self.assertTrue('foo' in self.conf)
         self.assertEquals(len(self.conf), 1)
         self.assertTrue(self.conf.foo is None)
         self.assertFalse('foo' in self.fconf)
         self.assertEquals(len(self.fconf), 0)
-        self.assertRaises(NoSuchOptError, getattr, self.fconf, 'foo')
+        self.assertRaises(cfg.NoSuchOptError, getattr, self.fconf, 'foo')
 
     def test_import_opt(self):
-        self.fconf = ConfigFilter(CONF)
+        self.fconf = cfgfilter.ConfigFilter(cfg.CONF)
         self.assertFalse(hasattr(self.fconf, 'blaa'))
         self.fconf.import_opt('blaa', 'tests.testmods.blaa_opt')
         self.assertTrue(hasattr(self.fconf, 'blaa'))
 
     def test_import_opt_in_group(self):
-        self.fconf = ConfigFilter(CONF)
+        self.fconf = cfgfilter.ConfigFilter(cfg.CONF)
         self.assertFalse(hasattr(self.fconf, 'bar'))
         self.fconf.import_opt('foo', 'tests.testmods.bar_foo_opt', group='bar')
         self.assertTrue(hasattr(self.fconf, 'bar'))
         self.assertTrue(hasattr(self.fconf.bar, 'foo'))
 
     def test_import_group(self):
-        self.fconf = ConfigFilter(CONF)
+        self.fconf = cfgfilter.ConfigFilter(cfg.CONF)
         self.assertFalse(hasattr(self.fconf, 'baar'))
         self.fconf.import_group('baar', 'tests.testmods.baar_baa_opt')
         self.assertTrue(hasattr(self.fconf, 'baar'))

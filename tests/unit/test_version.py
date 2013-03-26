@@ -18,7 +18,7 @@
 import StringIO
 import sys
 
-from oslo.config.cfg import *
+from oslo.config import cfg
 
 from openstack.common import version
 from tests import utils
@@ -28,7 +28,7 @@ class DeferredVersionTestCase(utils.BaseTestCase):
 
     def setUp(self):
         super(DeferredVersionTestCase, self).setUp()
-        self.conf = ConfigOpts()
+        self.conf = cfg.ConfigOpts()
 
     def test_cached_version(self):
         class MyVersionInfo(version.VersionInfo):
