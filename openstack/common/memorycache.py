@@ -20,7 +20,15 @@
 
 from oslo.config import cfg
 
+from openstack.common.gettextutils import _
+from openstack.common import log as logging
 from openstack.common import timeutils
+
+try:
+    import memcache
+    has_memcache = True
+except:
+    has_memcache = False
 
 memcache_opts = [
     cfg.ListOpt('memcached_servers',
@@ -30,6 +38,7 @@ memcache_opts = [
 
 CONF = cfg.CONF
 CONF.register_opts(memcache_opts)
+LOG = logging.getLogger(__name__)
 
 
 def get_client(memcached_servers=None):
@@ -37,14 +46,33 @@ def get_client(memcached_servers=None):
 
     if not memcached_servers:
         memcached_servers = CONF.memcached_servers
-    if memcached_servers:
-        try:
-            import memcache
-            client_cls = memcache.Client
-        except ImportError:
-            pass
+    if memcached_servers and has_memcache:
+        client_cls = memcache.Client
+    else:
+        client_cls = Client
 
-    return client_cls(memcached_servers, debug=0)
+    return ClientFailureWrapper(client_cls(memcached_servers, debug=0))
+
+
+class ClientFailureWrapper(object):
+    def __init__(self, client):
+        self._client = client
+
+    def _gen_wrapper(action, default_return=None):
+        def wrapper(self, key, *args, **kwargs):
+            try:
+                return getattr(self._client, action)(key, *args, **kwargs)
+            except Exception:
+                LOG.exception(_("Cache failure while performing %s on key %s"),
+                              action, key)
+                return default_return
+        return wrapper
+
+    get = _gen_wrapper("get")
+    set = _gen_wrapper("set", False)
+    add = _gen_wrapper("add", False)
+    incr = _gen_wrapper("incr")
+    delete = _gen_wrapper("delete", False)
 
 
 class Client(object):
