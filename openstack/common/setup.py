@@ -23,6 +23,7 @@ Utilities with minimum-depends for use in setup.py
 import email
 import os
 import re
+import StringIO
 import subprocess
 import sys
 
@@ -225,17 +226,25 @@ def get_cmdclass():
     # enable setup.py to build the documentation, otherwise,
     # just ignore it
     try:
-        from sphinx.setup_command import BuildDoc
+        from sphinx import application
+        from sphinx import config
+        from sphinx import setup_command
 
-        class LocalBuildDoc(BuildDoc):
+        class LocalBuildDoc(setup_command.BuildDoc):
 
             builders = ['html', 'man']
 
             def generate_autoindex(self):
+                option_dict = self.distribution.get_option_dict(
+                    'build_sphinx')
                 print "**Autodocumenting from %s" % os.path.abspath(os.curdir)
                 modules = {}
-                option_dict = self.distribution.get_option_dict('build_sphinx')
-                source_dir = os.path.join(option_dict['source_dir'][1], 'api')
+                if 'source_dir' in option_dict:
+                    source_dir = os.path.join(
+                        option_dict['source_dir'][1], 'api')
+                else:
+                    source_dir = 'doc/source/api'
+
                 if not os.path.exists(source_dir):
                     os.makedirs(source_dir)
                 for pkg in self.distribution.packages:
@@ -262,8 +271,50 @@ def get_cmdclass():
                             output_file.write(_rst_template % values)
                         autoindex.write("   %s.rst\n" % module)
 
+            def _sphinx_run(self):
+                if not self.verbose:
+                    status_stream = StringIO.StringIO()
+                else:
+                    status_stream = sys.stdout
+                confoverrides = {}
+                if self.version:
+                    confoverrides['version'] = self.version
+                if self.release:
+                    confoverrides['release'] = self.release
+                if self.today:
+                    confoverrides['today'] = self.today
+                sphinx_config = config.Config(
+                    self.config_dir, 'conf.py', {}, [])
+                if (self.builder == 'man' and
+                        len(sphinx_config.man_pages) == 0):
+                    return
+                app = application.Sphinx(
+                    self.source_dir, self.config_dir,
+                    self.builder_target_dir, self.doctree_dir,
+                    self.builder, confoverrides, status_stream,
+                    freshenv=self.fresh_env, warningiserror=True)
+
+                try:
+                    app.build(force_all=self.all_files)
+                except Exception, err:
+                    from docutils import utils
+                    if isinstance(err, utils.SystemMessage):
+                        sys.stder.write('reST markup error:\n')
+                        sys.stderr.write(
+                            err.args[0].encode('ascii', 'backslashreplace'))
+                        sys.stderr.write('\n')
+                    else:
+                        raise
+
+                if self.link_index:
+                    src = app.config.master_doc + app.builder.out_suffix
+                    dst = app.builder.get_outfilename('index')
+                    os.symlink(src, dst)
+
             def run(self):
-                if not os.getenv('SPHINX_DEBUG'):
+                option_dict = self.distribution.get_option_dict('oslo')
+                if ('autodoc_index_modules' in option_dict and
+                        not os.getenv('SPHINX_DEBUG')):
                     self.generate_autoindex()
 
                 for builder in self.builders:
@@ -272,7 +323,10 @@ def get_cmdclass():
                     self.project = self.distribution.get_name()
                     self.version = self.distribution.get_version()
                     self.release = self.distribution.get_version()
-                    BuildDoc.run(self)
+                    if 'warnerrors' in option_dict:
+                        self._sphinx_run()
+                    else:
+                        setup_command.BuildDoc.run(self)
 
         class LocalBuildLatex(LocalBuildDoc):
             builders = ['latex']
@@ -304,9 +358,12 @@ def _get_revno(git_dir):
 
 
 def _get_version_from_git(pre_version):
-    """Return a version which is equal to the tag that's on the current
+    """Return a version based on git revisions.
+
+    The version will be equal to the tag that's on the current
     revision if there is one, or tag plus number of additional revisions
-    if the current revision has no tag."""
+    if the current revision has no tag.
+    """
 
     git_dir = _get_git_directory()
     if git_dir:

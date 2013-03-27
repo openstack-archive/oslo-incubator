@@ -167,30 +167,44 @@ class GitLogsTest(utils.BaseTestCase):
 
 class GetCmdClassTest(utils.BaseTestCase):
 
-    def test_get_cmdclass(self):
+    def setUp(self):
+        super(GetCmdClassTest, self).setUp()
+
         cmdclass = setup.get_cmdclass()
 
         self.assertTrue("sdist" in cmdclass)
-        build_sphinx = cmdclass.get("build_sphinx")
-        if build_sphinx:
-            self.useFixture(fixtures.MonkeyPatch(
-                "sphinx.setup_command.BuildDoc.run", lambda self: None))
-            from distutils.dist import Distribution
-            distr = Distribution()
-            distr.packages = ("fake_package",)
-            distr.command_options["build_sphinx"] = {"source_dir": ["a", "."]}
-            pkg_fixture = fixtures.PythonPackage(
-                "fake_package", [("fake_module.py", "")])
-            self.useFixture(pkg_fixture)
-            self.useFixture(DiveDir(pkg_fixture.base))
+        self.build_sphinx = cmdclass.get("build_sphinx")
+        self.useFixture(fixtures.MonkeyPatch(
+            "sphinx.setup_command.BuildDoc.run", lambda self: None))
+        from distutils.dist import Distribution
+        self.distr = Distribution()
+        self.distr.packages = ("fake_package",)
+        self.distr.command_options["build_sphinx"] = {"source_dir": ["a", "."]}
+        pkg_fixture = fixtures.PythonPackage(
+            "fake_package", [("fake_module.py", "")])
+        self.useFixture(pkg_fixture)
+        self.useFixture(DiveDir(pkg_fixture.base))
 
-            build_doc = build_sphinx(distr)
-            build_doc.run()
+    def test_autodoc_index_modules(self):
 
-            self.assertTrue(
-                os.path.exists("api/autoindex.rst"))
-            self.assertTrue(
-                os.path.exists("api/fake_package.fake_module.rst"))
+        self.distr.command_options["oslo"] = {"autodoc_index_modules": "True"}
+        build_doc = self.build_sphinx(self.distr)
+        build_doc.run()
+
+        self.assertTrue(
+            os.path.exists("api/autoindex.rst"))
+        self.assertTrue(
+            os.path.exists("api/fake_package.fake_module.rst"))
+
+    def test_no_autodoc_index_modules(self):
+
+        build_doc = self.build_sphinx(self.distr)
+        build_doc.run()
+
+        self.assertFalse(
+            os.path.exists("api/autoindex.rst"))
+        self.assertFalse(
+            os.path.exists("api/fake_package.fake_module.rst"))
 
 
 class ParseRequirementsTest(utils.BaseTestCase):
