@@ -20,6 +20,7 @@
 
 from oslo.config import cfg
 
+from openstack.common import log as logging
 from openstack.common import timeutils
 
 memcache_opts = [
@@ -30,6 +31,7 @@ memcache_opts = [
 
 CONF = cfg.CONF
 CONF.register_opts(memcache_opts)
+LOG = logging.getLogger(__name__)
 
 
 def get_client(memcached_servers=None):
@@ -44,8 +46,28 @@ def get_client(memcached_servers=None):
         except ImportError:
             pass
 
-    return client_cls(memcached_servers, debug=0)
+    return ClientFailureWrapper(client_cls(memcached_servers, debug=0))
 
+
+class ClientFailureWrapper(object):
+    def __init__(self, client):
+        self._client = client
+
+    def _gen_wrapper(action, action_name, default_return):
+        def wrapper(self, key, *args, **kwargs):
+            try:
+                return getattr(self._client, action)(key, *args, **kwargs)
+            except Exception:
+                LOG.exception(_("Cache failure while %s value for key %s"),
+                              action_name, key)
+                return default_return
+        return wrapper
+
+    get = _gen_wrapper("get", "getting", None)
+    set = _gen_wrapper("set", "setting", False)
+    add = _gen_wrapper("add", "adding", False)
+    incr = _gen_wrapper("incr", "incrementing", None)
+    delete = _gen_wrapper("delete", "deleting", False)
 
 class Client(object):
     """Replicates a tiny subset of memcached client interface."""

@@ -56,3 +56,16 @@ class MemorycacheTest(utils.BaseTestCase):
             self.assertEqual(self.client.get('foo'), None)
         finally:
             timeutils.clear_time_override()
+
+    def test_client_failure(self):
+        """Even when there's an internal error in cache client, execution
+        should not fail"""
+
+        def failing_function(*args, **kwargs):
+            raise Exception("failure")
+
+        self.stubs.Set(self.client._client, 'set', failing_function)
+        self.stubs.Set(self.client._client, 'get', failing_function)
+
+        self.assertEqual(self.client.set('foo', 'bar'), False)
+        self.assertEqual(self.client.get('foo'), None)
