@@ -659,17 +659,20 @@ def _cast(addr, context, topic, msg, timeout=None, envelope=False,
     timeout_cast = timeout or CONF.rpc_cast_timeout
     payload = [RpcContext.marshal(context), msg]
 
-    with Timeout(timeout_cast, exception=rpc_common.Timeout):
-        try:
+    try:
+        with Timeout(timeout_cast, exception=rpc_common.Timeout):
             conn = ZmqClient(addr)
 
             # assumes cast can't return an exception
             conn.cast(_msg_id, topic, payload, envelope)
-        except zmq.ZMQError:
-            raise RPCException("Cast failed. ZMQ Socket Exception")
-        finally:
-            if 'conn' in vars():
-                conn.close()
+    except zmq.ZMQError:
+        raise RPCException(_("Cast failed. ZMQ Socket Exception"))
+    except rpc_common.Timeout as exc:
+        raise rpc_common.Timeout(
+            exc.info, topic, msg.get('method'))
+    finally:
+        if 'conn' in vars():
+            conn.close()
 
 
 def _call(addr, context, topic, msg, timeout=None,
@@ -700,8 +703,8 @@ def _call(addr, context, topic, msg, timeout=None,
 
     # Messages arriving async.
     # TODO(ewindisch): have reply consumer with dynamic subscription mgmt
-    with Timeout(timeout, exception=rpc_common.Timeout):
-        try:
+    try:
+        with Timeout(timeout, exception=rpc_common.Timeout):
             msg_waiter = ZmqSocket(
                 "ipc://%s/zmq_topic_zmq_replies.%s" %
                 (CONF.rpc_zmq_ipc_dir,
@@ -715,27 +718,44 @@ def _call(addr, context, topic, msg, timeout=None,
             LOG.debug(_("Cast sent; Waiting reply"))
             # Blocks until receives reply
             msg = msg_waiter.recv()
-            LOG.debug(_("Received message: %s"), msg)
-            LOG.debug(_("Unpacking response"))
+    except zmq.ZMQError:
+        raise RPCException(_("ZMQ Socket Error"))
+    except rpc_common.Timeout as exc:
+        raise rpc_common.Timeout(
+            exc.info, topic, msg.get('method'))
+    finally:
+        if 'msg_waiter' in vars():
+            msg_waiter.close()
 
-            if msg[2] == 'cast':  # Legacy version
-                raw_msg = _deserialize(msg[-1])[-1]
-            elif msg[2] == 'impl_zmq_v2':
-                rpc_envelope = unflatten_envelope(msg[4:])
-                raw_msg = rpc_common.deserialize_msg(rpc_envelope)
-            else:
-                raise rpc_common.UnsupportedRpcEnvelopeVersion(
-                    _("Unsupported or unknown ZMQ envelope returned."))
+    try:
+        LOG.debug(_("Received response: %s"), msg)
+        if msg[2] == 'cast':  # Legacy version
+            raw_msg = _deserialize(msg[-1])[-1]
+        elif msg[2] == 'impl_zmq_v2':
+            rpc_envelope = unflatten_envelope(msg[4:])
+            raw_msg = rpc_common.deserialize_msg(rpc_envelope)
+        else:
+            raise rpc_common.UnsupportedRpcEnvelopeVersion(
+                _("Unsupported or unknown ZMQ envelope returned."))
+    except (IndexError, KeyError):
+        # If the message was invalid, the envelope was invalid.
+        raise rpc_common.UnsupportedRpcEnvelopeVersion(
+            _("Unsupported or unknown ZMQ envelope returned."))
 
-            responses = raw_msg['args']['response']
-        # ZMQError trumps the Timeout error.
-        except zmq.ZMQError:
-            raise RPCException("ZMQ Socket Error")
-        except (IndexError, KeyError):
-            raise RPCException(_("RPC Message Invalid."))
-        finally:
-            if 'msg_waiter' in vars():
-                msg_waiter.close()
+    # Satisfy possibility that we were passed a non-dict type.
+    # NOTE(ewindisch): We're likely to pass responses directly
+    #                  from reply() instead of using the
+    #                  -process_reply wrapper come the I-release.
+    if isinstance(raw_msg, list):
+        responses = raw_msg
+    elif not isinstance(raw_msg, dict):
+        return raw_msg
+    elif 'args' in raw_msg and 'response' in raw_msg['args']:
+        # typical Grizzly and Havana message replies.
+        responses = raw_msg['args']['response']
+    else:
+        # some unknown dictionary.
+        responses = [raw_msg]
 
     # It seems we don't need to do all of the following,
     # but perhaps it would be useful for multicall?
