@@ -20,6 +20,8 @@
 
 from oslo.config import cfg
 
+from openstack.common.gettextutils import _
+from openstack.common import log as logging
 from openstack.common import timeutils
 
 memcache_opts = [
@@ -30,21 +32,24 @@ memcache_opts = [
 
 CONF = cfg.CONF
 CONF.register_opts(memcache_opts)
+LOG = logging.getLogger(__name__)
+
+
+try:
+    import memcache
+    has_memcache = True
+except ImportError:
+    has_memcache = False
 
 
 def get_client(memcached_servers=None):
-    client_cls = Client
-
-    if not memcached_servers:
+    if memcached_servers is None:
         memcached_servers = CONF.memcached_servers
-    if memcached_servers:
-        try:
-            import memcache
-            client_cls = memcache.Client
-        except ImportError:
-            pass
 
-    return client_cls(memcached_servers, debug=0)
+    if memcached_servers and has_memcache:
+        return SafeMemcacheClient(memcached_servers, debug=0)
+    else:
+        return SafeClient()
 
 
 class Client(object):
@@ -94,3 +99,52 @@ class Client(object):
         """Deletes the value associated with a key."""
         if key in self.cache:
             del self.cache[key]
+
+
+def fallback_wrapper(default_value=None):
+    """This wrapper calls super on a class which doesn't really have a parent,
+    but due to MRO will work like a mixin and resolve to the actual client
+    class as long as SafeClient uses the right parent class order.
+    """
+    def wrapper(f):
+        def func(self, key, *args, **kwargs):
+            try:
+                actual_func = getattr(super(SafeClientMixin, self),
+                                      f.__name__)
+                return actual_func(key, *args, **kwargs)
+            except Exception:
+                LOG.exception(_("Cache failure while performing %s on key %s"),
+                              f.__name__, key)
+                return default_value
+        return func
+    return wrapper
+
+
+class SafeClientMixin(object):
+    @fallback_wrapper()
+    def get(*args, **kwargs):
+        pass
+
+    @fallback_wrapper(False)
+    def set(*args, **kwargs):
+        pass
+
+    @fallback_wrapper(False)
+    def add(*args, **kwargs):
+        pass
+
+    @fallback_wrapper()
+    def incr(*args, **kwargs):
+        pass
+
+    @fallback_wrapper(False)
+    def delete(*args, **kwargs):
+        pass
+
+
+class SafeClient(SafeClientMixin, Client):
+    pass
+
+if has_memcache:
+    class SafeMemcacheClient(SafeClientMixin, memcache.Client):
+        pass
