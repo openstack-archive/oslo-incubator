@@ -659,17 +659,20 @@ def _cast(addr, context, topic, msg, timeout=None, envelope=False,
     timeout_cast = timeout or CONF.rpc_cast_timeout
     payload = [RpcContext.marshal(context), msg]
 
-    with Timeout(timeout_cast, exception=rpc_common.Timeout):
-        try:
+    try:
+        with Timeout(timeout_cast, exception=rpc_common.Timeout):
             conn = ZmqClient(addr)
 
             # assumes cast can't return an exception
             conn.cast(_msg_id, topic, payload, envelope)
-        except zmq.ZMQError:
-            raise RPCException("Cast failed. ZMQ Socket Exception")
-        finally:
-            if 'conn' in vars():
-                conn.close()
+    except zmq.ZMQError:
+        raise RPCException("Cast failed. ZMQ Socket Exception")
+    except rpc_common.Timeout as exc:
+        raise rpc_common.Timeout(
+            exc.info, topic, msg.get('method'))
+    finally:
+        if 'conn' in vars():
+            conn.close()
 
 
 def _call(addr, context, topic, msg, timeout=None,
@@ -700,8 +703,8 @@ def _call(addr, context, topic, msg, timeout=None,
 
     # Messages arriving async.
     # TODO(ewindisch): have reply consumer with dynamic subscription mgmt
-    with Timeout(timeout, exception=rpc_common.Timeout):
-        try:
+    try:
+        with Timeout(timeout, exception=rpc_common.Timeout):
             msg_waiter = ZmqSocket(
                 "ipc://%s/zmq_topic_zmq_replies.%s" %
                 (CONF.rpc_zmq_ipc_dir,
@@ -728,14 +731,16 @@ def _call(addr, context, topic, msg, timeout=None,
                     _("Unsupported or unknown ZMQ envelope returned."))
 
             responses = raw_msg['args']['response']
-        # ZMQError trumps the Timeout error.
-        except zmq.ZMQError:
-            raise RPCException("ZMQ Socket Error")
-        except (IndexError, KeyError):
-            raise RPCException(_("RPC Message Invalid."))
-        finally:
-            if 'msg_waiter' in vars():
-                msg_waiter.close()
+    except zmq.ZMQError:
+        raise RPCException("ZMQ Socket Error")
+    except (IndexError, KeyError):
+        raise RPCException(_("RPC Message Invalid."))
+    except rpc_common.Timeout as exc:
+        raise rpc_common.Timeout(
+            exc.info, topic, msg.get('method'))
+    finally:
+        if 'msg_waiter' in vars():
+            msg_waiter.close()
 
     # It seems we don't need to do all of the following,
     # but perhaps it would be useful for multicall?
