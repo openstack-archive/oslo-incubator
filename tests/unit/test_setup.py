@@ -87,13 +87,16 @@ class GitLogsTest(utils.BaseTestCase):
 
     @staticmethod
     def _root_dir():
-        # NOTE(yamahata): get root direcotry of repository
-        # __file__ = $ROOT/tests/unit/test_setup.py
-        # => $ROOT/tests/unit => $ROOT/tests => $ROOT
-        root_dir = os.path.dirname(__file__)
-        root_dir = os.path.dirname(root_dir)
-        root_dir = os.path.dirname(root_dir)
-        return root_dir
+        # NOTE(yamahata): get root directory of repository
+        # NOTE(aababilov): use openstack.common.setup.__file__
+        # because openstack/common/setup.py uses this
+        # variable to find the root.
+        # Do not use test_setup.__file__ variable because
+        # openstack package can be installed somewhere and
+        # its location will differ from tests' one.
+        import openstack.common.setup
+        return os.path.dirname(os.path.dirname(os.path.dirname(
+            openstack.common.setup.__file__)))
 
     def test_write_git_changelog(self):
         root_dir = self._root_dir()
@@ -116,7 +119,7 @@ class GitLogsTest(utils.BaseTestCase):
 
         setup.write_git_changelog()
 
-        with open(os.path.join(root_dir, "ChangeLog"), "r") as ch_fh:
+        with open("ChangeLog", "r") as ch_fh:
             self.assertTrue("email@foo.com" in ch_fh.read())
 
     def _fake_log_output(self, cmd, mapping):
