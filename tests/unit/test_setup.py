@@ -116,7 +116,7 @@ class GitLogsTest(utils.BaseTestCase):
 
         setup.write_git_changelog()
 
-        with open(os.path.join(root_dir, "ChangeLog"), "r") as ch_fh:
+        with open("ChangeLog", "r") as ch_fh:
             self.assertTrue("email@foo.com" in ch_fh.read())
 
     def _fake_log_output(self, cmd, mapping):
