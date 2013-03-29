@@ -19,6 +19,9 @@ import logging
 import logging.handlers
 import os
 import subprocess
+import uuid
+
+import fixtures
 
 from openstack.common.rootwrap import filters
 from openstack.common.rootwrap import wrapper
@@ -198,3 +201,104 @@ class RootwrapTestCase(utils.BaseTestCase):
         raw.set('DEFAULT', 'syslog_log_level', 'INFO')
         config = wrapper.RootwrapConfig(raw)
         self.assertEqual(config.syslog_log_level, logging.INFO)
+
+
+class PathFilterTestCase(utils.BaseTestCase):
+    def setUp(self):
+        super(PathFilterTestCase, self).setUp()
+
+        tmpdir = fixtures.TempDir('/tmp')
+        self.useFixture(tmpdir)
+
+        self.f = filters.PathFilter('/bin/chown', 'root', 'pass', tmpdir.path)
+
+        gen_name = lambda: str(uuid.uuid4())
+
+        self.SIMPLE_FILE_WITHIN_DIR = os.path.join(tmpdir.path, 'some')
+        self.SIMPLE_FILE_OUTSIDE_DIR = os.path.join('/tmp', 'some')
+        self.TRAVERSAL_WITHIN_DIR = os.path.join(tmpdir.path, 'a', '..',
+                                                 'some')
+        self.TRAVERSAL_OUTSIDE_DIR = os.path.join(tmpdir.path, '..', 'some')
+
+        self.TRAVERSAL_SYMLINK_WITHIN_DIR = os.path.join(tmpdir.path,
+                                                         gen_name())
+        os.symlink(os.path.join(tmpdir.path, 'a', '..', 'a'),
+                   self.TRAVERSAL_SYMLINK_WITHIN_DIR)
+
+        self.TRAVERSAL_SYMLINK_OUTSIDE_DIR = os.path.join(tmpdir.path,
+                                                          gen_name())
+        os.symlink(os.path.join(tmpdir.path, 'a', '..', '..', '..', 'etc'),
+                   self.TRAVERSAL_SYMLINK_OUTSIDE_DIR)
+
+        self.SYMLINK_WITHIN_DIR = os.path.join(tmpdir.path, gen_name())
+        os.symlink(os.path.join(tmpdir.path, 'a'), self.SYMLINK_WITHIN_DIR)
+
+        self.SYMLINK_OUTSIDE_DIR = os.path.join(tmpdir.path, gen_name())
+        os.symlink(os.path.join('/tmp', 'some_file'), self.SYMLINK_OUTSIDE_DIR)
+
+    def test_wrong_arguments_number(self):
+        args = ['chown', '-c', 'nova', self.SIMPLE_FILE_WITHIN_DIR]
+        self.assertFalse(self.f.match(args))
+
+    def test_wrong_exec_command(self):
+        args = ['wrong_exec', self.SIMPLE_FILE_WITHIN_DIR]
+        self.assertFalse(self.f.match(args))
+
+    def test_match(self):
+        args = ['chown', 'nova', self.SIMPLE_FILE_WITHIN_DIR]
+        self.assertTrue(self.f.match(args))
+
+    def test_match_traversal(self):
+        args = ['chown', 'nova', self.TRAVERSAL_WITHIN_DIR]
+        self.assertTrue(self.f.match(args))
+
+    def test_match_symlink(self):
+        args = ['chown', 'nova', self.SYMLINK_WITHIN_DIR]
+        self.assertTrue(self.f.match(args))
+
+    def test_match_traversal_symlink(self):
+        args = ['chown', 'nova', self.TRAVERSAL_SYMLINK_WITHIN_DIR]
+        self.assertTrue(self.f.match(args))
+
+    def test_reject(self):
+        args = ['chown', 'nova', self.SIMPLE_FILE_OUTSIDE_DIR]
+        self.assertFalse(self.f.match(args))
+
+    def test_reject_traversal(self):
+        args = ['chown', 'nova', self.TRAVERSAL_OUTSIDE_DIR]
+        self.assertFalse(self.f.match(args))
+
+    def test_reject_symlink(self):
+        args = ['chown', 'nova', self.SYMLINK_OUTSIDE_DIR]
+        self.assertFalse(self.f.match(args))
+
+    def test_reject_traversal_symlink(self):
+        args = ['chown', 'nova', self.TRAVERSAL_SYMLINK_OUTSIDE_DIR]
+        self.assertFalse(self.f.match(args))
+
+    def test_get_command(self):
+        args = ['chown', 'nova', self.SIMPLE_FILE_WITHIN_DIR]
+        expected = ['/bin/chown', 'nova', self.SIMPLE_FILE_WITHIN_DIR]
+
+        self.assertEqual(expected, self.f.get_command(args))
+
+    def test_get_command_traversal(self):
+        args = ['chown', 'nova', self.TRAVERSAL_WITHIN_DIR]
+        expected = ['/bin/chown', 'nova',
+                    os.path.realpath(self.TRAVERSAL_WITHIN_DIR)]
+
+        self.assertEqual(expected, self.f.get_command(args))
+
+    def test_get_command_symlink(self):
+        args = ['chown', 'nova', self.SYMLINK_WITHIN_DIR]
+        expected = ['/bin/chown', 'nova',
+                    os.path.realpath(self.SYMLINK_WITHIN_DIR)]
+
+        self.assertEqual(expected, self.f.get_command(args))
+
+    def test_get_command_traversal_symlink(self):
+        args = ['chown', 'nova', self.TRAVERSAL_SYMLINK_WITHIN_DIR]
+        expected = ['/bin/chown', 'nova',
+                    os.path.realpath(self.TRAVERSAL_SYMLINK_WITHIN_DIR)]
+
+        self.assertEqual(expected, self.f.get_command(args))

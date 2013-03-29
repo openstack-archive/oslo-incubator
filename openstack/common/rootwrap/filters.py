@@ -88,6 +88,47 @@ class RegExpFilter(CommandFilter):
         return False
 
 
+class PathFilter(CommandFilter):
+    """Command filter checking that path arguments are within given dirs
+
+        BE AWARE: this filter only checks arguments that specify file system
+        paths, any other ones will be copied to the resulting command as is
+
+        A typical rootwrapper filter entry looks like this:
+            # cmdname: filter name, raw command, user, args: pass | abs FS path
+            # (note: `pass` means `pass argument as is`; otherwise, specify the
+            #         absolute path of a base dir path argument must be within)
+
+            chown: PathFilter, /bin/chown, root, pass, /var/lib/images
+
+    """
+
+    def match(self, userargs):
+        command, arguments = userargs[0], userargs[1:]
+
+        equal_args_num = len(self.args) == len(arguments)
+        exec_is_valid = super(PathFilter, self).match(userargs)
+        paths_are_within_base_dirs = all(
+            os.path.commonprefix([arg, os.path.realpath(value)]) == arg
+            for arg, value in zip(self.args, arguments)
+            if os.path.isabs(arg)  # only test arguments specifying abs paths
+        )
+
+        return (equal_args_num and
+                exec_is_valid and
+                paths_are_within_base_dirs)
+
+    def get_command(self, userargs, exec_dirs=[]):
+        command, arguments = userargs[0], userargs[1:]
+
+        # convert path values to canonical ones; copy other args as is
+        args = [os.path.realpath(value) if os.path.isabs(arg) else value
+                for arg, value in zip(self.args, arguments)]
+
+        return super(PathFilter, self).get_command([command] + args,
+                                                   exec_dirs)
+
+
 class DnsmasqFilter(CommandFilter):
     """Specific filter for the dnsmasq call (which includes env)"""
 
