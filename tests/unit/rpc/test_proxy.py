@@ -145,5 +145,13 @@ class RpcProxyTestCase(utils.BaseTestCase):
             server_params={'blah': 1}, supports_topic_override=False)
 
     def test_make_msg(self):
-        self.assertEqual(proxy.RpcProxy.make_msg('test_method', a=1, b=2),
-                         {'method': 'test_method', 'args': {'a': 1, 'b': 2}})
+        msg = proxy.RpcProxy.make_msg('test_method', 'foo', a=1, b=2)
+        expected = {'method': 'test_method', 'namespace': 'foo',
+                    'args': {'a': 1, 'b': 2}}
+        self.assertEqual(msg, expected)
+
+    def test_make_msg_no_namespace(self):
+        msg = proxy.RpcProxy.make_msg('test_method', None, a=1, b=2)
+        expected = {'method': 'test_method', 'namespace': None,
+                    'args': {'a': 1, 'b': 2}}
+        self.assertEqual(msg, expected)

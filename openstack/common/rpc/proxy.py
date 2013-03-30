@@ -59,8 +59,8 @@ class RpcProxy(object):
         return topic if topic else self.topic
 
     @staticmethod
-    def make_msg(method, **kwargs):
-        return {'method': method, 'args': kwargs}
+    def make_msg(method, namespace, **kwargs):
+        return {'method': method, 'namespace': namespace, 'args': kwargs}
 
     def call(self, context, msg, topic=None, version=None, timeout=None):
         """rpc.call() a remote method.
