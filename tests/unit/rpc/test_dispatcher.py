@@ -58,6 +58,18 @@ class RpcDispatcherTestCase(utils.BaseTestCase):
             self.test_method_ctxt = ctxt
             self.test_method_arg1 = arg1
 
+    class API4(object):
+        RPC_API_VERSION = '1.0'
+        RPC_API_NAMESPACE = 'testapi'
+
+        def __init__(self):
+            self.test_method_ctxt = None
+            self.test_method_arg1 = None
+
+        def test_method(self, ctxt, arg1):
+            self.test_method_ctxt = ctxt
+            self.test_method_arg1 = arg1
+
     def setUp(self):
         super(RpcDispatcherTestCase, self).setUp()
         self.ctxt = context.RequestContext('fake_user', 'fake_project')
@@ -67,7 +79,7 @@ class RpcDispatcherTestCase(utils.BaseTestCase):
         v3 = self.API3()
         disp = dispatcher.RpcDispatcher([v2, v3])
 
-        disp.dispatch(self.ctxt, version, 'test_method', arg1=1)
+        disp.dispatch(self.ctxt, version, 'test_method', None, arg1=1)
 
         self.assertEqual(v2.test_method_ctxt, expectations[0])
         self.assertEqual(v2.test_method_arg1, expectations[1])
@@ -104,7 +116,7 @@ class RpcDispatcherTestCase(utils.BaseTestCase):
         v1 = self.API1()
         disp = dispatcher.RpcDispatcher([v1])
 
-        disp.dispatch(self.ctxt, None, 'test_method', arg1=1)
+        disp.dispatch(self.ctxt, None, 'test_method', None, arg1=1)
 
         self.assertEqual(v1.test_method_ctxt, self.ctxt)
         self.assertEqual(v1.test_method_arg1, 1)
@@ -114,11 +126,35 @@ class RpcDispatcherTestCase(utils.BaseTestCase):
         disp = dispatcher.RpcDispatcher([v1])
         self.assertRaises(AttributeError,
                           disp.dispatch,
-                          self.ctxt, "1.0", "does_not_exist")
+                          self.ctxt, "1.0", "does_not_exist", None)
 
     def test_missing_method_version_no_match(self):
         v1 = self.API1()
         disp = dispatcher.RpcDispatcher([v1])
         self.assertRaises(rpc_common.UnsupportedRpcVersion,
                           disp.dispatch,
-                          self.ctxt, "2.0", "does_not_exist")
+                          self.ctxt, "2.0", "does_not_exist", None)
+
+    def test_method_without_namespace(self):
+        v1 = self.API1()
+        v4 = self.API4()
+        disp = dispatcher.RpcDispatcher([v1, v4])
+
+        disp.dispatch(self.ctxt, '1.0', 'test_method', None, arg1=1)
+
+        self.assertEqual(v1.test_method_ctxt, self.ctxt)
+        self.assertEqual(v1.test_method_arg1, 1)
+        self.assertEqual(v4.test_method_ctxt, None)
+        self.assertEqual(v4.test_method_arg1, None)
+
+    def test_method_with_namespace(self):
+        v1 = self.API1()
+        v4 = self.API4()
+        disp = dispatcher.RpcDispatcher([v1, v4])
+
+        disp.dispatch(self.ctxt, '1.0', 'test_method', 'testapi', arg1=1)
+
+        self.assertEqual(v1.test_method_ctxt, None)
+        self.assertEqual(v1.test_method_arg1, None)
+        self.assertEqual(v4.test_method_ctxt, self.ctxt)
+        self.assertEqual(v4.test_method_arg1, 1)
