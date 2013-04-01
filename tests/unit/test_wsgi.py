@@ -20,6 +20,7 @@ import socket
 import urllib2
 
 import mock
+import jsonschema
 import routes
 import six
 import webob
@@ -446,6 +447,76 @@ class ResourceTest(utils.BaseTestCase):
 
         response = resource(request)
         self.assertEqual(response.status, '415 Unsupported Media Type')
+
+    def _get_resource_for_validation_test(self):
+        class Controller(object):
+            @wsgi.validator(request_body_schema={
+                'type': 'object',
+                'properties': {
+                    'foo': {
+                        'type': 'string', 'minLength': 1, 'maxLength': 10,
+                    },
+                },
+            })
+            def index(self, req, body=None):
+                return body.get('foo')
+
+        return wsgi.Resource(Controller())
+
+    def test_api_validation_dispatch(self):
+        resource = self._get_resource_for_validation_test()
+
+        args = {'foo': 'abc'}
+        actual = resource.dispatch(resource.controller,
+                                   'index', None, body=args)
+        expected = 'abc'
+        self.assertEqual(actual, expected)
+
+        args = {'foo': '0123456789a'}
+        self.assertRaises(jsonschema.ValidationError,
+                          resource.dispatch, resource.controller,
+                          'index', None, body=args)
+
+        args = {'foo': 0}
+        self.assertRaises(jsonschema.ValidationError,
+                          resource.dispatch, resource.controller,
+                          'index', None, body=args)
+
+    def test_api_validation_json(self):
+        resource = self._get_resource_for_validation_test()
+
+        request = wsgi.Request.blank(
+            "/", body='{"foo": "abc"}', method='GET',
+            headers={'Content-Type': "application/json"},
+            environ={'wsgiorg.routing_args': [None, {'action': 'index'}]})
+        response = resource(request)
+        self.assertEqual(response.status, '200 OK')
+        self.assertEqual(response.body, '"abc"')
+
+        request = wsgi.Request.blank(
+            "/", body='{"foo": "0123456789a"}', method='GET',
+            headers={'Content-Type': "application/json"},
+            environ={'wsgiorg.routing_args': [None, {'action': 'index'}]})
+        response = resource(request)
+        self.assertEqual(response.status, '400 Bad Request')
+
+    def test_api_validation_xml(self):
+        resource = self._get_resource_for_validation_test()
+
+        request = wsgi.Request.blank(
+            "/", body='<foo>abc</foo>', method='GET',
+            headers={'Content-Type': "application/xml"},
+            environ={'wsgiorg.routing_args': [None, {'action': 'index'}]})
+        response = resource(request)
+        self.assertEqual(response.status, '200 OK')
+        self.assertEqual(response.body, '"abc"')
+
+        request = wsgi.Request.blank(
+            "/", body='<foo>0123456789a</foo>', method='GET',
+            headers={'Content-Type': "application/xml"},
+            environ={'wsgiorg.routing_args': [None, {'action': 'index'}]})
+        response = resource(request)
+        self.assertEqual(response.status, '400 Bad Request')
 
 
 class ServerTest(utils.BaseTestCase):
