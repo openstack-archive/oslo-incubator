@@ -35,6 +35,7 @@ import webob.exc
 from xml.dom import minidom
 from xml.parsers import expat
 
+from openstack.common import api_validator
 from openstack.common import exception
 from openstack.common.gettextutils import _
 from openstack.common import jsonutils
@@ -397,6 +398,15 @@ class Resource(object):
             method = getattr(obj, action)
         except AttributeError:
             method = getattr(obj, 'default')
+
+        schema = getattr(method, 'validator_schema', None)
+        if schema:
+            validator = api_validator.APIValidator(schema)
+            try:
+                validator.validate(args[0].get('body', None))
+            except exception.ValidationError as ex:
+                msg = _("Request validation failure: %s") % ex.message
+                return webob.exc.HTTPBadRequest(explanation=msg)
 
         return method(*args, **kwargs)
 
@@ -795,3 +805,10 @@ class XMLDeserializer(TextDeserializer):
 
     def default(self, datastring):
         return {'body': self._from_xml(datastring)}
+
+
+def validator(schema):
+    def decorator(func, **kwargs):
+        func.validator_schema = schema
+        return func
+    return decorator
