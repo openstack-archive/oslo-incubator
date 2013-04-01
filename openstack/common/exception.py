@@ -76,6 +76,10 @@ class Invalid(Error):
     pass
 
 
+class ValidationError(Error):
+    pass
+
+
 class BadInputError(Exception):
     """Error resulting from a client sending bad input to a server"""
     pass
