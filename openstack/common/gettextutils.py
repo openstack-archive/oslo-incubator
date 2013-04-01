@@ -26,12 +26,12 @@ Usual usage in an openstack.common module:
 import gettext
 import os
 
-
-t = gettext.translation('oslo', 'locale', fallback=True)
+_localedir = os.environ.get('oslo'.upper() + '_LOCALEDIR')
+_t = gettext.translation('oslo', localedir=_localedir, fallback=True)
 
 
 def _(msg):
-    return t.ugettext(msg)
+    return _t.ugettext(msg)
 
 
 def install(domain):
