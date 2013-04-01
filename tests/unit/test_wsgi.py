@@ -446,6 +446,32 @@ class ResourceTest(utils.BaseTestCase):
         response = resource(request)
         self.assertEqual(response.status, '415 Unsupported Media Type')
 
+    def test_api_validation(self):
+        class Controller(object):
+            @wsgi.validator(schema={
+                'type': 'object',
+                'properties': {
+                    'foo': {
+                        'type': 'string', 'minLength': 1, 'maxLength': 10,
+                    },
+                },
+            })
+            def index(self, req, pants=None):
+                return pants
+
+        args = {"body": {"foo": "abc"}}
+        resource = wsgi.Resource(Controller())
+        actual = resource.dispatch(resource.controller,
+                                   'index', args, pants='off')
+        expected = 'off'
+        self.assertEqual(actual, expected)
+
+        args = {"body": {"foo": "0123456789a"}}
+        resource = wsgi.Resource(Controller())
+        actual = resource.dispatch(resource.controller,
+                                   'index', args, pants='off')
+        self.assertEqual(actual.status, '400 Bad Request')
+
 
 class ServerTest(utils.BaseTestCase):
 
