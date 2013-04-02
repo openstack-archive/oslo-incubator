@@ -138,7 +138,7 @@ class GitLogsTest(utils.BaseTestCase):
 
         git_log_cmd = ("git --git-dir=%s log --format" %
                        os.path.join(root_dir, '.git'))
-        git_co_log_cmd = ("git log --git-dir=%s" %
+        git_co_log_cmd = ("git --git-dir=%s log" %
                           os.path.join(root_dir, '.git'))
         cmd_map = {
             git_log_cmd: author_new,
