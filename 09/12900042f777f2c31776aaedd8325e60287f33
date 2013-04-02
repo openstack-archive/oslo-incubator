@@ -1,0 +1,11 @@
+Verified+2: Jenkins
+Code-Review+1: Kiall Mac Innes <kiall@hp.com>
+Code-Review+2: Mark McLoughlin <markmc@redhat.com>
+Code-Review+1: Zhongyue Luo <zhongyue.luo@gmail.com>
+Approved+1: Michael Still <mikal@stillhq.com>
+Code-Review+2: Michael Still <mikal@stillhq.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 02 Apr 2013 23:54:29 +0000
+Reviewed-on: https://review.openstack.org/25412
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
