@@ -140,3 +140,7 @@ class MalformedRequestBody(OpenstackException):
 
 class InvalidContentType(OpenstackException):
     message = "Invalid content type %(content_type)s"
+
+
+class InvalidPeriodicTaskArg(OpenstackException):
+    message = _("Unexpected argument for periodic task creation: %(arg)s.")
