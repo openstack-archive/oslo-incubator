@@ -19,16 +19,7 @@ import eventlet
 eventlet.monkey_patch()
 
 import contextlib
-import os
 import sys
-
-# If ../oslo/__init__.py exists, add ../ to Python search path, so that
-# it will override what happens to be installed in /usr/(local/)lib/python...
-POSSIBLE_TOPDIR = os.path.normpath(os.path.join(os.path.abspath(sys.argv[0]),
-                                   os.pardir,
-                                   os.pardir))
-if os.path.exists(os.path.join(POSSIBLE_TOPDIR, 'oslo', '__init__.py')):
-    sys.path.insert(0, POSSIBLE_TOPDIR)
 
 from oslo.config import cfg
 
@@ -48,6 +39,3 @@ def main():
     with contextlib.closing(impl_zmq.ZmqProxy(CONF)) as reactor:
         reactor.consume_in_thread()
         reactor.wait()
-
-if __name__ == '__main__':
-    main()
