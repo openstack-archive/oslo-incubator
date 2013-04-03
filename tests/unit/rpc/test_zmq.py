@@ -88,7 +88,7 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
             reactor.consume_in_thread()
         else:
             LOG.warning(_("Detected zmq-receiver socket."))
-            LOG.warning(_("Assuming nova-rpc-zmq-receiver is running."))
+            LOG.warning(_("Assuming oslo-rpc-zmq-receiver is running."))
             LOG.warning(_("Using system zmq receiver deamon."))
         super(_RpcZmqBaseTestCase, self).setUp(
             topic=topic, topic_nested=topic_nested)
