@@ -20,17 +20,20 @@ def _fake_context():
     return context.RequestContext(1, 1)
 
 
-class LoggerTestCase(test_utils.BaseTestCase):
+class CommonLoggerTestsMixIn(object):
+    """These tests are shared between LoggerTestCase and
+    LazyLoggerTestCase.
+    """
+
     def setUp(self):
-        super(LoggerTestCase, self).setUp()
+        super(CommonLoggerTestsMixIn, self).setUp()
 
         # common context has different fields to the defaults in log.py
         self.config(logging_context_format_string='%(asctime)s %(levelname)s '
                                                   '%(name)s [%(request_id)s '
                                                   '%(user)s %(tenant)s] '
                                                   '%(message)s')
-
-        self.log = log.getLogger()
+        self.log = None
 
     def test_handlers_have_legacy_formatter(self):
         formatters = []
@@ -71,6 +74,18 @@ class LoggerTestCase(test_utils.BaseTestCase):
         for func in ('critical', 'error', 'exception', 'warning', 'warn',
                      'info', 'debug', 'log', 'audit'):
             self.assertRaises(AttributeError, getattr, log, func)
+
+
+class LoggerTestCase(CommonLoggerTestsMixIn, test_utils.BaseTestCase):
+    def setUp(self):
+        super(LoggerTestCase, self).setUp()
+        self.log = log.getLogger()
+
+
+class LazyLoggerTestCase(CommonLoggerTestsMixIn, test_utils.BaseTestCase):
+    def setUp(self):
+        super(LazyLoggerTestCase, self).setUp()
+        self.log = log.getLazyLogger()
 
 
 class LogHandlerTestCase(test_utils.BaseTestCase):
