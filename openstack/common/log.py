@@ -211,6 +211,23 @@ def _get_log_file_path(binary=None):
         return '%s.log' % (os.path.join(logdir, binary),)
 
 
+class LazyAdapter(logging.LoggerAdapter):
+    def __init__(self, name='unknown', version='unknown'):
+        self._logger = None
+        self.extra = {}
+        self.name = name
+        self.version = version
+
+    @property
+    def logger(self):
+        if not self._logger:
+            self._logger = getLogger(self.name, self.version)
+        return self._logger
+
+    def audit(self, msg, *args, **kwargs):
+        self.log(logging.AUDIT, msg, *args, **kwargs)
+
+
 class ContextAdapter(logging.LoggerAdapter):
     warn = logging.LoggerAdapter.warning
 
@@ -218,6 +235,10 @@ class ContextAdapter(logging.LoggerAdapter):
         self.logger = logger
         self.project = project_name
         self.version = version_string
+
+    @property
+    def handlers(self):
+        return self.logger.handlers
 
     def audit(self, msg, *args, **kwargs):
         self.log(logging.AUDIT, msg, *args, **kwargs)
@@ -450,6 +471,10 @@ def getLogger(name='unknown', version='unknown'):
                                         name,
                                         version)
     return _loggers[name]
+
+
+def getLazyLogger(name='unknown', version='unknown'):
+    return LazyAdapter(name, version)
 
 
 class WritableLogger(object):
