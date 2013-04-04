@@ -73,6 +73,12 @@ class LoggerTestCase(test_utils.BaseTestCase):
             self.assertRaises(AttributeError, getattr, log, func)
 
 
+class LazyLoggerTestCase(LoggerTestCase):
+    def setUp(self):
+        super(LazyLoggerTestCase, self).setUp()
+        self.log = log.getLazyLogger()
+
+
 class LogHandlerTestCase(test_utils.BaseTestCase):
     def test_log_path_logdir(self):
         self.config(log_dir='/some/path', log_file=None)
