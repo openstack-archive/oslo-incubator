@@ -86,6 +86,11 @@ opts = [
 ]
 
 
+MODULE_DEPENDENCY_TREE = {}
+OSLO_IMPORT_PATTERN = re.compile(r"\s*from\sopenstack\.common(\simport\s|\.)"
+                                 "(\w+)($|.+)")
+
+
 def _parse_args(argv):
     conf = cfg.ConfigOpts()
     conf.register_cli_opts(opts)
@@ -222,6 +227,52 @@ def _create_module_init(base, dest_dir, *sub_paths):
         open(init_path, 'w').close()
 
 
+def _find_mods(srcfile):
+    with open(srcfile, 'r') as f:
+        for line in f:
+            result = OSLO_IMPORT_PATTERN.match(line)
+            if result:
+                yield result.group(2)
+
+
+def _update_dependency_tree(mod_name, filepath):
+    for mod in _find_mods(filepath):
+        if mod == mod_name:
+            continue
+        elif mod not in MODULE_DEPENDENCY_TREE.setdefault(mod_name, []):
+            MODULE_DEPENDENCY_TREE[mod_name].append(mod)
+
+
+def _build_dependency_tree():
+    base_path = os.path.join('openstack', 'common')
+    for dirpath, _, filenames in os.walk(base_path):
+        for filename in [x for x in filenames if x.endswith('.py')]:
+            if dirpath == base_path:
+                if filename == '__init__.py':
+                    continue
+                mod_name = filename.split('.')[0]
+            else:
+                mod_name = dirpath.split(os.sep)[2]
+            filepath = os.path.join(dirpath, filename)
+            _update_dependency_tree(mod_name, filepath)
+
+
+def _dfs_dep_tree(dep_tree, mod_name, mod_list=[]):
+    mod_list.append(mod_name)
+    for mod in dep_tree.get(mod_name, []):
+        if mod not in mod_list:
+            mod_list = _dfs_dep_tree(dep_tree, mod, mod_list)
+    return mod_list
+
+
+def _complete_module_list(mod_list):
+    _build_dependency_tree()
+    for mod in mod_list:
+        mod_list.extend([x for x in _dfs_dep_tree(MODULE_DEPENDENCY_TREE, mod)
+                         if x not in mod_list])
+    return mod_list
+
+
 def main(argv):
     conf = _parse_args(argv)
 
@@ -244,7 +295,7 @@ def main(argv):
     _create_module_init(conf.base, dest_dir)
     _create_module_init(conf.base, dest_dir, 'common')
 
-    for mod in conf.module + conf.modules:
+    for mod in _complete_module_list(conf.module + conf.modules):
         _copy_module(mod, conf.base, dest_dir)
 
 
