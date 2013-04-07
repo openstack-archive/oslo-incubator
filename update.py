@@ -244,8 +244,31 @@ def main(argv):
     _create_module_init(conf.base, dest_dir)
     _create_module_init(conf.base, dest_dir, 'common')
 
+    srcfiles = []
     for mod in conf.module + conf.modules:
-        _copy_module(mod, conf.base, dest_dir)
+        asdf = os.path.join('./', 'openstack', 'common', mod)
+        if os.path.isdir(asdf):
+            for (dirpath, dirname, filenames) in os.walk(asdf):
+                for filename in filter(lambda x: x.endswith('.py'), filenames):
+                    srcfiles.append(os.path.join(dirpath, filename))
+        else:
+            srcfiles.append('%s.py' % asdf)
+    missing = []
+    for srcfile in srcfiles:
+        if not os.path.isfile(srcfile):
+            continue
+        with open(srcfile, 'r') as fp:
+            for k in fp:
+                m = re.match(r"(from openstack\.common)(\Wimport\W|\.)(\w+)($|\W\w+)", k)
+                if m:
+                    zxcv = m.group(3)
+                    if (zxcv not in conf.module and
+                        zxcv not in conf.modules and
+                        zxcv not in missing):
+                        missing.append(zxcv)
+    for mod in conf.module + conf.modules + missing:
+        print mod
+        #_copy_module(mod, conf.base, dest_dir)
 
 
 if __name__ == "__main__":
