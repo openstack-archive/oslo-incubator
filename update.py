@@ -222,6 +222,33 @@ def _create_module_init(base, dest_dir, *sub_paths):
         open(init_path, 'w').close()
 
 
+def _find_mods(srcfile):
+    with open(srcfile, 'r') as f:
+        for line in f:
+            match = re.match(r"\s*from\sopenstack\.common(\simport\s|\.)"
+                             "(\w+)($|.+)", line)
+            if match:
+                yield match.group(2)
+
+
+def _complete_module_list(modules):
+    srcfiles = []
+    for mod in modules:
+        filepath = os.path.join('./', 'openstack', 'common', mod)
+        if os.path.isdir(filepath):
+            for (dirpath, dirname, filenames) in os.walk(filepath):
+                for filename in filter(lambda x: x.endswith('.py'), filenames):
+                    srcfiles.append(os.path.join(dirpath, filename))
+        else:
+            srcfiles.append('%s.py' % filepath)
+    for srcfile in srcfiles:
+        if not os.path.isfile(srcfile):
+            print >> sys.stderr, "Module %s not found" % srcfile
+            continue
+        modules.extend([x for x in _find_mods(srcfile) if x not in modules])
+    return modules
+
+
 def main(argv):
     conf = _parse_args(argv)
 
@@ -244,7 +271,7 @@ def main(argv):
     _create_module_init(conf.base, dest_dir)
     _create_module_init(conf.base, dest_dir, 'common')
 
-    for mod in conf.module + conf.modules:
+    for mod in _complete_module_list(conf.module + conf.modules):
         _copy_module(mod, conf.base, dest_dir)
 
 
