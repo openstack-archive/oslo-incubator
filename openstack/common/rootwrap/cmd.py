@@ -61,7 +61,7 @@ def _exit_error(execname, message, errorcode, log=True):
     sys.exit(errorcode)
 
 
-if __name__ == '__main__':
+def main():
     # Split arguments, require at least a command
     execname = sys.argv.pop(0)
     if len(sys.argv) < 2:

@@ -67,6 +67,10 @@ setuptools.setup(
     entry_points={
         "openstack.common.scheduler.filters": filters,
         "openstack.common.tests.fakes.weights": weights,
+        "console_scripts": [
+            'oslo-rootwrap = openstack.common.rootwrap.cmd:main',
+            'oslo-rpc-zmq-receiver = openstack.common.rpc.zmq_receiver:main',
+        ]
     },
     namespace_packages=['openstack'],
 )
