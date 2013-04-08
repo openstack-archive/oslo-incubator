@@ -38,9 +38,19 @@ import functools
 import inspect
 import itertools
 import json
+import types
 import xmlrpclib
 
 from openstack.common import timeutils
+
+
+nasty_type_tests = [inspect.ismodule, inspect.isclass, inspect.ismethod,
+                    inspect.isfunction, inspect.isgeneratorfunction,
+                    inspect.isgenerator, inspect.istraceback, inspect.isframe,
+                    inspect.iscode, inspect.isbuiltin, inspect.isroutine,
+                    inspect.isabstract]
+
+simple_types = (types.NoneType, int, basestring, bool, float, long)
 
 
 def to_primitive(value, convert_instances=False, convert_datetime=True,
@@ -58,18 +68,45 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
     Therefore, convert_instances=True is lossy ... be aware.
 
     """
-    nasty = [inspect.ismodule, inspect.isclass, inspect.ismethod,
-             inspect.isfunction, inspect.isgeneratorfunction,
-             inspect.isgenerator, inspect.istraceback, inspect.isframe,
-             inspect.iscode, inspect.isbuiltin, inspect.isroutine,
-             inspect.isabstract]
-    for test in nasty:
-        if test(value):
-            return unicode(value)
+    if level > max_depth:
+        return '?'
+
+    # handle obvious types first - order of basic types determined by running
+    # full tests on nova project, resulting in the following counts:
+    # 572754 <type 'NoneType'>
+    # 460353 <type 'int'>
+    # 379632 <type 'unicode'>
+    # 274610 <type 'str'>
+    # 199918 <type 'dict'>
+    # 114200 <type 'datetime.datetime'>
+    #  51817 <type 'bool'>
+    #  26164 <type 'list'>
+    #   6491 <type 'float'>
+    #    283 <type 'tuple'>
+    #     19 <type 'long'>
+    if isinstance(value, simple_types):
+        return value
+
+    value_type = type(value)
+    if value_type is datetime.datetime:
+        if convert_datetime:
+            return timeutils.strtime(value)
+        else:
+            return value
+
+    recursive = functools.partial(to_primitive,
+                                  convert_instances=convert_instances,
+                                  convert_datetime=convert_datetime,
+                                  level=level,
+                                  max_depth=max_depth)
+    if value_type is dict:
+        return dict((k, recursive(dv)) for k, dv in value.iteritems())
+    if value_type is list or value_type is tuple:
+        return [recursive(lv) for lv in value]
 
     # value of itertools.count doesn't get caught by inspects
     # above and results in infinite loop when list(value) is called.
-    if type(value) == itertools.count:
+    if value_type == itertools.count:
         return unicode(value)
 
     # FIXME(vish): Workaround for LP bug 852095. Without this workaround,
@@ -80,17 +117,9 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
     if getattr(value, '__module__', None) == 'mox':
         return 'mock'
 
-    if level > max_depth:
-        return '?'
-
     # The try block may not be necessary after the class check above,
     # but just in case ...
     try:
-        recursive = functools.partial(to_primitive,
-                                      convert_instances=convert_instances,
-                                      convert_datetime=convert_datetime,
-                                      level=level,
-                                      max_depth=max_depth)
         # It's not clear why xmlrpclib created their own DateTime type, but
         # for our purposes, make it a datetime type which is explicitly
         # handled
@@ -112,6 +141,8 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
             # Ignore class member vars.
             return recursive(value.__dict__, level=level + 1)
         else:
+            if any(test(value) for test in nasty_type_tests):
+                return unicode(value)
             return value
     except TypeError:
         # Class objects are tricky since they may define something like
