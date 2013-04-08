@@ -34,14 +34,14 @@ class LoopingCallTestCase(utils.BaseTestCase):
         def _raise_it():
             raise loopingcall.LoopingCallDone(True)
 
-        timer = loopingcall.LoopingCall(_raise_it)
+        timer = loopingcall.FixedIntervalLoopingCall(_raise_it)
         self.assertTrue(timer.start(interval=0.5).wait())
 
     def test_return_false(self):
         def _raise_it():
             raise loopingcall.LoopingCallDone(False)
 
-        timer = loopingcall.LoopingCall(_raise_it)
+        timer = loopingcall.FixedIntervalLoopingCall(_raise_it)
         self.assertFalse(timer.start(interval=0.5).wait())
 
     def _wait_for_zero(self):
@@ -54,7 +54,7 @@ class LoopingCallTestCase(utils.BaseTestCase):
     def test_repeat(self):
         self.num_runs = 2
 
-        timer = loopingcall.LoopingCall(self._wait_for_zero)
+        timer = loopingcall.FixedIntervalLoopingCall(self._wait_for_zero)
         self.assertFalse(timer.start(interval=0.5).wait())
 
     def test_interval_adjustment(self):
@@ -77,7 +77,7 @@ class LoopingCallTestCase(utils.BaseTestCase):
 
         try:
             timeutils.set_time_override(timeoverrides)
-            timer = loopingcall.LoopingCall(self._wait_for_zero)
+            timer = loopingcall.FixedIntervalLoopingCall(self._wait_for_zero)
             timer.start(interval=1.01).wait()
         finally:
             timeutils.clear_time_override()
