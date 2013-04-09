@@ -57,7 +57,6 @@ as it allows particular rules to be explicitly disabled.
 """
 
 import abc
-import logging
 import re
 import urllib
 
@@ -65,6 +64,7 @@ import urllib2
 
 from openstack.common.gettextutils import _
 from openstack.common import jsonutils
+from openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)

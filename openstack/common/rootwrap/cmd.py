@@ -34,12 +34,13 @@
 """
 
 import ConfigParser
-import logging
 import os
 import pwd
 import signal
 import subprocess
 import sys
+
+from openstack.common import log as logging
 
 
 RC_UNAUTHORIZED = 99
