@@ -221,6 +221,52 @@ def _create_module_init(base, dest_dir, *sub_paths):
         open(init_path, 'w').close()
 
 
+def _find_import_modules(srcfile):
+    oslo_import_pattern = re.compile(r"\s*from\sopenstack\.common"
+                                     "(\simport\s|\.)(\w+)($|.+)")
+    with open(srcfile, 'r') as f:
+        for line in f:
+            result = oslo_import_pattern.match(line)
+            if result:
+                yield result.group(2)
+
+
+def _build_dependency_tree():
+    dep_tree = {}
+    base_path = os.path.join('openstack', 'common')
+    for dirpath, _, filenames in os.walk(base_path):
+        for filename in [x for x in filenames if x.endswith('.py')]:
+            if dirpath == base_path:
+                mod_name = filename.split('.')[0]
+            else:
+                mod_name = dirpath.split(os.sep)[2]
+            if mod_name == '__init__':
+                continue
+            filepath = os.path.join(dirpath, filename)
+            dep_list = dep_tree.setdefault(mod_name, [])
+            dep_list.extend([x for x in _find_import_modules(filepath)
+                             if x != mod_name and x not in dep_list])
+    return dep_tree
+
+
+def _dfs_dependency_tree(dep_tree, mod_name, mod_list=[]):
+    mod_list.append(mod_name)
+    for mod in dep_tree.get(mod_name, []):
+        if mod not in mod_list:
+            mod_list = _dfs_dependency_tree(dep_tree, mod, mod_list)
+    return mod_list
+
+
+def _complete_module_list(mod_list):
+    addons = []
+    dep_tree = _build_dependency_tree()
+    for mod in mod_list:
+        addons.extend([x for x in _dfs_dependency_tree(dep_tree, mod)
+                       if x not in mod_list and x not in addons])
+    mod_list.extend(addons)
+    return mod_list
+
+
 def main(argv):
     conf = _parse_args(argv)
 
@@ -243,7 +289,7 @@ def main(argv):
     _create_module_init(conf.base, dest_dir)
     _create_module_init(conf.base, dest_dir, 'common')
 
-    for mod in conf.module + conf.modules:
+    for mod in _complete_module_list(conf.module + conf.modules):
         _copy_module(mod, conf.base, dest_dir)
 
 
