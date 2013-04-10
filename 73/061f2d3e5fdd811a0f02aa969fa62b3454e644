@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Approved+1: Russell Bryant <rbryant@redhat.com>
+Code-Review+2: Russell Bryant <rbryant@redhat.com>
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 10 Apr 2013 19:25:13 +0000
+Reviewed-on: https://review.openstack.org/26591
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
