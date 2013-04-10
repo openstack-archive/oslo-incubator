@@ -28,6 +28,7 @@ class ModelBaseTest(test_utils.BaseTestCase):
                         'get',
                         'next',
                         'update',
+                        'save',
                         'iteritems')
         for method in dict_methods:
             self.assertTrue(hasattr(models.ModelBase, method))
@@ -70,3 +71,24 @@ class ModelBaseTest(test_utils.BaseTestCase):
             found_items += 1
 
         self.assertEqual(min_items, found_items)
+
+
+class ChangeLogTest(test_utils.BaseTestCase):
+
+    def test_auto_update(self):
+
+        class TestModel(models.ModelBase, models.ChangeLogMixin):
+            pass
+
+        dict_methods = ('__getitem__',
+                        '__setitem__',
+                        '__iter__',
+                        'get',
+                        'next',
+                        'update',
+                        'save',
+                        'iteritems',
+                        'created_at',
+                        'updated_at')
+        for method in dict_methods:
+            self.assertTrue(hasattr(TestModel, method))
