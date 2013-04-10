@@ -33,7 +33,6 @@ from openstack.common import timeutils
 class ModelBase(object):
     """Base class for models."""
     __table_initialized__ = False
-    metadata = None
 
     def save(self, session=None):
         """Save this object."""
