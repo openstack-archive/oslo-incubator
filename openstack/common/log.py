@@ -44,12 +44,12 @@ import traceback
 from oslo.config import cfg
 
 from openstack.common.gettextutils import _
+from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import local
 from openstack.common import notifier
 
 
-_DEFAULT_LOG_FORMAT = "%(asctime)s %(levelname)8s [%(name)s] %(message)s"
 _DEFAULT_LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 common_cli_opts = [
@@ -74,11 +74,12 @@ logging_cli_opts = [
                     'documentation for details on logging configuration '
                     'files.'),
     cfg.StrOpt('log-format',
-               default=_DEFAULT_LOG_FORMAT,
+               default=None,
                metavar='FORMAT',
                help='A logging.Formatter log message format string which may '
                     'use any of the available logging.LogRecord attributes. '
-                    'Default: %(default)s'),
+                    'DEPRECATED.  Please use logging_context_format_string '
+                    'and logging_default_format_string instead.'),
     cfg.StrOpt('log-date-format',
                default=_DEFAULT_LOG_DATE_FORMAT,
                metavar='DATE_FORMAT',
@@ -111,6 +112,13 @@ generic_log_opts = [
 ]
 
 log_opts = [
+    cfg.StrOpt('logging_formatter',
+               default=None,
+               help='Logging formatter to use, currently only works if '
+               'log_format is not set.  The default is a context aware '
+               'formatter with formatting determined by '
+               'logging_context_format_string, logging_default_format_string, '
+               'logging_debug_format_string, and logging_exception_prefix.'),
     cfg.StrOpt('logging_context_format_string',
                default='%(asctime)s.%(msecs)03d %(process)d %(levelname)s '
                        '%(name)s [%(request_id)s %(user)s %(tenant)s] '
@@ -383,6 +391,14 @@ def _find_facility_from_conf():
     return facility
 
 
+def _get_formatter():
+    if CONF.logging_formatter:
+        formatter = importutils.import_class(CONF.logging_formatter)
+    else:
+        formatter = ContextFormatter
+    return formatter
+
+
 def _setup_logging_from_conf():
     log_root = getLogger(None).logger
     for handler in log_root.handlers:
@@ -417,13 +433,17 @@ def _setup_logging_from_conf():
     if CONF.publish_errors:
         log_root.addHandler(PublishErrorsHandler(logging.ERROR))
 
+    datefmt = CONF.log_date_format
+    formatter = _get_formatter()
     for handler in log_root.handlers:
-        datefmt = CONF.log_date_format
+        # NOTE(alaski): CONF.log_format overrides everything currently.  This
+        # should be deprecated in favor of context aware formatting which can
+        # be customized per project.
         if CONF.log_format:
             handler.setFormatter(logging.Formatter(fmt=CONF.log_format,
                                                    datefmt=datefmt))
         else:
-            handler.setFormatter(LegacyFormatter(datefmt=datefmt))
+            handler.setFormatter(formatter(datefmt=datefmt))
 
     if CONF.debug:
         log_root.setLevel(logging.DEBUG)
@@ -460,7 +480,7 @@ class WritableLogger(object):
         self.logger.log(self.level, msg)
 
 
-class LegacyFormatter(logging.Formatter):
+class ContextFormatter(logging.Formatter):
     """A context.RequestContext aware formatter configured through flags.
 
     The flags used to set format strings are: logging_context_format_string
@@ -478,6 +498,9 @@ class LegacyFormatter(logging.Formatter):
         # NOTE(sdague): default the fancier formating params
         # to an empty string so we don't throw an exception if
         # they get used
+        # TODO(alaski): instance seems Nova specific so this could be
+        # left up to a helper method implementable by a subclass.
+        # Should help address 1075095
         for key in ('instance', 'color'):
             if key not in record.__dict__:
                 record.__dict__[key] = ''
