@@ -44,6 +44,7 @@ import traceback
 from oslo.config import cfg
 
 from openstack.common.gettextutils import _
+from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import local
 from openstack.common import notifier
@@ -111,6 +112,11 @@ generic_log_opts = [
 ]
 
 log_opts = [
+    cfg.StrOpt('logging_formatter',
+               default=None,
+               help='Logging formatter to use.  If not set then '
+               'logging.Formatter is used with formatting determined by '
+               'log_format configuration.'),
     cfg.StrOpt('logging_context_format_string',
                default='%(asctime)s.%(msecs)03d %(process)d %(levelname)s '
                        '%(name)s [%(request_id)s %(user)s %(tenant)s] '
@@ -383,6 +389,14 @@ def _find_facility_from_conf():
     return facility
 
 
+def _get_formatter():
+    if CONF.logging_formatter:
+        formatter = importutils.import_class(CONF.logging_formatter)
+    else:
+        formatter = logging.Formatter
+    return formatter
+
+
 def _setup_logging_from_conf():
     log_root = getLogger(None).logger
     for handler in log_root.handlers:
@@ -417,13 +431,10 @@ def _setup_logging_from_conf():
     if CONF.publish_errors:
         log_root.addHandler(PublishErrorsHandler(logging.ERROR))
 
+    datefmt = CONF.log_date_format
+    formatter = _get_formatter()
     for handler in log_root.handlers:
-        datefmt = CONF.log_date_format
-        if CONF.log_format:
-            handler.setFormatter(logging.Formatter(fmt=CONF.log_format,
-                                                   datefmt=datefmt))
-        else:
-            handler.setFormatter(LegacyFormatter(datefmt=datefmt))
+        handler.setFormatter(formatter(fmt=CONF.log_format, datefmt=datefmt))
 
     if CONF.debug:
         log_root.setLevel(logging.DEBUG)

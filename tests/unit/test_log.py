@@ -380,6 +380,15 @@ class LogConfigOptsTestCase(test_utils.BaseTestCase):
         CONF(['--logdir', logdir])
         self.assertEquals(CONF.log_dir, logdir)
 
+    def test_formatter_default(self):
+        formatter = log._get_formatter()
+        self.assertEqual(formatter, logging.Formatter)
+
+    def test_formatter_defined(self):
+        CONF.logging_formatter = 'openstack.common.log.LegacyFormatter'
+        formatter = log._get_formatter()
+        self.assertEqual(formatter, log.LegacyFormatter)
+
 
 class LogConfigTestCase(test_utils.BaseTestCase):
 
