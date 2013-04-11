@@ -221,6 +221,25 @@ class LegacyFormatterTestCase(test_utils.BaseTestCase):
         self.assertEqual("NOCTXT: baz --DBG\n", self.stream.getvalue())
 
 
+class DefaultFormatterTestCase(test_utils.BaseTestCase):
+    def setUp(self):
+        super(DefaultFormatterTestCase, self).setUp()
+        self.config(log_format="DEFAULT: %(message)s")
+        self.log = log.getLogger()
+        self.stream = cStringIO.StringIO()
+        self.handler = logging.StreamHandler(self.stream)
+        self.handler.setFormatter(log.DefaultFormatter())
+        self.log.logger.addHandler(self.handler)
+        self.addCleanup(self.log.logger.removeHandler, self.handler)
+        self.level = self.log.logger.getEffectiveLevel()
+        self.log.logger.setLevel(logging.DEBUG)
+        self.addCleanup(self.log.logger.setLevel, self.level)
+
+    def test_log(self):
+        self.log.info("foo")
+        self.assertEqual("DEFAULT: foo\n", self.stream.getvalue())
+
+
 class ExceptionLoggingTestCase(test_utils.BaseTestCase):
     """Test that Exceptions are logged"""
 
@@ -379,6 +398,15 @@ class LogConfigOptsTestCase(test_utils.BaseTestCase):
         logdir = '/some/other/path/'
         CONF(['--logdir', logdir])
         self.assertEquals(CONF.log_dir, logdir)
+
+    def test_formatter_default(self):
+        formatter = log._get_formatter()
+        self.assertEqual(formatter, log.DefaultFormatter)
+
+    def test_formatter_defined(self):
+        CONF.logging_formatter = 'openstack.common.log.LegacyFormatter'
+        formatter = log._get_formatter()
+        self.assertEqual(formatter, log.LegacyFormatter)
 
 
 class LogConfigTestCase(test_utils.BaseTestCase):
