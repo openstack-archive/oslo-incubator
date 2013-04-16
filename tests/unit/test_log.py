@@ -5,6 +5,8 @@ import StringIO
 import sys
 import tempfile
 
+import mox
+
 from oslo.config import cfg
 
 from openstack.common import context
@@ -455,3 +457,17 @@ handlers=
         os.chmod(log_config, 0)
         self.config(log_config=log_config)
         self.assertRaises(log.LogConfigError, log.setup, 'test_log_config')
+
+    def test_log_disable_existing_false(self):
+        log_config = '/path/to/some_log_config.conf'
+        self.config(log_config=log_config, log_config_disable_existing=False)
+        mocker = mox.Mox()
+        mocker.StubOutWithMock(logging.config, 'fileConfig')
+        logging.config.fileConfig(log_config,
+                                  disable_existing_loggers=False)
+        mocker.ReplayAll()
+
+        log.setup('test_log_config')
+
+        mocker.UnsetStubs()
+        mocker.VerifyAll()
