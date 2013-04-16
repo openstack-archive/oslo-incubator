@@ -70,6 +70,13 @@ logging_cli_opts = [
                     'options specified. Please see the Python logging module '
                     'documentation for details on logging configuration '
                     'files.'),
+    cfg.BoolOpt('log-config-disable-existing',
+                default=True,
+                help='If False, do not disable existing loggers during setup '
+                     'of logging from the file specified in log-config. '
+                     'If True (default), then existing loggers will be wiped '
+                     'out, then new logging setup done from the logging '
+                     'config file. Ignored if log_config is not set.'),
     cfg.StrOpt('log-format',
                default=None,
                metavar='FORMAT',
@@ -346,7 +353,10 @@ class LogConfigError(Exception):
 
 def _load_log_config(log_config):
     try:
-        logging.config.fileConfig(log_config)
+    except moves.configparser.Error as exc:
+        logging.config.fileConfig(log_config,
+                                  disable_existing_loggers=
+                                  CONF.log_config_disable_existing)
     except moves.configparser.Error as exc:
         raise LogConfigError(log_config, str(exc))
 
