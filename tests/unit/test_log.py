@@ -19,6 +19,8 @@ import os
 import sys
 import tempfile
 
+import mock
+
 from oslo.config import cfg
 import six
 
@@ -515,3 +517,14 @@ handlers=
         os.chmod(log_config, 0)
         self.config(log_config=log_config)
         self.assertRaises(log.LogConfigError, log.setup, 'test_log_config')
+
+    def test_log_disable_existing_false(self):
+        log_config = self._create_tempfile('logging', self.minimal_config)
+        self.config(log_config=log_config, log_config_disable_existing=False)
+        logging.config.fileConfig = mock.MagicMock()
+        logging.config.fileConfig(log_config,
+                                  disable_existing_loggers=False)
+
+        log.setup('test_log_config')
+        logging.config.fileConfig.assert_called_with(log_config,
+                                          disable_existing_loggers=False)
