@@ -22,7 +22,7 @@
 SQLAlchemy models.
 """
 
-from sqlalchemy import Column, Integer
+from sqlalchemy import Boolean, Column, Integer
 from sqlalchemy import DateTime
 from sqlalchemy.orm import object_mapper
 
@@ -95,12 +95,30 @@ class TimestampMixin(object):
     updated_at = Column(DateTime, onupdate=timeutils.utcnow)
 
 
-class SoftDeleteMixin(object):
+class SoftDeleteBase(object):
     deleted_at = Column(DateTime)
-    deleted = Column(Integer, default=0)
+
+    def _mark_delete(self):
+        raise NotImplementedError()
 
     def soft_delete(self, session=None):
         """Mark this object as deleted."""
-        self.deleted = self.id
+        self._mark_delete()
         self.deleted_at = timeutils.utcnow()
         self.save(session=session)
+
+
+class SoftDeleteMixin(SoftDeleteBase):
+    deleted = Column(Integer, default=0)
+
+    def _mark_delete(self):
+        """Mark this object as deleted."""
+        self.deleted = self.id
+
+
+class BooleanSoftDeleteMixin(SoftDeleteBase):
+    deleted = Column(Boolean, default=False)
+
+    def _mark_delete(self):
+        """Mark this object as deleted."""
+        self.deleted = True
