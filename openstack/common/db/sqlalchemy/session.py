@@ -641,3 +641,14 @@ def _patch_mysqldb_with_stacktrace_comments():
         old_mysql_do_query(self, qq)
 
     setattr(MySQLdb.cursors.BaseCursor, '_do_query', _do_query)
+
+
+def clear_db():
+    global _ENGINE, _MAKER
+    assert _ENGINE
+
+    if _MAKER:
+        _MAKER.close_all()
+        _MAKER = None
+    _ENGINE.dispose()
+    _ENGINE = None
