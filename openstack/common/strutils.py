@@ -46,7 +46,7 @@ def bool_from_string(subject):
 
     Any string value in:
 
-        ('True', 'true', 'On', 'on', 'Yes', 'yes', '1')
+        ('True', 'true', 'On', 'on', 'Yes', 'yes', '1', 'y')
 
     is interpreted as a boolean True.
 
@@ -55,7 +55,7 @@ def bool_from_string(subject):
     if isinstance(subject, bool):
         return subject
     if isinstance(subject, basestring):
-        if subject.strip().lower() in ('true', 'on', 'yes', '1'):
+        if subject.strip().lower() in ('true', 'on', 'yes', '1', 'y'):
             return True
     return False
 
