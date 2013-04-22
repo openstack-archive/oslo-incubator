@@ -213,7 +213,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
                 raise ValueError()
             except Exception:
                 raise rpc_common.ClientException()
-        except rpc_common.ClientException, e:
+        except rpc_common.ClientException as e:
             pass
 
         self.assertTrue(isinstance(e, rpc_common.ClientException))
@@ -226,7 +226,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         e = None
         try:
             rpc_common.catch_client_exception([ValueError], naughty, 'a')
-        except rpc_common.ClientException, e:
+        except rpc_common.ClientException as e:
             pass
 
         self.assertTrue(isinstance(e, rpc_common.ClientException))

@@ -29,7 +29,7 @@ class SaveAndReraiseTest(utils.BaseTestCase):
             except:
                 with excutils.save_and_reraise_exception():
                     pass
-        except Exception, _e:
+        except Exception as _e:
             e = _e
 
         self.assertEqual(str(e), msg)
@@ -43,7 +43,7 @@ class SaveAndReraiseTest(utils.BaseTestCase):
             except:
                 with excutils.save_and_reraise_exception():
                     raise Exception(msg)
-        except Exception, _e:
+        except Exception as _e:
             e = _e
 
         self.assertEqual(str(e), msg)

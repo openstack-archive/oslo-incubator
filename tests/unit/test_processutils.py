@@ -72,7 +72,7 @@ class ProcessExecutionErrorTest(utils.BaseTestCase):
         the Wielder of Wonder, with world's renown.
         """.strip()
         err = processutils.ProcessExecutionError(stdout=stdout)
-        print err.message
+        print(err.message)
         self.assertTrue('people-kings' in err.message)
 
     def test_with_stderr(self):

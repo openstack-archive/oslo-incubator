@@ -87,7 +87,7 @@ class ServiceLauncherTest(utils.BaseTestCase):
                 try:
                     traceback.print_exc()
                 except BaseException:
-                    print "Couldn't print traceback"
+                    print("Couldn't print traceback")
                 status = 2
 
             # Really exit

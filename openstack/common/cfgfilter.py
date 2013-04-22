@@ -24,7 +24,7 @@ For example, if module 'foo' registers the 'blaa' option and the module
 
   import foo
 
-  print CONF.blaa
+  print(CONF.blaa)
 
 However, it's completely non-obvious why foo is being imported (is it
 unused, can we remove the import) and where the 'blaa' option comes from.
@@ -33,7 +33,7 @@ The CONF.import_opt() method allows such a dependency to be explicitly
 declared:
 
   CONF.import_opt('blaa', 'foo')
-  print CONF.blaa
+  print(CONF.blaa)
 
 However, import_opt() has a weakness - if 'bar' imports 'foo' using the
 import builtin and doesn't use import_opt() to import 'blaa', then 'blaa'
@@ -47,7 +47,7 @@ import_opt() e.g. with:
 
   CONF = ConfigFilter(cfg.CONF)
   CONF.import_opt('blaa', 'foo')
-  print CONF.blaa
+  print(CONF.blaa)
 
 no other options other than 'blaa' are available via CONF.
 """

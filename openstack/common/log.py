@@ -340,7 +340,7 @@ class LogConfigError(Exception):
 def _load_log_config(log_config):
     try:
         logging.config.fileConfig(log_config)
-    except ConfigParser.Error, exc:
+    except ConfigParser.Error as exc:
         raise LogConfigError(log_config, str(exc))
 
 

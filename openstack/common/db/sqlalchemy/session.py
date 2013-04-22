@@ -419,12 +419,12 @@ def _wrap_db_error(f):
         # note(boris-42): We should catch unique constraint violation and
         # wrap it by our own DBDuplicateEntry exception. Unique constraint
         # violation is wrapped by IntegrityError.
-        except sqla_exc.OperationalError, e:
+        except sqla_exc.OperationalError as e:
             _raise_if_deadlock_error(e, get_engine().name)
             # NOTE(comstud): A lot of code is checking for OperationalError
             # so let's not wrap it for now.
             raise
-        except sqla_exc.IntegrityError, e:
+        except sqla_exc.IntegrityError as e:
             # note(boris-42): SqlAlchemy doesn't unify errors from different
             # DBs so we must do this. Also in some tables (for example
             # instance_types) there are more than one unique constraint. This
@@ -432,7 +432,7 @@ def _wrap_db_error(f):
             # unique constraint, from error message.
             _raise_if_duplicate_entry_error(e, get_engine().name)
             raise exception.DBError(e)
-        except Exception, e:
+        except Exception as e:
             LOG.exception(_('DB exception wrapped.'))
             raise exception.DBError(e)
     _wrap.func_name = f.func_name
@@ -481,7 +481,7 @@ def _ping_listener(dbapi_conn, connection_rec, connection_proxy):
     """
     try:
         dbapi_conn.cursor().execute('select 1')
-    except dbapi_conn.OperationalError, ex:
+    except dbapi_conn.OperationalError as ex:
         if ex.args[0] in (2006, 2013, 2014, 2045, 2055):
             LOG.warn(_('Got mysql server has gone away: %s'), ex)
             raise sqla_exc.DisconnectionError("Database server went away")
@@ -545,7 +545,7 @@ def create_engine(sql_connection):
 
     try:
         engine.connect()
-    except sqla_exc.OperationalError, e:
+    except sqla_exc.OperationalError as e:
         if not _is_db_connection_error(e.args[0]):
             raise
 
@@ -561,7 +561,7 @@ def create_engine(sql_connection):
             try:
                 engine.connect()
                 break
-            except sqla_exc.OperationalError, e:
+            except sqla_exc.OperationalError as e:
                 if (remaining != 'infinite' and remaining == 0) or \
                         not _is_db_connection_error(e.args[0]):
                     raise
