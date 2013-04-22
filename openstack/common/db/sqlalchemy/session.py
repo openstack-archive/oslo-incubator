@@ -248,6 +248,7 @@ from eventlet import greenthread
 from oslo.config import cfg
 from sqlalchemy import exc as sqla_exc
 import sqlalchemy.interfaces
+from sqlalchemy.interfaces import PoolListener
 import sqlalchemy.orm
 from sqlalchemy.pool import NullPool, StaticPool
 from sqlalchemy.sql.expression import literal_column
@@ -315,6 +316,18 @@ def set_defaults(sql_connection, sqlite_db):
     cfg.set_defaults(sql_opts,
                      sql_connection=sql_connection,
                      sqlite_db=sqlite_db)
+
+
+class SqliteForeignKeysListener(PoolListener):
+    """
+    Ensures that the foreign key constraints are enforced in SQLite.
+
+    The foreign key constraints are disabled by default in SQLite,
+    so the foreign key constraints will be enabled here for every
+    database connection
+    """
+    def connect(self, dbapi_con, con_record):
+        dbapi_con.execute('pragma foreign_keys=ON')
 
 
 def get_session(autocommit=True, expire_on_commit=False):
@@ -439,11 +452,12 @@ def _wrap_db_error(f):
     return _wrap
 
 
-def get_engine():
+def get_engine(sqlite_fk=False):
     """Return a SQLAlchemy engine."""
     global _ENGINE
     if _ENGINE is None:
-        _ENGINE = create_engine(CONF.sql_connection)
+        _ENGINE = create_engine(CONF.sql_connection,
+                                sqlite_fk_constraints=sqlite_fk)
     return _ENGINE
 
 
@@ -500,7 +514,7 @@ def _is_db_connection_error(args):
     return False
 
 
-def create_engine(sql_connection):
+def create_engine(sql_connection, sqlite_fk_constraints=False):
     """Return a new SQLAlchemy engine."""
     connection_dict = sqlalchemy.engine.url.make_url(sql_connection)
 
@@ -517,6 +531,8 @@ def create_engine(sql_connection):
         engine_args['echo'] = True
 
     if "sqlite" in connection_dict.drivername:
+        if sqlite_fk_constraints:
+            engine_args["listeners"] = [SqliteForeignKeysListener()]
         engine_args["poolclass"] = NullPool
 
         if CONF.sql_connection == "sqlite://":
