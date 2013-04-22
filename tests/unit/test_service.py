@@ -19,6 +19,9 @@
 """
 Unit Tests for remote procedure calls using queue
 """
+
+from __future__ import print_function
+
 import os
 import signal
 import time
