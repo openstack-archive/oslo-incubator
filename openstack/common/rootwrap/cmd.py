@@ -34,16 +34,13 @@
 """
 
 import ConfigParser
+import logging
 import os
 import pwd
 import signal
 import subprocess
 import sys
 
-from openstack.common import log as logging
-
-
-LOG = logging.getLogger(__name__)
 
 RC_UNAUTHORIZED = 99
 RC_NOCOMMAND = 98
@@ -60,7 +57,7 @@ def _subprocess_setup():
 def _exit_error(execname, message, errorcode, log=True):
     print "%s: %s" % (execname, message)
     if log:
-        LOG.error(message)
+        logging.error(message)
     sys.exit(errorcode)
 
 
@@ -107,7 +104,7 @@ def main():
             command = filtermatch.get_command(userargs,
                                               exec_dirs=config.exec_dirs)
             if config.use_syslog:
-                LOG.info("(%s > %s) Executing %s (filter match = %s)" % (
+                logging.info("(%s > %s) Executing %s (filter match = %s)" % (
                     os.getlogin(), pwd.getpwuid(os.getuid())[0],
                     command, filtermatch.name))
 
