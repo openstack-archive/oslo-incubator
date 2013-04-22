@@ -41,32 +41,31 @@ import json
 import types
 import xmlrpclib
 
+from openstack.common.gettextutils import _
+
 from openstack.common import timeutils
 
-
-_nasty_type_tests = [inspect.ismodule, inspect.isclass, inspect.ismethod,
+_simple_type_tests = (types.NoneType, int, basestring, bool, float, long)
+_nasty_type_tests = (inspect.ismodule, inspect.isclass, inspect.ismethod,
                      inspect.isfunction, inspect.isgeneratorfunction,
                      inspect.isgenerator, inspect.istraceback, inspect.isframe,
                      inspect.iscode, inspect.isbuiltin, inspect.isroutine,
-                     inspect.isabstract]
-
-_simple_types = (types.NoneType, int, basestring, bool, float, long)
+                     inspect.isabstract)
 
 
-def to_primitive(value, convert_instances=False, convert_datetime=True,
-                 level=0, max_depth=3):
-    """Convert a complex object into primitives.
+class NotSerializableException(Exception):
+    pass
 
-    Handy for JSON serialization. We can optionally handle instances,
-    but since this is a recursive function, we could have cyclical
-    data structures.
 
-    To handle cyclical data structures we could track the actual objects
-    visited in a set, but not all objects are hashable. Instead we just
-    track the depth of the object inspections and don't go too deep.
+def _get_object_id(value):
+    # From python docs:
+    #
+    # This is an integer (or long integer) which is guaranteed to be unique
+    # and constant for this object during its lifetime.
+    return id(value)
 
-    Therefore, convert_instances=True is lossy ... be aware.
 
+def _simple_helper(value, **kwargs):
     """
     # handle obvious types first - order of basic types determined by running
     # full tests on nova project, resulting in the following counts:
@@ -81,20 +80,30 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
     #   6491 <type 'float'>
     #    283 <type 'tuple'>
     #     19 <type 'long'>
-    if isinstance(value, _simple_types):
-        return value
+    """
 
+    if isinstance(value, _simple_type_tests):
+        return value
     if isinstance(value, datetime.datetime):
-        if convert_datetime:
+        if kwargs.get('convert_datetime'):
             return timeutils.strtime(value)
         else:
             return value
+    raise NotSerializableException()
 
-    # value of itertools.count doesn't get caught by nasty_type_tests
-    # and results in infinite loop when list(value) is called.
+
+def _nasty_helper(value, **kwargs):
+    for functor in _nasty_type_tests:
+        if functor(value):
+            return unicode(value)
+    # Note: value of itertools.count doesn't get caught by inspects
+    # above and results in infinite loop when list(value) is called.
     if type(value) == itertools.count:
         return unicode(value)
+    raise NotSerializableException()
 
+
+def _mock_helper(value, **kwargs):
     # FIXME(vish): Workaround for LP bug 852095. Without this workaround,
     #              tests that raise an exception in a mocked method that
     #              has a @wrap_exception with a notifier will fail. If
@@ -102,23 +111,18 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
     #              can remove this workaround.
     if getattr(value, '__module__', None) == 'mox':
         return 'mock'
+    raise NotSerializableException()
 
-    if level > max_depth:
-        return '?'
 
-    # The try block may not be necessary after the class check above,
-    # but just in case ...
+def _recursive_helper(value, convert_instances, convert_datetime, level,
+                      max_depth, in_progress):
     try:
-        recursive = functools.partial(to_primitive,
+        recursive = functools.partial(_to_primitive_helper,
                                       convert_instances=convert_instances,
                                       convert_datetime=convert_datetime,
                                       level=level,
-                                      max_depth=max_depth)
-        if isinstance(value, dict):
-            return dict((k, recursive(v)) for k, v in value.iteritems())
-        elif isinstance(value, (list, tuple)):
-            return [recursive(lv) for lv in value]
-
+                                      max_depth=max_depth,
+                                      in_progress=in_progress)
         # It's not clear why xmlrpclib created their own DateTime type, but
         # for our purposes, make it a datetime type which is explicitly
         # handled
@@ -136,13 +140,63 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
             # Ignore class member vars.
             return recursive(value.__dict__, level=level + 1)
         else:
-            if any(test(value) for test in _nasty_type_tests):
-                return unicode(value)
             return value
     except TypeError:
         # Class objects are tricky since they may define something like
         # __iter__ defined but it isn't callable as list().
         return unicode(value)
+
+
+def _to_primitive_helper(value, in_progress,
+                         convert_instances, convert_datetime,
+                         level, max_depth):
+    """Convert a complex object into primitives.
+
+    Handy for JSON serialization. We can optionally handle instances,
+    but since this is a recursive function, we could have cyclical
+    data structures.
+
+    Therefore, convert_instances=True is lossy ... be aware.
+    """
+
+    if level > max_depth:
+        raise RuntimeError(_('Maximum to_primitive recursion depth of %s '
+                             'exceeded') % (max_depth))
+
+    value_id = _get_object_id(value)
+    if value_id in in_progress:
+        raise RuntimeError(_("Cycle found for object: %s") % value)
+
+    # The function order matters here since we want to activate the recursive
+    # helper as the last one that will get called, and not the first...
+    for func in (_simple_helper, _nasty_helper, _mock_helper,
+                 _recursive_helper):
+        in_progress[value_id] = True
+        try:
+            prim_value = func(value,
+                              convert_instances=convert_instances,
+                              convert_datetime=convert_datetime,
+                              level=level,
+                              in_progress=in_progress,
+                              max_depth=max_depth)
+            return prim_value
+        except NotSerializableException:
+            pass
+        finally:
+            in_progress.pop(value_id)
+
+    raise NotSerializableException(("Unable to convert: %s") % type(value))
+
+
+def to_primitive(value, convert_instances=False, convert_datetime=True,
+                 max_depth=3):
+    max_depth = max(0, max_depth)
+    return _to_primitive_helper(value,
+                                convert_instances=convert_instances,
+                                convert_datetime=convert_datetime,
+                                level=0,
+                                max_depth=max_depth,
+                                in_progress={})
 
 
 def dumps(value, default=to_primitive, **kwargs):

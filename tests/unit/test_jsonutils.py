@@ -115,7 +115,7 @@ class ToPrimitiveTestCase(utils.BaseTestCase):
 
         # If the cycle isn't caught, to_primitive() will eventually result in
         # an exception due to excessive recursion depth.
-        jsonutils.to_primitive(x)
+        self.assertRaises(RuntimeError, jsonutils.to_primitive, x)
 
     def test_instance(self):
         class MysteryClass(object):
@@ -144,28 +144,30 @@ class ToPrimitiveTestCase(utils.BaseTestCase):
         self.assertTrue(ret[1].startswith('<function foo at 0x'))
         self.assertEquals(ret[2], '<built-in function dir>')
 
+    def test_dict_with_cycle(self):
+        test_obj = {}
+        test_obj['me'] = test_obj
+        self.assertRaises(RuntimeError,
+                          jsonutils.to_primitive, test_obj)
+
     def test_depth(self):
         class LevelsGenerator(object):
             def __init__(self, levels):
                 self._levels = levels
 
             def iteritems(self):
-                if self._levels == 0:
+                if self._levels <= 1:
                     return iter([])
                 else:
                     return iter([(0, LevelsGenerator(self._levels - 1))])
 
         l4_obj = LevelsGenerator(4)
 
-        json_l2 = {0: {0: '?'}}
-        json_l3 = {0: {0: {0: '?'}}}
-        json_l4 = {0: {0: {0: {0: '?'}}}}
+        self.assertRaises(RuntimeError,
+                          jsonutils.to_primitive, l4_obj, max_depth=2)
 
-        ret = jsonutils.to_primitive(l4_obj, max_depth=2)
-        self.assertEquals(ret, json_l2)
-
-        ret = jsonutils.to_primitive(l4_obj, max_depth=3)
-        self.assertEquals(ret, json_l3)
+        self.assertRaises(RuntimeError,
+                          jsonutils.to_primitive, l4_obj, max_depth=3)
 
         ret = jsonutils.to_primitive(l4_obj, max_depth=4)
-        self.assertEquals(ret, json_l4)
+        self.assertEquals(ret, {0: {0: {0: {}}}})
