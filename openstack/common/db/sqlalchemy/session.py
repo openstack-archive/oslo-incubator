@@ -317,6 +317,17 @@ def set_defaults(sql_connection, sqlite_db):
                      sqlite_db=sqlite_db)
 
 
+def cleanup():
+    global _ENGINE, _MAKER
+
+    if _MAKER:
+        _MAKER.close_all()
+        _MAKER = None
+    if _ENGINE:
+        _ENGINE.dispose()
+        _ENGINE = None
+
+
 def get_session(autocommit=True, expire_on_commit=False):
     """Return a SQLAlchemy session."""
     global _MAKER
