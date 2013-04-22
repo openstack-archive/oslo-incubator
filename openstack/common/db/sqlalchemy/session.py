@@ -248,6 +248,7 @@ from eventlet import greenthread
 from oslo.config import cfg
 from sqlalchemy import exc as sqla_exc
 import sqlalchemy.interfaces
+from sqlalchemy.interfaces import PoolListener
 import sqlalchemy.orm
 from sqlalchemy.pool import NullPool, StaticPool
 from sqlalchemy.sql.expression import literal_column
@@ -275,6 +276,9 @@ sql_opts = [
     cfg.BoolOpt('sqlite_synchronous',
                 default=True,
                 help='If passed, use synchronous mode for sqlite'),
+    cfg.BoolOpt('sqlite_foreign_key_constraints',
+                default=False,
+                help='If passed, use foreign key contraints for sqlite'),
     cfg.IntOpt('sql_min_pool_size',
                default=1,
                help='Minimum number of SQL connections to keep open in a '
@@ -310,11 +314,24 @@ _ENGINE = None
 _MAKER = None
 
 
-def set_defaults(sql_connection, sqlite_db):
+def set_defaults(sql_connection, sqlite_db, sqlite_fk=False):
     """Set defaults for configuration variables."""
     cfg.set_defaults(sql_opts,
                      sql_connection=sql_connection,
-                     sqlite_db=sqlite_db)
+                     sqlite_db=sqlite_db,
+                     sqlite_foreign_key_constraints=sqlite_fk)
+
+
+class SqliteForeignKeysListener(PoolListener):
+    """
+    Ensures that the foreign key constraints are enforced in SQLite.
+
+    The foreign key constraints are disabled by default in SQLite,
+    so the foreign key constraints will be enabled here for every
+    database connection
+    """
+    def connect(self, dbapi_con, con_record):
+        dbapi_con.execute('pragma foreign_keys=ON')
 
 
 def get_session(autocommit=True, expire_on_commit=False):
@@ -517,6 +534,8 @@ def create_engine(sql_connection):
         engine_args['echo'] = True
 
     if "sqlite" in connection_dict.drivername:
+        if CONF.sqlite_foreign_key_constraints:
+            engine_args["listeners"] = [SqliteForeignKeysListener()]
         engine_args["poolclass"] = NullPool
 
         if CONF.sql_connection == "sqlite://":
