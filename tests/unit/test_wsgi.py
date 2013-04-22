@@ -544,10 +544,6 @@ class WSGIServerTest(utils.BaseTestCase):
         server.stop()
 
     def test_ipv6_listen_called_with_scope(self):
-        server = wsgi.Service("test_app",
-                              1234,
-                              host="fe80::204:acff:fe96:da87%eth0")
-
         with mock.patch.object(wsgi.eventlet, 'listen') as mock_listen:
             with mock.patch.object(socket, 'getaddrinfo') as mock_get_addr:
                 mock_get_addr.return_value = [
@@ -557,7 +553,10 @@ class WSGIServerTest(utils.BaseTestCase):
                      '',
                      ('fe80::204:acff:fe96:da87%eth0', 1234, 0, 2))
                 ]
-                server.start()
+
+                wsgi.Service("test_app",
+                             1234,
+                             host="fe80::204:acff:fe96:da87%eth0")
 
                 mock_get_addr.assert_called_once_with(
                     "fe80::204:acff:fe96:da87%eth0",
