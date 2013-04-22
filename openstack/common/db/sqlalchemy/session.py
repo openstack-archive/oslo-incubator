@@ -318,6 +318,17 @@ def set_defaults(sql_connection, sqlite_db):
                      sqlite_db=sqlite_db)
 
 
+def cleanup():
+    global _ENGINE, _MAKER
+
+    if _MAKER:
+        _MAKER.close_all()
+        _MAKER = None
+    if _ENGINE:
+        _ENGINE.dispose()
+        _ENGINE = None
+
+
 class SqliteForeignKeysListener(PoolListener):
     """
     Ensures that the foreign key constraints are enforced in SQLite.
