@@ -81,7 +81,7 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
         return 'mock'
 
     if level > max_depth:
-        return '?'
+        raise RuntimeError(_('Maximum to_primitive recursion depth exceeded'))
 
     # The try block may not be necessary after the class check above,
     # but just in case ...
