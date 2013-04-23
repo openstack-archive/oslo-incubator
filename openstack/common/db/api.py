@@ -46,15 +46,17 @@ from openstack.common import lockutils
 db_opts = [
     cfg.StrOpt('db_backend',
                default='sqlalchemy',
+               deprecated_group='DEFAULT',
                help='The backend to use for db'),
     cfg.BoolOpt('dbapi_use_tpool',
                 default=False,
+                deprecated_group='DEFAULT',
                 help='Enable the experimental use of thread pooling for '
                      'all DB API calls')
 ]
 
 CONF = cfg.CONF
-CONF.register_opts(db_opts)
+CONF.register_opts(db_opts, "DATABASE")
 
 
 class DBAPI(object):
@@ -75,8 +77,8 @@ class DBAPI(object):
         if self.__backend:
             # Another thread assigned it
             return self.__backend
-        backend_name = CONF.db_backend
-        self.__use_tpool = CONF.dbapi_use_tpool
+        backend_name = CONF.DATABASE.db_backend
+        self.__use_tpool = CONF.DATABASE.dbapi_use_tpool
         if self.__use_tpool:
             from eventlet import tpool
             self.__tpool = tpool
