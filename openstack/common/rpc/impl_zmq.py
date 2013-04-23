@@ -30,7 +30,6 @@ from openstack.common import excutils
 from openstack.common.gettextutils import _
 from openstack.common import importutils
 from openstack.common import jsonutils
-from openstack.common import processutils as utils
 from openstack.common.rpc import common as rpc_common
 
 zmq = importutils.try_import('eventlet.green.zmq')
@@ -68,7 +67,7 @@ zmq_opts = [
                help='Maximum number of ingress messages to locally buffer '
                     'per topic. Default is unlimited.'),
 
-    cfg.StrOpt('rpc_zmq_ipc_dir', default='/var/run/openstack',
+    cfg.StrOpt('rpc_zmq_ipc_dir', default='/tmp/openstack-zmq',
                help='Directory for holding IPC sockets'),
 
     cfg.StrOpt('rpc_zmq_host', default=socket.gethostname(),
@@ -521,13 +520,10 @@ class ZmqProxy(ZmqBaseReactor):
              CONF.rpc_zmq_port)
         consumption_proxy = InternalContext(None)
 
-        if not os.path.isdir(ipc_dir):
-            try:
-                utils.execute('mkdir', '-p', ipc_dir, run_as_root=True)
-                utils.execute('chown', "%s:%s" % (os.getuid(), os.getgid()),
-                              ipc_dir, run_as_root=True)
-                utils.execute('chmod', '750', ipc_dir, run_as_root=True)
-            except utils.ProcessExecutionError:
+        try:
+            os.makedirs(ipc_dir)
+        except os.error:
+            if not os.path.isdir(ipc_dir):
                 with excutils.save_and_reraise_exception():
                     LOG.error(_("Could not create IPC directory %s") %
                               (ipc_dir, ))
