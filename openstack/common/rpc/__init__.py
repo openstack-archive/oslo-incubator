@@ -140,7 +140,7 @@ def call(context, topic, msg, timeout=None, check_for_lock=False):
     return _get_impl().call(CONF, context, topic, msg, timeout)
 
 
-def cast(context, topic, msg):
+def cast(context, topic, msg, control_exchange=None):
     """Invoke a remote method that does not return anything.
 
     :param context: Information that identifies the user that has made this
@@ -155,7 +155,7 @@ def cast(context, topic, msg):
 
     :returns: None
     """
-    return _get_impl().cast(CONF, context, topic, msg)
+    return _get_impl().cast(CONF, context, topic, msg, control_exchange)
 
 
 def fanout_cast(context, topic, msg):

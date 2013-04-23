@@ -265,13 +265,15 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
                       'virtual_host': FLAGS.rabbit_virtual_host,
                       'transport': 'memory'}])
 
-            def topic_send(_context, topic, msg):
-                pass
+            def topic_send(_context, topic, msg,
+                           timeout=None, control_exchange=None):
+                self.assertEqual(control_exchange, "my-exchange")
 
         MyConnection.pool = rpc_amqp.Pool(FLAGS, MyConnection)
         self.stubs.Set(impl_kombu, 'Connection', MyConnection)
 
-        impl_kombu.cast(FLAGS, ctxt, 'fake_topic', {'msg': 'fake'})
+        impl_kombu.cast(FLAGS, ctxt, 'fake_topic', {'msg': 'fake'},
+                        control_exchange="my-exchange")
 
     def test_cast_to_server_uses_server_params(self):
         """Test kombu rpc.cast"""
@@ -297,14 +299,16 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
                       'virtual_host': server_params['virtual_host'],
                       'transport': 'memory'}])
 
-            def topic_send(_context, topic, msg):
-                pass
+            def topic_send(_context, topic, msg,
+                           timeout=None, control_exchange=None):
+                self.assertEqual(control_exchange, "my-exchange")
 
         MyConnection.pool = rpc_amqp.Pool(FLAGS, MyConnection)
         self.stubs.Set(impl_kombu, 'Connection', MyConnection)
 
         impl_kombu.cast_to_server(FLAGS, ctxt, server_params,
-                                  'fake_topic', {'msg': 'fake'})
+                                  'fake_topic', {'msg': 'fake'},
+                                  control_exchange="my-exchange")
 
     def test_fanout_send_receive(self):
         """Test sending to a fanout exchange and consuming from 2 queues"""

@@ -243,10 +243,10 @@ class DirectPublisher(Publisher):
 
 class TopicPublisher(Publisher):
     """Publisher class for 'topic'"""
-    def __init__(self, conf, session, topic):
+    def __init__(self, conf, session, topic, control_exchange=None):
         """init a 'topic' publisher.
         """
-        exchange_name = rpc_amqp.get_control_exchange(conf)
+        exchange_name = control_exchange or rpc_amqp.get_control_exchange(conf)
         super(TopicPublisher, self).__init__(session,
                                              "%s/%s" % (exchange_name, topic))
 
@@ -449,7 +449,7 @@ class Connection(object):
         for proxy_cb in self.proxy_callbacks:
             proxy_cb.wait()
 
-    def publisher_send(self, cls, topic, msg):
+    def publisher_send(self, cls, topic, msg, **kwargs):
         """Send to a publisher based on the publisher class"""
 
         def _connect_error(exc):
@@ -458,7 +458,7 @@ class Connection(object):
                           "'%(topic)s': %(err_str)s") % log_info)
 
         def _publisher_send():
-            publisher = cls(self.conf, self.session, topic)
+            publisher = cls(self.conf, self.session, topic, **kwargs)
             publisher.send(msg)
 
         return self.ensure(_connect_error, _publisher_send)
@@ -487,7 +487,8 @@ class Connection(object):
         """Send a 'direct' message"""
         self.publisher_send(DirectPublisher, msg_id, msg)
 
-    def topic_send(self, topic, msg, timeout=None):
+    def topic_send(self, topic, msg, timeout=None,
+                   control_exchange=None):
         """Send a 'topic' message"""
         #
         # We want to create a message with attributes, e.g. a TTL. We
@@ -500,7 +501,8 @@ class Connection(object):
         # will need to be altered accordingly.
         #
         qpid_message = qpid_messaging.Message(content=msg, ttl=timeout)
-        self.publisher_send(TopicPublisher, topic, qpid_message)
+        self.publisher_send(TopicPublisher, topic, qpid_message,
+                            control_exchange=control_exchange)
 
     def fanout_send(self, topic, msg):
         """Send a 'fanout' message"""
@@ -610,11 +612,12 @@ def call(conf, context, topic, msg, timeout=None):
         rpc_amqp.get_connection_pool(conf, Connection))
 
 
-def cast(conf, context, topic, msg):
+def cast(conf, context, topic, msg, control_exchange=None):
     """Sends a message on a topic without waiting for a response."""
     return rpc_amqp.cast(
         conf, context, topic, msg,
-        rpc_amqp.get_connection_pool(conf, Connection))
+        rpc_amqp.get_connection_pool(conf, Connection),
+        control_exchange)
 
 
 def fanout_cast(conf, context, topic, msg):
@@ -624,11 +627,13 @@ def fanout_cast(conf, context, topic, msg):
         rpc_amqp.get_connection_pool(conf, Connection))
 
 
-def cast_to_server(conf, context, server_params, topic, msg):
+def cast_to_server(conf, context, server_params, topic, msg,
+                   control_exchange=None):
     """Sends a message on a topic to a specific server."""
     return rpc_amqp.cast_to_server(
         conf, context, server_params, topic, msg,
-        rpc_amqp.get_connection_pool(conf, Connection))
+        rpc_amqp.get_connection_pool(conf, Connection),
+        control_exchange=control_exchange)
 
 
 def fanout_cast_to_server(conf, context, server_params, topic, msg):

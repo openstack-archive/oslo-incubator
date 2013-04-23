@@ -618,13 +618,15 @@ def call(conf, context, topic, msg, timeout, connection_pool):
     return rv[-1]
 
 
-def cast(conf, context, topic, msg, connection_pool):
+def cast(conf, context, topic, msg, connection_pool,
+         control_exchange=None):
     """Sends a message on a topic without waiting for a response."""
     LOG.debug(_('Making asynchronous cast on %s...'), topic)
     _add_unique_id(msg)
     pack_context(msg, context)
     with ConnectionContext(conf, connection_pool) as conn:
-        conn.topic_send(topic, rpc_common.serialize_msg(msg))
+        conn.topic_send(topic, rpc_common.serialize_msg(msg),
+                        control_exchange=control_exchange)
 
 
 def fanout_cast(conf, context, topic, msg, connection_pool):
@@ -636,13 +638,15 @@ def fanout_cast(conf, context, topic, msg, connection_pool):
         conn.fanout_send(topic, rpc_common.serialize_msg(msg))
 
 
-def cast_to_server(conf, context, server_params, topic, msg, connection_pool):
+def cast_to_server(conf, context, server_params, topic, msg, connection_pool,
+                   control_exchange=None):
     """Sends a message on a topic to a specific server."""
     _add_unique_id(msg)
     pack_context(msg, context)
     with ConnectionContext(conf, connection_pool, pooled=False,
                            server_params=server_params) as conn:
-        conn.topic_send(topic, rpc_common.serialize_msg(msg))
+        conn.topic_send(topic, rpc_common.serialize_msg(msg),
+                        control_exchange=control_exchange)
 
 
 def fanout_cast_to_server(conf, context, server_params, topic, msg,

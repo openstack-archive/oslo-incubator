@@ -334,7 +334,7 @@ class DirectPublisher(Publisher):
 
 class TopicPublisher(Publisher):
     """Publisher class for 'topic'"""
-    def __init__(self, conf, channel, topic, **kwargs):
+    def __init__(self, conf, channel, topic, exchange_name=None, **kwargs):
         """init a 'topic' publisher.
 
         Kombu options may be passed as keyword args to override defaults
@@ -343,12 +343,12 @@ class TopicPublisher(Publisher):
                    'auto_delete': False,
                    'exclusive': False}
         options.update(kwargs)
-        exchange_name = rpc_amqp.get_control_exchange(conf)
-        super(TopicPublisher, self).__init__(channel,
-                                             exchange_name,
-                                             topic,
-                                             type='topic',
-                                             **options)
+        super(TopicPublisher, self).__init__(
+            channel,
+            exchange_name or rpc_amqp.get_control_exchange(conf),
+            topic,
+            type='topic',
+            **options)
 
 
 class FanoutPublisher(Publisher):
@@ -700,9 +700,10 @@ class Connection(object):
         """Send a 'direct' message"""
         self.publisher_send(DirectPublisher, msg_id, msg)
 
-    def topic_send(self, topic, msg, timeout=None):
+    def topic_send(self, topic, msg, timeout=None, control_exchange=None):
         """Send a 'topic' message"""
-        self.publisher_send(TopicPublisher, topic, msg, timeout)
+        self.publisher_send(TopicPublisher, topic, msg, timeout,
+                            control_exchange=control_exchange)
 
     def fanout_send(self, topic, msg):
         """Send a 'fanout' message"""
@@ -798,11 +799,12 @@ def call(conf, context, topic, msg, timeout=None):
         rpc_amqp.get_connection_pool(conf, Connection))
 
 
-def cast(conf, context, topic, msg):
+def cast(conf, context, topic, msg, control_exchange=None):
     """Sends a message on a topic without waiting for a response."""
     return rpc_amqp.cast(
         conf, context, topic, msg,
-        rpc_amqp.get_connection_pool(conf, Connection))
+        rpc_amqp.get_connection_pool(conf, Connection),
+        control_exchange=control_exchange)
 
 
 def fanout_cast(conf, context, topic, msg):
@@ -812,11 +814,13 @@ def fanout_cast(conf, context, topic, msg):
         rpc_amqp.get_connection_pool(conf, Connection))
 
 
-def cast_to_server(conf, context, server_params, topic, msg):
+def cast_to_server(conf, context, server_params, topic, msg,
+                   control_exchange=None):
     """Sends a message on a topic to a specific server."""
     return rpc_amqp.cast_to_server(
         conf, context, server_params, topic, msg,
-        rpc_amqp.get_connection_pool(conf, Connection))
+        rpc_amqp.get_connection_pool(conf, Connection),
+        control_exchange=control_exchange)
 
 
 def fanout_cast_to_server(conf, context, server_params, topic, msg):

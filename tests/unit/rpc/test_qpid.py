@@ -255,7 +255,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
                 '"type": "topic"}, "create": "always"}')
         else:
             expected_address = (
-                'openstack/impl_qpid_test ; {"node": {"x-declare": '
+                'my-exchange/impl_qpid_test ; {"node": {"x-declare": '
                 '{"auto-delete": true, "durable": false}, "type": "topic"}, '
                 '"create": "always"}')
         self.mock_session.sender(expected_address).AndReturn(self.mock_sender)
@@ -280,11 +280,13 @@ class RpcQpidTestCase(utils.BaseTestCase):
                 if fanout:
                     method = impl_qpid.fanout_cast_to_server
                 else:
+                    args.append("my-exchange")
                     method = impl_qpid.cast_to_server
             else:
                 if fanout:
                     method = impl_qpid.fanout_cast
                 else:
+                    args.append("my-exchange")
                     method = impl_qpid.cast
 
             method(*args)
