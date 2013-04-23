@@ -34,7 +34,8 @@ class DBAPI(object):
 class DBAPITestCase(test_utils.BaseTestCase):
     def test_dbapi_api_class_method_and_tpool_false(self):
         backend_mapping = {'test_known': 'tests.unit.db.test_api'}
-        self.config(db_backend='test_known', dbapi_use_tpool=False)
+        self.config(backend='test_known', use_tpool=False,
+                    group="DATABASE")
 
         info = dict(tpool=False)
         orig_execute = tpool.execute
@@ -53,7 +54,8 @@ class DBAPITestCase(test_utils.BaseTestCase):
 
     def test_dbapi_api_class_method_and_tpool_true(self):
         backend_mapping = {'test_known': 'tests.unit.db.test_api'}
-        self.config(db_backend='test_known', dbapi_use_tpool=True)
+        self.config(backend='test_known', use_tpool=True,
+                    group="DATABASE")
 
         info = dict(tpool=False)
         orig_execute = tpool.execute
@@ -71,14 +73,16 @@ class DBAPITestCase(test_utils.BaseTestCase):
         self.assertTrue(info['tpool'])
 
     def test_dbapi_full_path_module_method(self):
-        self.config(db_backend='tests.unit.db.test_api')
+        self.config(backend='tests.unit.db.test_api',
+                    group="DATABASE")
         dbapi = api.DBAPI()
         result = dbapi.api_class_call1(1, 2, kwarg1='meow')
         expected = ((1, 2), {'kwarg1': 'meow'})
         self.assertEqual(expected, result)
 
     def test_dbapi_unknown_invalid_backend(self):
-        self.config(db_backend='tests.unit.db.not_existant')
+        self.config(backend='tests.unit.db.not_existent',
+                    group="DATABASE")
         dbapi = api.DBAPI()
 
         def call_it():
