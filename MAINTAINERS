@@ -1,0 +1,281 @@
+= Generalist Code Reviewers =
+
+Oslo has a cadre of core reviewers who have taken on a generalist role
+on the project. They are folks with good taste in Python code, provide
+constructive input in their reviews and make time to review any patches
+submitted to the project, irrespective of the area which a given patch
+targets.
+
+The current members of oslo-core are listed here:
+
+  https://review.openstack.org/#/admin/groups/106,members
+
+This the group who can +2 and approve patches in oslo. However, they may
+choose to seek feedback from the appropriate specialist API maintainer
+before approving a patch if it is in any way controversial or risky.
+
+= Specialist API Maintainers =
+
+APIs in oslo-incubator are resting here temporarily until they have been
+cleaned up sufficiently so that we can make a commitment to backwards
+compatibility and release the API in a properly published library.
+
+While in oslo-incubator, an API should have one or more specialist
+maintainers who have taken on the following responsibilities:
+
+  - Developing a roadmap for the API graduating from the incubator
+
+  - Reviewing changes proposed for that API - a +1 from an API
+    maintainer should be treated as a +2 by oslo-core members
+
+  - Keeping track of which Integrated projects are using the API and
+    helping to ensure the API meets the use cases of those projects
+
+  - Ensuring that any incompatible or potentially troublesome changes
+    are synced from oslo-incubator into the projects using the API,
+    either by performing the sync themselves are asking that the authors
+    of the patch perform the sync
+
+= List of API Maintainers =
+
+Each API has an entry with the following keys:
+
+ M: Maintainer email address
+ S: Status, one of the following:
+      Maintained:  Has an active maintainer
+      Orphan:      No current maintainer, feel free to step up!
+      Obsolete:    Replaced by newer code, or a dead end, or out-dated
+ F: Wildcard patterns, relative to openstack/common/
+
+== authutils ==
+
+M:
+S: Orphan
+F: authutils.py
+
+== build ==
+
+M: Monty Taylor <mordred@inaugust.com>
+S: Orphan
+F: setup.py
+F: version.py
+
+== cfg ==
+
+M: Mark McLoughlin <markmc@redhat.com>
+S: Maintained
+F: cfgfilter.py
+
+== cliutils ==
+
+M:
+S: Orphan
+F: cliutils.py
+
+== context ==
+
+M:
+S: Obsolete
+F: context.py
+F: middleware/context.py
+
+== db ==
+
+M:
+S: Orphan
+F: db/
+
+== eventlet_backdoor ==
+
+M:
+S: Orphan
+F: eventlet_backdoor.py
+
+== exception ==
+
+M:
+S: Obsolete
+F: exception.py
+
+== excutils ==
+
+M:
+S: Orphan
+F: excutils.py
+
+== fileutils ==
+
+M:
+S: Orphan
+F: fileutils.py
+
+== fixtures ==
+
+M: Monty Taylor <mordred@inaugust.com>
+S: Maintained
+F: fixture/
+
+== gettextutils ==
+
+M: Mark McLoughlin <markmc@redhat.com>
+S: Maintained
+F: gettextutils.py
+
+== importutils ==
+
+M:
+S: Orphan
+F: importutils.py
+
+== jsonutils ==
+
+M:
+S: Orphan
+F: jsonutils.py
+
+== local ==
+
+M:
+S: Orphan
+F: local.py
+
+== lockutils ==
+
+M:
+S: Orphan
+F: lockutils.py
+
+== log ==
+
+M:
+S: Orphan
+F: log.py
+
+== loopingcall ==
+
+M:
+S: Orphan
+F: loopingcall.py
+
+== memorycache ==
+
+M:
+S: Orphan
+F: memorycache.py
+
+== network_utils ==
+
+M:
+S: Orphan
+F: network_utils.py
+
+== notifier ==
+
+M:
+S: Orphan
+F: notifier/
+
+== pastedeploy ==
+
+M: Mark McLoughlin <markmc@redhat.com>
+S: Obsolete
+F: pastedeploy.py
+
+== periodic_task ==
+
+M:
+S: Orphan
+F: periodic_task.py
+
+== plugins ==
+
+M:
+S: Orphan
+F: plugin/
+
+== policy ==
+
+M:
+S: Orphan
+F: policy.py
+
+== processutils ==
+
+M:
+S: Orphan
+F: processutils.py
+
+== rootwrap ==
+
+M: Thierry Carrez <thierry@openstack.org>
+S: Maintained
+F: rootwrap/
+
+== rpc ==
+
+M: Mark McLoughlin <markmc@redhat.com>
+M: Russell Bryant <rbryant@redhat.com>
+S: Maintained
+F: rpc/
+
+== scheduler ==
+
+M:
+S: Orphan
+F: scheduler/
+
+== service ==
+
+M:
+S: Orphan
+F: service.py
+
+== sslutils ==
+
+M:
+S: Orphan
+F: sslutils.py
+
+== strutils ==
+
+M:
+S: Orphan
+F: strutils.py
+
+== threadgroup ==
+
+M:
+S: Orphan
+F: threadgroup.py
+
+== timeutils ==
+
+M:
+S: Orphan
+F: timeutils.py
+
+== uuidutils ==
+
+M:
+S: Orphan
+F: uuidutils.py
+
+== wsgi ==
+
+M:
+S: Orphan
+F: wsgi.py
+
+== xmlutils ==
+
+M:
+S: Orphan
+F: xmlutils.py
+
+== zmq ==
+
+M: Eric Windisch <eric@cloudscaling.com>
+S: Maintained
+F: rpc/impl_zmq.py
+F: rpc/matchmaker*.py
+F: rpc/zmq_receiver.py
