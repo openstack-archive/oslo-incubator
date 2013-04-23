@@ -18,6 +18,10 @@
 
 """Unit tests for SQLAlchemy specific code."""
 
+import os
+import tempfile
+
+import fixtures
 from sqlalchemy import Column, MetaData, Table, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import DateTime, Integer, String
@@ -35,6 +39,51 @@ class TmpTable(BASE, models.ModelBase):
     __tablename__ = _TABLE_NAME
     id = Column(Integer, primary_key=True)
     foo = Column(Integer)
+
+
+class SessionParametersTestCase(test_utils.BaseTestCase):
+    def setUp(self):
+        super(SessionParametersTestCase, self).setUp()
+        self.useFixture(fixtures.NestedTempfile())
+        self.tempdirs = []
+
+    def create_tempfiles(self, files, ext='.conf'):
+        tempfiles = []
+        for (basename, contents) in files:
+            if not os.path.isabs(basename):
+                (fd, path) = tempfile.mkstemp(prefix=basename, suffix=ext)
+            else:
+                path = basename + ext
+                fd = os.open(path, os.O_CREAT | os.O_WRONLY)
+            tempfiles.append(path)
+            try:
+                os.write(fd, contents)
+            finally:
+                os.close(fd)
+        return tempfiles
+
+    def test_deprecated_session_parameters(self):
+        paths = self.create_tempfiles([('test',
+                                        '[DEFAULT]\n'
+                                        'sql_connection=x://y.z\n'
+                                        'sql_min_pool_size=10\n'
+                                        'sql_max_pool_size=20\n'
+                                        'sql_max_retries=30\n'
+                                        'sql_retry_interval=40\n'
+                                        'sql_max_overflow=50\n'
+                                        'sql_connection_debug=60\n'
+                                        'sql_connection_trace=True\n'
+                                        )])
+
+        test_utils.CONF(['--config-file', paths[0]])
+        self.assertEquals(test_utils.CONF.database.connection, 'x://y.z')
+        self.assertEquals(test_utils.CONF.database.min_pool_size, 10)
+        self.assertEquals(test_utils.CONF.database.max_pool_size, 20)
+        self.assertEquals(test_utils.CONF.database.max_retries, 30)
+        self.assertEquals(test_utils.CONF.database.retry_interval, 40)
+        self.assertEquals(test_utils.CONF.database.max_overflow, 50)
+        self.assertEquals(test_utils.CONF.database.connection_debug, 60)
+        self.assertEquals(test_utils.CONF.database.connection_trace, True)
 
 
 class SessionErrorWrapperTestCase(test_utils.BaseTestCase):
