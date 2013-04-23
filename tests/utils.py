@@ -17,6 +17,9 @@
 
 """Common utilities used in testing"""
 
+import os
+import tempfile
+
 import fixtures
 from oslo.config import cfg
 import testtools
@@ -36,12 +39,29 @@ class BaseTestCase(testtools.TestCase):
         self.useFixture(fixtures.FakeLogger('openstack.common'))
         self.useFixture(fixtures.Timeout(30, True))
         self.stubs.Set(exception, '_FATAL_EXCEPTION_FORMAT_ERRORS', True)
+        self.useFixture(fixtures.NestedTempfile())
+        self.tempdirs = []
 
     def tearDown(self):
         super(BaseTestCase, self).tearDown()
         CONF.reset()
         self.stubs.UnsetAll()
         self.stubs.SmartUnsetAll()
+
+    def create_tempfiles(self, files, ext='.conf'):
+        tempfiles = []
+        for (basename, contents) in files:
+            if not os.path.isabs(basename):
+                (fd, path) = tempfile.mkstemp(prefix=basename, suffix=ext)
+            else:
+                path = basename + ext
+                fd = os.open(path, os.O_CREAT | os.O_WRONLY)
+            tempfiles.append(path)
+            try:
+                os.write(fd, contents)
+            finally:
+                os.close(fd)
+        return tempfiles
 
     def config(self, **kw):
         """
