@@ -37,6 +37,51 @@ class TmpTable(BASE, models.ModelBase):
     foo = Column(Integer)
 
 
+class SessionParametersTestCase(test_utils.BaseTestCase):
+
+    def test_deprecated_session_parameters(self):
+        paths = self.create_tempfiles([('test', """[DEFAULT]
+sql_connection=x://y.z
+sql_min_pool_size=10
+sql_max_pool_size=20
+sql_max_retries=30
+sql_retry_interval=40
+sql_max_overflow=50
+sql_connection_debug=60
+sql_connection_trace=True
+""")])
+        test_utils.CONF(['--config-file', paths[0]])
+        self.assertEquals(test_utils.CONF.sqlalchemy.connection, 'x://y.z')
+        self.assertEquals(test_utils.CONF.sqlalchemy.min_pool_size, 10)
+        self.assertEquals(test_utils.CONF.sqlalchemy.max_pool_size, 20)
+        self.assertEquals(test_utils.CONF.sqlalchemy.max_retries, 30)
+        self.assertEquals(test_utils.CONF.sqlalchemy.retry_interval, 40)
+        self.assertEquals(test_utils.CONF.sqlalchemy.max_overflow, 50)
+        self.assertEquals(test_utils.CONF.sqlalchemy.connection_debug, 60)
+        self.assertEquals(test_utils.CONF.sqlalchemy.connection_trace, True)
+
+    def test_session_parameters(self):
+        paths = self.create_tempfiles([('test', """[sqlalchemy]
+connection=x://y.z
+min_pool_size=10
+max_pool_size=20
+max_retries=30
+retry_interval=40
+max_overflow=50
+connection_debug=60
+connection_trace=True
+""")])
+        test_utils.CONF(['--config-file', paths[0]])
+        self.assertEquals(test_utils.CONF.sqlalchemy.connection, 'x://y.z')
+        self.assertEquals(test_utils.CONF.sqlalchemy.min_pool_size, 10)
+        self.assertEquals(test_utils.CONF.sqlalchemy.max_pool_size, 20)
+        self.assertEquals(test_utils.CONF.sqlalchemy.max_retries, 30)
+        self.assertEquals(test_utils.CONF.sqlalchemy.retry_interval, 40)
+        self.assertEquals(test_utils.CONF.sqlalchemy.max_overflow, 50)
+        self.assertEquals(test_utils.CONF.sqlalchemy.connection_debug, 60)
+        self.assertEquals(test_utils.CONF.sqlalchemy.connection_trace, True)
+
+
 class SessionErrorWrapperTestCase(test_utils.BaseTestCase):
     def setUp(self):
         super(SessionErrorWrapperTestCase, self).setUp()
