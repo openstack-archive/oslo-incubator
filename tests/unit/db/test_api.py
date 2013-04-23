@@ -16,7 +16,11 @@
 
 """Unit tests for DB API."""
 
+import os
+import tempfile
+
 from eventlet import tpool
+import fixtures
 
 from openstack.common.db import api
 from tests import utils as test_utils
@@ -32,9 +36,42 @@ class DBAPI(object):
 
 
 class DBAPITestCase(test_utils.BaseTestCase):
+
+    def setUp(self):
+        super(DBAPITestCase, self).setUp()
+        self.useFixture(fixtures.NestedTempfile())
+        self.tempdirs = []
+
+    def create_tempfiles(self, files, ext='.conf'):
+        tempfiles = []
+        for (basename, contents) in files:
+            if not os.path.isabs(basename):
+                (fd, path) = tempfile.mkstemp(prefix=basename, suffix=ext)
+            else:
+                path = basename + ext
+                fd = os.open(path, os.O_CREAT | os.O_WRONLY)
+            tempfiles.append(path)
+            try:
+                os.write(fd, contents)
+            finally:
+                os.close(fd)
+        return tempfiles
+
+    def test_deprecated_dbapi_parameters(self):
+        paths = self.create_tempfiles([('test',
+                                        '[DEFAULT]\n'
+                                        'db_backend=test_123\n'
+                                        'dbapi_use_tpool=True\n'
+                                        )])
+
+        test_utils.CONF(['--config-file', paths[0]])
+        self.assertEquals(test_utils.CONF.database.backend, 'test_123')
+        self.assertEquals(test_utils.CONF.database.use_tpool, True)
+
     def test_dbapi_api_class_method_and_tpool_false(self):
         backend_mapping = {'test_known': 'tests.unit.db.test_api'}
-        self.config(db_backend='test_known', dbapi_use_tpool=False)
+        self.config(backend='test_known', use_tpool=False,
+                    group="database")
 
         info = dict(tpool=False)
         orig_execute = tpool.execute
@@ -53,7 +90,8 @@ class DBAPITestCase(test_utils.BaseTestCase):
 
     def test_dbapi_api_class_method_and_tpool_true(self):
         backend_mapping = {'test_known': 'tests.unit.db.test_api'}
-        self.config(db_backend='test_known', dbapi_use_tpool=True)
+        self.config(backend='test_known', use_tpool=True,
+                    group="database")
 
         info = dict(tpool=False)
         orig_execute = tpool.execute
@@ -71,14 +109,16 @@ class DBAPITestCase(test_utils.BaseTestCase):
         self.assertTrue(info['tpool'])
 
     def test_dbapi_full_path_module_method(self):
-        self.config(db_backend='tests.unit.db.test_api')
+        self.config(backend='tests.unit.db.test_api',
+                    group="database")
         dbapi = api.DBAPI()
         result = dbapi.api_class_call1(1, 2, kwarg1='meow')
         expected = ((1, 2), {'kwarg1': 'meow'})
         self.assertEqual(expected, result)
 
     def test_dbapi_unknown_invalid_backend(self):
-        self.config(db_backend='tests.unit.db.not_existant')
+        self.config(backend='tests.unit.db.not_existent',
+                    group="database")
         dbapi = api.DBAPI()
 
         def call_it():
