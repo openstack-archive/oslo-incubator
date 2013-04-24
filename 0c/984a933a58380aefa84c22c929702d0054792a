@@ -1,0 +1,11 @@
+Verified+2: Jenkins
+Code-Review+1: Eric Windisch <eric@cloudscaling.com>
+Code-Review+1: Thierry Carrez <thierry@openstack.org>
+Approved+1: Russell Bryant <rbryant@redhat.com>
+Code-Review+2: Russell Bryant <rbryant@redhat.com>
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 24 Apr 2013 22:43:45 +0000
+Reviewed-on: https://review.openstack.org/27379
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
