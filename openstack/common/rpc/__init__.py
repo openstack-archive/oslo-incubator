@@ -69,6 +69,19 @@ rpc_opts = [
     cfg.StrOpt('control_exchange',
                default='openstack',
                help='AMQP exchange to connect to if using RabbitMQ or Qpid'),
+    cfg.StrOpt('secure_messages',
+               default='optional',
+               help='Whether Secure Messaging (Signing) is required, defaults'
+                    'to "optional"'),
+    cfg.StrOpt('secure_message_keyfile',
+               default='',
+               help='Path to the file containing the keys'),
+    cfg.MultiStrOpt('secure_message_key',
+                    default='',
+                    help='A list of keys: (ex: name:<base64 encoded key>)'),
+    cfg.StrOpt('kds_endpoint',
+               default='',
+               help='KDS endpoint (ex: http://kds.example.com:35357/v3)'),
 ]
 
 CONF = cfg.CONF
