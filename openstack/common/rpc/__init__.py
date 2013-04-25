@@ -69,6 +69,14 @@ rpc_opts = [
     cfg.StrOpt('control_exchange',
                default='openstack',
                help='AMQP exchange to connect to if using RabbitMQ or Qpid'),
+    cfg.StrOpt('secure_messages',
+               default='optional',
+               help='Whether Secure Messaging (Signing) is required, defaults'
+                    'to "optional"'),
+    cfg.StrOpt('secure_message_key',
+               default='',
+               help='A file "file:/path/to/file" or a list of keys '
+                    'key:service:<base64 encoded key>'),
 ]
 
 CONF = cfg.CONF
@@ -288,6 +296,29 @@ def queue_get_for(context, topic, host):
     <host>.
     """
     return '%s.%s' % (topic, host) if host else topic
+
+
+_SERVICENAME = None
+
+
+def set_service_name(name):
+    """Sets a global with the global rpc serivce name.
+
+    This function should be normally used as follows:
+
+        rpc.set_service_name(rpc.queue_get_for(topic, host))
+
+    This name may be used later on to find the identity of the service in order
+    to do things like source keys for signing of messages.
+    """
+    global _SERVICENAME
+    _SERVICENAME = name
+
+
+def get_service_name():
+    """Returns the global rpc service name"""
+    global _SERVICENAME
+    return _SERVICENAME
 
 
 _RPCIMPL = None
