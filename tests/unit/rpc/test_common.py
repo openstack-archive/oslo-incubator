@@ -14,7 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 """
-Unit Tests for 'common' functons used through rpc code.
+Unit Tests for 'common' functions used through rpc code.
 """
 
 import logging
@@ -28,6 +28,7 @@ from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import rpc
 from openstack.common.rpc import common as rpc_common
+from openstack.common.rpc import securemessage as rpc_secmsg
 from tests import utils as test_utils
 
 
@@ -324,6 +325,180 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
 
         self.assertRaises(rpc_common.UnsupportedRpcEnvelopeVersion,
                           rpc_common.deserialize_msg, s_msg)
+
+    def _test_msg_signing(self, msg, src, dst, sm='required'):
+        cfg.CONF.secure_messages = sm
+
+        try:
+            rpc.set_service_name(src)
+
+            serialized = rpc_common.serialize_msg(msg, dst)
+
+            rpc_secmsg.KEYcache(wipe=True)
+            rpc.set_service_name(dst)
+
+            ret = rpc_common.deserialize_msg(serialized)
+        finally:
+            cfg.CONF.secure_messages = 'optional'
+
+        return ret
+
+    def test_msg_signing_ok(self):
+        msg = {'foo': 'bar'}
+        src = 'foo'
+        dst = 'bar'
+        # Pre-calculated key material for testing
+        skey = '\x0fS\xcb\xf5x\xe2\x83X%\x0b\xe5\xe5\x92\xd7\x0e4'
+        ekey = 'L\x85\x11\x9b9\xa6\x9a\xaa]\xcb4\xfa\x9f\xa0\xf7\xeb'
+        esek = ('DbfMIyYVFHYPyeUjQY0AwDAz6roe6Y2qqrNTenJJwGE8'
+                'pyN8QiRBxTND8M2xVvyanIbwmW8h1FhH7T1GHD4hy8eE'
+                'l50IexWzlEbMks8kuFflCpVhTdE40W+NtqcGc9C58Oy/'
+                'boTa1IU5Yk60EjU5Bp+t6ogBBTA5A/8s3J45udY=')
+
+        cfg.CONF.secure_message_key = ('key:'
+                                       + src + ':DwsLDwsLDwsLDwsLDwsLDw==,'
+                                       + dst + ':CwsLCwsLCwsLCwsLCwsLCw==')
+        # Adds test keys in cache, we do it twice, once for client side use,
+        # then for server side use as we run both in the same process
+        store = rpc_secmsg.KEYstore(src, dst)
+        keys = store.format_ticket(skey, ekey, esek)
+        store.put_keys('ticket', 2000000000, keys)
+        keys = store.format_sek(skey, ekey)
+        store.put_keys('sek', 2000000000, keys)
+
+        ret = self._test_msg_signing(msg, src, dst)
+
+        self.assertEqual(msg, ret)
+
+    def test_msg_signing_fail_no_dest(self):
+        msg = {'foo': 'bar'}
+        src = 'foo'
+        dst = 'bar'
+        # Pre-calculated key material for testing
+        skey = '\x0fS\xcb\xf5x\xe2\x83X%\x0b\xe5\xe5\x92\xd7\x0e4'
+        ekey = 'L\x85\x11\x9b9\xa6\x9a\xaa]\xcb4\xfa\x9f\xa0\xf7\xeb'
+        esek = ('DbfMIyYVFHYPyeUjQY0AwDAz6roe6Y2qqrNTenJJwGE8'
+                'pyN8QiRBxTND8M2xVvyanIbwmW8h1FhH7T1GHD4hy8eE'
+                'l50IexWzlEbMks8kuFflCpVhTdE40W+NtqcGc9C58Oy/'
+                'boTa1IU5Yk60EjU5Bp+t6ogBBTA5A/8s3J45udY=')
+
+        cfg.CONF.secure_message_key = ('key:'
+                                       + src + ':DwsLDwsLDwsLDwsLDwsLDw==,'
+                                       + dst + ':CwsLCwsLCwsLCwsLCwsLCw==')
+        # Adds test keys in cache, we do it twice, once for client side use,
+        # then for server side use as we run both in the same process
+        store = rpc_secmsg.KEYstore(src, dst)
+        keys = store.format_ticket(skey, ekey, esek)
+        store.put_keys('ticket', 2000000000, keys)
+        keys = store.format_sek(skey, ekey)
+        store.put_keys('sek', 2000000000, keys)
+
+        # NOTE: bad destination
+        self.assertRaises(rpc_secmsg.CommunicationError,
+                          self._test_msg_signing, msg, src, 'bad')
+
+    def test_msg_signing_opt_nofail_no_dest(self):
+        msg = {'foo': 'bar'}
+        src = 'foo'
+        dst = 'bar'
+        # Pre-calculated key material for testing
+        skey = '\x0fS\xcb\xf5x\xe2\x83X%\x0b\xe5\xe5\x92\xd7\x0e4'
+        ekey = 'L\x85\x11\x9b9\xa6\x9a\xaa]\xcb4\xfa\x9f\xa0\xf7\xeb'
+        esek = ('DbfMIyYVFHYPyeUjQY0AwDAz6roe6Y2qqrNTenJJwGE8'
+                'pyN8QiRBxTND8M2xVvyanIbwmW8h1FhH7T1GHD4hy8eE'
+                'l50IexWzlEbMks8kuFflCpVhTdE40W+NtqcGc9C58Oy/'
+                'boTa1IU5Yk60EjU5Bp+t6ogBBTA5A/8s3J45udY=')
+
+        cfg.CONF.secure_message_key = ('key:'
+                                       + src + ':DwsLDwsLDwsLDwsLDwsLDw==,'
+                                       + dst + ':CwsLCwsLCwsLCwsLCwsLCw==')
+        store = rpc_secmsg.KEYstore(src, dst)
+        keys = store.format_ticket(skey, ekey, esek)
+        store.put_keys('ticket', 2000000000, keys)
+        keys = store.format_sek(skey, ekey)
+        store.put_keys('sek', 2000000000, keys)
+
+        # NOTE: bad destination cause no failure if signing is optional
+        ret = self._test_msg_signing(msg, src, 'bad', sm='optional')
+
+        self.assertEqual(msg, ret)
+
+    def test_msg_signing_fail_dstkey(self):
+        msg = {'foo': 'bar'}
+        src = 'foo'
+        dst = 'bar'
+        # Pre-calculated key material for testing
+        skey = '\x0fS\xcb\xf5x\xe2\x83X%\x0b\xe5\xe5\x92\xd7\x0e4'
+        ekey = 'L\x85\x11\x9b9\xa6\x9a\xaa]\xcb4\xfa\x9f\xa0\xf7\xeb'
+        esek = ('DbfMIyYVFHYPyeUjQY0AwDAz6roe6Y2qqrNTenJJwGE8'
+                'pyN8QiRBxTND8M2xVvyanIbwmW8h1FhH7T1GHD4hy8eE'
+                'l50IexWzlEbMks8kuFflCpVhTdE40W+NtqcGc9C58Oy/'
+                'boTa1IU5Yk60EjU5Bp+t6ogBBTA5A/8s3J45udY=')
+
+        # NOTE: Uses wrong decryption key so that we get a bad metadata error
+        cfg.CONF.secure_message_key = ('key:'
+                                       + src + ':BadKBadKBadKBadKBadKBa==,'
+                                       + dst + ':BadKBadKBadKBadKBadKBa==')
+        store = rpc_secmsg.KEYstore(src, dst)
+        keys = store.format_ticket(skey, ekey, esek)
+        store.put_keys('ticket', 2000000000, keys)
+        keys = store.format_sek(skey, ekey)
+        store.put_keys('sek', 2000000000, keys)
+
+        self.assertRaises(rpc_secmsg.InvalidMetadata,
+                          self._test_msg_signing, msg, src, dst)
+
+    def test_msg_signing_fail_signature(self):
+        msg = {'foo': 'bar'}
+        src = 'foo'
+        dst = 'bar'
+        # Pre-calculated key material for testing
+        # NOTE: Uses a bad signing key to cause signature errors
+        skey = 'bad\xf5x\xe2\x83X%\x0b\xe5\xe5\x92\xd7\x0e4'
+        ekey = 'L\x85\x11\x9b9\xa6\x9a\xaa]\xcb4\xfa\x9f\xa0\xf7\xeb'
+        esek = ('DbfMIyYVFHYPyeUjQY0AwDAz6roe6Y2qqrNTenJJwGE8'
+                'pyN8QiRBxTND8M2xVvyanIbwmW8h1FhH7T1GHD4hy8eE'
+                'l50IexWzlEbMks8kuFflCpVhTdE40W+NtqcGc9C58Oy/'
+                'boTa1IU5Yk60EjU5Bp+t6ogBBTA5A/8s3J45udY=')
+
+        cfg.CONF.secure_message_key = ('key:'
+                                       + src + ':DwsLDwsLDwsLDwsLDwsLDw==,'
+                                       + dst + ':CwsLCwsLCwsLCwsLCwsLCw==')
+        store = rpc_secmsg.KEYstore(src, dst)
+        keys = store.format_ticket(skey, ekey, esek)
+        store.put_keys('ticket', 2000000000, keys)
+        keys = store.format_sek(skey, ekey)
+        store.put_keys('sek', 2000000000, keys)
+
+        self.assertRaises(rpc_secmsg.InvalidSignature,
+                          self._test_msg_signing, msg, src, dst)
+
+    def test_msg_signing_fail_opt_signature(self):
+        msg = {'foo': 'bar'}
+        src = 'foo'
+        dst = 'bar'
+        # Pre-calculated key material for testing
+        # NOTE: Uses a bad signing key to cause signature errors
+        skey = 'bad\xf5x\xe2\x83X%\x0b\xe5\xe5\x92\xd7\x0e4'
+        ekey = 'L\x85\x11\x9b9\xa6\x9a\xaa]\xcb4\xfa\x9f\xa0\xf7\xeb'
+        esek = ('DbfMIyYVFHYPyeUjQY0AwDAz6roe6Y2qqrNTenJJwGE8'
+                'pyN8QiRBxTND8M2xVvyanIbwmW8h1FhH7T1GHD4hy8eE'
+                'l50IexWzlEbMks8kuFflCpVhTdE40W+NtqcGc9C58Oy/'
+                'boTa1IU5Yk60EjU5Bp+t6ogBBTA5A/8s3J45udY=')
+
+        cfg.CONF.secure_message_key = ('key:'
+                                       + src + ':DwsLDwsLDwsLDwsLDwsLDw==,'
+                                       + dst + ':CwsLCwsLCwsLCwsLCwsLCw==')
+        store = rpc_secmsg.KEYstore(src, dst)
+        keys = store.format_ticket(skey, ekey, esek)
+        store.put_keys('ticket', 2000000000, keys)
+        keys = store.format_sek(skey, ekey)
+        store.put_keys('sek', 2000000000, keys)
+
+        # NOTE: Receiver should fail if it receives a bad signature, even if
+        # signing is optional
+        self.assertRaises(rpc_secmsg.InvalidSignature,
+                          self._test_msg_signing, msg, src, dst, sm='optional')
 
     def test_safe_log_sanitizes_globals(self):
         def logger_method(msg, data):
