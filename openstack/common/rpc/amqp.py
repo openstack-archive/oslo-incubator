@@ -537,7 +537,7 @@ def multicall(conf, context, topic, msg, timeout, connection_pool):
     msg.update({'_reply_q': connection_pool.reply_proxy.get_reply_q()})
     wait_msg = MulticallProxyWaiter(conf, msg_id, timeout, connection_pool)
     with ConnectionContext(conf, connection_pool) as conn:
-        conn.topic_send(topic, rpc_common.serialize_msg(msg), timeout)
+        conn.topic_send(topic, rpc_common.serialize_msg(msg, topic), timeout)
     return wait_msg
 
 
@@ -557,7 +557,7 @@ def cast(conf, context, topic, msg, connection_pool):
     _add_unique_id(msg)
     pack_context(msg, context)
     with ConnectionContext(conf, connection_pool) as conn:
-        conn.topic_send(topic, rpc_common.serialize_msg(msg))
+        conn.topic_send(topic, rpc_common.serialize_msg(msg, topic))
 
 
 def fanout_cast(conf, context, topic, msg, connection_pool):
@@ -566,7 +566,7 @@ def fanout_cast(conf, context, topic, msg, connection_pool):
     _add_unique_id(msg)
     pack_context(msg, context)
     with ConnectionContext(conf, connection_pool) as conn:
-        conn.fanout_send(topic, rpc_common.serialize_msg(msg))
+        conn.fanout_send(topic, rpc_common.serialize_msg(msg, topic))
 
 
 def cast_to_server(conf, context, server_params, topic, msg, connection_pool):
@@ -575,7 +575,10 @@ def cast_to_server(conf, context, server_params, topic, msg, connection_pool):
     pack_context(msg, context)
     with ConnectionContext(conf, connection_pool, pooled=False,
                            server_params=server_params) as conn:
-        conn.topic_send(topic, rpc_common.serialize_msg(msg))
+        fulltopic = topic
+        if 'hostname' in server_params:
+            fulltopic += ('.' + server_params['hostname'])
+        conn.topic_send(topic, rpc_common.serialize_msg(msg, fulltopic))
 
 
 def fanout_cast_to_server(conf, context, server_params, topic, msg,
@@ -585,7 +588,10 @@ def fanout_cast_to_server(conf, context, server_params, topic, msg,
     pack_context(msg, context)
     with ConnectionContext(conf, connection_pool, pooled=False,
                            server_params=server_params) as conn:
-        conn.fanout_send(topic, rpc_common.serialize_msg(msg))
+        fulltopic = topic
+        if 'hostname' in server_params:
+            fulltopic += ('.' + server_params['hostname'])
+        conn.fanout_send(topic, rpc_common.serialize_msg(msg, fulltopic))
 
 
 def notify(conf, context, topic, msg, connection_pool, envelope):
@@ -597,7 +603,7 @@ def notify(conf, context, topic, msg, connection_pool, envelope):
     pack_context(msg, context)
     with ConnectionContext(conf, connection_pool) as conn:
         if envelope:
-            msg = rpc_common.serialize_msg(msg)
+            msg = rpc_common.serialize_msg(msg, topic)
         conn.notify_send(topic, msg)
 
 
