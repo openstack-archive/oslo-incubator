@@ -303,6 +303,33 @@ def queue_get_for(context, topic, host):
     return '%s.%s' % (topic, host) if host else topic
 
 
+_SERVICENAME = None
+
+
+def set_service_name(topic, host):
+    """Sets a global with the global rpc serivce name.
+
+    This function should be normally used as follows:
+
+        rpc.set_service_name(topic, host)
+
+    This name may be used later on to find the identity of the service in order
+    to do things like source keys for signing of messages.
+    """
+    global _SERVICENAME
+    _SERVICENAME = (topic, host)
+
+
+def get_service_name(merge=False):
+    """Returns the global rpc service name."""
+    global _SERVICENAME
+    if not _SERVICENAME:
+        return None
+    if merge:
+        return '%s.%s' % _SERVICENAME
+    return _SERVICENAME
+
+
 _RPCIMPL = None
 
 
