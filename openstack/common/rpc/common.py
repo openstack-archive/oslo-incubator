@@ -28,6 +28,8 @@ from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import local
 from openstack.common import log as logging
+from openstack.common import rpc
+from openstack.common.rpc import crypto
 
 
 CONF = cfg.CONF
@@ -46,7 +48,20 @@ This version number applies to the message envelope that is used in the
 serialization done inside the rpc layer.  See serialize_msg() and
 deserialize_msg().
 
-The current message format (version 2.0) is very simple.  It is:
+The current message format (version 2.1) it has 2 mandatory fields and 2
+optional fields.
+    {
+        'oslo.version': <RPC Envelope Version as a String>,
+        'oslo.message': <Application Message Payload, JSON encoded, optionally
+                         encrypted>
+        'oslo.secure.metadata': <metadata for the signature, JSON encoded>
+        'oslo.secure.signature': <a HMAC signature over the other fields
+                                  HMAC(key, (version || metadata || message))>
+    }
+The 'secure' field are optional but should be either both present or both
+absent. If they are not present a receiver may decide to refuse the message.
+
+The message format (version 2.0) is very simple.  It is:
 
     {
         'oslo.version': <RPC Envelope Version as a String>,
@@ -64,10 +79,12 @@ We will JSON encode the application message payload.  The message envelope,
 which includes the JSON encoded application message body, will be passed down
 to the messaging libraries as a dict.
 '''
-_RPC_ENVELOPE_VERSION = '2.0'
+_RPC_ENVELOPE_VERSION = '2.1'
 
 _VERSION_KEY = 'oslo.version'
 _MESSAGE_KEY = 'oslo.message'
+_METADATA_KEY = 'oslo.secure.metadata'
+_SIGNATURE_KEY = 'oslo.secure.signature'
 
 
 class RPCException(Exception):
@@ -156,6 +173,8 @@ class UnsupportedRpcEnvelopeVersion(RPCException):
     message = _("Specified RPC envelope version, %(version)s, "
                 "not supported by this endpoint.")
 
+class InvalidRPCEnvelope(RPCException):
+    message = _("Invalid RPC Envelope: %s")
 
 class Connection(object):
     """A connection, returned by rpc.create_connection().
@@ -454,12 +473,29 @@ def version_is_compatible(imp_version, version):
         return False
     return True
 
-
-def serialize_msg(raw_msg):
+def serialize_msg(raw_msg, topic=None):
     # NOTE(russellb) See the docstring for _RPC_ENVELOPE_VERSION for more
     # information about this format.
+    version = _RPC_ENVELOPE_VERSION
+    message = jsonutils.dumps(raw_msg)
+    metadata = None
+    signature = None
+
+    try:
+        if topic is not None:
+            secmsg = rpc.crypto.SecureMessage(rpc.get_service_name())
+            metadata, message, signature = secmsg.encode(version, topic, message)
+    except Exception:
+        if CONF.secure_messages != 'optional':
+            raise
+        pass
+
     msg = {_VERSION_KEY: _RPC_ENVELOPE_VERSION,
-           _MESSAGE_KEY: jsonutils.dumps(raw_msg)}
+           _MESSAGE_KEY: message}
+
+    if (metadata is not None and signature is not None):
+        msg[_METADATA_KEY] = metadata
+        msg[_SIGNATURE_KEY] = signature
 
     return msg
 
@@ -499,10 +535,28 @@ def deserialize_msg(msg):
 
     # At this point we think we have the message envelope
     # format we were expecting. (#1.a above)
-
     if not version_is_compatible(_RPC_ENVELOPE_VERSION, msg[_VERSION_KEY]):
         raise UnsupportedRpcEnvelopeVersion(version=msg[_VERSION_KEY])
 
-    raw_msg = jsonutils.loads(msg[_MESSAGE_KEY])
+    raw_msg = None
+    try:
+        if _SIGNATURE_KEY in msg:
+            secmsg = rpc.crypto.SecureMessage(rpc.get_service_name())
+            metadata, raw_msg = secmsg.decode(msg[_VERSION_KEY],
+                                              msg[_METADATA_KEY],
+                                              msg[_MESSAGE_KEY],
+                                              msg[_SIGNATURE_KEY])
+        else:
+            if CONF.secure_messages != 'optional':
+                raise InvalidRPCEnvelope(_('Missing Required Signature'))
+    except rpc.crypto.SecureMessageException:
+        raise
+    except Exception:
+        if CONF.secure_messages == 'optional':
+            pass
+        raise
+
+    if raw_msg is None:
+        raw_msg = jsonutils.loads(msg[_MESSAGE_KEY])
 
     return raw_msg
