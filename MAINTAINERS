@@ -238,8 +238,8 @@ F: sslutils.py
 
 == strutils ==
 
-M:
-S: Orphan
+M: Flavio Percoco <flavio@redhat.com>
+S: Maintained
 F: strutils.py
 
 == threadgroup ==
