@@ -17,6 +17,9 @@
 
 from __future__ import print_function
 
+import os
+import tempfile
+
 from openstack.common import processutils
 from tests import utils
 
@@ -81,3 +84,83 @@ class ProcessExecutionErrorTest(utils.BaseTestCase):
         stderr = 'Cottonian library'
         err = processutils.ProcessExecutionError(stderr=stderr)
         self.assertTrue(stderr in str(err.message))
+
+    def test_retry_on_failure(self):
+        fd, tmpfilename = tempfile.mkstemp()
+        _, tmpfilename2 = tempfile.mkstemp()
+        try:
+            fp = os.fdopen(fd, 'w+')
+            fp.write('''#!/bin/sh
+# If stdin fails to get passed during one of the runs, make a note.
+if ! grep -q foo
+then
+    echo 'failure' > "$1"
+fi
+# If stdin has failed to get passed during this or a previous run, exit early.
+if grep failure "$1"
+then
+    exit 1
+fi
+runs="$(cat $1)"
+if [ -z "$runs" ]
+then
+    runs=0
+fi
+runs=$(($runs + 1))
+echo $runs > "$1"
+exit 1
+''')
+            fp.close()
+            os.chmod(tmpfilename, 0755)
+            self.assertRaises(processutils.ProcessExecutionError,
+                              processutils.execute,
+                              tmpfilename, tmpfilename2, attempts=10,
+                              process_input='foo',
+                              delay_on_retry=False)
+            fp = open(tmpfilename2, 'r')
+            runs = fp.read()
+            fp.close()
+            self.assertNotEquals(runs.strip(), 'failure', 'stdin did not '
+                                                          'always get passed '
+                                                          'correctly')
+            runs = int(runs.strip())
+            self.assertEquals(runs, 10,
+                              'Ran %d times instead of 10.' % (runs,))
+        finally:
+            os.unlink(tmpfilename)
+            os.unlink(tmpfilename2)
+
+    def test_unknown_kwargs_raises_error(self):
+        self.assertRaises(processutils.UnknownArgumentError,
+                          processutils.execute,
+                          '/usr/bin/env', 'true',
+                          this_is_not_a_valid_kwarg=True)
+
+    def test_check_exit_code_boolean(self):
+        processutils.execute('/usr/bin/env', 'false', check_exit_code=False)
+        self.assertRaises(processutils.ProcessExecutionError,
+                          processutils.execute,
+                          '/usr/bin/env', 'false', check_exit_code=True)
+
+    def test_no_retry_on_success(self):
+        fd, tmpfilename = tempfile.mkstemp()
+        _, tmpfilename2 = tempfile.mkstemp()
+        try:
+            fp = os.fdopen(fd, 'w+')
+            fp.write("""#!/bin/sh
+# If we've already run, bail out.
+grep -q foo "$1" && exit 1
+# Mark that we've run before.
+echo foo > "$1"
+# Check that stdin gets passed correctly.
+grep foo
+""")
+            fp.close()
+            os.chmod(tmpfilename, 0755)
+            processutils.execute(tmpfilename,
+                                 tmpfilename2,
+                                 process_input='foo',
+                                 attempts=2)
+        finally:
+            os.unlink(tmpfilename)
+            os.unlink(tmpfilename2)
