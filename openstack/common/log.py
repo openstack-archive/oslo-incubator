@@ -207,7 +207,27 @@ def _get_log_file_path(binary=None):
         return '%s.log' % (os.path.join(logdir, binary),)
 
 
-class ContextAdapter(logging.LoggerAdapter):
+class BaseLoggerAdapter(logging.LoggerAdapter):
+
+    def audit(self, msg, *args, **kwargs):
+        self.log(logging.AUDIT, msg, *args, **kwargs)
+
+
+class LazyAdapter(BaseLoggerAdapter):
+    def __init__(self, name='unknown', version='unknown'):
+        self._logger = None
+        self.extra = {}
+        self.name = name
+        self.version = version
+
+    @property
+    def logger(self):
+        if not self._logger:
+            self._logger = getLogger(self.name, self.version)
+        return self._logger
+
+
+class ContextAdapter(BaseLoggerAdapter):
     warn = logging.LoggerAdapter.warning
 
     def __init__(self, logger, project_name, version_string):
@@ -215,8 +235,9 @@ class ContextAdapter(logging.LoggerAdapter):
         self.project = project_name
         self.version = version_string
 
-    def audit(self, msg, *args, **kwargs):
-        self.log(logging.AUDIT, msg, *args, **kwargs)
+    @property
+    def handlers(self):
+        return self.logger.handlers
 
     def deprecated(self, msg, *args, **kwargs):
         stdmsg = _("Deprecated: %s") % msg
@@ -438,6 +459,15 @@ def getLogger(name='unknown', version='unknown'):
                                         name,
                                         version)
     return _loggers[name]
+
+
+def getLazyLogger(name='unknown', version='unknown'):
+    """
+    create a pass-through logger that does not create the real logger
+    until it is really needed and delegates all calls to the real logger
+    once it is created
+    """
+    return LazyAdapter(name, version)
 
 
 class WritableLogger(object):
