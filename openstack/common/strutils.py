@@ -21,11 +21,6 @@ System-level utilities and helper functions.
 
 import sys
 
-from openstack.common import log as logging
-
-
-LOG = logging.getLogger(__name__)
-
 
 def int_from_bool_as_string(subject):
     """
