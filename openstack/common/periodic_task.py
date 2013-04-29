@@ -152,6 +152,10 @@ class _PeriodicTasksMeta(type):
 class PeriodicTasks(object):
     __metaclass__ = _PeriodicTasksMeta
 
+    # NOTE(mikal): it is important that this class not implement an __init__
+    # method. This is because nova uses this class as a mixin, and __init__
+    # wont be called because of resolution order.
+
     def run_periodic_tasks(self, context, raise_on_error=False):
         """Tasks to be run at a periodic interval."""
         idle_for = DEFAULT_INTERVAL
