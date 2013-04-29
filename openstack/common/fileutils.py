@@ -19,6 +19,13 @@
 import errno
 import os
 
+from openstack.common.gettextutils import _
+from openstack.common import log as logging
+
+LOG = logging.getLogger(__name__)
+
+_FILE_CACHE = {}
+
 
 def ensure_tree(path):
     """Create a directory (and any ancestor directories required)
@@ -33,3 +40,28 @@ def ensure_tree(path):
                 raise
         else:
             raise
+
+
+def read_cached_file(filename, force_reload=False):
+    """Read from a file if it has been modified.
+
+    :param force_reload: Whether to reload the file.
+    :returns: A tuple with a boolean specifying if the data is fresh
+              or not.
+    """
+    global _FILE_CACHE
+
+    if force_reload and filename in _FILE_CACHE:
+        del _FILE_CACHE[filename]
+
+    reloaded = False
+    mtime = os.path.getmtime(filename)
+    cache_info = _FILE_CACHE.setdefault(filename, {})
+
+    if not cache_info or mtime > cache_info.get('mtime', 0):
+        LOG.debug(_("Reloading cached file %s") % filename)
+        with open(filename) as fap:
+            cache_info['data'] = fap.read()
+        cache_info['mtime'] = mtime
+        reloaded = True
+    return (reloaded, cache_info['data'])
