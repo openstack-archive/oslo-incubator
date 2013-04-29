@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Code-Review+2: Jason Kölker <jason@koelker.net>
+Code-Review+1: Zhongyue Luo <zhongyue.luo@gmail.com>
+Approved+1: Michael Still <mikal@stillhq.com>
+Code-Review+2: Michael Still <mikal@stillhq.com>
+Submitted-by: Jenkins
+Submitted-at: Mon, 29 Apr 2013 11:20:18 +0000
+Reviewed-on: https://review.openstack.org/27685
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
