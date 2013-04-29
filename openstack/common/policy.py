@@ -60,18 +60,36 @@ import abc
 import re
 import urllib
 
+from oslo.config import cfg
 import urllib2
 
 from openstack.common.gettextutils import _
+from openstack.common import fileutils
 from openstack.common import jsonutils
 from openstack.common import log as logging
 
+policy_opts = [
+    cfg.StrOpt('policy_file',
+               default='policy.json',
+               help=_('JSON file representing policy')),
+    cfg.StrOpt('policy_default_rule',
+               default='default',
+               help=_('Rule checked when requested rule is not found')),
+]
+
+CONF = cfg.CONF
+CONF.register_opts(policy_opts)
 
 LOG = logging.getLogger(__name__)
 
-
-_rules = None
 _checks = {}
+
+
+class PolicyNotAuthorized(Exception):
+
+    def __init__(self, rule):
+        msg = _("Policy doesn't allow %s to be performed." % rule)
+        super(PolicyNotAuthorized, self).__init__(msg)
 
 
 class Rules(dict):
@@ -123,65 +141,141 @@ class Rules(dict):
         return jsonutils.dumps(out_rules, indent=4)
 
 
-# Really have to figure out a way to deprecate this
-def set_rules(rules):
-    """Set the rules in use for policy checks."""
-
-    global _rules
-
-    _rules = rules
-
-
-# Ditto
-def reset():
-    """Clear the rules used for policy checks."""
-
-    global _rules
-
-    _rules = None
-
-
-def check(rule, target, creds, exc=None, *args, **kwargs):
+class Enforcer(object):
     """
-    Checks authorization of a rule against the target and credentials.
+    Responsible for loading and enforcing rules
 
-    :param rule: The rule to evaluate.
-    :param target: As much information about the object being operated
-                   on as possible, as a dictionary.
-    :param creds: As much information about the user performing the
-                  action as possible, as a dictionary.
-    :param exc: Class of the exception to raise if the check fails.
-                Any remaining arguments passed to check() (both
-                positional and keyword arguments) will be passed to
-                the exception class.  If exc is not provided, returns
-                False.
-
-    :return: Returns False if the policy does not allow the action and
-             exc is not provided; otherwise, returns a value that
-             evaluates to True.  Note: for rules using the "case"
-             expression, this True value will be the specified string
-             from the expression.
+    :param policy_file: Custom policy file to use, if none is
+                        specified, `CONF.policy_file` will be
+                        used.
+    :param rules: Default dictionary / Rules to use. It will be
+                  considered just in the first instantiation. If
+                  `load_rules(True)`, `clear()` or `set_rules(True)`
+                  is called this will be overwritten.
+    :param default_rule: Default rule to use, CONF.default_rule will
+                         be used if none is specified.
     """
 
-    # Allow the rule to be a Check tree
-    if isinstance(rule, BaseCheck):
-        result = rule(target, creds)
-    elif not _rules:
-        # No rules to reference means we're going to fail closed
-        result = False
-    else:
-        try:
-            # Evaluate the rule
-            result = _rules[rule](target, creds)
-        except KeyError:
-            # If the rule doesn't exist, fail closed
+    def __init__(self, policy_file=None, rules=None, default_rule=None):
+        self.rules = Rules(rules)
+        self.default_rule = default_rule or CONF.policy_default_rule
+
+        self.policy_path = None
+        self.policy_file = policy_file or CONF.policy_file
+
+    def set_rules(self, rules, overwrite=True):
+        """
+        Create a new Rules object based on the provided dict of rules
+
+        :param rules: New rules to use. It should be an instance of dict.
+        :param overwrite: Whether to overwrite current rules or update them
+                          with the new rules.
+        """
+
+        if not isinstance(rules, dict):
+            raise TypeError(_("Rules must be an instance of dict, "
+                            "got %s instead") % type(rules))
+
+        new_rules = rules
+        if not overwrite and self.rules:
+            new_rules = self.rules
+            new_rules.update(rules)
+
+        self.rules = Rules(new_rules)
+
+    def clear(self):
+        """
+        Clears Enforcer rules,  policy's cache
+        and policy's path.
+        """
+        self.set_rules({})
+        self.policy_path = None
+
+    def load_rules(self, force_reload=False):
+        """
+        Loads policy_path's rules. Policy file is cached
+        and will be reloaded if modified.
+
+        :param force_reload: Whether to overwrite current rules.
+        """
+
+        if not self.policy_path:
+            self.policy_path = self._get_policy_path()
+
+        reloaded, data = fileutils.read_cached_file(self.policy_path,
+                                                    force_reload=force_reload)
+
+        if reloaded:
+            rules = Rules.load_json(data, self.default_rule)
+            self.set_rules(rules, force_reload)
+
+    def _get_policy_path(self):
+        """
+        Locate the policy json data file
+
+        :param policy_file: Custom policy file to locate.
+
+        :returns: The policy path
+
+        :raises: ConfigFilesNotFoundError if the file couldn't
+                 be located.
+        """
+        policy_file = CONF.find_file(self.policy_file)
+
+        if policy_file:
+            return policy_file
+
+        raise cfg.ConfigFilesNotFoundError(path=CONF.policy_file)
+
+    def enforce(self, rule, target, creds, do_raise=False,
+                exc=None, *args, **kwargs):
+        """
+        Checks authorization of a rule against the target and credentials.
+
+        :param rule: A string specifying the rule to evaluate.
+        :param target: As much information about the object being operated
+                    on as possible, as a dictionary.
+        :param creds: As much information about the user performing the
+                    action as possible, as a dictionary.
+        :param do_raise: Whether to raise an exception or not if check
+                        fails.
+        :param exc: Class of the exception to raise if the check fails.
+                    Any remaining arguments passed to check() (both
+                    positional and keyword arguments) will be passed to
+                    the exception class. If not specified, PolicyNotAuthorized
+                    will be used.
+
+        :return: Returns False if the policy does not allow the action and
+                exc is not provided; otherwise, returns a value that
+                evaluates to True.  Note: for rules using the "case"
+                expression, this True value will be the specified string
+                from the expression.
+        """
+
+        self.load_rules()
+
+        # Allow the rule to be a Check tree
+        if isinstance(rule, BaseCheck):
+            result = rule(target, creds, self)
+        elif not self.rules:
+            # No rules to reference means we're going to fail closed
             result = False
+        else:
+            try:
+                # Evaluate the rule
+                result = self.rules[rule](target, creds, self)
+            except KeyError:
+                # If the rule doesn't exist, fail closed
+                result = False
 
-    # If it is False, raise the exception if requested
-    if exc and result is False:
-        raise exc(*args, **kwargs)
+        # If it is False, raise the exception if requested
+        if do_raise and result is False:
+            if not exc:
+                raise PolicyNotAuthorized(rule)
+            else:
+                raise exc(*args, **kwargs)
 
-    return result
+        return result
 
 
 class BaseCheck(object):
@@ -722,13 +816,13 @@ def register(name, func=None):
 
 @register("rule")
 class RuleCheck(Check):
-    def __call__(self, target, creds):
+    def __call__(self, target, creds, enforcer):
         """
         Recursively checks credentials based on the defined rules.
         """
 
         try:
-            return _rules[self.match](target, creds)
+            return enforcer.rules[self.match](target, creds, enforcer)
         except KeyError:
             # We don't have any matching rule; fail closed
             return False
@@ -736,7 +830,7 @@ class RuleCheck(Check):
 
 @register("role")
 class RoleCheck(Check):
-    def __call__(self, target, creds):
+    def __call__(self, target, creds, enforcer):
         """Check that there is a matching role in the cred dict."""
 
         return self.match.lower() in [x.lower() for x in creds['roles']]
@@ -744,7 +838,7 @@ class RoleCheck(Check):
 
 @register('http')
 class HttpCheck(Check):
-    def __call__(self, target, creds):
+    def __call__(self, target, creds, enforcer):
         """
         Check http: rules by calling to a remote server.
 
@@ -762,7 +856,7 @@ class HttpCheck(Check):
 
 @register(None)
 class GenericCheck(Check):
-    def __call__(self, target, creds):
+    def __call__(self, target, creds, enforcer):
         """
         Check an individual match.
 
