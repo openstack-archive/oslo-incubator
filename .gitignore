@@ -1,6 +1,7 @@
 *.swp
 *.pyc
 *.log
+*~
 .coverage
 requirements.txt
 .venv
