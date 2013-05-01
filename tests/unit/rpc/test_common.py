@@ -150,15 +150,15 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
             'class': 'FakeUserDefinedException',
             'module': self.__class__.__module__,
             'tb': ['raise FakeUserDefinedException'],
-            'args': (u'fakearg',),
-            'kwargs': {u'fakekwarg': u'fake'},
+            'args': ('fakearg',),
+            'kwargs': {'fakekwarg': 'fake'},
         }
         serialized = jsonutils.dumps(failure)
 
         after_exc = rpc_common.deserialize_remote_exception(FLAGS, serialized)
         self.assertTrue(isinstance(after_exc, FakeUserDefinedException))
-        self.assertEqual(after_exc.args, (u'fakearg',))
-        self.assertEqual(after_exc.kwargs, {u'fakekwarg': u'fake'})
+        self.assertEqual(after_exc.args, ('fakearg',))
+        self.assertEqual(after_exc.kwargs, {'fakekwarg': 'fake'})
 
     def test_deserialize_remote_exception_cannot_recreate(self):
         """Ensure a RemoteError is returned on initialization failure.
