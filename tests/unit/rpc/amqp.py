@@ -56,7 +56,7 @@ class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
                       {"method": "echo", "args": {"value": value}})
 
         # Wait for the cast to complete.
-        for x in xrange(50):
+        for x in range(50):
             if info['unpacked']:
                 break
             greenthread.sleep(0.1)
