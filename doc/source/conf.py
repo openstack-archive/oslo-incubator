@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import six
 import sys
 
 sys.path.insert(0, os.path.abspath('../..'))
@@ -24,8 +25,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Oslo'
-copyright = u'2012, OpenStack Foundation'
+project = six.u('Oslo')
+copyright = six.u('2012, OpenStack Foundation')
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
 add_function_parentheses = True
@@ -57,8 +58,8 @@ html_last_updated_fmt = os.popen(git_cmd).read()
 latex_documents = [
         ('index',
          '%s.tex' % project,
-         u'%s Documentation' % project,
-         u'OpenStack Foundation', 'manual'),
+         six.u('%s Documentation') % project,
+         six.u('OpenStack Foundation'), 'manual'),
 ]
 
 # Example configuration for intersphinx: refer to the Python standard library.

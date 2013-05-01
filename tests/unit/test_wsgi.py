@@ -16,6 +16,7 @@
 #    under the License.
 
 import os
+import six
 import socket
 import urllib2
 
@@ -189,7 +190,7 @@ class JSONDictSerializerTest(utils.BaseTestCase):
     def test_object_unicode(self):
         class TestUnicode:
             def __unicode__(self):
-                return u'TestUnicode'
+                return six.u('TestUnicode')
         input_dict = dict(cls=TestUnicode())
         expected_str = '{"cls":"TestUnicode"}'
         serializer = wsgi.JSONDictSerializer()

@@ -16,6 +16,7 @@
 #    under the License.
 
 import mock
+import six
 
 from openstack.common import strutils
 from tests import utils
@@ -47,24 +48,25 @@ class StrUtilsTest(utils.BaseTestCase):
         self.assertFalse(strutils.bool_from_string('This should not be True'))
 
     def test_unicode_bool_from_string(self):
-        self.assertTrue(strutils.bool_from_string(u'true'))
-        self.assertTrue(strutils.bool_from_string(u'TRUE'))
-        self.assertTrue(strutils.bool_from_string(u'on'))
-        self.assertTrue(strutils.bool_from_string(u'On'))
-        self.assertTrue(strutils.bool_from_string(u'yes'))
-        self.assertTrue(strutils.bool_from_string(u'YES'))
-        self.assertTrue(strutils.bool_from_string(u'yEs'))
-        self.assertTrue(strutils.bool_from_string(u'1'))
+        self.assertTrue(strutils.bool_from_string(six.u('true')))
+        self.assertTrue(strutils.bool_from_string(six.u('TRUE')))
+        self.assertTrue(strutils.bool_from_string(six.u('on')))
+        self.assertTrue(strutils.bool_from_string(six.u('On')))
+        self.assertTrue(strutils.bool_from_string(six.u('yes')))
+        self.assertTrue(strutils.bool_from_string(six.u('YES')))
+        self.assertTrue(strutils.bool_from_string(six.u('yEs')))
+        self.assertTrue(strutils.bool_from_string(six.u('1')))
 
-        self.assertFalse(strutils.bool_from_string(u'false'))
-        self.assertFalse(strutils.bool_from_string(u'FALSE'))
-        self.assertFalse(strutils.bool_from_string(u'off'))
-        self.assertFalse(strutils.bool_from_string(u'OFF'))
-        self.assertFalse(strutils.bool_from_string(u'no'))
-        self.assertFalse(strutils.bool_from_string(u'NO'))
-        self.assertFalse(strutils.bool_from_string(u'0'))
-        self.assertFalse(strutils.bool_from_string(u'42'))
-        self.assertFalse(strutils.bool_from_string(u'This should not be True'))
+        self.assertFalse(strutils.bool_from_string(six.u('false')))
+        self.assertFalse(strutils.bool_from_string(six.u('FALSE')))
+        self.assertFalse(strutils.bool_from_string(six.u('off')))
+        self.assertFalse(strutils.bool_from_string(six.u('OFF')))
+        self.assertFalse(strutils.bool_from_string(six.u('no')))
+        self.assertFalse(strutils.bool_from_string(six.u('NO')))
+        self.assertFalse(strutils.bool_from_string(six.u('0')))
+        self.assertFalse(strutils.bool_from_string(six.u('42')))
+        self.assertFalse(strutils.bool_from_string(six.u
+                                                  ('This should not be True')))
 
     def test_other_bool_from_string(self):
         self.assertFalse(strutils.bool_from_string(mock.Mock()))
@@ -76,25 +78,25 @@ class StrUtilsTest(utils.BaseTestCase):
     def test_safe_decode(self):
         safe_decode = strutils.safe_decode
         self.assertRaises(TypeError, safe_decode, True)
-        self.assertEqual(u'ni\xf1o', safe_decode("ni\xc3\xb1o",
-                                                 incoming="utf-8"))
-        self.assertEqual(u"test", safe_decode("dGVzdA==",
-                                              incoming='base64'))
+        self.assertEqual(six.u('ni\xf1o'), safe_decode("ni\xc3\xb1o",
+                         incoming="utf-8"))
+        self.assertEqual(six.u("test"), safe_decode("dGVzdA==",
+                         incoming='base64'))
 
-        self.assertEqual(u"strange", safe_decode('\x80strange',
-                                                 errors='ignore'))
+        self.assertEqual(six.u("strange"), safe_decode('\x80strange',
+                         errors='ignore'))
 
-        self.assertEqual(u'\xc0', safe_decode('\xc0',
-                                              incoming='iso-8859-1'))
+        self.assertEqual(six.u('\xc0'), safe_decode('\xc0',
+                         incoming='iso-8859-1'))
 
         # Forcing incoming to ascii so it falls back to utf-8
-        self.assertEqual(u'ni\xf1o', safe_decode('ni\xc3\xb1o',
-                                                 incoming='ascii'))
+        self.assertEqual(six.u('ni\xf1o'), safe_decode('ni\xc3\xb1o',
+                         incoming='ascii'))
 
     def test_safe_encode(self):
         safe_encode = strutils.safe_encode
         self.assertRaises(TypeError, safe_encode, True)
-        self.assertEqual("ni\xc3\xb1o", safe_encode(u'ni\xf1o',
+        self.assertEqual("ni\xc3\xb1o", safe_encode(six.u('ni\xf1o'),
                                                     encoding="utf-8"))
         self.assertEqual("dGVzdA==\n", safe_encode("test",
                                                    encoding='base64'))
