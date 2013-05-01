@@ -242,6 +242,7 @@ Efficient use of soft deletes:
 
 import os.path
 import re
+import six
 import time
 
 from eventlet import greenthread
@@ -483,7 +484,7 @@ def _add_regexp_listener(dbapi_con, con_record):
 
     def regexp(expr, item):
         reg = re.compile(expr)
-        return reg.search(unicode(item)) is not None
+        return reg.search(six.text_type(item)) is not None
     dbapi_con.create_function('regexp', 2, regexp)
 
 

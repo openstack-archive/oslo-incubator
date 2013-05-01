@@ -18,6 +18,7 @@
 #    under the License.
 
 import copy
+import six
 import sys
 import traceback
 
@@ -299,7 +300,8 @@ def serialize_remote_exception(failure_info, log_failure=True):
     tb = traceback.format_exception(*failure_info)
     failure = failure_info[1]
     if log_failure:
-        LOG.error(_("Returning exception %s to caller"), unicode(failure))
+        LOG.error(_("Returning exception %s to caller"),
+                  six.text_type(failure))
         LOG.error(tb)
 
     kwargs = {}
@@ -309,7 +311,7 @@ def serialize_remote_exception(failure_info, log_failure=True):
     data = {
         'class': str(failure.__class__.__name__),
         'module': str(failure.__class__.__module__),
-        'message': unicode(failure),
+        'message': six.text_type(failure),
         'tb': tb,
         'args': failure.args,
         'kwargs': kwargs

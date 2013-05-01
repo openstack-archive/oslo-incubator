@@ -18,6 +18,7 @@ Unit Tests for 'common' functons used through rpc code.
 """
 
 import logging
+import six
 import sys
 
 from oslo.config import cfg
@@ -96,7 +97,8 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         after_exc = rpc_common.deserialize_remote_exception(FLAGS, serialized)
         self.assertTrue(isinstance(after_exc, NotImplementedError))
         #assure the traceback was added
-        self.assertTrue('raise NotImplementedError' in unicode(after_exc))
+        self.assertTrue('raise NotImplementedError' in
+                        six.text_type(after_exc))
 
     def test_deserialize_remote_custom_exception(self):
         failure = {
@@ -109,9 +111,9 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
 
         after_exc = rpc_common.deserialize_remote_exception(FLAGS, serialized)
         self.assertTrue(isinstance(after_exc, exception.OpenstackException))
-        self.assertTrue('An unknown' in unicode(after_exc))
+        self.assertTrue('An unknown' in six.text_type(after_exc))
         #assure the traceback was added
-        self.assertTrue('raise OpenstackException' in unicode(after_exc))
+        self.assertTrue('raise OpenstackException' in six.text_type(after_exc))
 
     def test_deserialize_remote_exception_bad_module(self):
         failure = {
@@ -138,7 +140,8 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         after_exc = rpc_common.deserialize_remote_exception(FLAGS, serialized)
         self.assertTrue(isinstance(after_exc, FakeUserDefinedException))
         #assure the traceback was added
-        self.assertTrue('raise FakeUserDefinedException' in unicode(after_exc))
+        self.assertTrue('raise FakeUserDefinedException' in
+                        six.text_type(after_exc))
 
     def test_deserialize_remote_exception_args_and_kwargs(self):
         """
@@ -178,7 +181,8 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         after_exc = rpc_common.deserialize_remote_exception(FLAGS, serialized)
         self.assertTrue(isinstance(after_exc, rpc_common.RemoteError))
         #assure the traceback was added
-        self.assertTrue('raise FakeIDontExistException' in unicode(after_exc))
+        self.assertTrue('raise FakeIDontExistException' in
+                        six.text_type(after_exc))
 
     def test_loading_old_nova_config(self):
         self.config(rpc_backend='nova.rpc.impl_qpid')
