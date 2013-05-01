@@ -55,6 +55,8 @@ the modules to copy and the base destination module
 Obviously, the first way is the easiest!
 """
 
+from __future__ import print_function
+
 import functools
 import glob
 import os
@@ -171,8 +173,8 @@ def _copy_pyfile(path, base, dest_dir):
 
 
 def _copy_module(mod, base, dest_dir):
-    print ("Copying openstack.common.%s under the %s module in %s" %
-           (mod, base, dest_dir))
+    print(("Copying openstack.common.%s under the %s module in %s" %
+           (mod, base, dest_dir)))
 
     copy_pyfile = functools.partial(_copy_pyfile,
                                     base=base, dest_dir=dest_dir)
@@ -203,7 +205,7 @@ def _copy_module(mod, base, dest_dir):
     for matches in [glob.glob(g) for g in globs_to_copy]:
         for match in matches:
             dest = os.path.join(dest_dir, match.replace('oslo', base))
-            print "Copying %s to %s" % (match, dest)
+            print("Copying %s to %s" % (match, dest))
             _copy_file(match, dest, base)
 
 
@@ -275,15 +277,15 @@ def main(argv):
         dest_dir = os.path.dirname(conf.config_file[-1])
 
     if not dest_dir or not os.path.isdir(dest_dir):
-        print >> sys.stderr, "A valid destination dir is required"
+        print("A valid destination dir is required", file=sys.stderr)
         sys.exit(1)
 
     if not conf.module and not conf.modules:
-        print >> sys.stderr, "A list of modules to copy is required"
+        print("A list of modules to copy is required", file=sys.stderr)
         sys.exit(1)
 
     if not conf.base:
-        print >> sys.stderr, "A destination base module is required"
+        print("A destination base module is required", file=sys.stderr)
         sys.exit(1)
 
     _create_module_init(conf.base, dest_dir)
