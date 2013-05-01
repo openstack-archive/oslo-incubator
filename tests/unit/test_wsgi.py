@@ -21,6 +21,7 @@ import urllib2
 
 import mock
 import routes
+import six
 import webob
 
 from openstack.common import exception
@@ -189,7 +190,7 @@ class JSONDictSerializerTest(utils.BaseTestCase):
     def test_object_unicode(self):
         class TestUnicode:
             def __unicode__(self):
-                return u'TestUnicode'
+                return six.u('TestUnicode')
         input_dict = dict(cls=TestUnicode())
         expected_str = '{"cls":"TestUnicode"}'
         serializer = wsgi.JSONDictSerializer()
