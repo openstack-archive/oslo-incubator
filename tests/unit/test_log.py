@@ -35,11 +35,11 @@ class CommonLoggerTestsMixIn(object):
                                                   '%(message)s')
         self.log = None
 
-    def test_handlers_have_legacy_formatter(self):
+    def test_handlers_have_context_formatter(self):
         formatters = []
         for h in self.log.logger.handlers:
             f = h.formatter
-            if isinstance(f, log.LegacyFormatter):
+            if isinstance(f, log.ContextFormatter):
                 formatters.append(f)
         self.assert_(formatters)
         self.assertEqual(len(formatters), len(self.log.logger.handlers))
@@ -203,9 +203,9 @@ class JSONFormatterTestCase(test_utils.BaseTestCase):
         self.assertTrue(data['traceback'])
 
 
-class LegacyFormatterTestCase(test_utils.BaseTestCase):
+class ContextFormatterTestCase(test_utils.BaseTestCase):
     def setUp(self):
-        super(LegacyFormatterTestCase, self).setUp()
+        super(ContextFormatterTestCase, self).setUp()
         self.config(logging_context_format_string="HAS CONTEXT "
                                                   "[%(request_id)s]: "
                                                   "%(message)s",
@@ -214,7 +214,7 @@ class LegacyFormatterTestCase(test_utils.BaseTestCase):
         self.log = log.getLogger()
         self.stream = cStringIO.StringIO()
         self.handler = logging.StreamHandler(self.stream)
-        self.handler.setFormatter(log.LegacyFormatter())
+        self.handler.setFormatter(log.ContextFormatter())
         self.log.logger.addHandler(self.handler)
         self.addCleanup(self.log.logger.removeHandler, self.handler)
         self.level = self.log.logger.getEffectiveLevel()
@@ -245,7 +245,7 @@ class ExceptionLoggingTestCase(test_utils.BaseTestCase):
 
         stream = cStringIO.StringIO()
         handler = logging.StreamHandler(stream)
-        handler.setFormatter(log.LegacyFormatter())
+        handler.setFormatter(log.ContextFormatter())
         exc_log.logger.addHandler(handler)
         self.addCleanup(exc_log.logger.removeHandler, handler)
         excepthook = log._create_logging_excepthook(product_name)
@@ -280,7 +280,7 @@ class FancyRecordTestCase(test_utils.BaseTestCase):
         self.stream = cStringIO.StringIO()
 
         self.colorhandler = log.ColorHandler(self.stream)
-        self.colorhandler.setFormatter(log.LegacyFormatter())
+        self.colorhandler.setFormatter(log.ContextFormatter())
 
         self.colorlog = log.getLogger()
         self.colorlog.logger.addHandler(self.colorhandler)
@@ -369,8 +369,8 @@ class LogConfigOptsTestCase(test_utils.BaseTestCase):
         self.assertTrue(CONF.log_config is None)
         self.assertTrue(CONF.log_file is None)
         self.assertTrue(CONF.log_dir is None)
+        self.assertTrue(CONF.log_format is None)
 
-        self.assertEquals(CONF.log_format, log._DEFAULT_LOG_FORMAT)
         self.assertEquals(CONF.log_date_format, log._DEFAULT_LOG_DATE_FORMAT)
 
         self.assertEquals(CONF.use_syslog, False)
@@ -394,6 +394,21 @@ class LogConfigOptsTestCase(test_utils.BaseTestCase):
         logdir = '/some/other/path/'
         CONF(['--logdir', logdir])
         self.assertEquals(CONF.log_dir, logdir)
+
+    def test_log_format_overrides_formatter(self):
+        CONF(['--log-format', '[Any format]'])
+        log._setup_logging_from_conf()
+        logger = log._loggers[None].logger
+        for handler in logger.handlers:
+            formatter = handler.formatter
+            self.assertTrue(isinstance(formatter, logging.Formatter))
+
+    def test_default_formatter(self):
+        log._setup_logging_from_conf()
+        logger = log._loggers[None].logger
+        for handler in logger.handlers:
+            formatter = handler.formatter
+            self.assertTrue(isinstance(formatter, log.ContextFormatter))
 
 
 class LogConfigTestCase(test_utils.BaseTestCase):
