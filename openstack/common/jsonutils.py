@@ -38,6 +38,7 @@ import functools
 import inspect
 import itertools
 import json
+import six
 import types
 import xmlrpclib
 
@@ -93,7 +94,7 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
     # value of itertools.count doesn't get caught by nasty_type_tests
     # and results in infinite loop when list(value) is called.
     if type(value) == itertools.count:
-        return unicode(value)
+        return six.text_type(value)
 
     # FIXME(vish): Workaround for LP bug 852095. Without this workaround,
     #              tests that raise an exception in a mocked method that
@@ -137,12 +138,12 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
             return recursive(value.__dict__, level=level + 1)
         else:
             if any(test(value) for test in _nasty_type_tests):
-                return unicode(value)
+                return six.text_type(value)
             return value
     except TypeError:
         # Class objects are tricky since they may define something like
         # __iter__ defined but it isn't callable as list().
-        return unicode(value)
+        return six.text_type(value)
 
 
 def dumps(value, default=to_primitive, **kwargs):

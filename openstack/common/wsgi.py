@@ -22,6 +22,7 @@ eventlet.patcher.monkey_patch(all=False, socket=True)
 
 import datetime
 import errno
+import six
 import socket
 import sys
 import time
@@ -451,7 +452,7 @@ class JSONDictSerializer(DictSerializer):
             if isinstance(obj, datetime.datetime):
                 _dtime = obj - datetime.timedelta(microseconds=obj.microsecond)
                 return _dtime.isoformat()
-            return unicode(obj)
+            return six.text_type(obj)
         return jsonutils.dumps(data, default=sanitizer)
 
 

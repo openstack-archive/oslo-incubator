@@ -26,6 +26,7 @@ import contextlib
 import logging
 
 import mock
+import six
 from oslo.config import cfg
 
 from openstack.common import exception
@@ -465,9 +466,10 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
                            "args": {"value": value}})
             self.fail("should have thrown Exception")
         except NotImplementedError as exc:
-            self.assertTrue(value in unicode(exc))
+            self.assertTrue(value in six.text_type(exc))
             #Traceback should be included in exception message
-            self.assertTrue('raise NotImplementedError(value)' in unicode(exc))
+            self.assertTrue('raise NotImplementedError(value)' in
+                            six.text_type(exc))
 
     def test_call_converted_exception(self):
         """Test that exception gets passed back properly.
@@ -492,9 +494,9 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
                            "args": {"value": value}})
             self.fail("should have thrown Exception")
         except exception.ApiError as exc:
-            self.assertTrue(value in unicode(exc))
+            self.assertTrue(value in six.text_type(exc))
             #Traceback should be included in exception message
-            self.assertTrue('exception.ApiError' in unicode(exc))
+            self.assertTrue('exception.ApiError' in six.text_type(exc))
 
     def test_create_worker(self):
         meth = 'declare_topic_consumer'
