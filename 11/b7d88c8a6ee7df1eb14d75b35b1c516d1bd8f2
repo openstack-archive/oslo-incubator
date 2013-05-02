@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Code-Review+2: Adam Gandelman <adam.gandelman@canonical.com>
+Approved+1: garyk <gkotton@redhat.com>
+Code-Review+2: garyk <gkotton@redhat.com>
+Code-Review+1: Neela Shah <neela@us.ibm.com>
+Submitted-by: Jenkins
+Submitted-at: Thu, 02 May 2013 07:02:16 +0000
+Reviewed-on: https://review.openstack.org/27911
+Project: openstack/oslo-incubator
+Branch: refs/heads/stable/grizzly
