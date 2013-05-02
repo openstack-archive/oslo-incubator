@@ -141,8 +141,8 @@ F: local.py
 
 == lockutils ==
 
-M:
-S: Orphan
+M: Michael Still <mikal@stillhq.com>
+S: Maintained
 F: lockutils.py
 
 == log ==
@@ -201,8 +201,8 @@ F: policy.py
 
 == processutils ==
 
-M:
-S: Orphan
+M: Michael Still <mikal@stillhq.com>
+S: Maintained
 F: processutils.py
 
 == rootwrap ==
@@ -226,8 +226,8 @@ F: scheduler/
 
 == service ==
 
-M:
-S: Orphan
+M: Michael Still <mikal@stillhq.com>
+S: Maintained
 F: service.py
 
 == sslutils ==
