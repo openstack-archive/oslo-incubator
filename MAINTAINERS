@@ -183,8 +183,8 @@ F: pastedeploy.py
 
 == periodic_task ==
 
-M:
-S: Orphan
+M: Michael Still <mikal@stillhq.com>
+S: Maintained
 F: periodic_task.py
 
 == plugins ==
