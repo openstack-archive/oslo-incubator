@@ -16,7 +16,7 @@
 Tests For Scheduler weights.
 """
 
-from openstack.common.scheduler import weight
+from openstack.common.scheduler import base_weight
 from tests.unit import fakes
 from tests import utils
 
@@ -24,7 +24,8 @@ from tests import utils
 class TestWeightHandler(utils.BaseTestCase):
     def test_get_all_classes(self):
         namespace = "openstack.common.tests.fakes.weights"
-        handler = weight.BaseWeightHandler(weight.BaseWeigher, namespace)
+        handler = base_weight.BaseWeightHandler(
+            base_weight.BaseWeigher, namespace)
         classes = handler.get_all_classes()
         self.assertTrue(fakes.FakeWeigher1 in classes)
         self.assertTrue(fakes.FakeWeigher2 in classes)
