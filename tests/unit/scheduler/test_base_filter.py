@@ -65,8 +65,10 @@ class FakeFilter1(BaseFakeFilter):
 
 class FakeFilter2(BaseFakeFilter):
     """
-    * Should be NOT included in all_classes
+    * Should be included in all_classes
     * Derives from BaseFakeFilter
+    * AND
+    * It is returned by all_filters
     * BUT
     * It has no entry point
     """
@@ -85,6 +87,8 @@ class FakeFilter4(BaseFakeFilter):
     Should be included
     * Derives from BaseFakeFilter
     * AND
+    * It is returned by all_filters
+    * AND
     * It has an entrypoint
     """
     pass
@@ -95,15 +99,21 @@ class FakeFilter5(BaseFakeFilter):
     Should NOT be included
     * Derives from BaseFakeFilter
     * BUT
+    * It is NOT returned by all_filters
+    * AND
     * It has NO entrypoint
     """
     pass
 
 
+def all_filters():
+    return FakeFilter2, FakeFilter3, FakeFilter4
+
+
 class FakeExtensionManager(list):
 
     def __init__(self, namespace):
-        classes = [FakeFilter1, FakeFilter3, FakeFilter4]
+        classes = [FakeFilter1, FakeFilter3, all_filters, FakeFilter4]
         exts = map(FakeExtension, classes)
         super(FakeExtensionManager, self).__init__(exts)
         self.namespace = namespace
@@ -122,9 +132,12 @@ class TestBaseFilterHandler(utils.BaseTestCase):
         # In order for a FakeFilter to be returned by get_all_classes, it has
         # to comply with these rules:
         # * It must be derived from BaseFakeFilter
-        #   AND
-        # * It must have a python entrypoint assigned (returned by
+        #   AND (
+        # * It have a python entrypoint assigned (returned by
         #   FakeExtensionManager)
-        expected = [FakeFilter1, FakeFilter4]
+        #   OR
+        # * it must be returned by all_filters (which is an entrypoint)
+        # )
+        expected = set([FakeFilter1, FakeFilter2, FakeFilter4])
         result = self.handler.get_all_classes()
         self.assertEqual(expected, result)

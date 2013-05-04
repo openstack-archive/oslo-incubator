@@ -17,9 +17,7 @@
 Pluggable Weighing support
 """
 
-import inspect
-
-from stevedore import extension
+from openstack.common.scheduler import base_handler
 
 
 class WeighedObject(object):
@@ -56,25 +54,8 @@ class BaseWeigher(object):
                            self._weigh_object(obj.obj, weight_properties))
 
 
-class BaseWeightHandler(object):
+class BaseWeightHandler(base_handler.BaseHandler):
     object_class = WeighedObject
-
-    def __init__(self, weighed_object_type, weight_namespace):
-        self.namespace = weight_namespace
-        self.weighed_object_type = weighed_object_type
-        self.weight_manager = extension.ExtensionManager(weight_namespace)
-
-    def _is_correct_class(self, obj):
-        """Return whether an object is a class of the correct type and
-        is not prefixed with an underscore.
-        """
-        return (inspect.isclass(obj) and
-                not obj.__name__.startswith('_') and
-                issubclass(obj, self.weighed_object_type))
-
-    def get_all_classes(self):
-        return [x.plugin for x in self.weight_manager
-                if self._is_correct_class(x.plugin)]
 
     def get_weighed_objects(self, weigher_classes, obj_list,
                             weighing_properties):
