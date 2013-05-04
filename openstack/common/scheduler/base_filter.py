@@ -17,9 +17,7 @@
 Filter support
 """
 
-import inspect
-
-from stevedore import extension
+from openstack.common.scheduler import base_handler
 
 
 class BaseFilter(object):
@@ -42,27 +40,11 @@ class BaseFilter(object):
                 yield obj
 
 
-class BaseFilterHandler(object):
+class BaseFilterHandler(base_handler.BaseHandler):
     """ Base class to handle loading filter classes.
 
     This class should be subclassed where one needs to use filters.
     """
-    def __init__(self, filter_class_type, filter_namespace):
-        self.namespace = filter_namespace
-        self.filter_class_type = filter_class_type
-        self.filter_manager = extension.ExtensionManager(filter_namespace)
-
-    def _is_correct_class(self, obj):
-        """Return whether an object is a class of the correct type and
-        is not prefixed with an underscore.
-        """
-        return (inspect.isclass(obj) and
-                not obj.__name__.startswith('_') and
-                issubclass(obj, self.filter_class_type))
-
-    def get_all_classes(self):
-        return [x.plugin for x in self.filter_manager
-                if self._is_correct_class(x.plugin)]
 
     def get_filtered_objects(self, filter_classes, objs,
                              filter_properties):
