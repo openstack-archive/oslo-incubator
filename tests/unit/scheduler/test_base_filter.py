@@ -113,7 +113,7 @@ class TestBaseFilterHandler(utils.BaseTestCase):
 
     def setUp(self):
         super(TestBaseFilterHandler, self).setUp()
-        self.stubs.Set(base_filter.extension, 'ExtensionManager',
+        self.stubs.Set(base_filter.base_handler.extension, 'ExtensionManager',
                        FakeExtensionManager)
         self.handler = base_filter.BaseFilterHandler(BaseFakeFilter,
                                                      'fake_filters')
