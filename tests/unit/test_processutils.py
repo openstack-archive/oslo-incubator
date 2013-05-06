@@ -17,7 +17,9 @@
 
 from __future__ import print_function
 
+import fixtures
 import os
+import StringIO
 import tempfile
 
 from openstack.common import processutils
@@ -164,3 +166,86 @@ grep foo
         finally:
             os.unlink(tmpfilename)
             os.unlink(tmpfilename2)
+
+
+def fake_execute(*cmd, **kwargs):
+    return 'stdout', 'stderr'
+
+
+def fake_execute_raises(*cmd, **kwargs):
+    raise processutils.ProcessExecutionError(exit_code=42,
+                                             stdout='stdout',
+                                             stderr='stderr',
+                                             cmd=['this', 'is', 'a',
+                                                  'command'])
+
+
+class TryCmdTestCase(utils.BaseTestCase):
+    def test_keep_warnings(self):
+        self.useFixture(fixtures.MonkeyPatch(
+            'openstack.common.processutils.execute', fake_execute))
+        o, e = processutils.trycmd('this is a command'.split(' '))
+        self.assertNotEqual('', o)
+        self.assertNotEqual('', e)
+
+    def test_keep_warnings_from_raise(self):
+        self.useFixture(fixtures.MonkeyPatch(
+            'openstack.common.processutils.execute', fake_execute_raises))
+        o, e = processutils.trycmd('this is a command'.split(' '),
+                                   discard_warnings=True)
+        self.assertNotEqual(None, o)
+        self.assertNotEqual('', e)
+
+    def test_discard_warnings(self):
+        self.useFixture(fixtures.MonkeyPatch(
+            'openstack.common.processutils.execute', fake_execute))
+        o, e = processutils.trycmd('this is a command'.split(' '),
+                                   discard_warnings=True)
+        self.assertNotEqual(None, o)
+        self.assertEqual('', e)
+
+
+class FakeSshChannel(object):
+    def __init__(self, rc):
+        self.rc = rc
+
+    def recv_exit_status(self):
+        return self.rc
+
+
+class FakeSshStream(StringIO.StringIO):
+    def setup_channel(self, rc):
+        self.channel = FakeSshChannel(rc)
+
+
+class FakeSshConnection(object):
+    def __init__(self, rc):
+        self.rc = rc
+
+    def exec_command(self, cmd):
+        stdout = FakeSshStream('stdout')
+        stdout.setup_channel(self.rc)
+        return (StringIO.StringIO(),
+                stdout,
+                StringIO.StringIO('stderr'))
+
+
+class SshExecuteTestCase(utils.BaseTestCase):
+    def test_invalid_addl_env(self):
+        self.assertRaises(processutils.InvalidArgumentError,
+                          processutils.ssh_execute,
+                          None, 'ls', addl_env='important')
+
+    def test_invalid_process_input(self):
+        self.assertRaises(processutils.InvalidArgumentError,
+                          processutils.ssh_execute,
+                          None, 'ls', process_input='important')
+
+    def test_works(self):
+        o, e = processutils.ssh_execute(FakeSshConnection(0), 'ls')
+        self.assertEqual('stdout', o)
+        self.assertEqual('stderr', e)
+
+    def test_fails(self):
+        self.assertRaises(processutils.ProcessExecutionError,
+                          processutils.ssh_execute, FakeSshConnection(1), 'ls')
