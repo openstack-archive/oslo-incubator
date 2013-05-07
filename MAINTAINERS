@@ -250,14 +250,14 @@ F: threadgroup.py
 
 == timeutils ==
 
-M:
-S: Orphan
+M: Zhongyue Luo <zhongyue.nah@intel.com>
+S: Maintained
 F: timeutils.py
 
 == uuidutils ==
 
-M:
-S: Orphan
+M: Zhongyue Luo <zhongyue.nah@intel.com>
+S: Maintained
 F: uuidutils.py
 
 == wsgi ==
