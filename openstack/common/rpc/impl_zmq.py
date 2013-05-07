@@ -24,6 +24,7 @@ import uuid
 
 import eventlet
 import greenlet
+import six
 from oslo.config import cfg
 
 from openstack.common import excutils
@@ -554,8 +555,8 @@ def unflatten_envelope(packenv):
     h = {}
     try:
         while True:
-            k = i.next()
-            h[k] = i.next()
+            k = six.advance_iterator(i)
+            h[k] = six.advance_iterator(i)
     except StopIteration:
         return h
 
