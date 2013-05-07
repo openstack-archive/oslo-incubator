@@ -38,6 +38,7 @@ from eventlet import semaphore
 # This import should no longer be needed when the amqp_rpc_single_reply_queue
 # option is removed.
 from oslo.config import cfg
+import six
 
 from openstack.common import excutils
 from openstack.common.gettextutils import _
@@ -235,7 +236,7 @@ def msg_reply(conf, msg_id, reply_q, connection_pool, reply=None,
             msg = {'result': reply, 'failure': failure}
         except TypeError:
             msg = {'result': dict((k, repr(v))
-                   for k, v in reply.__dict__.iteritems()),
+                   for k, v in six.iteritems(reply.__dict__)),
                    'failure': failure}
         if ending:
             msg['ending'] = True
@@ -302,7 +303,7 @@ def pack_context(msg, context):
 
     """
     context_d = dict([('_context_%s' % key, value)
-                      for (key, value) in context.to_dict().iteritems()])
+                      for (key, value) in six.iteritems(context.to_dict())])
     msg.update(context_d)
 
 
@@ -551,7 +552,7 @@ class MulticallWaiter(object):
             raise StopIteration
         while True:
             try:
-                self._iterator.next()
+                six.advance_iterator(self._iterator)
             except Exception:
                 with excutils.save_and_reraise_exception():
                     self.done()
