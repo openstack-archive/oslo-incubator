@@ -32,6 +32,7 @@ import eventlet.wsgi
 from oslo.config import cfg
 import routes
 import routes.middleware
+import six
 import webob.dec
 import webob.exc
 from xml.dom import minidom
@@ -453,7 +454,7 @@ class JSONDictSerializer(DictSerializer):
             if isinstance(obj, datetime.datetime):
                 _dtime = obj - datetime.timedelta(microseconds=obj.microsecond)
                 return _dtime.isoformat()
-            return unicode(obj)
+            return six.text_type(obj)
         return jsonutils.dumps(data, default=sanitizer)
 
 

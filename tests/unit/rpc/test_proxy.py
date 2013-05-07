@@ -20,6 +20,8 @@ Unit Tests for rpc.proxy
 
 import copy
 
+import six
+
 from openstack.common import context
 from openstack.common import lockutils
 from openstack.common import rpc
@@ -102,7 +104,7 @@ class RpcProxyTestCase(utils.BaseTestCase):
                 self.assertEqual(
                     u'Timeout while waiting on RPC response - '
                     'topic: "fake_topic", RPC method: "fake_method" '
-                    'info: "The spider got you"', unicode(exc))
+                    'info: "The spider got you"', six.text_type(exc))
             _check_args(ctxt, topic, expected_msg, timeout=42)
             self.stubs.Set(rpc, rpc_method, _fake_rpc_method)
 
