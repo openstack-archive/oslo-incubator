@@ -15,6 +15,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import six
 from openstack.common.db.sqlalchemy import models
 from tests import utils as test_utils
 
@@ -50,7 +51,7 @@ class ModelBaseTest(test_utils.BaseTestCase):
         mb = models.ModelBase()
         h = {'a': '1', 'b': '2'}
         mb.update(h)
-        for key, value in mb.iteritems():
+        for key, value in six.iteritems(mb):
             self.assertEqual(h[key], value)
 
     def test_modelbase_iter(self):

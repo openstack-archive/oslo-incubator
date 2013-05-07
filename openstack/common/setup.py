@@ -28,6 +28,7 @@ import re
 import subprocess
 import sys
 
+import six
 from setuptools.command import sdist
 
 
@@ -54,7 +55,7 @@ def canonicalize_emails(changelog, mapping):
     """Takes in a string and an email alias mapping and replaces all
        instances of the aliases in the string with their real email.
     """
-    for alias, email_address in mapping.iteritems():
+    for alias, email_address in six.iteritems(mapping):
         changelog = changelog.replace(alias, email_address)
     return changelog
 

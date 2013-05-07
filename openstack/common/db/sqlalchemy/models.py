@@ -25,6 +25,7 @@ SQLAlchemy models.
 from sqlalchemy import Column, Integer
 from sqlalchemy import DateTime
 from sqlalchemy.orm import object_mapper
+import six
 
 from openstack.common.db.sqlalchemy.session import get_session
 from openstack.common import timeutils
@@ -70,12 +71,12 @@ class ModelBase(object):
         return self
 
     def next(self):
-        n = self._i.next()
+        n = six.adavnce_iterator(self._i)
         return n, getattr(self, n)
 
     def update(self, values):
         """Make the model object behave like a dict."""
-        for k, v in values.iteritems():
+        for k, v in six.iteritems(values):
             setattr(self, k, v)
 
     def iteritems(self):
@@ -83,10 +84,10 @@ class ModelBase(object):
 
         Includes attributes from joins."""
         local = dict(self)
-        joined = dict([(k, v) for k, v in self.__dict__.iteritems()
+        joined = dict([(k, v) for k, v in six.iteritems(self.__dict__)
                       if not k[0] == '_'])
         local.update(joined)
-        return local.iteritems()
+        return six.iteritems(local)
 
 
 class TimestampMixin(object):
