@@ -195,3 +195,19 @@ class LockTestCase(utils.BaseTestCase):
         finally:
             if os.path.exists(lock_dir):
                 shutil.rmtree(lock_dir, ignore_errors=True)
+
+    def test_synchronized_with_prefix(self):
+        lock_name = 'mylock'
+        lock_pfix = 'mypfix-'
+
+        foo = lockutils.synchronized_with_prefix(lock_pfix)
+
+        @foo(lock_name, external=True)
+        def bar(dirpath, pfix, name):
+            filepath = os.path.join(dirpath, '%s%s' % (pfix, name))
+            return os.path.isfile(filepath)
+
+        lock_dir = tempfile.mkdtemp()
+        self.config(lock_path=lock_dir)
+
+        self.assertTrue(bar(lock_dir, lock_pfix, lock_name))
