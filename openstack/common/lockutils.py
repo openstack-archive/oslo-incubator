@@ -36,17 +36,27 @@ from openstack.common import log as logging
 LOG = logging.getLogger(__name__)
 
 
-util_opts = [
+lock_opts = [
     cfg.BoolOpt('disable_process_locking', default=False,
                 help='Whether to disable inter-process locks'),
+    cfg.StrOpt('lock_file_prefix',
+               required=True,
+               help='Prefix string to use for lock files. Default to a '
+                    'temp directory'),
     cfg.StrOpt('lock_path',
-               help=('Directory to use for lock files. Default to a '
-                     'temp directory'))
+               help='Directory to use for lock files. Default to a '
+                    'temp directory')
 ]
 
 
 CONF = cfg.CONF
-CONF.register_opts(util_opts)
+CONF.register_opts(lock_opts)
+
+
+def set_defaults(lock_file_prefix, lock_path):
+    cfg.set_defaults(lock_opts,
+                     lock_file_prefix=lock_file_prefix,
+                     lock_path=lock_path)
 
 
 class _InterProcessLock(object):
@@ -131,12 +141,12 @@ else:
 _semaphores = weakref.WeakValueDictionary()
 
 
-def synchronized(name, lock_file_prefix, external=False, lock_path=None):
+def synchronized(name, lock_file_prefix=None, external=False, lock_path=None):
     """Synchronization decorator.
 
     Decorating a method like so::
 
-        @synchronized('mylock')
+        @synchronized
         def foo(self, *args):
            ...
 
@@ -144,11 +154,11 @@ def synchronized(name, lock_file_prefix, external=False, lock_path=None):
 
     Different methods can share the same lock::
 
-        @synchronized('mylock')
+        @synchronized
         def foo(self, *args):
            ...
 
-        @synchronized('mylock')
+        @synchronized
         def bar(self, *args):
            ...
 
@@ -156,6 +166,8 @@ def synchronized(name, lock_file_prefix, external=False, lock_path=None):
 
     The lock_file_prefix argument is used to provide lock files on disk with a
     meaningful prefix. The prefix should end with a hyphen ('-') if specified.
+    The prefix should be set via set_defaults() since invoking this decorator
+    with a lock_file_prefix argument is now deprecated.
 
     The external keyword argument denotes whether this lock should work across
     multiple processes. This means that if two different workers both run a
@@ -163,9 +175,15 @@ def synchronized(name, lock_file_prefix, external=False, lock_path=None):
     of them will execute at a time.
 
     The lock_path keyword argument is used to specify a special location for
-    external lock files to live. If nothing is set, then CONF.lock_path is
-    used as a default.
+    external lock files to live. The prefix should be set via set_defaults()
+    since invoking this decorator with a lock_path argument is now deprecated.
     """
+
+    if lock_file_prefix or lock_path:
+        LOG.deprecated('Passing %s as an argument is deprecated.' %
+                       'lock_file_prefix' if lock_file_prefix else 'lock_path')
+        set_defaults(lock_file_prefix or CONF.lock_file_prefix,
+                     lock_path or CONF.lock_path)
 
     def wrap(f):
         @functools.wraps(f)
@@ -198,9 +216,7 @@ def synchronized(name, lock_file_prefix, external=False, lock_path=None):
                         cleanup_dir = False
 
                         # We need a copy of lock_path because it is non-local
-                        local_lock_path = lock_path
-                        if not local_lock_path:
-                            local_lock_path = CONF.lock_path
+                        local_lock_path = CONF.lock_path
 
                         if not local_lock_path:
                             cleanup_dir = True
@@ -212,7 +228,8 @@ def synchronized(name, lock_file_prefix, external=False, lock_path=None):
                         # NOTE(mikal): the lock name cannot contain directory
                         # separators
                         safe_name = name.replace(os.sep, '_')
-                        lock_file_name = '%s%s' % (lock_file_prefix, safe_name)
+                        lock_file_name = '%s%s' % (CONF.lock_file_prefix,
+                                                   safe_name)
                         lock_file_path = os.path.join(local_lock_path,
                                                       lock_file_name)
 
