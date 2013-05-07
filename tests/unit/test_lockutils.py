@@ -128,7 +128,7 @@ class LockTestCase(utils.BaseTestCase):
     def _do_test_synchronized_externally(self):
         """We can lock across multiple processes"""
 
-        @lockutils.synchronized('external', 'test-', external=True)
+        @lockutils.synchronized('external', external=True)
         def lock_files(handles_dir):
             # Open some files we can use for locking
             handles = []
@@ -177,7 +177,7 @@ class LockTestCase(utils.BaseTestCase):
 
     def test_synchronized_externally(self):
         lock_dir = tempfile.mkdtemp()
-        self.config(lock_path=lock_dir)
+        lockutils.set_defaults('test-', lock_dir)
 
         try:
             self._do_test_synchronized_externally()
@@ -188,7 +188,7 @@ class LockTestCase(utils.BaseTestCase):
     def test_synchronized_externally_lock_dir_not_exist(self):
         lock_dir = tempfile.mkdtemp()
         os.rmdir(lock_dir)
-        self.config(lock_path=lock_dir)
+        lockutils.set_defaults('test-', lock_dir)
 
         try:
             self._do_test_synchronized_externally()
