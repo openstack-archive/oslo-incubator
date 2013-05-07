@@ -108,7 +108,7 @@ class LockTestCase(utils.BaseTestCase):
         """We can nest external syncs"""
         tempdir = tempfile.mkdtemp()
         try:
-            self.config(lock_path=tempdir)
+            lockutils.set_defaults(tempdir)
             sentinel = object()
 
             @lockutils.synchronized('testlock1', 'test-', external=True)
@@ -177,7 +177,7 @@ class LockTestCase(utils.BaseTestCase):
 
     def test_synchronized_externally(self):
         lock_dir = tempfile.mkdtemp()
-        self.config(lock_path=lock_dir)
+        lockutils.set_defaults(lock_dir)
 
         try:
             self._do_test_synchronized_externally()
@@ -188,10 +188,20 @@ class LockTestCase(utils.BaseTestCase):
     def test_synchronized_externally_lock_dir_not_exist(self):
         lock_dir = tempfile.mkdtemp()
         os.rmdir(lock_dir)
-        self.config(lock_path=lock_dir)
+        lockutils.set_defaults(lock_dir)
 
         try:
             self._do_test_synchronized_externally()
         finally:
             if os.path.exists(lock_dir):
                 shutil.rmtree(lock_dir, ignore_errors=True)
+
+    def test_synchronized_with_prefix(self):
+        sentinel = object()
+        foo = lockutils.synchronized_with_prefix('test-')
+
+        @foo('mylock', external=True)
+        def bar():
+            return sentinel
+
+        self.assertEqual(sentinel, bar())
