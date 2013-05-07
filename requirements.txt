@@ -16,3 +16,4 @@ http://tarballs.openstack.org/oslo.config/oslo.config-1.2.0a2.tar.gz#egg=oslo.co
 qpid-python
 six
 netaddr
+pycrypto>=2.6
