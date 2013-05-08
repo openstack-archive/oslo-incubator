@@ -20,8 +20,6 @@
 Utilities with minimum-depends for use in setup.py
 """
 
-from __future__ import print_function
-
 import email
 import os
 import re
