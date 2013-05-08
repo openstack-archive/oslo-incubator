@@ -173,8 +173,7 @@ def _copy_pyfile(path, base, dest_dir):
 
 
 def _copy_module(mod, base, dest_dir):
-    print(("Copying openstack.common.%s under the %s module in %s" %
-           (mod, base, dest_dir)))
+    print("Copying %s under the %s module in %s" % (mod, base, dest_dir))
 
     copy_pyfile = functools.partial(_copy_pyfile,
                                     base=base, dest_dir=dest_dir)
@@ -183,7 +182,8 @@ def _copy_module(mod, base, dest_dir):
         path = _mod_to_path('openstack.common')
         for d in mod.split('.')[:-1]:
             path = os.path.join(path, d)
-            copy_pyfile(os.path.join(path, '__init__.py'))
+            if os.path.isdir(path):
+                copy_pyfile(os.path.join(path, '__init__.py'))
 
     mod_path = _mod_to_path('openstack.common.%s' % mod)
     mod_file = '%s.py' % mod_path
@@ -200,6 +200,7 @@ def _copy_module(mod, base, dest_dir):
     globs_to_copy = [
         os.path.join('tools', mod + '*'),
         os.path.join('etc', 'oslo', mod + '*.conf'),
+        os.path.join('contrib', mod + '*'),
     ]
 
     for matches in [glob.glob(g) for g in globs_to_copy]:
