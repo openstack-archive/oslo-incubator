@@ -29,8 +29,6 @@ It also allows setting of formatting information through conf.
 
 """
 
-import ConfigParser
-import cStringIO
 import inspect
 import itertools
 import logging
@@ -41,6 +39,8 @@ import sys
 import traceback
 
 from oslo.config import cfg
+from six.moves import configparser
+from six.moves import StringIO
 
 from openstack.common.gettextutils import _
 from openstack.common import jsonutils
@@ -358,7 +358,7 @@ class LogConfigError(Exception):
 def _load_log_config(log_config):
     try:
         logging.config.fileConfig(log_config)
-    except ConfigParser.Error as exc:
+    except configparser.Error as exc:
         raise LogConfigError(log_config, str(exc))
 
 
@@ -527,7 +527,7 @@ class ContextFormatter(logging.Formatter):
         if not record:
             return logging.Formatter.formatException(self, exc_info)
 
-        stringbuffer = cStringIO.StringIO()
+        stringbuffer = StringIO()
         traceback.print_exception(exc_info[0], exc_info[1], exc_info[2],
                                   None, stringbuffer)
         lines = stringbuffer.getvalue().split('\n')

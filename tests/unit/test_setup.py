@@ -18,10 +18,10 @@
 import io
 import os
 import sys
-import StringIO
 from tempfile import mkstemp
 
 import fixtures
+from six.moves import StringIO
 
 from openstack.common import setup
 from tests import utils
@@ -105,14 +105,14 @@ class GitLogsTest(utils.BaseTestCase):
             "os.path.exists",
             lambda path: os.path.abspath(path) in exist_files))
         self.useFixture(fixtures.FakePopen(lambda _: {
-            "stdout": StringIO.StringIO("Author: Foo Bar <email@bar.com>\n")
+            "stdout": StringIO("Author: Foo Bar <email@bar.com>\n")
         }))
 
         builtin_open = open
 
         def _fake_open(name, mode):
             if name.endswith('.mailmap'):
-                # StringIO.StringIO doesn't have __exit__ (at least python 2.6)
+                # StringIO doesn't have __exit__ (at least python 2.6)
                 return io.BytesIO("Foo Bar <email@foo.com> <email@bar.com>\n")
             return builtin_open(name, mode)
         self.useFixture(fixtures.MonkeyPatch("__builtin__.open", _fake_open))
@@ -152,7 +152,7 @@ class GitLogsTest(utils.BaseTestCase):
             lambda path: os.path.abspath(path) in exist_files))
 
         self.useFixture(fixtures.FakePopen(lambda proc_args: {
-            "stdout": StringIO.StringIO(
+            "stdout": StringIO(
                 self._fake_log_output(proc_args["args"][2], cmd_map))
         }))
 
