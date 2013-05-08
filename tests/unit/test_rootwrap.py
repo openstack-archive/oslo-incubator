@@ -14,13 +14,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import ConfigParser
 import logging
 import logging.handlers
 import os
 import subprocess
 import uuid
 
+from six.moves import configparser
 import fixtures
 
 from openstack.common.rootwrap import filters
@@ -159,10 +159,10 @@ class RootwrapTestCase(utils.BaseTestCase):
         self.assertTrue(filtermatch is self.filters[-1])
 
     def test_RootwrapConfig(self):
-        raw = ConfigParser.RawConfigParser()
+        raw = configparser.RawConfigParser()
 
-        # Empty config should raise ConfigParser.Error
-        self.assertRaises(ConfigParser.Error, wrapper.RootwrapConfig, raw)
+        # Empty config should raise configparser.Error
+        self.assertRaises(configparser.Error, wrapper.RootwrapConfig, raw)
 
         # Check default values
         raw.set('DEFAULT', 'filters_path', '/a,/b')

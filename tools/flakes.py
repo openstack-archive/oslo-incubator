@@ -7,8 +7,9 @@
 
 __all__ = ['main']
 
-import __builtin__ as builtins
 import sys
+
+from six.moves import builtins
 
 import pyflakes.api
 from pyflakes import checker

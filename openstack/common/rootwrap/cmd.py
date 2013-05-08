@@ -35,7 +35,6 @@
 
 from __future__ import print_function
 
-import ConfigParser
 import logging
 import os
 import pwd
@@ -43,6 +42,7 @@ import signal
 import subprocess
 import sys
 
+from six.moves import ConfigParser
 
 RC_UNAUTHORIZED = 99
 RC_NOCOMMAND = 98
