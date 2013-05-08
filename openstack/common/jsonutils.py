@@ -39,12 +39,14 @@ import inspect
 import itertools
 import json
 import types
-import xmlrpclib
+try:
+    import xmlrpclib
+except ImportError:
+    import xmlrpc.client as xmlrpclib
 
 import six
 
 from openstack.common import timeutils
-
 
 _nasty_type_tests = [inspect.ismodule, inspect.isclass, inspect.ismethod,
                      inspect.isfunction, inspect.isgeneratorfunction,

@@ -15,8 +15,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import StringIO
 import sys
+
+from six.moves import StringIO
 
 from oslo.config import cfg
 
@@ -47,7 +48,7 @@ class DeferredVersionTestCase(utils.BaseTestCase):
 
         deferred_string = MyVersionInfo("openstack")\
             .cached_version_string()
-        self.stubs.Set(sys, 'stderr', StringIO.StringIO())
+        self.stubs.Set(sys, 'stderr', StringIO())
         self.assertRaises(SystemExit,
                           self.conf, ['--version'],
                           project="project",
@@ -66,7 +67,7 @@ class DeferredVersionTestCase(utils.BaseTestCase):
             .cached_version_string()
 
         for i in range(50):
-            self.stubs.Set(sys, 'stderr', StringIO.StringIO())
+            self.stubs.Set(sys, 'stderr', StringIO())
             self.assertRaises(SystemExit,
                               self.conf, ['--version'],
                               project="project",

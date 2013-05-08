@@ -17,9 +17,9 @@
 
 """Test of Policy Engine"""
 
-import StringIO
 import urllib
 
+from six.moves import StringIO
 import mock
 import urllib2
 
@@ -738,7 +738,7 @@ class HttpCheckTestCase(utils.BaseTestCase):
         return result
 
     @mock.patch.object(urllib2, 'urlopen',
-                       return_value=StringIO.StringIO('True'))
+                       return_value=StringIO('True'))
     def test_accept(self, mock_urlopen):
         check = policy.HttpCheck('http', '//example.com/%(name)s')
 
@@ -756,7 +756,7 @@ class HttpCheckTestCase(utils.BaseTestCase):
         ))
 
     @mock.patch.object(urllib2, 'urlopen',
-                       return_value=StringIO.StringIO('other'))
+                       return_value=StringIO('other'))
     def test_reject(self, mock_urlopen):
         check = policy.HttpCheck('http', '//example.com/%(name)s')
 
