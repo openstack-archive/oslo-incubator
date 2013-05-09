@@ -158,3 +158,40 @@ class RpcDispatcherTestCase(utils.BaseTestCase):
         self.assertEqual(v1.test_method_arg1, None)
         self.assertEqual(v4.test_method_ctxt, self.ctxt)
         self.assertEqual(v4.test_method_arg1, 1)
+
+    def test_serialization(self):
+        api = self.API1()
+        disp = dispatcher.RpcDispatcher([api])
+
+        self.serialized = False
+        self.deserialized = False
+
+        def fake_serialize(result):
+            self.serialized = True
+            return 'foo'
+
+        def fake_deserialize(kwargs):
+            self.deserialized = True
+
+        self.stubs.Set(disp, '_serialize_result', fake_serialize)
+        self.stubs.Set(disp, '_deserialize_args', fake_deserialize)
+
+        result = disp.dispatch(self.ctxt, '1.0', 'test_method',
+                               None, arg1=1)
+
+        self.assertTrue(self.serialized)
+        self.assertTrue(self.deserialized)
+        self.assertEqual(result, 'foo')
+
+    def test_serialize_result(self):
+        class Foo(object):
+            def to_primitive(self):
+                return 'primitive'
+
+        disp = dispatcher.RpcDispatcher(None)
+        result = disp._serialize_result(Foo())
+        self.assertEqual(result, 'primitive')
+
+    def test_deserialize_args(self):
+        disp = dispatcher.RpcDispatcher(None)
+        self.assertEqual(disp._deserialize_args({}), None)
