@@ -30,6 +30,7 @@ import unittest
 
 from openstack.common import cfg
 from openstack.common import context
+from openstack.common import jsonutils
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common import testutils
 
@@ -365,6 +366,92 @@ class RpcQpidTestCase(unittest.TestCase):
     @testutils.skip_if(qpid is None, "Test requires qpid")
     def test_multicall(self):
         self._test_call(multi=True)
+
+    def _test_publisher(self, message=True):
+        """Test that messages containing long strings are correctly serialized
+           in a way that Qpid can handle.
+
+        :param message: The publisher may be passed either a Qpid Message
+        object or a bare dict.  This parameter controls which of those the test
+        will send.
+        """
+        self.sent_msg = None
+
+        def send_stub(msg):
+            self.sent_msg = msg
+
+        # Qpid cannot serialize a dict containing a string > 65535 chars.
+        raw_msg = {'test': 'a' * 65536}
+        if message:
+            base_msg = qpid.messaging.Message(raw_msg)
+        else:
+            base_msg = raw_msg
+        expected_msg = qpid.messaging.Message(jsonutils.dumps(raw_msg))
+        expected_msg.content_type = impl_qpid.JSON_CONTENT_TYPE
+        mock_session = self.mox.CreateMock(self.orig_session)
+        mock_sender = self.mox.CreateMock(self.orig_sender)
+        mock_session.sender(mox.IgnoreArg()).AndReturn(mock_sender)
+        self.stubs.Set(mock_sender, 'send', send_stub)
+        self.mox.ReplayAll()
+
+        publisher = impl_qpid.Publisher(mock_session, 'test_node')
+        publisher.send(base_msg)
+
+        self.assertEqual(self.sent_msg.content, expected_msg.content)
+        self.assertEqual(self.sent_msg.content_type, expected_msg.content_type)
+
+    @testutils.skip_if(qpid is None, "Test requires qpid")
+    def test_publisher_long_message(self):
+        self._test_publisher(message=True)
+
+    @testutils.skip_if(qpid is None, "Test requires qpid")
+    def test_publisher_long_dict(self):
+        self._test_publisher(message=False)
+
+    def _test_consumer_long_message(self, json=True):
+        """Verify that the Qpid implementation correctly deserializes
+           message content.
+
+        :param json: For compatibility, this code needs to support both
+            messages that are and are not JSON encoded.  This param
+            specifies which is being tested.
+        """
+        def fake_callback(msg):
+            self.received_msg = msg
+
+        # The longest string Qpid can handle itself
+        chars = 65535
+        if json:
+            # The first length that requires JSON encoding
+            chars = 65536
+        raw_msg = {'test': 'a' * chars}
+        if json:
+            fake_message = qpid.messaging.Message(jsonutils.dumps(raw_msg))
+            fake_message.content_type = impl_qpid.JSON_CONTENT_TYPE
+        else:
+            fake_message = qpid.messaging.Message(raw_msg)
+        mock_session = self.mox.CreateMock(self.orig_session)
+        mock_receiver = self.mox.CreateMock(self.orig_receiver)
+        mock_session.receiver(mox.IgnoreArg()).AndReturn(mock_receiver)
+        mock_receiver.fetch().AndReturn(fake_message)
+        mock_session.acknowledge(mox.IgnoreArg())
+        self.mox.ReplayAll()
+
+        consumer = impl_qpid.DirectConsumer(None,
+                                            mock_session,
+                                            'bogus_msg_id',
+                                            fake_callback)
+        consumer.consume()
+
+        self.assertEqual(self.received_msg, raw_msg)
+
+    @testutils.skip_if(qpid is None, "Test requires qpid")
+    def test_consumer_long_message(self):
+        self._test_consumer_long_message(json=True)
+
+    @testutils.skip_if(qpid is None, "Test requires qpid")
+    def test_consumer_long_message_no_json(self):
+        self._test_consumer_long_message(json=False)
 
 
 #
