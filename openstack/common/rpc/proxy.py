@@ -66,6 +66,32 @@ class RpcProxy(object):
     def make_msg(method, **kwargs):
         return RpcProxy.make_namespaced_msg(method, None, **kwargs)
 
+    def _serialize_msg_args(self, msg):
+        """Helper method called to serialize the args inside a message.
+
+        This calls arg.to_primitive() for any arg in msg that has such an
+        implementation.
+
+        :param msg: The message to send, with potentially non-primitive
+                    arguments
+        :returns:   The message with its 'args' serialize
+        """
+        for argname, arg in msg['args'].items():
+            if hasattr(arg, 'to_primitive'):
+                msg['args'][argname] = arg.to_primitive()
+
+    def _deserialize_result(self, result):
+        """Helper method called to deserialize the result of a call.
+
+        This is a hook that is called to deserialize (if necessary) the
+        result of a call. It is unimplemented here, but provided for
+        subclasses to implement if necessary.
+
+        :param result: The result of the call
+        :returns: The deserialized (if necessary) result
+        """
+        return result
+
     def call(self, context, msg, topic=None, version=None, timeout=None):
         """rpc.call() a remote method.
 
@@ -81,9 +107,11 @@ class RpcProxy(object):
         :returns: The return value from the remote method.
         """
         self._set_version(msg, version)
+        self._serialize_msg_args(msg)
         real_topic = self._get_topic(topic)
         try:
-            return rpc.call(context, real_topic, msg, timeout)
+            result = rpc.call(context, real_topic, msg, timeout)
+            return self._deserialize_result(result)
         except rpc.common.Timeout as exc:
             raise rpc.common.Timeout(
                 exc.info, real_topic, msg.get('method'))
@@ -104,9 +132,11 @@ class RpcProxy(object):
                   from the remote method as they arrive.
         """
         self._set_version(msg, version)
+        self._serialize_msg_args(msg)
         real_topic = self._get_topic(topic)
         try:
-            return rpc.multicall(context, real_topic, msg, timeout)
+            result = rpc.multicall(context, real_topic, msg, timeout)
+            return self._deserialize_result(result)
         except rpc.common.Timeout as exc:
             raise rpc.common.Timeout(
                 exc.info, real_topic, msg.get('method'))
@@ -124,6 +154,7 @@ class RpcProxy(object):
                   remote method.
         """
         self._set_version(msg, version)
+        self._serialize_msg_args(msg)
         rpc.cast(context, self._get_topic(topic), msg)
 
     def fanout_cast(self, context, msg, topic=None, version=None):
@@ -139,6 +170,7 @@ class RpcProxy(object):
                   from the remote method.
         """
         self._set_version(msg, version)
+        self._serialize_msg_args(msg)
         rpc.fanout_cast(context, self._get_topic(topic), msg)
 
     def cast_to_server(self, context, server_params, msg, topic=None,
@@ -157,6 +189,7 @@ class RpcProxy(object):
                   return values.
         """
         self._set_version(msg, version)
+        self._serialize_msg_args(msg)
         rpc.cast_to_server(context, server_params, self._get_topic(topic), msg)
 
     def fanout_cast_to_server(self, context, server_params, msg, topic=None,
@@ -175,5 +208,6 @@ class RpcProxy(object):
                   return values.
         """
         self._set_version(msg, version)
+        self._serialize_msg_args(msg)
         rpc.fanout_cast_to_server(context, server_params,
                                   self._get_topic(topic), msg)

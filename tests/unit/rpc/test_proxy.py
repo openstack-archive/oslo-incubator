@@ -45,6 +45,8 @@ class RpcProxyTestCase(utils.BaseTestCase):
 
         self.fake_args = None
         self.fake_kwargs = None
+        self.args_were_serialized = False
+        self.result_was_deserialized = False
 
         def _fake_rpc_method(*args, **kwargs):
             rpc._check_for_lock()
@@ -69,6 +71,18 @@ class RpcProxyTestCase(utils.BaseTestCase):
 
         self.stubs.Set(rpc, rpc_method, _fake_rpc_method)
 
+        def _fake_serialze_msg_args(msg):
+            self.args_were_serialized = True
+
+        def _fake_deserialize_result(result):
+            self.result_was_deserialized = True
+            return result
+
+        self.stubs.Set(rpc_proxy, '_serialize_msg_args',
+                       _fake_serialze_msg_args)
+        self.stubs.Set(rpc_proxy, '_deserialize_result',
+                       _fake_deserialize_result)
+
         args = [ctxt, msg]
         if server_params:
             args.insert(1, server_params)
@@ -84,6 +98,8 @@ class RpcProxyTestCase(utils.BaseTestCase):
         new_msg = copy.deepcopy(expected_msg)
         new_msg['version'] = '1.1'
         _check_args(ctxt, topic, new_msg)
+        self.assertTrue(self.args_were_serialized)
+        self.assertEqual(self.result_was_deserialized, has_retval)
 
         if has_timeout:
             # Set a timeout
@@ -157,3 +173,18 @@ class RpcProxyTestCase(utils.BaseTestCase):
         expected = {'method': 'test_method', 'namespace': None,
                     'args': {'a': 1, 'b': 2}}
         self.assertEqual(msg, expected)
+
+    def test_serialize_msg_args(self):
+        class FakeThing(object):
+            def to_primitive(self):
+                return 'primitive'
+
+        fake_msg = {'args': {'foo': FakeThing()}}
+        rpc_proxy = proxy.RpcProxy('fake', '1.0')
+        rpc_proxy._serialize_msg_args(fake_msg)
+        self.assertEqual(fake_msg,
+                         {'args': {'foo': 'primitive'}})
+
+    def test_deserialize_result(self):
+        rpc_proxy = proxy.RpcProxy('fake', '1.0')
+        self.assertEqual(rpc_proxy._deserialize_result('foo'), 'foo')
