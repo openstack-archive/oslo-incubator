@@ -103,6 +103,32 @@ class RpcDispatcher(object):
         self.callbacks = callbacks
         super(RpcDispatcher, self).__init__()
 
+    def _deserialize_args(self, kwargs):
+        """Deserialize arguments to a function before dispatch.
+
+        This is a hook called to deserialize (if necessary) arguments to
+        the method we dispatch to.
+
+        :param kwargs: The arguments to be passed to the method
+        """
+        return
+
+    def _serialize_result(self, result):
+        """Serialize the result of a call.
+
+        This is called to serialize the result of a called method before
+        it is returned to the caller over the RPC bus.
+
+        The base implementation calls to_primitive() on the result, if it
+        exists.
+
+        :param result: The result of the method
+        :returns: The serialized (if necessary) form of result
+        """
+        if hasattr(result, 'to_primitive'):
+            result = result.to_primitive()
+        return result
+
     def dispatch(self, ctxt, version, method, namespace, **kwargs):
         """Dispatch a message based on a requested version.
 
@@ -145,7 +171,9 @@ class RpcDispatcher(object):
             if not hasattr(proxyobj, method):
                 continue
             if is_compatible:
-                return getattr(proxyobj, method)(ctxt, **kwargs)
+                self._deserialize_args(kwargs)
+                result = getattr(proxyobj, method)(ctxt, **kwargs)
+                return self._serialize_result(result)
 
         if had_compatible:
             raise AttributeError("No such RPC function '%s'" % method)
