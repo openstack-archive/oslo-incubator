@@ -64,8 +64,13 @@ payload.
 We will JSON encode the application message payload.  The message envelope,
 which includes the JSON encoded application message body, will be passed down
 to the messaging libraries as a dict.
+
+Changes for version 2.1:
+
+A minor version bump was needed for a change in the Qpid implementation to
+deal with the fact that Qpid can't serialize long strings in a dict.
 '''
-_RPC_ENVELOPE_VERSION = '2.0'
+_RPC_ENVELOPE_VERSION = '2.1'
 
 _VERSION_KEY = 'oslo.version'
 _MESSAGE_KEY = 'oslo.message'

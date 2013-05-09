@@ -123,10 +123,29 @@ class ConsumerBase(object):
         self.receiver = session.receiver(self.address)
         self.receiver.capacity = 1
 
+    def _unpack_json_msg(self, msg):
+        """Load the JSON data in msg if msg.content_type indicates that it
+           is necessary.  Put the loaded data back into msg.content and
+           update msg.content_type appropriately.
+
+        A Qpid Message containing a dict will have a content_type of
+        'amqp/map', whereas one containing a string that needs to be converted
+        back from JSON will have a content_type of None.  Checking this allows
+        us to continue supporting messages sent from older versions of this
+        Qpid implementation.
+
+        :param msg: a Qpid Message object
+        :returns: None
+        """
+        if msg.content_type is None:
+            msg.content = jsonutils.loads(msg.content)
+            msg.content_type = 'amqp/map'
+
     def consume(self):
         """Fetch the message and pass it to the callback object"""
         message = self.receiver.fetch()
         try:
+            self._unpack_json_msg(message)
             msg = rpc_common.deserialize_msg(message.content)
             self.callback(msg)
         except Exception:
@@ -228,8 +247,25 @@ class Publisher(object):
         """Re-establish the Sender after a reconnection"""
         self.sender = session.sender(self.address)
 
+    def _pack_json_msg(self, msg):
+        """Qpid cannot serialize dicts containing strings longer than 65535
+           characters.  This function dumps the message content to a JSON
+           string, which Qpid is able to handle.
+
+        :param msg: May be either a Qpid Message object or a bare dict.
+        :returns: A Qpid Message with its content field JSON encoded, or a
+            JSON encoded string if msg was a dict.
+        """
+        try:
+            msg.content = jsonutils.dumps(msg.content)
+            msg.content_type = None
+        except AttributeError:
+            msg = jsonutils.dumps(msg)
+        return msg
+
     def send(self, msg):
         """Send a message"""
+        msg = self._pack_json_msg(msg)
         self.sender.send(msg)
 
 
