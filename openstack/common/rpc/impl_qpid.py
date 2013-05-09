@@ -123,10 +123,27 @@ class ConsumerBase(object):
         self.receiver = session.receiver(self.address)
         self.receiver.capacity = 1
 
+    def _load_msg(self, msg):
+        """Reverse the JSON dump done on the message content if the message
+           content_type indicates that it is necessary.
+
+        A Qpid Message containing a dict will have a content_type of
+        'amqp/map', whereas one containing a string that needs to be converted
+        back from JSON will have a content_type of None.  Checking this allows
+        us to continue supporting messages sent from older versions of this
+        Qpid implementation.
+
+        :param msg: a Qpid Message object
+        """
+        if msg.content_type is None:
+            msg.content = jsonutils.loads(msg.content)
+            msg.content_type = 'amqp/map'
+
     def consume(self):
         """Fetch the message and pass it to the callback object"""
         message = self.receiver.fetch()
         try:
+            self._load_msg(message)
             msg = rpc_common.deserialize_msg(message.content)
             self.callback(msg)
         except Exception:
@@ -228,8 +245,23 @@ class Publisher(object):
         """Re-establish the Sender after a reconnection"""
         self.sender = session.sender(self.address)
 
+    def _dump_msg(self, msg):
+        """Qpid cannot serialize dicts containing strings longer than 65535
+           characters.  This function dumps the message content to a JSON
+           string, which Qpid is able to handle.
+
+        :param msg: May be either a Qpid Message object or a bare dict.
+        """
+        try:
+            msg.content = jsonutils.dumps(msg.content)
+            msg.content_type = None
+        except AttributeError:
+            msg = jsonutils.dumps(msg)
+        return msg
+
     def send(self, msg):
         """Send a message"""
+        msg = self._dump_msg(msg)
         self.sender.send(msg)
 
 
