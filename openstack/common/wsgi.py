@@ -659,7 +659,7 @@ class RequestDeserializer(object):
         return self.headers_deserializer.deserialize(request, action)
 
     def deserialize_body(self, request, action):
-        if not len(request.body) > 0:
+        if not request.body:
             LOG.debug(_("Empty body provided in request"))
             return {}
 
