@@ -201,31 +201,31 @@ class TestIso8601Time(utils.BaseTestCase):
 
     def test_zulu(self):
         str = '2012-02-14T20:53:07Z'
-        self._do_test(str, 2012, 02, 14, 20, 53, 7, 0, 0)
+        self._do_test(str, 2012, 2, 14, 20, 53, 7, 0, 0)
 
     def test_zulu_micros(self):
         str = '2012-02-14T20:53:07.123Z'
-        self._do_test(str, 2012, 02, 14, 20, 53, 7, 123000, 0)
+        self._do_test(str, 2012, 2, 14, 20, 53, 7, 123000, 0)
 
     def test_offset_east(self):
         str = '2012-02-14T20:53:07+04:30'
         offset = 4.5 * 60 * 60
-        self._do_test(str, 2012, 02, 14, 20, 53, 7, 0, offset)
+        self._do_test(str, 2012, 2, 14, 20, 53, 7, 0, offset)
 
     def test_offset_east_micros(self):
         str = '2012-02-14T20:53:07.42+04:30'
         offset = 4.5 * 60 * 60
-        self._do_test(str, 2012, 02, 14, 20, 53, 7, 420000, offset)
+        self._do_test(str, 2012, 2, 14, 20, 53, 7, 420000, offset)
 
     def test_offset_west(self):
         str = '2012-02-14T20:53:07-05:30'
         offset = -5.5 * 60 * 60
-        self._do_test(str, 2012, 02, 14, 20, 53, 7, 0, offset)
+        self._do_test(str, 2012, 2, 14, 20, 53, 7, 0, offset)
 
     def test_offset_west_micros(self):
         str = '2012-02-14T20:53:07.654321-05:30'
         offset = -5.5 * 60 * 60
-        self._do_test(str, 2012, 02, 14, 20, 53, 7, 654321, offset)
+        self._do_test(str, 2012, 2, 14, 20, 53, 7, 654321, offset)
 
     def test_compare(self):
         zulu = timeutils.parse_isotime('2012-02-14T20:53:07')
@@ -271,36 +271,36 @@ class TestIso8601Time(utils.BaseTestCase):
         str = '2012-02-14T20:53:07Z'
         zulu = timeutils.parse_isotime(str)
         normed = timeutils.normalize_time(zulu)
-        self._instaneous(normed, 2012, 2, 14, 20, 53, 07, 0)
+        self._instaneous(normed, 2012, 2, 14, 20, 53, 7, 0)
 
     def test_east_normalize(self):
         str = '2012-02-14T20:53:07-07:00'
         east = timeutils.parse_isotime(str)
         normed = timeutils.normalize_time(east)
-        self._instaneous(normed, 2012, 2, 15, 03, 53, 07, 0)
+        self._instaneous(normed, 2012, 2, 15, 3, 53, 7, 0)
 
     def test_west_normalize(self):
         str = '2012-02-14T20:53:07+21:00'
         west = timeutils.parse_isotime(str)
         normed = timeutils.normalize_time(west)
-        self._instaneous(normed, 2012, 2, 13, 23, 53, 07, 0)
+        self._instaneous(normed, 2012, 2, 13, 23, 53, 7, 0)
 
     def test_normalize_aware_to_naive(self):
-        dt = datetime.datetime(2011, 2, 14, 20, 53, 07)
+        dt = datetime.datetime(2011, 2, 14, 20, 53, 7)
         str = '2011-02-14T20:53:07+21:00'
         aware = timeutils.parse_isotime(str)
         naive = timeutils.normalize_time(aware)
         self.assertTrue(naive < dt)
 
     def test_normalize_zulu_aware_to_naive(self):
-        dt = datetime.datetime(2011, 2, 14, 20, 53, 07)
+        dt = datetime.datetime(2011, 2, 14, 20, 53, 7)
         str = '2011-02-14T19:53:07Z'
         aware = timeutils.parse_isotime(str)
         naive = timeutils.normalize_time(aware)
         self.assertTrue(naive < dt)
 
     def test_normalize_naive(self):
-        dt = datetime.datetime(2011, 2, 14, 20, 53, 07)
-        dtn = datetime.datetime(2011, 2, 14, 19, 53, 07)
+        dt = datetime.datetime(2011, 2, 14, 20, 53, 7)
+        dtn = datetime.datetime(2011, 2, 14, 19, 53, 7)
         naive = timeutils.normalize_time(dtn)
         self.assertTrue(naive < dt)
