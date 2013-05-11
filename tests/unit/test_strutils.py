@@ -48,6 +48,10 @@ class StrUtilsTest(utils.BaseTestCase):
         self.assertFalse(strutils.bool_from_string(c(
                          'This should not be True')))
 
+        # Whitespace should be stripped
+        self.assertTrue(strutils.bool_from_string(c(' true ')))
+        self.assertFalse(strutils.bool_from_string(c(' false ')))
+
     def test_bool_from_string(self):
         self._test_bool_from_string(lambda s: s)
 
@@ -55,7 +59,15 @@ class StrUtilsTest(utils.BaseTestCase):
         self._test_bool_from_string(six.text_type)
 
     def test_other_bool_from_string(self):
+        self.assertFalse(strutils.bool_from_string(None))
         self.assertFalse(strutils.bool_from_string(mock.Mock()))
+
+    def test_int_bool_from_string(self):
+        self.assertTrue(strutils.bool_from_string(1))
+
+        self.assertFalse(strutils.bool_from_string(-1))
+        self.assertFalse(strutils.bool_from_string(0))
+        self.assertFalse(strutils.bool_from_string(2))
 
     def test_int_from_bool_as_string(self):
         self.assertEqual(1, strutils.int_from_bool_as_string(True))

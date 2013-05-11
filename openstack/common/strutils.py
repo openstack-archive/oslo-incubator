@@ -49,12 +49,15 @@ def bool_from_string(subject):
 
     Useful for JSON-decoded stuff and config file parsing
     """
-    if isinstance(subject, bool):
-        return subject
-    if isinstance(subject, basestring):
-        if subject.strip().lower() in ('true', 'on', 'yes', '1'):
-            return True
-    return False
+    try:
+        # True or 1 or '1' -> True
+        # False or < 1 or > 1 or '0' -> False
+        return int(subject) == 1
+    except TypeError:
+        # None -> False
+        return False
+    except ValueError:
+        return subject.strip().lower() in ('true', 'on', 'yes')
 
 
 def safe_decode(text, incoming=None, errors='strict'):
