@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 # Copyright 2011 OpenStack Foundation.
@@ -37,6 +38,10 @@ class StrUtilsTest(utils.BaseTestCase):
         self.assertTrue(strutils.bool_from_string(c('YES')))
         self.assertTrue(strutils.bool_from_string(c('yEs')))
         self.assertTrue(strutils.bool_from_string(c('1')))
+        self.assertTrue(strutils.bool_from_string(c('T')))
+        self.assertTrue(strutils.bool_from_string(c('t')))
+        self.assertTrue(strutils.bool_from_string(c('Y')))
+        self.assertTrue(strutils.bool_from_string(c('y')))
 
         self.assertFalse(strutils.bool_from_string(c('false')))
         self.assertFalse(strutils.bool_from_string(c('FALSE')))
@@ -47,9 +52,15 @@ class StrUtilsTest(utils.BaseTestCase):
         self.assertFalse(strutils.bool_from_string(c('42')))
         self.assertFalse(strutils.bool_from_string(c(
                          'This should not be True')))
+        self.assertFalse(strutils.bool_from_string(c('F')))
+        self.assertFalse(strutils.bool_from_string(c('f')))
+        self.assertFalse(strutils.bool_from_string(c('N')))
+        self.assertFalse(strutils.bool_from_string(c('n')))
 
         # Whitespace should be stripped
+        self.assertTrue(strutils.bool_from_string(c(' 1 ')))
         self.assertTrue(strutils.bool_from_string(c(' true ')))
+        self.assertFalse(strutils.bool_from_string(c(' 0 ')))
         self.assertFalse(strutils.bool_from_string(c(' false ')))
 
     def test_bool_from_string(self):
@@ -57,6 +68,14 @@ class StrUtilsTest(utils.BaseTestCase):
 
     def test_unicode_bool_from_string(self):
         self._test_bool_from_string(six.text_type)
+        self.assertFalse(strutils.bool_from_string(u'使用', strict=False))
+
+        exc = self.assertRaises(ValueError, strutils.bool_from_string,
+                                u'使用', strict=True)
+        expected_msg = (u"Unrecognized value '使用', acceptable values are:"
+                        u" '0', '1', 'f', 'false', 'n', 'no', 'off', 'on',"
+                        u" 't', 'true', 'y', 'yes'")
+        self.assertEqual(expected_msg, unicode(exc))
 
     def test_other_bool_from_string(self):
         self.assertFalse(strutils.bool_from_string(None))
@@ -68,6 +87,48 @@ class StrUtilsTest(utils.BaseTestCase):
         self.assertFalse(strutils.bool_from_string(-1))
         self.assertFalse(strutils.bool_from_string(0))
         self.assertFalse(strutils.bool_from_string(2))
+
+    def test_strict_bool_from_string(self):
+        # None isn't allowed in strict mode
+        exc = self.assertRaises(ValueError, strutils.bool_from_string, None,
+                                strict=True)
+        expected_msg = ("Unrecognized value 'None', acceptable values are:"
+                        " '0', '1', 'f', 'false', 'n', 'no', 'off', 'on',"
+                        " 't', 'true', 'y', 'yes'")
+        self.assertEqual(expected_msg, str(exc))
+
+        # Unrecognized strings aren't allowed
+        self.assertFalse(strutils.bool_from_string('Other', strict=False))
+        exc = self.assertRaises(ValueError, strutils.bool_from_string, 'Other',
+                                strict=True)
+        expected_msg = ("Unrecognized value 'Other', acceptable values are:"
+                        " '0', '1', 'f', 'false', 'n', 'no', 'off', 'on',"
+                        " 't', 'true', 'y', 'yes'")
+        self.assertEqual(expected_msg, str(exc))
+
+        # Unrecognized numbers aren't allowed
+        exc = self.assertRaises(ValueError, strutils.bool_from_string, 2,
+                                strict=True)
+        expected_msg = ("Unrecognized value '2', acceptable values are:"
+                        " '0', '1', 'f', 'false', 'n', 'no', 'off', 'on',"
+                        " 't', 'true', 'y', 'yes'")
+        self.assertEqual(expected_msg, str(exc))
+
+        # False-like values are allowed
+        self.assertFalse(strutils.bool_from_string('f', strict=True))
+        self.assertFalse(strutils.bool_from_string('false', strict=True))
+        self.assertFalse(strutils.bool_from_string('off', strict=True))
+        self.assertFalse(strutils.bool_from_string('n', strict=True))
+        self.assertFalse(strutils.bool_from_string('no', strict=True))
+        self.assertFalse(strutils.bool_from_string('0', strict=True))
+
+        self.assertTrue(strutils.bool_from_string('1', strict=True))
+
+        # Avoid font-similarity issues (one looks like lowercase-el, zero like
+        # oh, etc...)
+        for char in ('O', 'o', 'L', 'l', 'I', 'i'):
+            self.assertRaises(ValueError, strutils.bool_from_string, char,
+                              strict=True)
 
     def test_int_from_bool_as_string(self):
         self.assertEqual(1, strutils.int_from_bool_as_string(True))
