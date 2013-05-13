@@ -113,6 +113,12 @@ log_opts = [
                        '%(name)s [%(request_id)s %(user)s %(tenant)s] '
                        '%(instance)s%(message)s',
                help='format string to use for log messages with context'),
+    cfg.StrOpt('logging_context_with_correlation_id_format_string',
+               default='%(asctime)s.%(msecs)03d %(process)d %(levelname)s '
+                       '%(name)s [%(request_id)s %(user)s %(tenant)s] '
+                       '%(instance)s%(message)s',
+               help='format string to use for log messages when correlation id'
+                    ' is present in the context'),
     cfg.StrOpt('logging_default_format_string',
                default='%(asctime)s.%(msecs)03d %(process)d %(levelname)s '
                        '%(name)s [-] %(instance)s%(message)s',
@@ -508,7 +514,9 @@ class ContextFormatter(logging.Formatter):
             if key not in record.__dict__:
                 record.__dict__[key] = ''
 
-        if record.__dict__.get('request_id', None):
+        if record.__dict__.get('correlation_id', None):
+            self._fmt = CONF.logging_context_with_correlation_id_format_string
+        elif record.__dict__.get('request_id', None):
             self._fmt = CONF.logging_context_format_string
         else:
             self._fmt = CONF.logging_default_format_string
