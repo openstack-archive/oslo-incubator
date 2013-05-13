@@ -37,6 +37,10 @@ class StrUtilsTest(utils.BaseTestCase):
         self.assertTrue(strutils.bool_from_string(c('YES')))
         self.assertTrue(strutils.bool_from_string(c('yEs')))
         self.assertTrue(strutils.bool_from_string(c('1')))
+        self.assertTrue(strutils.bool_from_string(c('T')))
+        self.assertTrue(strutils.bool_from_string(c('t')))
+        self.assertTrue(strutils.bool_from_string(c('Y')))
+        self.assertTrue(strutils.bool_from_string(c('y')))
 
         self.assertFalse(strutils.bool_from_string(c('false')))
         self.assertFalse(strutils.bool_from_string(c('FALSE')))
@@ -47,6 +51,10 @@ class StrUtilsTest(utils.BaseTestCase):
         self.assertFalse(strutils.bool_from_string(c('42')))
         self.assertFalse(strutils.bool_from_string(c(
                          'This should not be True')))
+        self.assertFalse(strutils.bool_from_string(c('F')))
+        self.assertFalse(strutils.bool_from_string(c('f')))
+        self.assertFalse(strutils.bool_from_string(c('N')))
+        self.assertFalse(strutils.bool_from_string(c('n')))
 
         # Whitespace should be stripped
         self.assertTrue(strutils.bool_from_string(c(' true ')))
@@ -68,6 +76,22 @@ class StrUtilsTest(utils.BaseTestCase):
         self.assertFalse(strutils.bool_from_string(-1))
         self.assertFalse(strutils.bool_from_string(0))
         self.assertFalse(strutils.bool_from_string(2))
+
+    def test_strict_bool_from_string(self):
+        self.assertFalse(strutils.bool_from_string('Other', strict=False))
+        exc = self.assertRaises(ValueError, strutils.bool_from_string, 'Other',
+                                strict=True)
+
+        expected_msg = ("Unrecognized value 'Other', acceptable values are:"
+                        " '0', '1', 'f', 'false', 'n', 'no', 'off', 'on',"
+                        " 't', 'true', 'y', 'yes'")
+        self.assertEqual(expected_msg, str(exc))
+
+        self.assertFalse(strutils.bool_from_string('f', strict=True))
+        self.assertFalse(strutils.bool_from_string('false', strict=True))
+        self.assertFalse(strutils.bool_from_string('off', strict=True))
+        self.assertFalse(strutils.bool_from_string('n', strict=True))
+        self.assertFalse(strutils.bool_from_string('no', strict=True))
 
     def test_int_from_bool_as_string(self):
         self.assertEqual(1, strutils.int_from_bool_as_string(True))
