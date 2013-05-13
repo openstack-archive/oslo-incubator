@@ -37,17 +37,19 @@ def int_from_bool_as_string(subject):
     return bool_from_string(subject) and 1 or 0
 
 
-def bool_from_string(subject):
+def bool_from_string(subject, strict=False):
     """
     Interpret a string as a boolean.
 
-    Any string value in:
+    A case-insensitive match is performed such that strings matching 't',
+    'true', 'on', 'y', 'yes', or '1' are considered True and, when
+    `strict=False`, anything else is considered False.
 
-        ('True', 'true', 'On', 'on', 'Yes', 'yes', '1')
+    Useful for JSON-decoded stuff and config file parsing.
 
-    is interpreted as a boolean True.
-
-    Useful for JSON-decoded stuff and config file parsing
+    If `strict=True`, unrecognized values will raise a ValueError which is
+    useful when parsing values passed in from an API call. Strings yielding
+    False are 'f', 'false', 'off', 'n', 'no', or '0'.
     """
     try:
         # True or 1 or '1' -> True
@@ -57,7 +59,16 @@ def bool_from_string(subject):
         # None -> False
         return False
     except ValueError:
-        return subject.strip().lower() in ('true', 'on', 'yes')
+        subject = subject.strip().lower()
+        if subject in ('t', 'true', 'on', 'y', 'yes'):
+            return True
+        elif subject in ('f', 'false', 'off', 'n', 'no'):
+            return False
+        else:
+            if strict:
+                raise ValueError
+            else:
+                return False
 
 
 def safe_decode(text, incoming=None, errors='strict'):
