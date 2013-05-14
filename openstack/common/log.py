@@ -43,9 +43,9 @@ import traceback
 from oslo.config import cfg
 
 from openstack.common.gettextutils import _
+from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import local
-from openstack.common import notifier
 
 
 _DEFAULT_LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
@@ -322,17 +322,6 @@ class JSONFormatter(logging.Formatter):
         return jsonutils.dumps(message)
 
 
-class PublishErrorsHandler(logging.Handler):
-    def emit(self, record):
-        if ('openstack.common.notifier.log_notifier' in
-                CONF.notification_driver):
-            return
-        notifier.api.notify(None, 'error.publisher',
-                            'error_notification',
-                            notifier.api.ERROR,
-                            dict(error=record.msg))
-
-
 def _create_logging_excepthook(product_name):
     def logging_excepthook(type, value, tb):
         extra = {}
@@ -428,7 +417,10 @@ def _setup_logging_from_conf():
         log_root.addHandler(streamlog)
 
     if CONF.publish_errors:
-        log_root.addHandler(PublishErrorsHandler(logging.ERROR))
+        handler = importutils.import_object(
+            "openstack.common.log_handler.PublishErrorsHandler",
+            logging.ERROR)
+        log_root.addHandler(handler)
 
     datefmt = CONF.log_date_format
     for handler in log_root.handlers:

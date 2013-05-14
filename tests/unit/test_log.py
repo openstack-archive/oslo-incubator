@@ -10,6 +10,7 @@ from oslo.config import cfg
 from openstack.common import context
 from openstack.common import jsonutils
 from openstack.common import log
+from openstack.common.log_handler import PublishErrorsHandler
 from openstack.common.notifier import api as notifier
 from tests import utils as test_utils
 
@@ -114,7 +115,7 @@ class PublishErrorsHandlerTestCase(test_utils.BaseTestCase):
     """Tests for log.PublishErrorsHandler"""
     def setUp(self):
         super(PublishErrorsHandlerTestCase, self).setUp()
-        self.publiserrorshandler = log.PublishErrorsHandler(logging.ERROR)
+        self.publiserrorshandler = PublishErrorsHandler(logging.ERROR)
 
     def test_emit_cfg_log_notifier_in_notifier_drivers(self):
         self.config(notification_driver=[
