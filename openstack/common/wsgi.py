@@ -172,6 +172,19 @@ class Middleware(object):
     behavior.
     """
 
+    @classmethod
+    def factory(cls, global_conf, **local_conf):
+        """
+        Factory method for paste.deploy
+        """
+        conf = global_conf.copy()
+        conf.update(local_conf)
+
+        def filter(app):
+            return cls(app, conf)
+
+        return filter
+
     def __init__(self, application):
         self.application = application
 
