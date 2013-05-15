@@ -85,6 +85,9 @@ opts = [
                default=None,
                help='A config file or destination project directory',
                positional=True),
+    cfg.BoolOpt('nodeps',
+                default=False,
+                help='Discard dependencies of configured modules'),
 ]
 
 
@@ -260,7 +263,9 @@ def _dfs_dependency_tree(dep_tree, mod_name, mod_list=[]):
     return mod_list
 
 
-def _complete_module_list(mod_list):
+def _complete_module_list(mod_list, nodeps):
+    if nodeps:
+        return mod_list
     addons = []
     dep_tree = _build_dependency_tree()
     for mod in mod_list:
@@ -292,7 +297,7 @@ def main(argv):
     _create_module_init(conf.base, dest_dir)
     _create_module_init(conf.base, dest_dir, 'common')
 
-    for mod in _complete_module_list(conf.module + conf.modules):
+    for mod in _complete_module_list(conf.module + conf.modules, conf.nodeps):
         _copy_module(mod, conf.base, dest_dir)
 
 
