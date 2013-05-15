@@ -25,8 +25,8 @@ import six
 from openstack.common import context
 from openstack.common import lockutils
 from openstack.common import rpc
-from openstack.common.rpc import proxy
 from openstack.common.rpc import common as rpc_common
+from openstack.common.rpc import proxy
 from tests import utils
 
 

@@ -29,8 +29,8 @@ from oslo.config import cfg
 
 from openstack.common import context
 from openstack.common.rpc import amqp as rpc_amqp
-from tests import utils
 from openstack.common.rpc import common as rpc_common
+from tests import utils
 
 try:
     import qpid
