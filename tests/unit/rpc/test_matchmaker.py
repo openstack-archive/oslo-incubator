@@ -17,6 +17,7 @@
 import logging
 
 from openstack.common.rpc import matchmaker
+from openstack.common.rpc import matchmaker_ring
 from tests.unit.rpc import matchmaker_common as common
 from tests import utils
 
@@ -32,7 +33,7 @@ class MatchMakerFileTestCase(utils.BaseTestCase, common._MatchMakerTestCase):
         ring = {
             self.topic: self.hosts
         }
-        self.driver = matchmaker.MatchMakerRing(ring)
+        self.driver = matchmaker_ring.MatchMakerRing(ring)
 
 
 class MatchMakerLocalhostTestCase(utils.BaseTestCase,
