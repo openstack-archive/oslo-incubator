@@ -85,6 +85,12 @@ class RpcProxyTestCase(utils.BaseTestCase):
         new_msg['version'] = '1.1'
         _check_args(ctxt, topic, new_msg)
 
+        # override the version to be above a specified cap
+        rpc_proxy.version_cap = '1.0'
+        self.assertRaises(rpc_common.RpcVersionCapError,
+                          getattr(rpc_proxy, rpc_method), *args, version='1.1')
+        rpc_proxy.version_cap = None
+
         if has_timeout:
             # Set a timeout
             retval = getattr(rpc_proxy, rpc_method)(ctxt, msg, timeout=42)

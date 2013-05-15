@@ -1,6 +1,6 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
-# Copyright 2012 Red Hat, Inc.
+# Copyright 2012-2013 Red Hat, Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -23,6 +23,7 @@ For more information about rpc API version numbers, see:
 
 
 from openstack.common import rpc
+from openstack.common.rpc import common as rpc_common
 
 
 class RpcProxy(object):
@@ -34,16 +35,19 @@ class RpcProxy(object):
     rpc API.
     """
 
-    def __init__(self, topic, default_version):
+    def __init__(self, topic, default_version, version_cap=None):
         """Initialize an RpcProxy.
 
         :param topic: The topic to use for all messages.
         :param default_version: The default API version to request in all
                outgoing messages.  This can be overridden on a per-message
                basis.
+        :param version_cap: Optionally cap the maximum version used for sent
+               messages.
         """
         self.topic = topic
         self.default_version = default_version
+        self.version_cap = version_cap
         super(RpcProxy, self).__init__()
 
     def _set_version(self, msg, vers):
@@ -52,7 +56,11 @@ class RpcProxy(object):
         :param msg: The message having a version added to it.
         :param vers: The version number to add to the message.
         """
-        msg['version'] = vers if vers else self.default_version
+        v = vers if vers else self.default_version
+        if (self.version_cap and not
+                rpc_common.version_is_compatible(self.version_cap, v)):
+            raise rpc_common.RpcVersionCapError(version=self.version_cap)
+        msg['version'] = v
 
     def _get_topic(self, topic):
         """Return the topic to use for a message."""
