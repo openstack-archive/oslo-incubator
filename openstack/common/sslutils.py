@@ -42,39 +42,52 @@ CONF = cfg.CONF
 CONF.register_opts(ssl_opts, "ssl")
 
 
-def is_enabled():
-    cert_file = CONF.ssl.cert_file
-    key_file = CONF.ssl.key_file
-    ca_file = CONF.ssl.ca_file
-    use_ssl = cert_file or key_file
+class SslWrapper(object):
+    def __init__(self, opts=None):
+        if opts is None:
+            opts = {}
 
-    if cert_file and not os.path.exists(cert_file):
-        raise RuntimeError(_("Unable to find cert_file : %s") % cert_file)
+        self.cert_file = self._getopt('cert_file', opts)
+        self.key_file = self._getopt('key_file', opts)
+        self.ca_file = self._getopt('ca_file', opts)
+        self.use_ssl = (opts.get('use_ssl', True) and
+                        (self.cert_file or self.key_file))
 
-    if ca_file and not os.path.exists(ca_file):
-        raise RuntimeError(_("Unable to find ca_file : %s") % ca_file)
+        if self.use_ssl:
+            if not self.cert_file or not self.key_file:
+                raise RuntimeError(_("When running server in SSL mode, you "
+                                     "must specify both a cert_file and "
+                                     "key_file option value in your "
+                                     "configuration file."))
 
-    if key_file and not os.path.exists(key_file):
-        raise RuntimeError(_("Unable to find key_file : %s") % key_file)
+    @property
+    def enabled(self):
+        return self.use_ssl
 
-    if use_ssl and (not cert_file or not key_file):
-        raise RuntimeError(_("When running server in SSL mode, you must "
-                             "specify both a cert_file and key_file "
-                             "option value in your configuration file"))
+    def _file_exists(self, filename):
+        return os.path.exists(filename)
 
-    return use_ssl
+    def _getopt(self, key, opts):
+        value = opts.get(key, None)
+        if value is None:
+            value = getattr(CONF.ssl, key)
 
+        if value is not None and not self._file_exists(value):
+            raise RuntimeError(_("Unable to find %(key)s : %(value)s") %
+                               {'key': key, 'value': value})
 
-def wrap(sock):
-    ssl_kwargs = {
-        'server_side': True,
-        'certfile': CONF.ssl.cert_file,
-        'keyfile': CONF.ssl.key_file,
-        'cert_reqs': ssl.CERT_NONE,
-    }
+        return value
 
-    if CONF.ssl.ca_file:
-        ssl_kwargs['ca_certs'] = CONF.ssl.ca_file
-        ssl_kwargs['cert_reqs'] = ssl.CERT_REQUIRED
+    def wrap(self, sock):
+        ssl_kwargs = {
+            'server_side': True,
+            'certfile': self.cert_file,
+            'keyfile': self.key_file,
+            'cert_reqs': ssl.CERT_NONE,
+        }
 
-    return ssl.wrap_socket(sock, **ssl_kwargs)
+        if self.ca_file:
+            ssl_kwargs['ca_certs'] = self.ca_file
+            ssl_kwargs['cert_reqs'] = ssl.CERT_REQUIRED
+
+        return ssl.wrap_socket(sock, **ssl_kwargs)

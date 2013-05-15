@@ -76,16 +76,19 @@ class Service(service.Service):
     Launcher classes in service.py.
     """
 
-    def __init__(self, application, port,
-                 host='0.0.0.0', backlog=4096, threads=1000):
+    def __init__(self, application, port, host='0.0.0.0', backlog=4096,
+                 threads=1000, ssl_opts=None, **server_kwargs):
+
         self.application = application
         self._port = port
         self._host = host
         self._backlog = backlog if backlog else CONF.backlog
-        self._socket = self._get_socket(host, port, self._backlog)
+        self.server_kwargs = server_kwargs
+        self._socket = self._get_socket(host, port, self._backlog, ssl_opts)
+
         super(Service, self).__init__(threads)
 
-    def _get_socket(self, host, port, backlog):
+    def _get_socket(self, host, port, backlog, ssl_opts):
         # TODO(dims): eventlet's green dns/socket module does not actually
         # support IPv6 in getaddrinfo(). We need to get around this in the
         # future or monitor upstream for a fix
@@ -103,8 +106,10 @@ class Service(service.Service):
                 sock = eventlet.listen(bind_addr,
                                        backlog=backlog,
                                        family=family)
-                if sslutils.is_enabled():
-                    sock = sslutils.wrap(sock)
+
+                ssl_wrapper = sslutils.SslWrapper(ssl_opts)
+                if ssl_wrapper.enabled:
+                    sock = ssl_wrapper.wrap(sock)
 
             except socket.error as err:
                 if err.args[0] != errno.EADDRINUSE:
@@ -157,11 +162,8 @@ class Service(service.Service):
 
     def _run(self, application, socket):
         """Start a WSGI server in a new green thread."""
-        logger = logging.getLogger('eventlet.wsgi')
-        eventlet.wsgi.server(socket,
-                             application,
-                             custom_pool=self.tg.pool,
-                             log=logging.WritableLogger(logger))
+        eventlet.wsgi.server(socket, application, custom_pool=self.tg.pool,
+                             **self.server_kwargs)
 
 
 class Middleware(object):
