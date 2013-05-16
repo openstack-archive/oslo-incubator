@@ -27,6 +27,7 @@ import signal
 import time
 import traceback
 
+from eventlet import event
 from oslo.config import cfg
 
 from openstack.common import log as logging
@@ -192,6 +193,20 @@ class ServiceLauncherTest(utils.BaseTestCase):
         self.assertEqual(os.WEXITSTATUS(status), 0)
 
 
+class _Service(service.Service):
+    def __init__(self):
+        super(_Service, self).__init__()
+        self.init = event.Event()
+        self.cleaned_up = False
+
+    def start(self):
+        self.init.send()
+
+    def stop(self):
+        self.cleaned_up = True
+        super(_Service, self).stop()
+
+
 class LauncherTest(utils.BaseTestCase):
     def test_backdoor_port(self):
         # backdoor port should get passed to the service being launched
@@ -200,3 +215,15 @@ class LauncherTest(utils.BaseTestCase):
         launcher = service.launch(svc)
         self.assertEqual(1234, svc.backdoor_port)
         launcher.stop()
+
+    def test_graceful_shutdown(self):
+        # test that services are given a chance to clean up:
+        svc = _Service()
+
+        launcher = service.launch(svc)
+        # wait on 'init' so we know the service had time to start:
+        svc.init.wait()
+
+        launcher.stop()
+        self.assertTrue(svc.cleaned_up)
+        self.assertTrue(svc.done.ready())
