@@ -27,9 +27,19 @@ import signal
 from eventlet.green import subprocess
 from eventlet import greenthread
 
+from oslo.config import cfg
+
 from openstack.common.gettextutils import _
 from openstack.common import log as logging
 
+utils_opts = [
+    cfg.StrOpt('rootwrap_config',
+               default="/etc/oslo/rootwrap.conf",
+               help='Path to the rootwrap configuration file to use for '
+                    'running commands as root'),
+]
+CONF = cfg.CONF
+CONF.register_opts(utils_opts)
 
 LOG = logging.getLogger(__name__)
 
@@ -129,9 +139,12 @@ def execute(*cmd, **kwargs):
 
     if run_as_root and os.geteuid() != 0:
         if not root_helper:
-            raise NoRootWrapSpecified(
-                message=('Command requested root, but did not specify a root '
-                         'helper.'))
+            if CONF.rootwrap_config and os.path.exists(CONF.rootwrap_config):
+                root_helper = 'sudo oslo-rootwrap %s' % CONF.rootwrap_config
+            else:
+                raise NoRootWrapSpecified(
+                    message=('Command requested root, but did not specify '
+                             'a root helper.'))
         cmd = shlex.split(root_helper) + list(cmd)
 
     cmd = map(str, cmd)
@@ -203,7 +216,7 @@ def trycmd(*args, **kwargs):
     try:
         out, err = execute(*args, **kwargs)
         failed = False
-    except ProcessExecutionError, exn:
+    except ProcessExecutionError as exn:
         out, err = '', str(exn)
         failed = True
 
