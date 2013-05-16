@@ -21,8 +21,8 @@ import fixtures
 from oslo.config import cfg
 import testtools
 
-from openstack.common.fixture import moxstubout
 from openstack.common import exception
+from openstack.common.fixture import moxstubout
 
 CONF = cfg.CONF
 

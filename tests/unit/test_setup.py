@@ -17,8 +17,8 @@
 
 import io
 import os
-import sys
 import StringIO
+import sys
 from tempfile import mkstemp
 
 import fixtures

@@ -20,8 +20,8 @@ Unit Tests for 'common' functons used through rpc code.
 import logging
 import sys
 
-import six
 from oslo.config import cfg
+import six
 
 from openstack.common import exception
 from openstack.common import importutils

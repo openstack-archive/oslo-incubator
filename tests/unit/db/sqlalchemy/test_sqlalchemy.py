@@ -19,8 +19,8 @@
 """Unit tests for SQLAlchemy specific code."""
 
 from sqlalchemy import Column, MetaData, Table, UniqueConstraint
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import DateTime, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
 
 from openstack.common.db import exception as db_exc
 from openstack.common.db.sqlalchemy import models

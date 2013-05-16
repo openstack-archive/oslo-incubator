@@ -26,8 +26,8 @@ import contextlib
 import logging
 
 import mock
-import six
 from oslo.config import cfg
+import six
 
 from openstack.common import exception
 from openstack.common.rpc import amqp as rpc_amqp
