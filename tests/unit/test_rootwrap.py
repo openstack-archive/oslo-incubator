@@ -134,6 +134,18 @@ class RootwrapTestCase(utils.BaseTestCase):
         self.stubs.Set(os, 'readlink', fake_readlink)
         self.assertTrue(f.match(usercmd))
 
+    def test_KillFilter_upgraded_exe(self):
+        """Makes sure upgraded exe's are killed correctly"""
+        # See bug #1179793.
+        def fake_readlink(blah):
+            return '/bin/commandddddd\0\05190bfb2 (deleted)'
+
+        f = filters.KillFilter("root", "/bin/commandddddd")
+        usercmd = ['kill', 1234]
+
+        self.stubs.Set(os, 'readlink', fake_readlink)
+        self.assertTrue(f.match(usercmd))
+
     def test_ReadFileFilter(self):
         goodfn = '/good/file.name'
         f = filters.ReadFileFilter(goodfn)
