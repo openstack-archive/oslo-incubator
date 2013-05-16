@@ -190,3 +190,13 @@ class ServiceLauncherTest(utils.BaseTestCase):
         status = self._reap_test()
         self.assertTrue(os.WIFEXITED(status))
         self.assertEqual(os.WEXITSTATUS(status), 0)
+
+
+class LauncherTest(utils.BaseTestCase):
+    def test_backdoor_port(self):
+        # backdoor port should get passed to the service being launched
+        self.config(backdoor_port=1234)
+        svc = service.Service()
+        launcher = service.launch(svc)
+        self.assertEqual(1234, svc.backdoor_port)
+        launcher.stop()
