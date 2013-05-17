@@ -344,7 +344,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
             r'^.*/.* ; {"node": {"x-declare": {"auto-delete":'
             ' true, "durable": true, "type": "direct"}, "type": '
             '"topic"}, "create": "always", "link": {"x-declare": '
-            '{"auto-delete": true, "exclusive": true, "durable": '
+            '{"exclusive": true, "auto-delete": true, "durable": '
             'false}, "durable": true, "name": ".*"}}')
         self.mock_session.receiver(rcv_addr).AndReturn(self.mock_receiver)
         self.mock_receiver.capacity = 1
@@ -423,7 +423,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
             r'^.*/.* ; {"node": {"x-declare": {"auto-delete":'
             ' true, "durable": true, "type": "direct"}, "type": '
             '"topic"}, "create": "always", "link": {"x-declare": '
-            '{"auto-delete": true, "exclusive": true, "durable": '
+            '{"exclusive": true, "auto-delete": true, "durable": '
             'false}, "durable": true, "name": ".*"}}')
         self.mock_session.receiver(rcv_addr).AndReturn(self.mock_receiver)
         self.mock_receiver.capacity = 1
