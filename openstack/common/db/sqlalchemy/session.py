@@ -269,6 +269,17 @@ sql_opts = [
                help='The SQLAlchemy connection string used to connect to the '
                     'database',
                secret=True),
+    cfg.StrOpt('sql_slave_connection',
+               default='sqlite:///' +
+                       os.path.abspath(os.path.join(os.path.dirname(__file__),
+                       '../', '$sqlite_db')),
+               help='The SQLAlchemy connection string used to connect to the '
+                    'slave database',
+               secret=True),
+    cfg.BoolOpt('sql_reads_to_slave',
+                default=False,
+                help='When True we try to send read queries to the slave '
+                     'handle when safe to do so.'),
     cfg.StrOpt('sqlite_db',
                default='oslo.sqlite',
                help='the filename to use with sqlite'),
@@ -322,6 +333,7 @@ def set_defaults(sql_connection, sqlite_db):
 
 def cleanup():
     global _ENGINE, _MAKER
+    global _SLAVE_ENGINE, _SLAVE_MAKER
 
     if _MAKER:
         _MAKER.close_all()
@@ -329,6 +341,12 @@ def cleanup():
     if _ENGINE:
         _ENGINE.dispose()
         _ENGINE = None
+    if _SLAVE_MAKER:
+        _SLAVE_MAKER.close_all()
+        _SLAVE_MAKER = None
+    if _SLAVE_ENGINE:
+        _SLAVE_ENGINE.dispose()
+        _SLAVE_ENGINE = None
 
 
 class SqliteForeignKeysListener(PoolListener):
@@ -344,15 +362,25 @@ class SqliteForeignKeysListener(PoolListener):
 
 
 def get_session(autocommit=True, expire_on_commit=False,
-                sqlite_fk=False):
+                sqlite_fk=False, slave_session=False):
     """Return a SQLAlchemy session."""
     global _MAKER
+    global _SLAVE_MAKER
+    maker = _MAKER
 
-    if _MAKER is None:
+    if slave_session:
+        maker = _SLAVE_MAKER
+
+    if maker is None:
         engine = get_engine(sqlite_fk=sqlite_fk)
-        _MAKER = get_maker(engine, autocommit, expire_on_commit)
+        maker = get_maker(engine, autocommit, expire_on_commit)
 
-    session = _MAKER()
+    if slave_session:
+        _SLAVE_MAKER = maker
+    else:
+        _MAKER = maker
+
+    session = maker()
     return session
 
 
@@ -466,13 +494,26 @@ def _wrap_db_error(f):
     return _wrap
 
 
-def get_engine(sqlite_fk=False):
+def get_engine(sqlite_fk=False, slave_engine=False):
     """Return a SQLAlchemy engine."""
     global _ENGINE
-    if _ENGINE is None:
-        _ENGINE = create_engine(CONF.sql_connection,
+    global _SLAVE_ENGINE
+    engine = _ENGINE
+    db_uri = CONF.sql_connection
+
+    if slave_engine:
+        engine = _SLAVE_ENGINE
+        db_uri = CONF.sql_slave_connection
+
+    if engine is None:
+        engine = create_engine(db_uri,
                                 sqlite_fk=sqlite_fk)
-    return _ENGINE
+    if slave_engine:
+        _SLAVE_ENGINE = engine
+    else:
+        _ENGINE = engine
+
+    return engine
 
 
 def _synchronous_switch_listener(dbapi_conn, connection_rec):
@@ -530,6 +571,11 @@ def _is_db_connection_error(args):
 
 def create_engine(sql_connection, sqlite_fk=False):
     """Return a new SQLAlchemy engine."""
+    # NOTE(geekinutah): At this point we could be connecting to the normal
+    #                   db handle or the slave db handle. Things like
+    #                   _wrap_db_error aren't going to work well if their
+    #                   backends don't match. Let's check.
+    _assert_matching_drivers()
     connection_dict = sqlalchemy.engine.url.make_url(sql_connection)
 
     engine_args = {
@@ -671,3 +717,17 @@ def _patch_mysqldb_with_stacktrace_comments():
         old_mysql_do_query(self, qq)
 
     setattr(MySQLdb.cursors.BaseCursor, '_do_query', _do_query)
+
+
+def _assert_matching_drivers():
+    """Make sure slave handle and normal handle have the same driver."""
+    # NOTE(geekinutah): There's no use case for writing to one backend and
+    #                 reading from another. Who knows what the future holds?
+    if not CONF.sql_reads_to_slave:
+        return
+
+    c_dict = sqlalchemy.engine.url.make_url(CONF.sql_connection)
+    slave_c_dict = sqlalchemy.engine.url.make_url(CONF.sql_slave_connection)
+    assert c_dict.drivername == slave_c_dict.drivername
+
+
