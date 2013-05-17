@@ -25,10 +25,12 @@ from sqlalchemy.ext.declarative import declarative_base
 from openstack.common.db import exception as db_exc
 from openstack.common.db.sqlalchemy import models
 from openstack.common.db.sqlalchemy import session
+from oslo.config import cfg
 from tests import utils as test_utils
 
 BASE = declarative_base()
 _TABLE_NAME = '__tmp__test__tmp__'
+CONF = cfg.CONF
 
 
 class TmpTable(BASE, models.ModelBase):
@@ -137,3 +139,17 @@ class RegexpFilterTestCase(test_utils.BaseTestCase):
 
     def test_regexp_filter_unicode_nomatch(self):
         self._test_regexp_filter(u'♦', [])
+
+
+class SlaveBackendTestCase(test_utils.BaseTestCase):
+
+    session.CONF.sql_reads_to_slave = True
+
+    def test_slave_backend_match(self):
+        slave_e = session.get_engine(slave_engine=False)
+        e = session.get_engine()
+        self.assertEqual(slave_e, e)
+
+    def test_slave_backend_nomatch(self):
+        session.CONF.sql_connection = "mysql:///localhost"
+        self.assertRaises(AssertionError, session._assert_matching_drivers())
