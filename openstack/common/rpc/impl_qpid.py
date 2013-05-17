@@ -65,6 +65,9 @@ qpid_opts = [
     cfg.BoolOpt('qpid_tcp_nodelay',
                 default=True,
                 help='Disable Nagle algorithm'),
+    cfg.BoolOpt('qpid_durable_queues',
+                default=False,
+                help='use durable queues in Qpid'),
 ]
 
 cfg.CONF.register_opts(qpid_opts)
@@ -148,12 +151,19 @@ class DirectConsumer(ConsumerBase):
         'msg_id' is the msg_id to listen on
         'callback' is the callback to call when messages are received
         """
+        # Default options
+        options = {
+            'durable': conf.qpid_durable_queues,
+        }
 
         super(DirectConsumer, self).__init__(session, callback,
                                              "%s/%s" % (msg_id, msg_id),
                                              {"type": "direct"},
                                              msg_id,
-                                             {"exclusive": True})
+                                             {
+                                                 "exclusive": True,
+                                                 "durable": options['durable'],
+                                             })
 
 
 class TopicConsumer(ConsumerBase):
@@ -169,11 +179,18 @@ class TopicConsumer(ConsumerBase):
         :param callback: the callback to call when messages are received
         :param name: optional queue name, defaults to topic
         """
+        # Default options
+        options = {
+            'durable': conf.qpid_durable_queues,
+        }
 
         exchange_name = exchange_name or rpc_amqp.get_control_exchange(conf)
         super(TopicConsumer, self).__init__(session, callback,
                                             "%s/%s" % (exchange_name, topic),
-                                            {}, name or topic, {})
+                                            {}, name or topic,
+                                            {
+                                                "durable": options['durable'],
+                                            })
 
 
 class FanoutConsumer(ConsumerBase):
@@ -245,10 +262,18 @@ class TopicPublisher(Publisher):
     """Publisher class for 'topic'"""
     def __init__(self, conf, session, topic):
         """init a 'topic' publisher.
+
+        Qpid options may be passed as keyword args to override defaults
         """
+        options = {
+            'durable': conf.qpid_durable_queues,
+        }
         exchange_name = rpc_amqp.get_control_exchange(conf)
         super(TopicPublisher, self).__init__(session,
-                                             "%s/%s" % (exchange_name, topic))
+                                             "%s/%s" % (exchange_name, topic),
+                                             {
+                                                 "durable": options['durable'],
+                                             })
 
 
 class FanoutPublisher(Publisher):
