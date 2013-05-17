@@ -131,7 +131,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
                 'openstack/impl_qpid_test ; {"node": {"x-declare": '
                 '{"auto-delete": true, "durable": true}, "type": "topic"}, '
                 '"create": "always", "link": {"x-declare": {"auto-delete": '
-                'true, "exclusive": false, "durable": false}, "durable": '
+                'false, "exclusive": false, "durable": false}, "durable": '
                 'true, "name": "impl_qpid_test"}}')
         self.mock_session.receiver(expected_address).AndReturn(
             self.mock_receiver)
@@ -164,7 +164,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
             'openstack/impl_qpid_test ; {"node": {"x-declare": '
             '{"auto-delete": true, "durable": true}, "type": "topic"}, '
             '"create": "always", "link": {"x-declare": {"auto-delete": '
-            'true, "exclusive": false, "durable": false}, "durable": '
+            'false, "exclusive": false, "durable": false}, "durable": '
             'true, "name": "impl.qpid.test.workers"}}')
         self.mock_session.receiver(expected_address).AndReturn(
             self.mock_receiver)
@@ -192,7 +192,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
             'exchange-name/impl_qpid_test ; {"node": {"x-declare": '
             '{"auto-delete": true, "durable": true}, "type": "topic"}, '
             '"create": "always", "link": {"x-declare": {"auto-delete": '
-            'true, "exclusive": false, "durable": false}, "durable": '
+            'false, "exclusive": false, "durable": false}, "durable": '
             'true, "name": "impl.qpid.test.consumer.pool"}}')
         self.mock_session.receiver(expected_address).AndReturn(
             self.mock_receiver)
@@ -222,7 +222,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
             'foobar/impl_qpid_test ; {"node": {"x-declare": '
             '{"auto-delete": true, "durable": true}, "type": "topic"}, '
             '"create": "always", "link": {"x-declare": {"auto-delete": '
-            'true, "exclusive": false, "durable": false}, "durable": '
+            'false, "exclusive": false, "durable": false}, "durable": '
             'true, "name": "impl.qpid.test.workers"}}')
         self.mock_session.receiver(expected_address).AndReturn(
             self.mock_receiver)
@@ -344,7 +344,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
             r'^.*/.* ; {"node": {"x-declare": {"auto-delete":'
             ' true, "durable": true, "type": "direct"}, "type": '
             '"topic"}, "create": "always", "link": {"x-declare": '
-            '{"auto-delete": true, "exclusive": true, "durable": '
+            '{"exclusive": true, "auto-delete": false, "durable": '
             'false}, "durable": true, "name": ".*"}}')
         self.mock_session.receiver(rcv_addr).AndReturn(self.mock_receiver)
         self.mock_receiver.capacity = 1
@@ -423,7 +423,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
             r'^.*/.* ; {"node": {"x-declare": {"auto-delete":'
             ' true, "durable": true, "type": "direct"}, "type": '
             '"topic"}, "create": "always", "link": {"x-declare": '
-            '{"auto-delete": true, "exclusive": true, "durable": '
+            '{"exclusive": true, "auto-delete": false, "durable": '
             'false}, "durable": true, "name": ".*"}}')
         self.mock_session.receiver(rcv_addr).AndReturn(self.mock_receiver)
         self.mock_receiver.capacity = 1
