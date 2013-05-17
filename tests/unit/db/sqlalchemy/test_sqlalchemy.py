@@ -182,3 +182,23 @@ class RegexpFilterTestCase(test_utils.BaseTestCase):
 
     def test_regexp_filter_unicode_nomatch(self):
         self._test_regexp_filter(u'♦', [])
+
+
+class SlaveBackendTestCase(test_utils.BaseTestCase):
+
+    def test_slave_engine_nomatch(self):
+        default = session.CONF.database.connection
+        session.CONF.database.slave_connection = default
+
+        e = session.get_engine()
+        slave_e = session.get_engine(slave_engine=True)
+        self.assertNotEqual(slave_e, e)
+
+    def test_no_slave_engine_match(self):
+        slave_e = session.get_engine()
+        e = session.get_engine()
+        self.assertEqual(slave_e, e)
+
+    def test_slave_backend_nomatch(self):
+        session.CONF.database.slave_connection = "mysql:///localhost"
+        self.assertRaises(AssertionError, session._assert_matching_drivers)
