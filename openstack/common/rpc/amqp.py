@@ -52,6 +52,14 @@ amqp_opts = [
                 default=False,
                 help='Enable a fast single reply queue if using AMQP based '
                 'RPC like RabbitMQ or Qpid.'),
+    cfg.BoolOpt('amqp_durable_queues',
+                default=False,
+                help='Use durable queues in amqp.',
+                deprecated_name='rabbit_durable_queues',
+                deprecated_group='DEFAULT'),
+    cfg.BoolOpt('amqp_auto_delete',
+                default=False,
+                help='Auto-delete queues in amqp.'),
 ]
 
 cfg.CONF.register_opts(amqp_opts)
