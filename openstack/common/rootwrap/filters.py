@@ -226,3 +226,37 @@ class ReadFileFilter(CommandFilter):
         if len(userargs) != 2:
             return False
         return True
+
+
+class IpFilter(CommandFilter):
+    """Specific filter for the ip utility to that does not match exec."""
+
+    def match(self, userargs):
+        if userargs[0] == 'ip':
+            if userargs[1] == 'netns':
+                if userargs[2] in ('list', 'add', 'delete'):
+                    return True
+                else:
+                    return False
+            else:
+                return True
+
+
+class ChainingFilter(CommandFilter):
+    def exec_args(self, userargs):
+        return []
+
+
+class IpNetnsExecFilter(ChainingFilter):
+    """Specific filter for the ip utility to that does match exec."""
+    def match(self, userargs):
+        if userargs[:3] == ['ip', 'netns', 'exec']:
+            return True
+        else:
+            return False
+
+    def exec_args(self, userargs):
+        args = userargs[4:]
+        if args:
+            args[0] = os.path.basename(args[0])
+        return args
