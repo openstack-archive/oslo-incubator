@@ -34,7 +34,7 @@ class CommandFilter(object):
         if self.real_exec is not None:
             return self.real_exec
         self.real_exec = ""
-        if self.exec_path.startswith('/'):
+        if os.path.isabs(self.exec_path):
             if os.access(self.exec_path, os.X_OK):
                 self.real_exec = self.exec_path
         else:
@@ -164,8 +164,10 @@ class DeprecatedDnsmasqFilter(DnsmasqFilter):
 
 class KillFilter(CommandFilter):
     """Specific filter for the kill calls.
+
        1st argument is the user to run /bin/kill under
        2nd argument is the location of the affected executable
+           if the argument is not absolute, it is checked against $PATH
        Subsequent arguments list the accepted signals (if any)
 
        This filter relies on /proc to accurately determine affected
@@ -194,21 +196,28 @@ class KillFilter(CommandFilter):
                 return False
         try:
             command = os.readlink("/proc/%d/exe" % int(args[1]))
-            # NOTE(yufang521247): /proc/PID/exe may have '\0' on the
-            # end, because python doen't stop at '\0' when read the
-            # target path.
-            command = command.split('\0')[0]
-            # NOTE(dprince): /proc/PID/exe may have ' (deleted)' on
-            # the end if an executable is updated or deleted
-            if command.endswith(" (deleted)"):
-                command = command[:command.rindex(" ")]
-            if command != self.args[0]:
-                # Affected executable does not match
-                return False
         except (ValueError, OSError):
             # Incorrect PID
             return False
-        return True
+
+        # NOTE(yufang521247): /proc/PID/exe may have '\0' on the
+        # end, because python doen't stop at '\0' when read the
+        # target path.
+        command = command.partition('\0')[0]
+
+        # NOTE(dprince): /proc/PID/exe may have ' (deleted)' on
+        # the end if an executable is updated or deleted
+        if command.endswith(" (deleted)"):
+            command = command[:-len(" (deleted)")]
+
+        kill_command = self.args[0]
+
+        if os.path.isabs(kill_command):
+            return kill_command == command
+
+        return (os.path.isabs(command) and
+                kill_command == os.path.basename(command) and
+                os.path.dirname(command) in os.environ['PATH'].split(':'))
 
 
 class ReadFileFilter(CommandFilter):
