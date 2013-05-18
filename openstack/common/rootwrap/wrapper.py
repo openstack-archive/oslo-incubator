@@ -132,7 +132,7 @@ def match_filter(filter_list, userargs, exec_dirs=[]):
     first_not_executable_filter = None
 
     for f in filter_list:
-        if f.match(userargs):
+        if f.match(userargs, exec_dirs=exec_dirs):
             # Try other filters if executable is absent
             if not f.get_exec(exec_dirs=exec_dirs):
                 if not first_not_executable_filter:
