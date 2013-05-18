@@ -107,6 +107,20 @@ class RootwrapTestCase(utils.BaseTestCase):
             usercmd = ['kill', p.pid]
             # Providing no signal should work
             self.assertTrue(f.match(usercmd) or f2.match(usercmd))
+
+            # verify that relative paths are matched against $PATH
+            f = filters.KillFilter("root", "cat")
+            # Our own PID does not match so it should fail
+            usercmd = ['kill', os.getpid()]
+            self.assertFalse(f.match(usercmd))
+            # Filter should find cat in /bin or /usr/bin
+            usercmd = ['kill', p.pid]
+            self.assertTrue(f.match(usercmd))
+            # Filter shouldn't be able to find binary in $PATH, so fail
+            with fixtures.EnvironmentVariable("PATH", "/foo:/bar"):
+                self.assertFalse(f.match(usercmd))
+            pass
+
         finally:
             # Terminate the "cat" process and wait for it to finish
             p.terminate()
