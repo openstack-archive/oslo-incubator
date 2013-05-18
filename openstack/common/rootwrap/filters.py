@@ -45,7 +45,7 @@ class CommandFilter(object):
                     break
         return self.real_exec
 
-    def match(self, userargs):
+    def match(self, userargs, exec_dirs=[]):
         """Only check that the first argument (command) matches exec_path."""
         return os.path.basename(self.exec_path) == userargs[0]
 
@@ -65,7 +65,7 @@ class CommandFilter(object):
 class RegExpFilter(CommandFilter):
     """Command filter doing regexp matching for every argument."""
 
-    def match(self, userargs):
+    def match(self, userargs, exec_dirs=[]):
         # Early skip if command or number of args don't match
         if (len(self.args) != len(userargs)):
             # DENY: argument numbers don't match
@@ -100,11 +100,11 @@ class PathFilter(CommandFilter):
 
     """
 
-    def match(self, userargs):
+    def match(self, userargs, exec_dirs=[]):
         command, arguments = userargs[0], userargs[1:]
 
         equal_args_num = len(self.args) == len(arguments)
-        exec_is_valid = super(PathFilter, self).match(userargs)
+        exec_is_valid = super(PathFilter, self).match(userargs, exec_dirs=exec_dirs)
         args_equal_or_pass = all(
             arg == 'pass' or arg == value
             for arg, value in zip(self.args, arguments)
@@ -137,7 +137,7 @@ class DnsmasqFilter(CommandFilter):
 
     CONFIG_FILE_ARG = 'CONFIG_FILE'
 
-    def match(self, userargs):
+    def match(self, userargs, exec_dirs=[]):
         if (userargs[0] == 'env' and
                 userargs[1].startswith(self.CONFIG_FILE_ARG) and
                 userargs[2].startswith('NETWORK_ID=') and
@@ -164,8 +164,11 @@ class DeprecatedDnsmasqFilter(DnsmasqFilter):
 
 class KillFilter(CommandFilter):
     """Specific filter for the kill calls.
+
        1st argument is the user to run /bin/kill under
        2nd argument is the location of the affected executable
+           if the argument is not an absolute path, it is checked
+           against exec_dirs
        Subsequent arguments list the accepted signals (if any)
 
        This filter relies on /proc to accurately determine affected
@@ -175,7 +178,7 @@ class KillFilter(CommandFilter):
     def __init__(self, *args):
         super(KillFilter, self).__init__("/bin/kill", *args)
 
-    def match(self, userargs):
+    def match(self, userargs, exec_dirs=[]):
         if userargs[0] != "kill":
             return False
         args = list(userargs)
@@ -194,21 +197,28 @@ class KillFilter(CommandFilter):
                 return False
         try:
             command = os.readlink("/proc/%d/exe" % int(args[1]))
-            # NOTE(yufang521247): /proc/PID/exe may have '\0' on the
-            # end, because python doen't stop at '\0' when read the
-            # target path.
-            command = command.split('\0')[0]
-            # NOTE(dprince): /proc/PID/exe may have ' (deleted)' on
-            # the end if an executable is updated or deleted
-            if command.endswith(" (deleted)"):
-                command = command[:command.rindex(" ")]
-            if command != self.args[0]:
-                # Affected executable does not match
-                return False
         except (ValueError, OSError):
             # Incorrect PID
             return False
-        return True
+
+        # NOTE(yufang521247): /proc/PID/exe may have '\0' on the
+        # end, because python doen't stop at '\0' when read the
+        # target path.
+        command = command.partition('\0')[0]
+
+        # NOTE(dprince): /proc/PID/exe may have ' (deleted)' on
+        # the end if an executable is updated or deleted
+        if command.endswith(" (deleted)"):
+            command = command[:-len(" (deleted)")]
+
+        kill_command = self.args[0]
+
+        if kill_command.startswith('/'):
+            return kill_command == command
+
+        return (command.startswith('/')
+                and kill_command == os.path.basename(command)
+                and os.path.dirname(command) in exec_dirs)
 
 
 class ReadFileFilter(CommandFilter):
@@ -218,7 +228,7 @@ class ReadFileFilter(CommandFilter):
         self.file_path = file_path
         super(ReadFileFilter, self).__init__("/bin/cat", "root", *args)
 
-    def match(self, userargs):
+    def match(self, userargs, exec_dirs=[]):
         if userargs[0] != 'cat':
             return False
         if userargs[1] != self.file_path:

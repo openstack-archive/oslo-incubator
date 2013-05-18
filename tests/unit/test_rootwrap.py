@@ -107,6 +107,18 @@ class RootwrapTestCase(utils.BaseTestCase):
             usercmd = ['kill', p.pid]
             # Providing no signal should work
             self.assertTrue(f.match(usercmd) or f2.match(usercmd))
+
+            # verify that exec_dirs are handled also for KillFilter
+            f = filters.KillFilter("root", "cat")
+            # Our own PID does not match so it should fail
+            usercmd = ['kill', os.getpid()]
+            self.assertFalse(f.match(usercmd, exec_dirs=['/bin', '/usr/bin']))
+            # Filter should find cat in /bin or /usr/bin
+            usercmd = ['kill', p.pid]
+            self.assertTrue(f.match(usercmd, exec_dirs=['/bin', '/usr/bin']))
+            # Filter shouldn't be able to find binary in exec_dirs, so fail
+            self.assertFalse(f.match(usercmd, exec_dirs=['/usr/some/thing', '/bin/some/else']))
+
         finally:
             # Terminate the "cat" process and wait for it to finish
             p.terminate()
