@@ -137,29 +137,70 @@ class DnsmasqFilter(CommandFilter):
 
     CONFIG_FILE_ARG = 'CONFIG_FILE'
 
+    def is_dnsmasq_cmd(self, argv):
+        if (argv[0] == "dnsmasq"):
+            return True
+        return False
+
+    def is_dnsmasq_env_vars(self, argv):
+        if (argv[0].partition('=')[0] not in
+                ('QUANTUM_RELAY_SOCKET_PATH', self.CONFIG_FILE_ARG)):
+            return False
+
+        if (argv[1].partition('=')[0] not in
+                ('QUANTUM_NETWORK_ID', 'NETWORK_ID')):
+            return False
+
+        return True
+
     def match(self, userargs):
-        if (userargs[0] == 'env' and
-                userargs[1].startswith(self.CONFIG_FILE_ARG) and
-                userargs[2].startswith('NETWORK_ID=') and
-                userargs[3] == 'dnsmasq'):
+        if (userargs[0] == 'env'
+                and self.is_dnsmasq_env_vars(userargs[1:3])
+                and userargs[3] == 'dnsmasq'):
             return True
         return False
 
     def get_command(self, userargs, exec_dirs=[]):
         to_exec = self.get_exec(exec_dirs=exec_dirs) or self.exec_path
-        dnsmasq_pos = userargs.index('dnsmasq')
-        return [to_exec] + userargs[dnsmasq_pos + 1:]
+        return [to_exec] + userargs[4:]
 
     def get_environment(self, userargs):
         env = os.environ.copy()
+
         env[self.CONFIG_FILE_ARG] = userargs[1].split('=')[-1]
+        env['QUANTUM_RELAY_SOCKET_PATH'] = userargs[1].split('=')[-1]
+
         env['NETWORK_ID'] = userargs[2].split('=')[-1]
+        env['QUANTUM_NETWORK_ID'] = userargs[2].split('=')[-1]
+
         return env
 
 
 class DeprecatedDnsmasqFilter(DnsmasqFilter):
     """Variant of dnsmasq filter to support old-style FLAGFILE."""
     CONFIG_FILE_ARG = 'FLAGFILE'
+
+
+class DnsmasqNetnsFilter(DnsmasqFilter):
+    """Specific filter for the dnsmasq call (which includes env)."""
+
+    def is_ip_netns_cmd(self, argv):
+        if ((argv[0] == "ip")
+                and (argv[1] == "netns")
+                and (argv[2] == "exec")):
+            return True
+        return False
+
+    def match(self, userargs):
+        """This matches the combination of the leading env
+        vars plus "ip" "netns" "exec" <foo> "dnsmasq"
+        """
+        if (userargs[0] == 'env'
+                and self.is_dnsmasq_env_vars(userargs[1:3])
+                and self.is_ip_netns_cmd(userargs[3:])
+                and self.is_dnsmasq_cmd(userargs[7:])):
+            return True
+        return False
 
 
 class KillFilter(CommandFilter):
@@ -226,3 +267,37 @@ class ReadFileFilter(CommandFilter):
         if len(userargs) != 2:
             return False
         return True
+
+
+class IpFilter(CommandFilter):
+    """Specific filter for the ip utility to that does not match exec."""
+
+    def match(self, userargs):
+        if userargs[0] == 'ip':
+            if userargs[1] == 'netns':
+                if userargs[2] in ('list', 'add', 'delete'):
+                    return True
+                else:
+                    return False
+            else:
+                return True
+
+
+class ChainingFilter(CommandFilter):
+    def exec_args(self, userargs):
+        return []
+
+
+class IpNetnsExecFilter(ChainingFilter):
+    """Specific filter for the ip utility to that does match exec."""
+    def match(self, userargs):
+        if userargs[:3] == ['ip', 'netns', 'exec']:
+            return True
+        else:
+            return False
+
+    def exec_args(self, userargs):
+        args = userargs[4:]
+        if args:
+            args[0] = os.path.basename(args[0])
+        return args
