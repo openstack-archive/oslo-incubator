@@ -77,6 +77,23 @@ class RootwrapTestCase(utils.BaseTestCase):
     def test_DeprecatedDnsmasqFilter(self):
         self._test_DnsmasqFilter(filters.DeprecatedDnsmasqFilter, 'FLAGFILE')
 
+    def test_EnvFilter(self):
+        envcmd = ['env', 'A=/some/thing', 'B=somethingelse']
+        realcmd = ['sleep', '10']
+        usercmd = envcmd + realcmd
+
+        f = filters.EnvFilter("env", "root", "A=", "B=ignored")
+        s = filters.CommandFilter("sleep", 'root', '10')
+        self.assertTrue(s.match(realcmd))
+        self.assertTrue(f.match(usercmd))
+        self.assertFalse(f.match(envcmd))
+        self.assertFalse(f.match(realcmd))
+        self.assertEqual(f.exec_args(usercmd), realcmd)
+
+        self.assertFalse(f.match([envcmd, 'C=ELSE']))
+        self.assertFalse(f.match(['env', 'C=xx']))
+        self.assertFalse(f.match(['env', 'A=xx']))
+
     def test_KillFilter(self):
         if not os.path.exists("/proc/%d" % os.getpid()):
             self.skipTest("Test requires /proc filesystem (procfs)")
@@ -154,6 +171,48 @@ class RootwrapTestCase(utils.BaseTestCase):
         usercmd = ['cat', goodfn]
         self.assertEqual(f.get_command(usercmd), ['/bin/cat', goodfn])
         self.assertTrue(f.match(usercmd))
+
+    def test_IpFilter_non_netns(self):
+        f = filters.IpFilter('/sbin/ip', 'root')
+        self.assertTrue(f.match(['ip', 'link', 'list']))
+
+    def _test_IpFilter_netns_helper(self, action):
+        f = filters.IpFilter('/sbin/ip', 'root')
+        self.assertTrue(f.match(['ip', 'link', action]))
+
+    def test_IpFilter_netns_add(self):
+        self._test_IpFilter_netns_helper('add')
+
+    def test_IpFilter_netns_delete(self):
+        self._test_IpFilter_netns_helper('delete')
+
+    def test_IpFilter_netns_list(self):
+        self._test_IpFilter_netns_helper('list')
+
+    def test_IpNetnsExecFilter_match(self):
+        f = filters.IpNetnsExecFilter('/sbin/ip', 'root')
+        self.assertTrue(
+            f.match(['ip', 'netns', 'exec', 'foo', 'ip', 'link', 'list']))
+
+    def test_IpNetnsExecFilter_nomatch(self):
+        f = filters.IpNetnsExecFilter('/sbin/ip', 'root')
+        self.assertFalse(f.match(['ip', 'link', 'list']))
+
+    def test_match_filter_recurses_exec_command_filter_matches(self):
+        filter_list = [filters.IpNetnsExecFilter('/sbin/ip', 'root'),
+                       filters.IpFilter('/sbin/ip', 'root')]
+        args = ['ip', 'netns', 'exec', 'foo', 'ip', 'link', 'list']
+
+        self.assertIsNotNone(wrapper.match_filter(filter_list, args))
+
+    def test_match_filter_recurses_exec_command_filter_does_not_match(self):
+        filter_list = [filters.IpNetnsExecFilter('/sbin/ip', 'root'),
+                       filters.IpFilter('/sbin/ip', 'root')]
+        args = ['ip', 'netns', 'exec', 'foo', 'ip', 'netns', 'exec', 'bar',
+                'ip', 'link', 'list']
+
+        self.assertRaises(wrapper.NoFilterMatched,
+                          wrapper.match_filter, filter_list, args)
 
     def test_exec_dirs_search(self):
         # This test supposes you have /bin/cat or /usr/bin/cat locally

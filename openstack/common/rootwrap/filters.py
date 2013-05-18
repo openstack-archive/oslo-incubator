@@ -219,10 +219,72 @@ class ReadFileFilter(CommandFilter):
         super(ReadFileFilter, self).__init__("/bin/cat", "root", *args)
 
     def match(self, userargs):
-        if userargs[0] != 'cat':
+        return (userargs == ['cat', self.file_path])
+
+
+class IpFilter(CommandFilter):
+    """Specific filter for the ip utility to that does not match exec."""
+
+    def match(self, userargs):
+        if userargs[0] == 'ip':
+            if userargs[1] == 'netns':
+                return (userargs[2] in ('list', 'add', 'delete'))
+            else:
+                return True
+
+
+class ChainingFilter(CommandFilter):
+    def exec_args(self, userargs):
+        return []
+
+
+class IpNetnsExecFilter(ChainingFilter):
+    """Specific filter for the ip utility to that does match exec."""
+    def match(self, userargs):
+        return (userargs[:3] == ['ip', 'netns', 'exec'])
+
+    def exec_args(self, userargs):
+        args = userargs[4:]
+        if args:
+            args[0] = os.path.basename(args[0])
+        return args
+
+
+class EnvFilter(ChainingFilter):
+    """Specific filter for the env utility."""
+
+    def _extract_env(self, arglist):
+        """Extract all leading NAME=VALUE arguments from arglist"""
+
+        envs = set()
+        for arg in arglist:
+            if '=' not in arg:
+                break
+            envs.add(arg.partition('=')[0])
+        return envs
+
+    def match(self, userargs):
+        if userargs[0] != 'env':
             return False
-        if userargs[1] != self.file_path:
+
+        # require one additional argument after configured ones
+        if len(userargs[1:]) <= len(self.args):
             return False
-        if len(userargs) != 2:
-            return False
-        return True
+
+        # extract all env args
+        user_envs = self._extract_env(userargs[1:])
+        filter_envs = self._extract_env(self.args)
+
+        return len(filter_envs) and user_envs == filter_envs
+
+    def exec_args(self, userargs):
+        args = userargs[1:]
+
+        # throw away all NAME=VALUE arguments
+        while args and '=' in args[0]:
+            args = args[1:]
+
+        if args:
+            args[0] = os.path.basename(args[0])
+
+        return args
