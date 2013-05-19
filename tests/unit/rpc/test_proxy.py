@@ -19,6 +19,7 @@ Unit Tests for rpc.proxy
 """
 
 import copy
+import mox
 
 import six
 
@@ -27,10 +28,19 @@ from openstack.common import lockutils
 from openstack.common import rpc
 from openstack.common.rpc import common as rpc_common
 from openstack.common.rpc import proxy
+from openstack.common.rpc import serializer as rpc_serializer
 from tests import utils
 
 
 class RpcProxyTestCase(utils.BaseTestCase):
+
+    def setUp(self):
+        super(RpcProxyTestCase, self).setUp()
+        self.mox = mox.Mox()
+
+    def cleanUp(self):
+        super(RpcProxyTestCase, self).cleanUp()
+        self.mox.VerifyAll()
 
     def _test_rpc_method(self, rpc_method, has_timeout=False, has_retval=False,
                          server_params=None, supports_topic_override=True):
@@ -174,3 +184,28 @@ class RpcProxyTestCase(utils.BaseTestCase):
         expected = {'method': 'test_method', 'namespace': 'meow',
                     'args': {'a': 1, 'b': 2}}
         self.assertEqual(msg, expected)
+
+    def test_serializer(self):
+        ctxt = context.RequestContext('fake', 'fake')
+        serializer = rpc_serializer.NoOpSerializer()
+
+        self.mox.StubOutWithMock(serializer, 'serialize_entity')
+        self.mox.StubOutWithMock(serializer, 'deserialize_entity')
+        self.mox.StubOutWithMock(rpc, 'call')
+
+        serializer.serialize_entity(ctxt, 1).AndReturn(1)
+        serializer.serialize_entity(ctxt, 2).AndReturn(2)
+        rpc.call(ctxt, 'fake',
+                 {'args': {'a': 1, 'b': 2},
+                  'namespace': None,
+                  'method': 'foo',
+                  'version': '1.0'},
+                 None).AndReturn('foo')
+        serializer.deserialize_entity(ctxt, 'foo').AndReturn('worked!')
+
+        self.mox.ReplayAll()
+
+        rpc_proxy = proxy.RpcProxy('fake', '1.0', serializer=serializer)
+        msg = rpc_proxy.make_msg('foo', a=1, b=2)
+        result = rpc_proxy.call(ctxt, msg)
+        self.assertEqual(result, 'worked!')

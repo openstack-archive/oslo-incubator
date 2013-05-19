@@ -18,9 +18,12 @@
 Unit Tests for rpc.dispatcher
 """
 
+import mox
+
 from openstack.common import context
 from openstack.common.rpc import common as rpc_common
 from openstack.common.rpc import dispatcher
+from openstack.common.rpc import serializer as rpc_serializer
 from tests import utils
 
 
@@ -35,6 +38,7 @@ class RpcDispatcherTestCase(utils.BaseTestCase):
         def test_method(self, ctxt, arg1):
             self.test_method_ctxt = ctxt
             self.test_method_arg1 = arg1
+            return 'fake-result'
 
     class API2(object):
         RPC_API_VERSION = '2.1'
@@ -73,6 +77,11 @@ class RpcDispatcherTestCase(utils.BaseTestCase):
     def setUp(self):
         super(RpcDispatcherTestCase, self).setUp()
         self.ctxt = context.RequestContext('fake_user', 'fake_project')
+        self.mox = mox.Mox()
+
+    def cleanUp(self):
+        super(RpcDispatcherTestCase, self).setUp()
+        self.mox.VerifyAll()
 
     def _test_dispatch(self, version, expectations):
         v2 = self.API2()
@@ -158,3 +167,21 @@ class RpcDispatcherTestCase(utils.BaseTestCase):
         self.assertEqual(v1.test_method_arg1, None)
         self.assertEqual(v4.test_method_ctxt, self.ctxt)
         self.assertEqual(v4.test_method_arg1, 1)
+
+    def test_serializer(self):
+        api = self.API1()
+        serializer = rpc_serializer.NoOpSerializer()
+
+        self.mox.StubOutWithMock(serializer, 'serialize_entity')
+        self.mox.StubOutWithMock(serializer, 'deserialize_entity')
+
+        serializer.deserialize_entity(self.ctxt, 1).AndReturn(1)
+        serializer.serialize_entity(self.ctxt, 'fake-result').AndReturn(
+            'worked!')
+
+        self.mox.ReplayAll()
+
+        disp = dispatcher.RpcDispatcher([api], serializer)
+        result = disp.dispatch(self.ctxt, '1.0', 'test_method',
+                               None, arg1=1)
+        self.assertEqual(result, 'worked!')
