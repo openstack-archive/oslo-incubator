@@ -158,3 +158,25 @@ class RpcDispatcherTestCase(utils.BaseTestCase):
         self.assertEqual(v1.test_method_arg1, None)
         self.assertEqual(v4.test_method_ctxt, self.ctxt)
         self.assertEqual(v4.test_method_arg1, 1)
+
+    def test_serializer(self):
+        api = self.API1()
+        calls = dict(serialize=0, deserialize=0)
+
+        class FakeSerializer(object):
+            def serialize_entity(self, context, entity):
+                calls['serialize'] += 1
+                return 'foo'
+
+            def deserialize_entity(self, context, entity):
+                calls['deserialize'] += 1
+                return entity
+
+        disp = dispatcher.RpcDispatcher([api], FakeSerializer())
+
+        result = disp.dispatch(self.ctxt, '1.0', 'test_method',
+                               None, arg1=1)
+
+        self.assertEqual(calls['deserialize'], 1)
+        self.assertEqual(calls['serialize'], 1)
+        self.assertEqual(result, 'foo')
