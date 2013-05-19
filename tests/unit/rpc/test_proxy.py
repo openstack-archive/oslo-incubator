@@ -163,3 +163,30 @@ class RpcProxyTestCase(utils.BaseTestCase):
         expected = {'method': 'test_method', 'namespace': None,
                     'args': {'a': 1, 'b': 2}}
         self.assertEqual(msg, expected)
+
+    def test_serializer(self):
+        calls = dict(serialize=0, deserialize=0)
+        ctxt = context.RequestContext('fake', 'fake')
+
+        class FakeSerializer(object):
+            def serialize_entity(self, context, entity):
+                calls['serialize'] += 1
+                return entity
+
+            def deserialize_entity(self, context, entity):
+                calls['deserialize'] += 1
+                return entity
+
+        def fake_call(context, topic, msg, timeout):
+            calls['call'] = msg
+            return 'foo'
+        self.stubs.Set(rpc, 'call', fake_call)
+
+        rpc_proxy = proxy.RpcProxy('fake', '1.0',
+                                   serializer=FakeSerializer())
+        msg = rpc_proxy.make_msg('foo', a=1, b=2)
+        result = rpc_proxy.call(ctxt, msg)
+        self.assertEqual(result, 'foo')
+        self.assertEqual(calls['serialize'], 2)
+        self.assertEqual(calls['deserialize'], 1)
+        self.assertEqual(calls['call']['args'], dict(a=1, b=2))
