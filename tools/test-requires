@@ -3,7 +3,8 @@ distribute>=0.6.24
 
 coverage
 fixtures>=0.3.12
-flake8
+flake8==2.0
+hacking>=0.5.3,<0.6
 mock
 mox==0.5.3
 mysql-python
@@ -12,6 +13,8 @@ nose-exclude
 nosexcover
 openstack.nose_plugin
 nosehtmloutput
+pep8==1.4.5
+pyflakes==0.7.2
 pylint
 pyzmq==2.2.0.1
 redis
