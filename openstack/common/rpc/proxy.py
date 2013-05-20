@@ -35,6 +35,9 @@ class RpcProxy(object):
     rpc API.
     """
 
+    # The default namespace, which can be overriden in a subclass.
+    RPC_API_NAMESPACE = None
+
     def __init__(self, topic, default_version, version_cap=None):
         """Initialize an RpcProxy.
 
@@ -70,9 +73,9 @@ class RpcProxy(object):
     def make_namespaced_msg(method, namespace, **kwargs):
         return {'method': method, 'namespace': namespace, 'args': kwargs}
 
-    @staticmethod
-    def make_msg(method, **kwargs):
-        return RpcProxy.make_namespaced_msg(method, None, **kwargs)
+    def make_msg(self, method, **kwargs):
+        return self.make_namespaced_msg(method, self.RPC_API_NAMESPACE,
+                                        **kwargs)
 
     def call(self, context, msg, topic=None, version=None, timeout=None):
         """rpc.call() a remote method.

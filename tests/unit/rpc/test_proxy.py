@@ -158,8 +158,19 @@ class RpcProxyTestCase(utils.BaseTestCase):
                     'args': {'a': 1, 'b': 2}}
         self.assertEqual(msg, expected)
 
-    def test_make_msg(self):
-        msg = proxy.RpcProxy.make_msg('test_method', a=1, b=2)
+    def test_make_msg_with_no_namespace(self):
+        proxy_obj = proxy.RpcProxy('fake', '1.0')
+        msg = proxy_obj.make_msg('test_method', a=1, b=2)
         expected = {'method': 'test_method', 'namespace': None,
+                    'args': {'a': 1, 'b': 2}}
+        self.assertEqual(msg, expected)
+
+    def test_make_msg_with_namespace(self):
+        class TestProxy(proxy.RpcProxy):
+            RPC_API_NAMESPACE = 'meow'
+
+        proxy_obj = TestProxy('fake', '1.0')
+        msg = proxy_obj.make_msg('test_method', a=1, b=2)
+        expected = {'method': 'test_method', 'namespace': 'meow',
                     'args': {'a': 1, 'b': 2}}
         self.assertEqual(msg, expected)
