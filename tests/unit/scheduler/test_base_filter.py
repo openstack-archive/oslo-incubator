@@ -13,8 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import mox
-
 from openstack.common.scheduler import base_filter
 
 from tests import utils
@@ -25,7 +23,6 @@ class TestBaseFilter(utils.BaseTestCase):
     def setUp(self):
         super(TestBaseFilter, self).setUp()
         self.filter = base_filter.BaseFilter()
-        self.mox = mox.Mox()
 
     def test_filter_one_is_called(self):
         filters = [1, 2, 3, 4]
