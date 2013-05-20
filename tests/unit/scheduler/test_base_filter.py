@@ -25,7 +25,6 @@ class TestBaseFilter(utils.BaseTestCase):
     def setUp(self):
         super(TestBaseFilter, self).setUp()
         self.filter = base_filter.BaseFilter()
-        self.mox = mox.Mox()
 
     def test_filter_one_is_called(self):
         filters = [1, 2, 3, 4]

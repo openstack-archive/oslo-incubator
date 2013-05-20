@@ -69,7 +69,6 @@ class RpcQpidTestCase(utils.BaseTestCase):
         self.mock_session = None
         self.mock_sender = None
         self.mock_receiver = None
-        self.mox = mox.Mox()
 
         self.orig_connection = qpid.messaging.Connection
         self.orig_session = qpid.messaging.Session
@@ -437,7 +436,6 @@ class RpcQpidTestCase(utils.BaseTestCase):
         if expect_failure:
             self.mock_session.next_receiver(timeout=mox.IsA(int)).AndRaise(
                 qpid.messaging.exceptions.Empty())
-            self.mock_receiver.fetch()
             self.mock_session.close()
             self.mock_connection.session().AndReturn(self.mock_session)
         else:
