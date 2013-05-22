@@ -121,7 +121,7 @@ class HttpError(ClientException):
         super(HttpError, self).__init__(formatted_string)
 
 
-class HttpClientError(HttpError):
+class HTTPClientError(HttpError):
     """Client-side HTTP error.
 
     Exception for cases in which the client seems to have erred.
@@ -138,7 +138,7 @@ class HttpServerError(HttpError):
     message = "HTTP Server Error"
 
 
-class BadRequest(HttpClientError):
+class BadRequest(HTTPClientError):
     """HTTP 400 - Bad Request.
 
     The request cannot be fulfilled due to bad syntax.
@@ -147,7 +147,7 @@ class BadRequest(HttpClientError):
     message = "Bad Request"
 
 
-class Unauthorized(HttpClientError):
+class Unauthorized(HTTPClientError):
     """HTTP 401 - Unauthorized.
 
     Similar to 403 Forbidden, but specifically for use when authentication
@@ -157,7 +157,7 @@ class Unauthorized(HttpClientError):
     message = "Unauthorized"
 
 
-class PaymentRequired(HttpClientError):
+class PaymentRequired(HTTPClientError):
     """HTTP 402 - Payment Required.
 
     Reserved for future use.
@@ -166,7 +166,7 @@ class PaymentRequired(HttpClientError):
     message = "Payment Required"
 
 
-class Forbidden(HttpClientError):
+class Forbidden(HTTPClientError):
     """HTTP 403 - Forbidden.
 
     The request was a valid request, but the server is refusing to respond
@@ -176,7 +176,7 @@ class Forbidden(HttpClientError):
     message = "Forbidden"
 
 
-class NotFound(HttpClientError):
+class NotFound(HTTPClientError):
     """HTTP 404 - Not Found.
 
     The requested resource could not be found but may be available again
@@ -186,7 +186,7 @@ class NotFound(HttpClientError):
     message = "Not Found"
 
 
-class MethodNotAllowed(HttpClientError):
+class MethodNotAllowed(HTTPClientError):
     """HTTP 405 - Method Not Allowed.
 
     A request was made of a resource using a request method not supported
@@ -196,7 +196,7 @@ class MethodNotAllowed(HttpClientError):
     message = "Method Not Allowed"
 
 
-class NotAcceptable(HttpClientError):
+class NotAcceptable(HTTPClientError):
     """HTTP 406 - Not Acceptable.
 
     The requested resource is only capable of generating content not
@@ -206,7 +206,7 @@ class NotAcceptable(HttpClientError):
     message = "Not Acceptable"
 
 
-class ProxyAuthenticationRequired(HttpClientError):
+class ProxyAuthenticationRequired(HTTPClientError):
     """HTTP 407 - Proxy Authentication Required.
 
     The client must first authenticate itself with the proxy.
@@ -215,7 +215,7 @@ class ProxyAuthenticationRequired(HttpClientError):
     message = "Proxy Authentication Required"
 
 
-class RequestTimeout(HttpClientError):
+class RequestTimeout(HTTPClientError):
     """HTTP 408 - Request Timeout.
 
     The server timed out waiting for the request.
@@ -224,7 +224,7 @@ class RequestTimeout(HttpClientError):
     message = "Request Timeout"
 
 
-class Conflict(HttpClientError):
+class Conflict(HTTPClientError):
     """HTTP 409 - Conflict.
 
     Indicates that the request could not be processed because of conflict
@@ -234,7 +234,7 @@ class Conflict(HttpClientError):
     message = "Conflict"
 
 
-class Gone(HttpClientError):
+class Gone(HTTPClientError):
     """HTTP 410 - Gone.
 
     Indicates that the resource requested is no longer available and will
@@ -244,7 +244,7 @@ class Gone(HttpClientError):
     message = "Gone"
 
 
-class LengthRequired(HttpClientError):
+class LengthRequired(HTTPClientError):
     """HTTP 411 - Length Required.
 
     The request did not specify the length of its content, which is
@@ -254,7 +254,7 @@ class LengthRequired(HttpClientError):
     message = "Length Required"
 
 
-class PreconditionFailed(HttpClientError):
+class PreconditionFailed(HTTPClientError):
     """HTTP 412 - Precondition Failed.
 
     The server does not meet one of the preconditions that the requester
@@ -264,7 +264,7 @@ class PreconditionFailed(HttpClientError):
     message = "Precondition Failed"
 
 
-class RequestEntityTooLarge(HttpClientError):
+class RequestEntityTooLarge(HTTPClientError):
     """HTTP 413 - Request Entity Too Large.
 
     The request is larger than the server is willing or able to process.
@@ -281,7 +281,7 @@ class RequestEntityTooLarge(HttpClientError):
         super(RequestEntityTooLarge, self).__init__(*args, **kwargs)
 
 
-class RequestUriTooLong(HttpClientError):
+class RequestUriTooLong(HTTPClientError):
     """HTTP 414 - Request-URI Too Long.
 
     The URI provided was too long for the server to process.
@@ -290,7 +290,7 @@ class RequestUriTooLong(HttpClientError):
     message = "Request-URI Too Long"
 
 
-class UnsupportedMediaType(HttpClientError):
+class UnsupportedMediaType(HTTPClientError):
     """HTTP 415 - Unsupported Media Type.
 
     The request entity has a media type which the server or resource does
@@ -300,7 +300,7 @@ class UnsupportedMediaType(HttpClientError):
     message = "Unsupported Media Type"
 
 
-class RequestedRangeNotSatisfiable(HttpClientError):
+class RequestedRangeNotSatisfiable(HTTPClientError):
     """HTTP 416 - Requested Range Not Satisfiable.
 
     The client has asked for a portion of the file, but the server cannot
@@ -310,7 +310,7 @@ class RequestedRangeNotSatisfiable(HttpClientError):
     message = "Requested Range Not Satisfiable"
 
 
-class ExpectationFailed(HttpClientError):
+class ExpectationFailed(HTTPClientError):
     """HTTP 417 - Expectation Failed.
 
     The server cannot meet the requirements of the Expect request-header field.
@@ -319,7 +319,7 @@ class ExpectationFailed(HttpClientError):
     message = "Expectation Failed"
 
 
-class UnprocessableEntity(HttpClientError):
+class UnprocessableEntity(HTTPClientError):
     """HTTP 422 - Unprocessable Entity.
 
     The request was well-formed but was unable to be followed due to semantic
@@ -440,7 +440,7 @@ def from_response(response, method, url):
         if 500 <= response.status_code < 600:
             cls = HttpServerError
         elif 400 <= response.status_code < 500:
-            cls = HttpClientError
+            cls = HTTPClientError
         else:
             cls = HttpError
     return cls(**kwargs)
