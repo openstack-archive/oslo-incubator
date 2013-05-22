@@ -5,6 +5,7 @@ WebOb==1.2.3
 eventlet>=0.12.0
 greenlet>=0.3.2
 lxml
+requests>=1.1,<1.2.3
 routes==1.12.3
 iso8601>=0.1.4
 anyjson>=0.3.3
