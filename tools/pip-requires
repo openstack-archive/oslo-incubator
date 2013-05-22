@@ -11,5 +11,6 @@ argparse
 stevedore
 SQLAlchemy>=0.7.8,<=0.7.9
 oslo.config>=1.1.0
+requests>=1.1
 qpid-python
 six
