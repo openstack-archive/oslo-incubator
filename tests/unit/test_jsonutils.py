@@ -16,8 +16,9 @@
 #    under the License.
 
 import datetime
-import StringIO
 import xmlrpclib
+
+from six import StringIO
 
 from openstack.common import jsonutils
 from tests import utils
@@ -32,7 +33,7 @@ class JSONUtilsTestCase(utils.BaseTestCase):
         self.assertEqual(jsonutils.loads('{"a": "b"}'), {'a': 'b'})
 
     def test_load(self):
-        x = StringIO.StringIO('{"a": "b"}')
+        x = StringIO('{"a": "b"}')
         self.assertEqual(jsonutils.load(x), {'a': 'b'})
 
 

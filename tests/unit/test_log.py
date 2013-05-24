@@ -1,9 +1,10 @@
 import cStringIO
 import logging
 import os
-import StringIO
 import sys
 import tempfile
+
+from six import StringIO
 
 from oslo.config import cfg
 
@@ -350,7 +351,7 @@ class SetDefaultsTestCase(test_utils.BaseTestCase):
 class LogConfigOptsTestCase(test_utils.BaseTestCase):
 
     def test_print_help(self):
-        f = StringIO.StringIO()
+        f = StringIO()
         CONF([])
         CONF.print_help(file=f)
         self.assertTrue('debug' in f.getvalue())
