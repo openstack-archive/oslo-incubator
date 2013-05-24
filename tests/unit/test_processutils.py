@@ -22,6 +22,8 @@ import os
 import StringIO
 import tempfile
 
+from six import StringIO
+
 from openstack.common import processutils
 from tests import utils
 
@@ -213,7 +215,7 @@ class FakeSshChannel(object):
         return self.rc
 
 
-class FakeSshStream(StringIO.StringIO):
+class FakeSshStream(StringIO):
     def setup_channel(self, rc):
         self.channel = FakeSshChannel(rc)
 
@@ -225,9 +227,9 @@ class FakeSshConnection(object):
     def exec_command(self, cmd):
         stdout = FakeSshStream('stdout')
         stdout.setup_channel(self.rc)
-        return (StringIO.StringIO(),
+        return (StringIO(),
                 stdout,
-                StringIO.StringIO('stderr'))
+                StringIO('stderr'))
 
 
 class SshExecuteTestCase(utils.BaseTestCase):
