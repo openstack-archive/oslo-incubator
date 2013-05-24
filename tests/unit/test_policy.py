@@ -18,10 +18,10 @@
 """Test of Policy Engine"""
 
 import os
-import StringIO
 import urllib
 
 import mock
+from six import StringIO
 import urllib2
 from oslo.config import cfg
 
@@ -779,7 +779,7 @@ class HttpCheckTestCase(PolicyBaseTestCase):
         return result
 
     @mock.patch.object(urllib2, 'urlopen',
-                       return_value=StringIO.StringIO('True'))
+                       return_value=StringIO('True'))
     def test_accept(self, mock_urlopen):
         check = policy.HttpCheck('http', '//example.com/%(name)s')
 
@@ -798,7 +798,7 @@ class HttpCheckTestCase(PolicyBaseTestCase):
         ))
 
     @mock.patch.object(urllib2, 'urlopen',
-                       return_value=StringIO.StringIO('other'))
+                       return_value=StringIO('other'))
     def test_reject(self, mock_urlopen):
         check = policy.HttpCheck('http', '//example.com/%(name)s')
 
