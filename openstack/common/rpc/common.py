@@ -417,7 +417,8 @@ class ClientException(Exception):
     """This encapsulates some actual exception that is expected to be
     hit by an RPC proxy object. Merely instantiating it records the
     current exception information, which will be passed back to the
-    RPC client without exceptional logging."""
+    RPC client without exceptional logging.
+    """
     def __init__(self):
         self._exc_info = sys.exc_info()
 
@@ -438,7 +439,8 @@ def client_exceptions(*exceptions):
     of expected exceptions that the RPC layer should not consider fatal,
     and not log as if they were generated in a real error scenario. Note
     that this will cause listed exceptions to be wrapped in a
-    ClientException, which is used internally by the RPC layer."""
+    ClientException, which is used internally by the RPC layer.
+    """
     def outer(func):
         def inner(*args, **kwargs):
             return catch_client_exception(exceptions, func, *args, **kwargs)

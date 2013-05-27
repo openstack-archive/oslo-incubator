@@ -37,7 +37,7 @@ class ManagerTestCase(utils.BaseTestCase):
 
 
 class NotifyTestCase(utils.BaseTestCase):
-    """Test case for the plugin notification interface"""
+    """Test case for the plugin notification interface."""
 
     def test_add_notifier(self):
         notifier1 = SimpleNotifier()
@@ -99,7 +99,7 @@ class MockExtManager():
 
 
 class APITestCase(utils.BaseTestCase):
-    """Test case for the plugin api extension interface"""
+    """Test case for the plugin api extension interface."""
     def test_add_extension(self):
         def mock_load(_s):
             return TestPluginClass()

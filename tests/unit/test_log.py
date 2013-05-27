@@ -238,7 +238,7 @@ class ContextFormatterTestCase(test_utils.BaseTestCase):
 
 
 class ExceptionLoggingTestCase(test_utils.BaseTestCase):
-    """Test that Exceptions are logged"""
+    """Test that Exceptions are logged."""
 
     def test_excepthook_logs_exception(self):
         product_name = 'somename'
@@ -267,7 +267,8 @@ class ExceptionLoggingTestCase(test_utils.BaseTestCase):
 
 class FancyRecordTestCase(test_utils.BaseTestCase):
     """Test how we handle fancy record keys that are not in the
-    base python logging"""
+    base python logging.
+    """
 
     def setUp(self):
         super(FancyRecordTestCase, self).setUp()

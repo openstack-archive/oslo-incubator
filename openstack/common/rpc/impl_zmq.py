@@ -514,7 +514,7 @@ class ZmqProxy(ZmqBaseReactor):
                         "%(topic)s. Dropping message.") % {'topic': topic})
 
     def consume_in_thread(self):
-        """Runs the ZmqProxy service"""
+        """Runs the ZmqProxy service."""
         ipc_dir = CONF.rpc_zmq_ipc_dir
         consume_in = "tcp://%s:%s" % \
             (CONF.rpc_zmq_bind_address,

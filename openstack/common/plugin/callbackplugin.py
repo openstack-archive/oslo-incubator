@@ -58,7 +58,7 @@ class _CallbackNotifier(object):
 
 
 class CallbackPlugin(plugin.Plugin):
-    """ Plugin with a simple callback interface.
+    """Plugin with a simple callback interface.
 
     This class is provided as a convenience for producing a simple
     plugin that only watches a couple of events.  For example, here's

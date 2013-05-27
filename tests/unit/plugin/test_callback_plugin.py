@@ -47,7 +47,7 @@ class TestCBP(callbackplugin.CallbackPlugin):
 
 
 class CallbackTestCase(test_utils.BaseTestCase):
-    """Tests for the callback plugin convenience class"""
+    """Tests for the callback plugin convenience class."""
 
     def test_callback_plugin_subclass(self):
 
