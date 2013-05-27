@@ -79,6 +79,12 @@ S: Obsolete
 F: context.py
 F: middleware/context.py
 
+== config ==
+M: Julien Danjou <julien@danjou.info>
+M: Zhongyue Luo <zhongyueluo@intel.com>
+S: Maintained
+F: config/
+
 == db ==
 
 M:
