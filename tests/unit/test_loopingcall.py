@@ -58,7 +58,7 @@ class LoopingCallTestCase(utils.BaseTestCase):
         self.assertFalse(timer.start(interval=0.5).wait())
 
     def test_interval_adjustment(self):
-        """Ensure the interval is adjusted to account for task duration"""
+        """Ensure the interval is adjusted to account for task duration."""
         self.num_runs = 3
 
         now = datetime.datetime.utcnow()

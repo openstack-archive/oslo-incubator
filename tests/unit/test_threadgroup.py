@@ -27,7 +27,7 @@ LOG = logging.getLogger(__name__)
 
 
 class ThreadGroupTestCase(utils.BaseTestCase):
-    """Test cases for thread group"""
+    """Test cases for thread group."""
     def setUp(self):
         super(ThreadGroupTestCase, self).setUp()
         self.tg = threadgroup.ThreadGroup()

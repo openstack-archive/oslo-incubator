@@ -223,7 +223,7 @@ class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
         self.config(amqp_rpc_single_reply_queue=False)
 
     def test_duplicate_message_check(self):
-        """Test sending *not-dict* to a topic exchange/queue"""
+        """Test sending *not-dict* to a topic exchange/queue."""
 
         conn = self.rpc.create_connection(FLAGS)
         message = {'args': 'topic test message', '_unique_id': 'aaaabbbbcccc'}

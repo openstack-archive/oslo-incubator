@@ -26,7 +26,7 @@ class SaveAndReraiseTest(utils.BaseTestCase):
         try:
             try:
                 raise Exception(msg)
-            except:
+            except Exception:
                 with excutils.save_and_reraise_exception():
                     pass
         except Exception as _e:
@@ -40,7 +40,7 @@ class SaveAndReraiseTest(utils.BaseTestCase):
         try:
             try:
                 raise Exception('dropped')
-            except:
+            except Exception:
                 with excutils.save_and_reraise_exception():
                     raise Exception(msg)
         except Exception as _e:

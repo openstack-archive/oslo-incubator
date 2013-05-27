@@ -21,7 +21,7 @@ from tests import utils
 
 
 class FakeService(service.Service):
-    """Fake manager for tests"""
+    """Fake manager for tests."""
     def __init__(self, host, topic):
         super(FakeService, self).__init__(host, topic, None)
         self.method_result = 'manager'
@@ -43,7 +43,7 @@ class FakeHookService(FakeService):
 
 
 class RpcServiceManagerTestCase(utils.BaseTestCase):
-    """Test cases for Services"""
+    """Test cases for Services."""
     def setUp(self):
         super(RpcServiceManagerTestCase, self).setUp()
         self.config(fake_rabbit=True)
