@@ -28,14 +28,13 @@ class CorrelationIdMiddlewareTest(utils.BaseTestCase):
         app = mock.Mock()
         req = mock.Mock()
         req.headers = {}
-        original_method = uuidutils.generate_uuid
+
         mock_generate_uuid = mock.Mock()
         mock_generate_uuid.return_value = "fake_uuid"
-        uuidutils.generate_uuid = mock_generate_uuid
+        self.stubs.Set(uuidutils, 'generate_uuid', mock_generate_uuid)
 
         middleware = correlation_id.CorrelationIdMiddleware(app)
         middleware(req)
-        uuidutils.generate_uuid = original_method
 
         self.assertEquals(req.headers.get("X_CORRELATION_ID"), "fake_uuid")
 
