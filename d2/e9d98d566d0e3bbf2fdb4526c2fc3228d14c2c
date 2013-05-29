@@ -1,0 +1,12 @@
+Verified+2: Jenkins
+Approved+1: Russell Bryant <rbryant@redhat.com>
+Code-Review+2: Russell Bryant <rbryant@redhat.com>
+Code-Review+1: Zhongyue Luo <zhongyue.luo@gmail.com>
+Code-Review+2: Doug Hellmann <doug.hellmann@dreamhost.com>
+Code-Review+1: Mark Vanderwiel <vanderwl@us.ibm.com>
+Code-Review+1: Aditi Raveesh <aditi.raveesh@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 29 May 2013 21:09:08 +0000
+Reviewed-on: https://review.openstack.org/29788
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
