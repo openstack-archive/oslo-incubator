@@ -17,15 +17,12 @@
 
 """Utility methods for working with WSGI servers."""
 
-from __future__ import print_function
-
 import eventlet
 eventlet.patcher.monkey_patch(all=False, socket=True)
 
 import datetime
 import errno
 import socket
-import sys
 import time
 
 import eventlet.wsgi
@@ -162,88 +159,6 @@ class Service(service.Service):
                              application,
                              custom_pool=self.tg.pool,
                              log=logging.WritableLogger(logger))
-
-
-class Middleware(object):
-    """
-    Base WSGI middleware wrapper. These classes require an application to be
-    initialized that will be called next.  By default the middleware will
-    simply call its wrapped app, or you can override __call__ to customize its
-    behavior.
-    """
-
-    @classmethod
-    def factory(cls, global_conf, **local_conf):
-        """
-        Factory method for paste.deploy
-        """
-
-        def filter(app):
-            return cls(app)
-
-        return filter
-
-    def __init__(self, application):
-        self.application = application
-
-    def process_request(self, req):
-        """
-        Called on each request.
-
-        If this returns None, the next application down the stack will be
-        executed. If it returns a response then that response will be returned
-        and execution will stop here.
-        """
-        return None
-
-    def process_response(self, response):
-        """Do whatever you'd like to the response."""
-        return response
-
-    @webob.dec.wsgify
-    def __call__(self, req):
-        response = self.process_request(req)
-        if response:
-            return response
-        response = req.get_response(self.application)
-        return self.process_response(response)
-
-
-class Debug(Middleware):
-    """
-    Helper class that can be inserted into any WSGI application chain
-    to get information about the request and response.
-    """
-
-    @webob.dec.wsgify
-    def __call__(self, req):
-        print(("*" * 40) + " REQUEST ENVIRON")
-        for key, value in req.environ.items():
-            print(key, "=", value)
-        print()
-        resp = req.get_response(self.application)
-
-        print(("*" * 40) + " RESPONSE HEADERS")
-        for (key, value) in resp.headers.iteritems():
-            print(key, "=", value)
-        print()
-
-        resp.app_iter = self.print_generator(resp.app_iter)
-
-        return resp
-
-    @staticmethod
-    def print_generator(app_iter):
-        """
-        Iterator that prints the contents of a wrapper string iterator
-        when iterated.
-        """
-        print(("*" * 40) + " BODY")
-        for part in app_iter:
-            sys.stdout.write(part)
-            sys.stdout.flush()
-            yield part
-        print()
 
 
 class Router(object):
