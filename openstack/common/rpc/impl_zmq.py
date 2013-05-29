@@ -30,7 +30,6 @@ from openstack.common import excutils
 from openstack.common.gettextutils import _
 from openstack.common import importutils
 from openstack.common import jsonutils
-from openstack.common import processutils as utils
 from openstack.common.rpc import common as rpc_common
 
 zmq = importutils.try_import('eventlet.green.zmq')
@@ -521,23 +520,23 @@ class ZmqProxy(ZmqBaseReactor):
              CONF.rpc_zmq_port)
         consumption_proxy = InternalContext(None)
 
-        if not os.path.isdir(ipc_dir):
-            try:
-                utils.execute('mkdir', '-p', ipc_dir, run_as_root=True)
-                utils.execute('chown', "%s:%s" % (os.getuid(), os.getgid()),
-                              ipc_dir, run_as_root=True)
-                utils.execute('chmod', '750', ipc_dir, run_as_root=True)
-            except utils.ProcessExecutionError:
+        try:
+            os.makedirs(ipc_dir)
+        except os.error:
+            if not os.path.isdir(ipc_dir):
                 with excutils.save_and_reraise_exception():
-                    LOG.error(_("Could not create IPC directory %s") %
-                              (ipc_dir, ))
-
+                    LOG.error(_("Required IPC directory does not exist at"
+                                " %s") % (ipc_dir, ))
         try:
             self.register(consumption_proxy,
                           consume_in,
                           zmq.PULL,
                           out_bind=True)
         except zmq.ZMQError:
+            if os.access(ipc_dir, os.X_OK):
+                with excutils.save_and_reraise_exception():
+                    LOG.error(_("Permission denied to IPC directory at"
+                                " %s") % (ipc_dir, ))
             with excutils.save_and_reraise_exception():
                 LOG.error(_("Could not create ZeroMQ receiver daemon. "
                             "Socket may already be in use."))
