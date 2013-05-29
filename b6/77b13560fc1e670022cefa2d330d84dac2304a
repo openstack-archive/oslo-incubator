@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Code-Review+1: Thierry Carrez <thierry@openstack.org>
+Code-Review+2: Mark McLoughlin <markmc@redhat.com>
+Approved+1: Russell Bryant <rbryant@redhat.com>
+Code-Review+2: Russell Bryant <rbryant@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 29 May 2013 21:11:27 +0000
+Reviewed-on: https://review.openstack.org/27346
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
