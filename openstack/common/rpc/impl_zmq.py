@@ -19,6 +19,7 @@ import pprint
 import re
 import socket
 import sys
+import time
 import types
 import uuid
 
@@ -32,6 +33,12 @@ from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import processutils as utils
 from openstack.common.rpc import common as rpc_common
+
+# Queue is renamed in Python3
+try:
+    import Queue as queue
+except ImportError:
+    import queue
 
 zmq = importutils.try_import('eventlet.green.zmq')
 
@@ -476,19 +483,19 @@ class ZmqProxy(ZmqBaseReactor):
                                          (ipc_dir, topic),
                                          sock_type, bind=True)
                 except RPCException:
-                    waiter.send_exception(*sys.exc_info())
+                    waiter.put((sys.exc_info()))
                     return
 
-                self.topic_proxy[topic] = eventlet.queue.LightQueue(
+                self.topic_proxy[topic] = queue.Queue(
                     CONF.rpc_zmq_topic_backlog)
                 self.sockets.append(out_sock)
 
                 # It takes some time for a pub socket to open,
                 # before we can have any faith in doing a send() to it.
                 if sock_type == zmq.PUB:
-                    eventlet.sleep(.5)
+                    time.sleep(.5)
 
-                waiter.send(True)
+                waiter.put(None)
 
                 while(True):
                     data = self.topic_proxy[topic].get()
@@ -496,20 +503,25 @@ class ZmqProxy(ZmqBaseReactor):
                     LOG.debug(_("ROUTER RELAY-OUT SUCCEEDED %(data)s") %
                               {'data': data})
 
-            wait_sock_creation = eventlet.event.Event()
-            eventlet.spawn(publisher, wait_sock_creation)
+            wait_sock_creation = queue.Queue(1)
+            self.pool.spawn(publisher, wait_sock_creation)
 
             try:
-                wait_sock_creation.wait()
+                exc = wait_sock_creation.get()
+                if exc:
+                    type_, value, tb = exc
+                    raise type_, value, tb
             except RPCException:
                 LOG.error(_("Topic socket file creation failed."))
                 return
+            finally:
+                wait_sock_creation = None
 
         try:
             self.topic_proxy[topic].put_nowait(data)
             LOG.debug(_("ROUTER RELAY-OUT QUEUED %(data)s") %
                       {'data': data})
-        except eventlet.queue.Full:
+        except queue.Full:
             LOG.error(_("Local per-topic backlog buffer full for topic "
                         "%(topic)s. Dropping message.") % {'topic': topic})
 
