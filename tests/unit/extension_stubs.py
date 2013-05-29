@@ -14,7 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from openstack.common import wsgi
+from openstack.common.deprecated import wsgi
 
 
 class StubExtension(object):

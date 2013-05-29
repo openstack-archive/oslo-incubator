@@ -23,7 +23,8 @@ import webob.dec
 import webob.exc
 
 from openstack.common.gettextutils import _
-from openstack.common import wsgi
+from openstack.common.middleware import base
+from openstack.common.deprecated import wsgi
 
 
 #default request size is 112k
@@ -66,7 +67,7 @@ class LimitingReader(object):
         return result
 
 
-class RequestBodySizeLimiter(wsgi.Middleware):
+class RequestBodySizeLimiter(base.Middleware):
     """Limit the size of incoming requests."""
 
     def __init__(self, *args, **kwargs):
