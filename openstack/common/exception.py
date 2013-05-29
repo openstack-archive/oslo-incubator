@@ -140,3 +140,17 @@ class MalformedRequestBody(OpenstackException):
 
 class InvalidContentType(OpenstackException):
     message = "Invalid content type %(content_type)s"
+
+class GlanceConnectionFailed(OpenstackException):
+    message = _("Connection to glance host %(host)s:%(port)s failed: "
+                "%(reason)s")
+
+class GlanceNotFound(OpenstackException):
+    message = _("Resource could not be found.")
+    code = 404
+
+class ImageNotFound(GlanceNotFound):
+        message = _("Image %(image_id)s could not be found.")
+
+class ImageNotAuthorized(OpenstackException):
+        message = _("Not authorized for image %(image_id)s.")
