@@ -79,3 +79,9 @@ class BaseTestCase(testtools.TestCase):
         group = kw.pop('group', None)
         for k, v in kw.iteritems():
             CONF.set_override(k, v, group)
+
+    def flags(self, **kw):
+        """Override flag variables for a test."""
+        group = kw.pop('group', None)
+        for k, v in kw.iteritems():
+            CONF.set_override(k, v, group)
