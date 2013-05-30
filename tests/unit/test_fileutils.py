@@ -34,3 +34,31 @@ class EnsureTree(utils.BaseTestCase):
         finally:
             if os.path.exists(tmpdir):
                 shutil.rmtree(tmpdir)
+
+
+class DeleteIfExists(utils.BaseTestCase):
+    def test_delete_if_exists(self):
+        tmpfile = tempfile.mktemp()
+
+        fileutils.delete_if_exists(tmpfile)
+        self.assertFalse(os.path.exists(tmpfile))
+
+        open(tmpfile, 'w')
+        fileutils.delete_if_exists(tmpfile)
+        self.assertFalse(os.path.exists(tmpfile))
+
+
+class RemovePathOnError(utils.BaseTestCase):
+    def test_remove_path_on_error(self):
+        tmpfile = tempfile.mktemp()
+        open(tmpfile, 'w')
+
+        with fileutils.remove_path_on_error(tmpfile):
+            pass
+        self.assertTrue(os.path.exists(tmpfile))
+
+        try:
+            with fileutils.remove_path_on_error(tmpfile):
+                raise Exception
+        except Exception:
+            self.assertFalse(os.path.exists(tmpfile))
