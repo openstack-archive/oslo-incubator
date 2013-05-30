@@ -27,5 +27,5 @@ To run tests in virtualenvs (preferred):
 
 To run tests in the current environment:
 
-  sudo pip install -r tools/pip-requires
+  sudo pip install -r requirements.txt
   nosetests
