@@ -25,8 +25,9 @@ class CapabilitiesFilter(filters.BaseHostFilter):
     """HostFilter to work with resource (instance & volume) type records."""
 
     def _satisfies_extra_specs(self, capabilities, resource_type):
-        """Check that the capabilities provided by the services
-        satisfy the extra specs associated with the instance type"""
+        """Check that the capabilities provided by the services satisfy
+        the extra specs associated with the instance type.
+        """
         extra_specs = resource_type.get('extra_specs', [])
         if not extra_specs:
             return True

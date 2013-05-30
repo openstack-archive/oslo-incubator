@@ -54,7 +54,8 @@ class NotifierTestCase(test_utils.BaseTestCase):
 
     def test_verify_message_format(self):
         """A test to ensure changing the message format is prohibitively
-        annoying"""
+        annoying.
+        """
 
         def message_assert(context, message):
             fields = [('publisher_id', 'publisher_id'),
