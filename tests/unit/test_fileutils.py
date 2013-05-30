@@ -16,11 +16,13 @@
 #    under the License.
 
 import __builtin__
+import errno
+import mock
+import mox
 import os
 import shutil
 import tempfile
 
-import mox
 
 from openstack.common import fileutils
 from tests import utils
@@ -82,3 +84,51 @@ class TestCachedFile(utils.BaseTestCase):
         fresh, data = fileutils.read_cached_file("/this/is/a/fake")
         self.assertEqual(data, fake_contents)
         self.assertTrue(fresh)
+
+
+class DeleteIfExists(utils.BaseTestCase):
+    def test_file_present(self):
+        tmpfile = tempfile.mktemp()
+
+        open(tmpfile, 'w')
+        fileutils.delete_if_exists(tmpfile)
+        self.assertFalse(os.path.exists(tmpfile))
+
+    def test_file_absent(self):
+        tmpfile = tempfile.mktemp()
+
+        fileutils.delete_if_exists(tmpfile)
+        self.assertFalse(os.path.exists(tmpfile))
+
+    @mock.patch('os.unlink')
+    def test_file_error(self, osunlink):
+        tmpfile = tempfile.mktemp()
+
+        open(tmpfile, 'w')
+
+        error = OSError()
+        error.errno = errno.EINVAL
+        osunlink.side_effect = error
+
+        self.assertRaises(OSError, fileutils.delete_if_exists, tmpfile)
+
+
+class RemovePathOnError(utils.BaseTestCase):
+    def test_error(self):
+        tmpfile = tempfile.mktemp()
+        open(tmpfile, 'w')
+
+        try:
+            with fileutils.remove_path_on_error(tmpfile):
+                raise Exception
+        except Exception:
+            self.assertFalse(os.path.exists(tmpfile))
+
+    def test_no_error(self):
+        tmpfile = tempfile.mktemp()
+        open(tmpfile, 'w')
+
+        with fileutils.remove_path_on_error(tmpfile):
+            pass
+        self.assertTrue(os.path.exists(tmpfile))
+        os.unlink(tmpfile)
