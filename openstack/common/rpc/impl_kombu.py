@@ -447,8 +447,9 @@ class Connection(object):
         self.reconnect()
 
     def _fetch_ssl_params(self):
-        """Handles fetching what ssl params
-        should be used for the connection (if any)"""
+        """Handles fetching what ssl params should be used for the connection
+        (if any).
+        """
         ssl_params = dict()
 
         # http://docs.python.org/library/ssl.html - ssl.wrap_socket
