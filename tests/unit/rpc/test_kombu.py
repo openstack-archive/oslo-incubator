@@ -114,7 +114,8 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
 
     def test_message_ttl_on_timeout(self):
         """Test message ttl being set by request timeout. The message
-        should die on the vine and never arrive."""
+        should die on the vine and never arrive.
+        """
         conn = self.rpc.create_connection(FLAGS)
         message = 'topic test message'
 

@@ -267,7 +267,8 @@ class ExceptionLoggingTestCase(test_utils.BaseTestCase):
 
 class FancyRecordTestCase(test_utils.BaseTestCase):
     """Test how we handle fancy record keys that are not in the
-    base python logging"""
+    base python logging.
+    """
 
     def setUp(self):
         super(FancyRecordTestCase, self).setUp()
