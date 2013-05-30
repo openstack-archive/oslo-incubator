@@ -16,8 +16,11 @@
 #    under the License.
 
 
+import contextlib
 import errno
 import os
+
+from openstack.common import excutils
 
 
 def ensure_tree(path):
@@ -33,3 +36,32 @@ def ensure_tree(path):
                 raise
         else:
             raise
+
+
+def delete_if_exists(path):
+    """Delete a file, but ignore file not found error.
+
+    :param path: File to delete
+    """
+
+    try:
+        os.unlink(path)
+    except OSError as e:
+        if e.errno == errno.ENOENT:
+            return
+        else:
+            raise
+
+
+@contextlib.contextmanager
+def remove_path_on_error(path):
+    """Protect code that wants to operate on PATH atomically.
+    Any exception will cause PATH to be removed.
+
+    :param path: File to work with
+    """
+    try:
+        yield
+    except Exception:
+        with excutils.save_and_reraise_exception():
+            delete_if_exists(path)
