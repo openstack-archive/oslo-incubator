@@ -41,7 +41,7 @@ class BaseFilter(object):
 
 
 class BaseFilterHandler(base_handler.BaseHandler):
-    """ Base class to handle loading filter classes.
+    """Base class to handle loading filter classes.
 
     This class should be subclassed where one needs to use filters.
     """
