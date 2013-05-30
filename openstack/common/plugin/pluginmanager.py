@@ -41,7 +41,7 @@ class PluginManager(object):
     """
 
     def __init__(self, project_name, service_name):
-        """ Construct Plugin Manager; load and initialize plugins.
+        """Construct Plugin Manager; load and initialize plugins.
 
         project_name (e.g. 'nova' or 'glance') is used
         to construct the entry point that identifies plugins.

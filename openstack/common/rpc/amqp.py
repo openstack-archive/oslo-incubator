@@ -183,7 +183,7 @@ class ConnectionContext(rpc_common.Connection):
 
 
 class ReplyProxy(ConnectionContext):
-    """ Connection class for RPC replies / callbacks """
+    """Connection class for RPC replies / callbacks."""
     def __init__(self, conf, connection_pool):
         self._call_waiters = {}
         self._num_call_waiters = 0

@@ -24,8 +24,7 @@ from stevedore import extension
 
 
 class BaseHandler(object):
-    """ Base class to handle loading filter and weight classes.
-    """
+    """Base class to handle loading filter and weight classes."""
     def __init__(self, modifier_class_type, modifier_namespace):
         self.namespace = modifier_namespace
         self.modifier_class_type = modifier_class_type
