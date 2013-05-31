@@ -50,6 +50,15 @@ class BaseTestCase(testtools.TestCase):
         self.stubs.UnsetAll()
         self.stubs.SmartUnsetAll()
 
+    def create_tempfile(self, basename, ext):
+        if not os.path.isabs(basename):
+            (fd, path) = tempfile.mkstemp(prefix=basename, suffix=ext)
+        else:
+            path = basename + ext
+            fd = os.open(path, os.O_CREAT | os.O_WRONLY)
+            os.close(fd)
+        return path
+
     def create_tempfiles(self, files, ext='.conf'):
         tempfiles = []
         for (basename, contents) in files:

@@ -85,6 +85,9 @@ connection_trace=True
 class SessionErrorWrapperTestCase(test_utils.BaseTestCase):
     def setUp(self):
         super(SessionErrorWrapperTestCase, self).setUp()
+        self.config(connection='sqlite:///' +
+                    self.create_tempfile('sqlite', 'db'),
+                    group='database')
         meta = MetaData()
         meta.bind = session.get_engine()
         test_table = Table(_TABLE_NAME, meta,
@@ -143,6 +146,9 @@ class RegexpFilterTestCase(test_utils.BaseTestCase):
 
     def setUp(self):
         super(RegexpFilterTestCase, self).setUp()
+        self.config(connection='sqlite:///' +
+                    self.create_tempfile('sqlite', 'db'),
+                    group='database')
         meta = MetaData()
         meta.bind = session.get_engine()
         test_table = Table(_REGEXP_TABLE_NAME, meta,
