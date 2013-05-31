@@ -154,3 +154,7 @@ class ImageNotFound(OpenstackException):
 
 class ImageNotAuthorized(OpenstackException):
         message = _("Not authorized for image %(image_id)s.")
+
+
+class ImageUnacceptable(Invalid):
+        message = _("Image %(image_id)s is unacceptable: %(reason)s")

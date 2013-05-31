@@ -21,6 +21,7 @@ import errno
 import os
 
 from openstack.common import excutils
+from openstack.common.processutils import execute_wrapper as execute
 
 
 def ensure_tree(path):
@@ -60,3 +61,35 @@ def remove_path_on_error(path):
     except Exception:
         with excutils.save_and_reraise_exception():
             delete_if_exists(path)
+
+
+@contextlib.contextmanager
+def temporary_chown(path, owner_uid=None):
+    """Temporarily chown a path.
+
+    :params owner_uid: UID of temporary owner (defaults to current user)
+    """
+    if owner_uid is None:
+        owner_uid = os.getuid()
+
+    orig_uid = os.stat(path).st_uid
+
+    if orig_uid != owner_uid:
+        execute('chown', owner_uid, path, run_as_root=True)
+    try:
+        yield
+    finally:
+        if orig_uid != owner_uid:
+            execute('chown', orig_uid, path, run_as_root=True)
+
+
+def file_open(*args, **kwargs):
+    """Open file
+
+    see built-in file() documentation for more details
+
+    Note: The reason this is kept in a separate module is to easily
+    be able to provide a stub module that doesn't alter system
+    state at all (for unit tests)
+    """
+    return file(*args, **kwargs)

@@ -19,6 +19,7 @@
 System-level utilities and helper functions.
 """
 
+import importlib
 import os
 import random
 import shlex
@@ -71,6 +72,22 @@ def _subprocess_setup():
     # Python installs a SIGPIPE handler by default. This is usually not what
     # non-Python subprocesses expect.
     signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+
+
+#TODO(ghe): Find a cleaner way for doing this
+def execute_wrapper(*cmd, **kwargs):
+    """
+    Allows project's execute() to insert rootwrap configuration into
+    oslo's execute() method kwargs.
+    """
+    base_pkg_name = __package__.split('.')[0]
+    try:
+        exc_wrapper = getattr(importlib.import_module(base_pkg_name + 'utils'),
+                              "execute")
+    except (ImportError, AttributeError):
+        execute(*cmd, **kwargs)
+    else:
+        exc_wrapper(*cmd, **kwargs)
 
 
 def execute(*cmd, **kwargs):
