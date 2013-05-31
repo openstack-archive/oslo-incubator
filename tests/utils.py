@@ -34,7 +34,9 @@ class BaseTestCase(testtools.TestCase):
 
     def setUp(self):
         super(BaseTestCase, self).setUp()
-        self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
+        moxfixture = self.useFixture(moxstubout.MoxStubout())
+        self.mox = moxfixture.mox
+        self.stubs = moxfixture.stubs
         self.addCleanup(CONF.reset)
         self.useFixture(fixtures.FakeLogger('openstack.common'))
         self.useFixture(fixtures.Timeout(30, True))
