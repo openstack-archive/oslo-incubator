@@ -1,0 +1,4 @@
+{
+    "default": "rule:admin",
+    "admin": "is_admin:True"
+}
