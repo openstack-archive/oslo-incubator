@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from collections import namedtuple
+import logging
 import os
 import pprint
 import re
@@ -100,7 +102,6 @@ def _deserialize(data):
     """
     Deserialization wrapper
     """
-    LOG.debug(_("Deserializing: %s"), data)
     return jsonutils.loads(data)
 
 
@@ -269,7 +270,6 @@ class InternalContext(object):
 
     def _get_response(self, ctx, proxy, topic, data):
         """Process a curried message and cast the result to topic."""
-        LOG.debug(_("Running func with context: %s"), ctx.to_dict())
         data.setdefault('version', None)
         data.setdefault('args', {})
 
@@ -552,6 +552,55 @@ def unflatten_envelope(packenv):
         return h
 
 
+class ZmqMsgInvalid(Exception):
+    pass
+
+
+RpcMsg = namedtuple('RpcMsg', ['ctx', 'msg'])
+
+
+class ZmqMsg(object):
+    """Wrapper around raw ZeroMQ messages that understands
+       our driver-specific envelope and automatically
+       and intelligently copies data (otherwise allowing zero-copy)
+    """
+    def __init__(self, data):
+        stderr = _("ZMQ Envelope version unsupported or unknown.")
+        try:
+            self._topic = data[1]
+            if data[2].bytes == 'impl_zmq_v2':
+                self.version = 2
+                self.packenv = data[4:]
+                self._ctx = data[3]
+            elif data[2].bytes == 'cast':  # Legacy protocol
+                self.version = 1
+                self.packenv = data[3]
+            else:
+                raise ZmqMsgInvalid(stderr)
+        except IndexError:
+            raise ZmqMsgInvalid(stderr)
+
+    def message(self):
+        if self.version == 2:
+            envelope = unflatten_envelope(self.packenv.bytes)
+            ctx = RpcContext.unmarshal(self._ctx.bytes)
+            msg = rpc_common.deserialize_msg(envelope)
+        elif self.version == 1:
+            rctx, msg = _deserialize(self.packenv.bytes)
+            ctx = RpcContext.unmarshal(rctx)
+        return RpcMsg(ctx, msg)
+
+    def safe_debug(self, msg):
+        """Wrapper around safe_log that only copies data when
+           debugging is enabled.
+        """
+        if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
+            rpc_common._safe_log(LOG.debug, msg, self.message().msg)
+
+    def topic(self):
+        return self._topic.bytes
+
+
 class ZmqReactor(ZmqBaseReactor):
     """
     A consumer class implementing a
@@ -563,36 +612,25 @@ class ZmqReactor(ZmqBaseReactor):
         super(ZmqReactor, self).__init__(conf)
 
     def consume(self, sock):
-        #TODO(ewindisch): use zero-copy (i.e. references, not copying)
-        data = sock.recv()
-        LOG.debug(_("CONSUMER RECEIVED DATA: %s"), data)
+        data = sock.recv(copy=False)
+
+        try:
+            zmsg = ZmqMsg(data)
+        except ZmqMsgInvalid as e:
+            LOG.error(str(e))
+            return
+
+        zmsg.safe_debug(_("Sending message: %s"))
+
         if sock in self.mapping:
-            LOG.debug(_("ROUTER RELAY-OUT %(data)s") % {
-                'data': data})
-            self.mapping[sock].send(data)
+            self.mapping[sock].send(data, copy=False)
+            zmsg.safe_debug(_("Relayed out message: %s"))
             return
 
         proxy = self.proxies[sock]
 
-        if data[2] == 'cast':  # Legacy protocol
-            packenv = data[3]
-
-            ctx, msg = _deserialize(packenv)
-            request = rpc_common.deserialize_msg(msg)
-            ctx = RpcContext.unmarshal(ctx)
-        elif data[2] == 'impl_zmq_v2':
-            packenv = data[4:]
-
-            msg = unflatten_envelope(packenv)
-            request = rpc_common.deserialize_msg(msg)
-
-            # Unmarshal only after verifying the message.
-            ctx = RpcContext.unmarshal(data[3])
-        else:
-            LOG.error(_("ZMQ Envelope version unsupported or unknown."))
-            return
-
-        self.pool.spawn_n(self.process, proxy, ctx, request)
+        ctx, msg = zmsg.message()
+        self.pool.spawn_n(self.process, proxy, ctx, msg)
 
 
 class Connection(rpc_common.Connection):
@@ -706,26 +744,20 @@ def _call(addr, context, topic, msg, timeout=None,
             _cast(addr, context, topic, payload, envelope)
 
             LOG.debug(_("Cast sent; Waiting reply"))
+
             # Blocks until receives reply
-            msg = msg_waiter.recv()
-            LOG.debug(_("Received message: %s"), msg)
-            LOG.debug(_("Unpacking response"))
+            data = msg_waiter.recv(copy=False)
 
-            if msg[2] == 'cast':  # Legacy version
-                raw_msg = _deserialize(msg[-1])[-1]
-            elif msg[2] == 'impl_zmq_v2':
-                rpc_envelope = unflatten_envelope(msg[4:])
-                raw_msg = rpc_common.deserialize_msg(rpc_envelope)
-            else:
-                raise rpc_common.UnsupportedRpcEnvelopeVersion(
-                    _("Unsupported or unknown ZMQ envelope returned."))
+            try:
+                zmsg = ZmqMsg(data)
+            except ZmqMsgInvalid:
+                raise RPCException(_("RPC Message Invalid."))
 
-            responses = raw_msg['args']['response']
+            zmsg.safe_debug(_("Received message: %s"))
+            responses = zmsg.message().msg['args']['response']
         # ZMQError trumps the Timeout error.
         except zmq.ZMQError:
             raise RPCException("ZMQ Socket Error")
-        except (IndexError, KeyError):
-            raise RPCException(_("RPC Message Invalid."))
         finally:
             if 'msg_waiter' in vars():
                 msg_waiter.close()
@@ -749,7 +781,7 @@ def _multi_send(method, context, topic, msg, timeout=None,
     message to all relevant hosts.
     """
     conf = CONF
-    LOG.debug(_("%(msg)s") % {'msg': ' '.join(map(pformat, (topic, msg)))})
+    rpc_common._safe_log(LOG.debug, _("Sending message: %s"), msg)
 
     queues = _get_matchmaker().queues(topic)
     LOG.debug(_("Sending message(s) to: %s"), queues)
