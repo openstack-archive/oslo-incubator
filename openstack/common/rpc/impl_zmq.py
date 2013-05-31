@@ -755,11 +755,14 @@ def _multi_send(method, context, topic, msg, timeout=None,
     LOG.debug(_("Sending message(s) to: %s"), queues)
 
     # Don't stack if we have no matchmaker results
-    if not queues:
-        LOG.warn(_("No matchmaker results. Not casting."))
-        # While not strictly a timeout, callers know how to handle
-        # this exception and a timeout isn't too big a lie.
-        raise rpc_common.Timeout(_("No match from matchmaker."))
+    if len(queues) == 0:
+        emsg = _("No matchmaker results. Not sending.")
+
+        if method.__name__ == '_cast':
+            LOG.warn(emsg)
+            return
+
+        raise rpc_common.Timeout(emsg)
 
     # This supports brokerless fanout (addresses > 1)
     for queue in queues:
