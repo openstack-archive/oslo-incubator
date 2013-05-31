@@ -25,7 +25,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from openstack.common.db import exception as db_exc
 from openstack.common.db.sqlalchemy import models
 from openstack.common.db.sqlalchemy import session
+from tests.unit.db.sqlalchemy import base as test_base
 from tests import utils as test_utils
+
 
 BASE = declarative_base()
 _TABLE_NAME = '__tmp__test__tmp__'
@@ -37,7 +39,7 @@ class TmpTable(BASE, models.ModelBase):
     foo = Column(Integer)
 
 
-class SessionParametersTestCase(test_utils.BaseTestCase):
+class SessionParametersTestCase(test_base.DbTestCase):
 
     def test_deprecated_session_parameters(self):
         paths = self.create_tempfiles([('test', """[DEFAULT]
@@ -84,7 +86,7 @@ pool_timeout=7
         self.assertEquals(test_utils.CONF.database.pool_timeout, 7)
 
 
-class SessionErrorWrapperTestCase(test_utils.BaseTestCase):
+class SessionErrorWrapperTestCase(test_base.DbTestCase):
     def setUp(self):
         super(SessionErrorWrapperTestCase, self).setUp()
         meta = MetaData()
@@ -99,14 +101,6 @@ class SessionErrorWrapperTestCase(test_utils.BaseTestCase):
                            Column('foo', Integer),
                            UniqueConstraint('foo', name='uniq_foo'))
         test_table.create()
-
-    def tearDown(self):
-        super(SessionErrorWrapperTestCase, self).tearDown()
-        meta = MetaData()
-        meta.bind = session.get_engine()
-        test_table = Table(_TABLE_NAME, meta, autoload=True)
-        test_table.drop()
-        session.cleanup()
 
     def test_flush_wrapper(self):
         tbl = TmpTable()
@@ -141,7 +135,7 @@ class RegexpTable(BASE, models.ModelBase):
     bar = Column(String(255))
 
 
-class RegexpFilterTestCase(test_utils.BaseTestCase):
+class RegexpFilterTestCase(test_base.DbTestCase):
 
     def setUp(self):
         super(RegexpFilterTestCase, self).setUp()
@@ -152,14 +146,6 @@ class RegexpFilterTestCase(test_utils.BaseTestCase):
                                   nullable=False),
                            Column('bar', String(255)))
         test_table.create()
-
-    def tearDown(self):
-        super(RegexpFilterTestCase, self).tearDown()
-        meta = MetaData()
-        meta.bind = session.get_engine()
-        test_table = Table(_REGEXP_TABLE_NAME, meta, autoload=True)
-        test_table.drop()
-        session.cleanup()
 
     def _test_regexp_filter(self, regexp, expected):
         _session = session.get_session()
