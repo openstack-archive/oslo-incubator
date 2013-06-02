@@ -95,7 +95,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         self.assertEqual(conn1, conn2)
 
     def test_topic_send_receive(self):
-        """Test sending to a topic exchange/queue"""
+        """Test sending to a topic exchange/queue."""
 
         conn = self.rpc.create_connection(FLAGS)
         message = 'topic test message'
@@ -132,7 +132,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         conn.close()
 
     def test_topic_send_receive_exchange_name(self):
-        """Test sending to a topic exchange/queue with an exchange name"""
+        """Test sending to a topic exchange/queue with an exchange name."""
 
         conn = self.rpc.create_connection(FLAGS)
         message = 'topic test message'
@@ -151,7 +151,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         self.assertEqual(self.received_message, message)
 
     def test_topic_multiple_queues(self):
-        """Test sending to a topic exchange with multiple queues"""
+        """Test sending to a topic exchange with multiple queues."""
 
         conn = self.rpc.create_connection(FLAGS)
         message = 'topic test message'
@@ -233,7 +233,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         self.assertEqual(self.received_message_2, message)
 
     def test_direct_send_receive(self):
-        """Test sending to a direct exchange/queue"""
+        """Test sending to a direct exchange/queue."""
         conn = self.rpc.create_connection(FLAGS)
         message = 'direct test message'
 
@@ -250,7 +250,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         self.assertEqual(self.received_message, message)
 
     def test_cast_interface_uses_default_options(self):
-        """Test kombu rpc.cast"""
+        """Test kombu rpc.cast."""
 
         ctxt = rpc_common.CommonRpcContext(user='fake_user',
                                            project='fake_project')
@@ -276,7 +276,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         impl_kombu.cast(FLAGS, ctxt, 'fake_topic', {'msg': 'fake'})
 
     def test_cast_to_server_uses_server_params(self):
-        """Test kombu rpc.cast"""
+        """Test kombu rpc.cast."""
 
         ctxt = rpc_common.CommonRpcContext(user='fake_user',
                                            project='fake_project')
@@ -309,7 +309,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
                                   'fake_topic', {'msg': 'fake'})
 
     def test_fanout_send_receive(self):
-        """Test sending to a fanout exchange and consuming from 2 queues"""
+        """Test sending to a fanout exchange and consuming from 2 queues."""
 
         self.skipTest("kombu memory transport seems buggy with "
                       "fanout queues as this test passes when "
@@ -366,7 +366,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         self.assertTrue(isinstance(result, self.rpc.DirectConsumer))
 
     def test_declare_consumer_ioerrors_will_reconnect(self):
-        """Test that an IOError exception causes a reconnection"""
+        """Test that an IOError exception causes a reconnection."""
         info = _raise_exc_stub(self.stubs, 2, self.rpc.DirectConsumer,
                                '__init__', 'Socket closed', exc_class=IOError)
 

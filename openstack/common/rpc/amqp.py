@@ -114,7 +114,7 @@ class ConnectionContext(rpc_common.Connection):
     """
 
     def __init__(self, conf, connection_pool, pooled=True, server_params=None):
-        """Create a new connection, or get one from the pool"""
+        """Create a new connection, or get one from the pool."""
         self.connection = None
         self.conf = conf
         self.connection_pool = connection_pool
@@ -127,7 +127,7 @@ class ConnectionContext(rpc_common.Connection):
         self.pooled = pooled
 
     def __enter__(self):
-        """When with ConnectionContext() is used, return self"""
+        """When with ConnectionContext() is used, return self."""
         return self
 
     def _done(self):
@@ -175,7 +175,7 @@ class ConnectionContext(rpc_common.Connection):
         self.connection.consume_in_thread()
 
     def __getattr__(self, key):
-        """Proxy all other calls to the Connection instance"""
+        """Proxy all other calls to the Connection instance."""
         if self.connection:
             return getattr(self.connection, key)
         else:
@@ -252,7 +252,7 @@ def msg_reply(conf, msg_id, reply_q, connection_pool, reply=None,
 
 
 class RpcContext(rpc_common.CommonRpcContext):
-    """Context that supports replying to a rpc.call"""
+    """Context that supports replying to a rpc.call."""
     def __init__(self, **kwargs):
         self.msg_id = kwargs.pop('msg_id', None)
         self.reply_q = kwargs.pop('reply_q', None)
@@ -491,7 +491,7 @@ class MulticallProxyWaiter(object):
         return result
 
     def __iter__(self):
-        """Return a result until we get a reply with an 'ending" flag"""
+        """Return a result until we get a reply with an 'ending' flag."""
         if self._done:
             raise StopIteration
         while True:
@@ -567,7 +567,7 @@ class MulticallWaiter(object):
 
 
 def create_connection(conf, new, connection_pool):
-    """Create a connection"""
+    """Create a connection."""
     return ConnectionContext(conf, connection_pool, pooled=not new)
 
 

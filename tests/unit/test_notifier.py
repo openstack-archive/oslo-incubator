@@ -29,7 +29,7 @@ ctxt2 = context.get_admin_context()
 
 
 class NotifierTestCase(test_utils.BaseTestCase):
-    """Test case for notifications"""
+    """Test case for notifications."""
     def setUp(self):
         super(NotifierTestCase, self).setUp()
         notification_driver = [
@@ -209,7 +209,7 @@ class SimpleNotifier(object):
 
 
 class MultiNotifierTestCase(test_utils.BaseTestCase):
-    """Test case for notifications"""
+    """Test case for notifications."""
 
     def setUp(self):
         super(MultiNotifierTestCase, self).setUp()

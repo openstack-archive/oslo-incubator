@@ -75,7 +75,7 @@ class LockTestCase(utils.BaseTestCase):
                                                "got mangled")
 
     def test_synchronized_internally(self):
-        """We can lock across multiple green threads"""
+        """We can lock across multiple green threads."""
         saved_sem_num = len(lockutils._semaphores)
         seen_threads = list()
 
@@ -105,7 +105,7 @@ class LockTestCase(utils.BaseTestCase):
                          "Semaphore leak detected")
 
     def test_nested_external_works(self):
-        """We can nest external syncs"""
+        """We can nest external syncs."""
         tempdir = tempfile.mkdtemp()
         try:
             self.config(lock_path=tempdir)
@@ -126,7 +126,7 @@ class LockTestCase(utils.BaseTestCase):
                 shutil.rmtree(tempdir)
 
     def _do_test_synchronized_externally(self):
-        """We can lock across multiple processes"""
+        """We can lock across multiple processes."""
 
         @lockutils.synchronized('external', 'test-', external=True)
         def lock_files(handles_dir):
