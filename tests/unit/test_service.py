@@ -44,7 +44,7 @@ class ExtendedService(service.Service):
 
 
 class ServiceManagerTestCase(utils.BaseTestCase):
-    """Test cases for Services"""
+    """Test cases for Services."""
     def test_override_manager_method(self):
         serv = ExtendedService()
         serv.start()

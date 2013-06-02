@@ -425,7 +425,7 @@ class HostFiltersTestCase(utils.BaseTestCase):
         self.assertFalse(filt_cls.host_passes(host, filter_properties))
 
     def test_json_filter_happy_day(self):
-        """Test json filter more thoroughly"""
+        """Test json filter more thoroughly."""
         filt_cls = self.class_map['JsonFilter']()
         raw = ['and',
                '$capabilities.enabled',

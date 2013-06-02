@@ -48,7 +48,7 @@ class AService(periodic_task.PeriodicTasks):
 
 
 class PeriodicTasksTestCase(utils.BaseTestCase):
-    """Test cases for PeriodicTasks"""
+    """Test cases for PeriodicTasks."""
 
     def test_is_called(self):
         serv = AService()
