@@ -95,20 +95,17 @@ class MatchMakerRedisHeartbeatTestCase(utils.BaseTestCase,
             self.driver.unregister(self.topic, host)
 
     def test_expires_set(self):
-        """
-        Test that expirations are set.
-        """
+        """Test that expirations are set."""
         self.driver.register(self.topic, self.hosts[0])
 
         ttl = self.driver.redis.ttl('.'.join((self.topic, self.hosts[0])))
         self.assertTrue(ttl > -1)
 
     def test_expires_hosts(self):
-        """
-        Tests that hosts expire.
-        Registers a host, ensures it is registered,
-        then waits for it to expire. Ensures is no
-        longer registered.
+        """Tests that hosts expire.
+
+        Registers a host, ensures it is registered, then waits for it to
+        expire. Ensures is no longer registered.
         """
         self.driver.register(self.topic, self.hosts[0])
 
@@ -122,9 +119,7 @@ class MatchMakerRedisHeartbeatTestCase(utils.BaseTestCase,
         self.assertEqual(ttl2, -1)
 
     def test_expired_hosts_removed(self):
-        """
-        Test that expired hosts are removed from results.
-        """
+        """Test that expired hosts are removed from results."""
         self.test_expires_hosts()
         self.assertEqual(self.driver.queues(self.topic), [])
 
@@ -132,9 +127,7 @@ class MatchMakerRedisHeartbeatTestCase(utils.BaseTestCase,
 class MatchMakerRedisTestCase(utils.BaseTestCase):
     """Generic tests that do not require a Redis server."""
     def test_redis_import_exception(self):
-        """
-        Try initializing an object without redis.
-        """
+        """Try initializing an object without redis."""
         matchmaker.redis = None
         self.assertRaises(ImportError, matchmaker.MatchMakerRedis)
         reload(matchmaker)

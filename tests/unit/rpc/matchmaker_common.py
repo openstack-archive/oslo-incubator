@@ -50,20 +50,17 @@ class _MatchMakerTestCase(_MatchMakerDirectedTopicTestCase):
 
 class _MatchMakerDynRegTestCase(object):
     def test_registers_host(self):
-        """
-        Registers a host, ensures it is registered.
-        """
+        """Registers a host, ensures it is registered."""
         self.driver.register(self.topic, self.hosts[0])
 
         match = self.driver.queues(self.topic)
         self.assertEqual(match[0][1], self.hosts[0])
 
     def test_unregister(self):
-        """
-        Tests that hosts unregister cleanly.
-        Registers a host, ensures it is registered,
-        then unregisters and ensures is no
-        longer registered.
+        """Tests that hosts unregister cleanly.
+
+        Registers a host, ensures it is registered, then unregisters and
+        ensures is no longer registered.
         """
         # Can only unregister if registrations work.
         self.test_registers_host()

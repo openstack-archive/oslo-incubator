@@ -124,7 +124,8 @@ class Timeout(RPCException):
                 'info: "%(info)s"')
 
     def __init__(self, info=None, topic=None, method=None):
-        """
+        """Initiates Timeout object.
+
         :param info: Extra info to convey to the user
         :param topic: The topic that the rpc call was sent to
         :param rpc_method_name: The name of the rpc method being
@@ -221,9 +222,9 @@ class Connection(object):
         raise NotImplementedError()
 
     def join_consumer_pool(self, callback, pool_name, topic, exchange_name):
-        """Register as a member of a group of consumers for a given topic from
-        the specified exchange.
+        """Register as a member of a group of consumers.
 
+        Uses given topic from the specified exchange.
         Exactly one member of a given pool will receive each message.
 
         A message will be delivered to multiple pools, if more than
@@ -414,10 +415,10 @@ class CommonRpcContext(object):
 
 
 class ClientException(Exception):
-    """This encapsulates some actual exception that is expected to be
-    hit by an RPC proxy object. Merely instantiating it records the
-    current exception information, which will be passed back to the
-    RPC client without exceptional logging.
+    """Encapsulates actual exception expected to be hit by a RPC proxy object.
+
+    Merely instantiating it records the current exception information, which
+    will be passed back to the RPC client without exceptional logging.
     """
     def __init__(self):
         self._exc_info = sys.exc_info()
@@ -435,6 +436,7 @@ def catch_client_exception(exceptions, func, *args, **kwargs):
 
 def client_exceptions(*exceptions):
     """Decorator for manager methods that raise expected exceptions.
+
     Marking a Manager method with this decorator allows the declaration
     of expected exceptions that the RPC layer should not consider fatal,
     and not log as if they were generated in a real error scenario. Note

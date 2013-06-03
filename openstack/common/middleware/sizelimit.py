@@ -41,7 +41,8 @@ CONF.register_opt(max_req_body_size)
 class LimitingReader(object):
     """Reader to limit the size of an incoming request."""
     def __init__(self, data, limit):
-        """
+        """Initiates LimitingReader object.
+
         :param data: Underlying data object
         :param limit: maximum number of bytes the reader should allow
         """

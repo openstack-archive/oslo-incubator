@@ -66,8 +66,7 @@ class BaseTestCase(testtools.TestCase):
         return tempfiles
 
     def config(self, **kw):
-        """
-        Override some configuration values.
+        """Override some configuration values.
 
         The keyword arguments are the names of configuration options to
         override and their values.
