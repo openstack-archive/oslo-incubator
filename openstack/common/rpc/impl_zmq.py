@@ -218,7 +218,7 @@ class ZmqClient(object):
             socket_type = zmq.PUSH
         self.outq = ZmqSocket(addr, socket_type, bind=bind)
 
-    def cast(self, msg_id, topic, data, envelope=False):
+    def cast(self, msg_id, topic, data, envelope=True):
         msg_id = msg_id or 0
 
         if not envelope:
