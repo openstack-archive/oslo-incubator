@@ -166,3 +166,35 @@ class StrUtilsTest(utils.BaseTestCase):
         # Forcing incoming to ascii so it falls back to utf-8
         self.assertEqual('ni\xc3\xb1o', safe_encode('ni\xc3\xb1o',
                                                     incoming='ascii'))
+
+    def test_string_conversions(self):
+        working_examples = {
+            '1024KB': 1048576,
+            '1024TB': 1125899906842624,
+            '1024K': 1048576,
+            '1024T': 1125899906842624,
+            '1TB': 1099511627776,
+            '1T': 1099511627776,
+            '1KB': 1024,
+            '1K': 1024,
+            '1B': 1,
+            '1': 1,
+            '1MB': 1048576,
+            '7MB': 7340032,
+            '0MB': 0,
+            '0KB': 0,
+            '0TB': 0,
+            '': 0,
+        }
+        for (in_value, expected_value) in working_examples.items():
+            b_value = strutils.to_bytes(in_value)
+            self.assertEquals(expected_value, b_value)
+            if in_value:
+                in_value = "-" + in_value
+                b_value = strutils.to_bytes(in_value)
+                self.assertEquals(expected_value * -1, b_value)
+        breaking_examples = [
+            'junk1KB', '1023BBBB',
+        ]
+        for v in breaking_examples:
+            self.assertRaises(TypeError, strutils.to_bytes, v)

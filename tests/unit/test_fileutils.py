@@ -82,3 +82,16 @@ class TestCachedFile(utils.BaseTestCase):
         fresh, data = fileutils.read_cached_file("/this/is/a/fake")
         self.assertEqual(data, fake_contents)
         self.assertTrue(fresh)
+
+
+class UtilsTestCase(utils.BaseTestCase):
+    def test_file_open(self):
+        dst_fd, dst_path = tempfile.mkstemp()
+        try:
+            os.close(dst_fd)
+            with open(dst_path, 'w') as f:
+                f.write('hello')
+            with fileutils.file_open(dst_path, 'r') as fp:
+                self.assertEquals(fp.read(), 'hello')
+        finally:
+            os.unlink(dst_path)
