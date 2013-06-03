@@ -30,9 +30,7 @@ class ContextMiddleware(base.Middleware):
         super(ContextMiddleware, self).__init__(app)
 
     def make_context(self, *args, **kwargs):
-        """
-        Create a context with the given arguments.
-        """
+        """Create a context with the given arguments."""
 
         # Determine the context class to use
         ctxcls = context.RequestContext
@@ -42,7 +40,8 @@ class ContextMiddleware(base.Middleware):
         return ctxcls(*args, **kwargs)
 
     def process_request(self, req):
-        """
+        """Process the request.
+
         Extract any authentication information in the request and
         construct an appropriate context from it.
         """
@@ -52,9 +51,7 @@ class ContextMiddleware(base.Middleware):
 
 
 def filter_factory(global_conf, **local_conf):
-    """
-    Factory method for paste.deploy
-    """
+    """Factory method for paste.deploy."""
     conf = global_conf.copy()
     conf.update(local_conf)
 

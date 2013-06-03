@@ -40,8 +40,7 @@ FALSE_STRINGS = ('0', 'f', 'false', 'off', 'n', 'no')
 
 
 def int_from_bool_as_string(subject):
-    """
-    Interpret a string as a boolean and return either 1 or 0.
+    """Interpret a string as a boolean and return either 1 or 0.
 
     Any string value in:
 
@@ -55,8 +54,7 @@ def int_from_bool_as_string(subject):
 
 
 def bool_from_string(subject, strict=False):
-    """
-    Interpret a string as a boolean.
+    """Interpret a string as a boolean.
 
     A case-insensitive match is performed such that strings matching 't',
     'true', 'on', 'y', 'yes', or '1' are considered True and, when
@@ -89,9 +87,7 @@ def bool_from_string(subject, strict=False):
 
 
 def safe_decode(text, incoming=None, errors='strict'):
-    """
-    Decodes incoming str using `incoming` if they're
-    not already unicode.
+    """Decodes incoming str using `incoming` if they're not already unicode.
 
     :param incoming: Text's current encoding
     :param errors: Errors handling policy. See here for valid
@@ -130,11 +126,10 @@ def safe_decode(text, incoming=None, errors='strict'):
 
 def safe_encode(text, incoming=None,
                 encoding='utf-8', errors='strict'):
-    """
-    Encodes incoming str/unicode using `encoding`. If
-    incoming is not specified, text is expected to
-    be encoded with current python's default encoding.
-    (`sys.getdefaultencoding`)
+    """Encodes incoming str/unicode using `encoding`.
+
+    If incoming is not specified, text is expected to be encoded with
+    current python's default encoding. (`sys.getdefaultencoding`)
 
     :param incoming: Text's current encoding
     :param encoding: Expected encoding for text (Default UTF-8)
