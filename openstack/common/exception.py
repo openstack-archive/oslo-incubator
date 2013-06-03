@@ -119,6 +119,9 @@ class OpenstackException(Exception):
     message = "An unknown exception occurred"
 
     def __init__(self, **kwargs):
+        if "message" in kwargs:
+            self.message = kwargs["message"]
+
         try:
             self._error_string = self.message % kwargs
 
@@ -139,3 +142,7 @@ class MalformedRequestBody(OpenstackException):
 
 class InvalidContentType(OpenstackException):
     message = "Invalid content type %(content_type)s"
+
+
+class ShadowTableExists(OpenstackException):
+    message = "Shadow table with name %(name)s already exists."
