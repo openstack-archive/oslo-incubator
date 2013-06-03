@@ -15,8 +15,8 @@
 
 import re
 
-from migrate.changeset.databases import sqlite
 from migrate.changeset import ansisql
+from migrate.changeset.databases import sqlite
 from sqlalchemy.schema import UniqueConstraint
 
 
