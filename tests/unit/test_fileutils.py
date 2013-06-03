@@ -132,3 +132,16 @@ class RemovePathOnError(utils.BaseTestCase):
             pass
         self.assertTrue(os.path.exists(tmpfile))
         os.unlink(tmpfile)
+
+
+class UtilsTestCase(utils.BaseTestCase):
+    def test_file_open(self):
+        dst_fd, dst_path = tempfile.mkstemp()
+        try:
+            os.close(dst_fd)
+            with open(dst_path, 'w') as f:
+                f.write('hello')
+            with fileutils.file_open(dst_path, 'r') as fp:
+                self.assertEquals(fp.read(), 'hello')
+        finally:
+            os.unlink(dst_path)
