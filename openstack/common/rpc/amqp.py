@@ -102,14 +102,15 @@ def get_connection_pool(conf, connection_cls):
 
 
 class ConnectionContext(rpc_common.Connection):
-    """The class that is actually returned to the caller of
-    create_connection().  This is essentially a wrapper around
-    Connection that supports 'with'.  It can also return a new
-    Connection, or one from a pool.  The function will also catch
-    when an instance of this class is to be deleted.  With that
-    we can return Connections to the pool on exceptions and so
-    forth without making the caller be responsible for catching
-    them.  If possible the function makes sure to return a
+    """The class that is actually returned to the create_connection() caller.
+
+    This is essentially a wrapper around Connection that supports 'with'.
+    It can also return a new Connection, or one from a pool.
+
+    The function will also catch when an instance of this class is to be
+    deleted.  With that we can return Connections to the pool on exceptions
+    and so forth without making the caller be responsible for catching
+    them. If possible the function makes sure to return a
     connection to the pool.
     """
 
@@ -339,8 +340,9 @@ def _add_unique_id(msg):
 
 
 class _ThreadPoolWithWait(object):
-    """Base class for a delayed invocation manager used by
-    the Connection class to start up green threads
+    """Base class for a delayed invocation manager.
+
+    Used by the Connection class to start up green threads
     to handle incoming messages.
     """
 
@@ -355,12 +357,14 @@ class _ThreadPoolWithWait(object):
 
 
 class CallbackWrapper(_ThreadPoolWithWait):
-    """Wraps a straight callback to allow it to be invoked in a green
-    thread.
+    """Wraps a straight callback.
+
+    Allows it to be invoked in a green thread.
     """
 
     def __init__(self, conf, callback, connection_pool):
-        """
+        """Initiates CallbackWrapper object.
+
         :param conf: cfg.CONF instance
         :param callback: a callable (probably a function)
         :param connection_pool: connection pool as returned by

@@ -69,8 +69,7 @@ def run_server(application, port, **kwargs):
 
 
 class Service(service.Service):
-    """
-    Provides a Service API for wsgi servers.
+    """Provides a Service API for wsgi servers.
 
     This gives us the ability to launch wsgi servers with the
     Launcher classes in service.py.
@@ -165,18 +164,16 @@ class Service(service.Service):
 
 
 class Middleware(object):
-    """
-    Base WSGI middleware wrapper. These classes require an application to be
-    initialized that will be called next.  By default the middleware will
-    simply call its wrapped app, or you can override __call__ to customize its
-    behavior.
+    """Base WSGI middleware wrapper.
+
+    These classes require an application to be initialized that will be called
+    next.  By default the middleware will simply call its wrapped app, or you
+    can override __call__ to customize its behavior.
     """
 
     @classmethod
     def factory(cls, global_conf, **local_conf):
-        """
-        Factory method for paste.deploy
-        """
+        """Factory method for paste.deploy."""
 
         def filter(app):
             return cls(app)
@@ -187,8 +184,7 @@ class Middleware(object):
         self.application = application
 
     def process_request(self, req):
-        """
-        Called on each request.
+        """Called on each request.
 
         If this returns None, the next application down the stack will be
         executed. If it returns a response then that response will be returned
@@ -210,9 +206,10 @@ class Middleware(object):
 
 
 class Debug(Middleware):
-    """
-    Helper class that can be inserted into any WSGI application chain
-    to get information about the request and response.
+    """Helper class that returns debug information.
+
+    Can be inserted into any WSGI application chain to get information about
+    the request and response.
     """
 
     @webob.dec.wsgify
@@ -234,10 +231,7 @@ class Debug(Middleware):
 
     @staticmethod
     def print_generator(app_iter):
-        """
-        Iterator that prints the contents of a wrapper string iterator
-        when iterated.
-        """
+        """Prints the contents of a wrapper string iterator when iterated."""
         print(("*" * 40) + " BODY")
         for part in app_iter:
             sys.stdout.write(part)
@@ -248,13 +242,10 @@ class Debug(Middleware):
 
 class Router(object):
 
-    """
-    WSGI middleware that maps incoming requests to WSGI apps.
-    """
+    """WSGI middleware that maps incoming requests to WSGI apps."""
 
     def __init__(self, mapper):
-        """
-        Create a router for the given routes.Mapper.
+        """Create a router for the given routes.Mapper.
 
         Each route in `mapper` must specify a 'controller', which is a
         WSGI app to call.  You'll probably want to specify an 'action' as
@@ -282,8 +273,8 @@ class Router(object):
 
     @webob.dec.wsgify
     def __call__(self, req):
-        """
-        Route the incoming request to a controller based on self.map.
+        """Route the incoming request to a controller based on self.map.
+
         If no match, return a 404.
         """
         return self._router
@@ -291,9 +282,10 @@ class Router(object):
     @staticmethod
     @webob.dec.wsgify
     def _dispatch(req):
-        """
+        """Gets application from the environment.
+
         Called by self._router after matching the incoming request to a route
-        and putting the information into req.environ.  Either returns 404
+        and putting the information into req.environ. Either returns 404
         or the routed WSGI app's response.
         """
         match = req.environ['wsgiorg.routing_args'][1]
@@ -348,8 +340,7 @@ class Request(webob.Request):
 
 
 class Resource(object):
-    """
-    WSGI app that handles (de)serialization and controller dispatch.
+    """WSGI app that handles (de)serialization and controller dispatch.
 
     Reads routing information supplied by RoutesMiddleware and calls
     the requested action method upon its deserializer, controller,
@@ -365,7 +356,8 @@ class Resource(object):
     serialized by requested content type.
     """
     def __init__(self, controller, deserializer=None, serializer=None):
-        """
+        """Initiates Resource object.
+
         :param controller: object that implement methods created by routes lib
         :param deserializer: object that supports webob request deserialization
                              through controller-like actions
@@ -472,7 +464,8 @@ class JSONDictSerializer(DictSerializer):
 class XMLDictSerializer(DictSerializer):
 
     def __init__(self, metadata=None, xmlns=None):
-        """
+        """Initiates XMLDictSerializer object.
+
         :param metadata: information needed to deserialize xml into
                          a dictionary.
         :param xmlns: XML namespace to include with serialized xml
@@ -747,7 +740,8 @@ class JSONDeserializer(TextDeserializer):
 class XMLDeserializer(TextDeserializer):
 
     def __init__(self, metadata=None):
-        """
+        """Initiates XMLDeserializer object.
+
         :param metadata: information needed to deserialize xml into
                          a dictionary.
         """
