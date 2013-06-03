@@ -65,3 +65,15 @@ def read_cached_file(filename, force_reload=False):
         cache_info['mtime'] = mtime
         reloaded = True
     return (reloaded, cache_info['data'])
+
+
+def file_open(*args, **kwargs):
+    """Open file
+
+    see built-in file() documentation for more details
+
+    Note: The reason this is kept in a separate module is to easily
+    be able to provide a stub module that doesn't alter system
+    state at all (for unit tests)
+    """
+    return file(*args, **kwargs)
