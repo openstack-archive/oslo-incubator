@@ -140,3 +140,20 @@ class MalformedRequestBody(OpenstackException):
 
 class InvalidContentType(OpenstackException):
     message = "Invalid content type %(content_type)s"
+
+
+class NoValidHost(OpenstackException):
+    message = "No valid host was found. %(reason)s"
+
+
+class UndefinedAttribute(OpenstackException):
+    message = "Attribute %(attribute)s should be defined "\
+              "in __init__ section."
+
+
+class SchedulerHostFilterNotFound(OpenstackException):
+    message = _("Scheduler Host Filter %(filter_name)s could not be found.")
+
+
+class SchedulerHostWeigherNotFound(NotFound):
+    message = _("Scheduler Host Weigher %(weigher_name)s could not be found.")
