@@ -111,9 +111,9 @@ utcnow.override_time = None
 
 
 def set_time_override(override_time=datetime.datetime.utcnow()):
-    """
-    Override utils.utcnow to return a constant time or a list thereof,
-    one at a time.
+    """Overrides utils.utcnow.
+
+    Make it return a constant time or a list thereof, one at a time.
     """
     utcnow.override_time = override_time
 
@@ -162,7 +162,8 @@ def unmarshall_time(tyme):
 
 
 def delta_seconds(before, after):
-    """
+    """Return the difference between two timing objects.
+
     Compute the difference in seconds between two date, time, or
     datetime objects (as a float, to microsecond resolution).
     """
@@ -175,8 +176,7 @@ def delta_seconds(before, after):
 
 
 def is_soon(dt, window):
-    """
-    Determines if time is going to happen in the next window seconds.
+    """Determines if time is going to happen in the next window seconds.
 
     :params dt: the time
     :params window: minimum seconds to remain to consider the time not soon

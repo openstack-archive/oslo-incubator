@@ -356,8 +356,7 @@ def cleanup():
 
 
 class SqliteForeignKeysListener(PoolListener):
-    """
-    Ensures that the foreign key constraints are enforced in SQLite.
+    """Ensures that the foreign key constraints are enforced in SQLite.
 
     The foreign key constraints are disabled by default in SQLite,
     so the foreign key constraints will be enabled here for every
@@ -406,7 +405,8 @@ _DUP_KEY_RE_DB = {
 
 
 def _raise_if_duplicate_entry_error(integrity_error, engine_name):
-    """
+    """Raise exception if two entries are duplicated.
+
     In this function will be raised DBDuplicateEntry exception if integrity
     error wrap unique constraint violation.
     """
@@ -449,7 +449,8 @@ _DEADLOCK_RE_DB = {
 
 
 def _raise_if_deadlock_error(operational_error, engine_name):
-    """
+    """Raise exception id deadlock occurred.
+
     Raise DBDeadlock exception if OperationalError contains a Deadlock
     condition.
     """
@@ -515,19 +516,17 @@ def _add_regexp_listener(dbapi_con, con_record):
 
 
 def _greenthread_yield(dbapi_con, con_record):
-    """
-    Ensure other greenthreads get a chance to execute by forcing a context
-    switch. With common database backends (eg MySQLdb and sqlite), there is
-    no implicit yield caused by network I/O since they are implemented by
-    C libraries that eventlet cannot monkey patch.
+    """Ensure other greenthreads get a chance to be executed.
+
+    Force a context switch. With common database backends (eg MySQLdb and
+    sqlite), there is no implicit yield caused by network I/O since they are
+    implemented by C libraries that eventlet cannot monkey patch.
     """
     greenthread.sleep(0)
 
 
 def _ping_listener(dbapi_conn, connection_rec, connection_proxy):
-    """
-    Ensures that MySQL connections checked out of the
-    pool are alive.
+    """Ensures that MySQL connections checked out of the pool are alive.
 
     Borrowed from:
     http://groups.google.com/group/sqlalchemy/msg/a4ce563d802c929f
@@ -657,8 +656,9 @@ def get_maker(engine, autocommit=True, expire_on_commit=False):
 
 
 def _patch_mysqldb_with_stacktrace_comments():
-    """Adds current stack trace as a comment in queries by patching
-    MySQLdb.cursors.BaseCursor._do_query.
+    """Adds current stack trace as a comment in queries.
+
+    Patches MySQLdb.cursors.BaseCursor._do_query.
     """
     import MySQLdb.cursors
     import traceback
