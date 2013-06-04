@@ -17,16 +17,17 @@
 
 """Test of Policy Engine"""
 
+import mock
 import os
 import urllib
-
-import mock
-from six import StringIO
 import urllib2
-from oslo.config import cfg
 
 from openstack.common import jsonutils
 from openstack.common import policy
+
+from oslo.config import cfg
+from six import StringIO
+
 from tests import utils
 
 CONF = cfg.CONF

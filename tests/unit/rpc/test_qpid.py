@@ -33,8 +33,8 @@ from openstack.common.rpc import common as rpc_common
 from tests import utils
 
 try:
-    import qpid
     from openstack.common.rpc import impl_qpid
+    import qpid
 except ImportError:
     qpid = None
     impl_qpid = None

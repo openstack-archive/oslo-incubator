@@ -243,21 +243,22 @@ Efficient use of soft deletes:
 
 import os.path
 import re
+import six
 import time
+
+import sqlalchemy.interfaces
+import sqlalchemy.orm
 
 from eventlet import greenthread
 from oslo.config import cfg
-import six
 from sqlalchemy import exc as sqla_exc
-import sqlalchemy.interfaces
 from sqlalchemy.interfaces import PoolListener
-import sqlalchemy.orm
 from sqlalchemy.pool import NullPool, StaticPool
 from sqlalchemy.sql.expression import literal_column
 
 from openstack.common.db import exception
-from openstack.common import log as logging
 from openstack.common.gettextutils import _
+from openstack.common import log as logging
 from openstack.common import timeutils
 
 DEFAULT = 'DEFAULT'
