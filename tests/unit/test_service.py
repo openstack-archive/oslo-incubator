@@ -200,3 +200,19 @@ class LauncherTest(utils.BaseTestCase):
         launcher = service.launch(svc)
         self.assertEqual(1234, svc.backdoor_port)
         launcher.stop()
+
+    def test_enable_backdoor_port_hint(self):
+        # enable_backdoor should get passed to the service being launched
+        self.config(enable_backdoor='port_hint:4321')
+        svc = service.Service()
+        launcher = service.launch(svc)
+        self.assertEqual(4321, svc.backdoor_port)
+        launcher.stop()
+
+    def test_enable_backdoor_random(self):
+        # enable_backdoor should get passed to the service being launched
+        self.config(enable_backdoor='random')
+        svc = service.Service()
+        launcher = service.launch(svc)
+        self.assertTrue(svc.backdoor_port is not None)
+        launcher.stop()
