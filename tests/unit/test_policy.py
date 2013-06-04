@@ -19,11 +19,11 @@
 
 import os
 import urllib
+import urllib2
 
 import mock
-from six import StringIO
-import urllib2
 from oslo.config import cfg
+from six import StringIO
 
 from openstack.common import jsonutils
 from openstack.common import policy
