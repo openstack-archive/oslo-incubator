@@ -35,6 +35,7 @@ from tests import utils
 
 try:
     import qpid
+
     from openstack.common.rpc import impl_qpid
 except ImportError:
     qpid = None

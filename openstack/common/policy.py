@@ -59,13 +59,13 @@ as it allows particular rules to be explicitly disabled.
 import abc
 import re
 import urllib
+import urllib2
 
 from oslo.config import cfg
 import six
-import urllib2
 
-from openstack.common.gettextutils import _
 from openstack.common import fileutils
+from openstack.common.gettextutils import _
 from openstack.common import jsonutils
 from openstack.common import log as logging
 
