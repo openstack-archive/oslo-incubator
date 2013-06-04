@@ -18,8 +18,10 @@
 
 from __future__ import print_function
 
+import errno
 import gc
 import pprint
+import socket
 import sys
 import traceback
 
@@ -82,7 +84,18 @@ def initialize_if_enabled():
             pprint.pprint(val)
     sys.displayhook = displayhook
 
-    sock = eventlet.listen(('localhost', CONF.backdoor_port))
+    try_port = CONF.backdoor_port
+    while True:
+        try:
+            sock = eventlet.listen(('localhost', try_port))
+            break
+        except socket.error as exc:
+            if exc.errno == errno.EADDRINUSE:
+                try_port += 1
+            else:
+                raise
+    # In the case of backdoor_port being zero, a port number is assigned by
+    # listen().  In any case, pull the port number out here.
     port = sock.getsockname()[1]
     eventlet.spawn_n(eventlet.backdoor.backdoor_server, sock,
                      locals=backdoor_locals)
