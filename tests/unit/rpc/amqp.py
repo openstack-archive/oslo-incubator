@@ -97,15 +97,10 @@ class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
         # Make sure the msg envelope was applied
         self.assertTrue('oslo.version' in self.test_msg)
 
-    def test_single_reply_queue_on_has_ids(
+    def test_single_reply_queue_caller_on(
             self, single_reply_queue_for_callee_off=False):
         if not self.rpc:
             self.skipTest('rpc driver not available.')
-
-        # TODO(pekowski): Remove these lines in Havana where the option will be
-        # removed and the default will be true.
-        self.assertFalse(FLAGS.amqp_rpc_single_reply_queue)
-        self.config(amqp_rpc_single_reply_queue=True)
 
         self.orig_unpack_context = rpc_amqp.unpack_context
 
@@ -127,10 +122,7 @@ class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
             def _process_data(myself, message_data):
                 #with open('mylog', 'a') as f:
                 #    f.write('my_process_data: ' + str(message_data) + '\n')
-                if single_reply_queue_for_callee_off:
-                    self.assertTrue('_msg_id' not in message_data)
-                else:
-                    self.assertTrue('_msg_id' in message_data)
+                self.assertTrue('_msg_id' in message_data)
                 self.ReplyProxy_was_called = True
                 super(MyReplyProxy, myself)._process_data(message_data)
 
@@ -158,69 +150,9 @@ class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
         self.stubs.UnsetAll()
         self.conn.pool.reply_proxy = self.orig_reply_proxy
 
-        # TODO(pekowski): Remove this line in Havana
-        self.config(amqp_rpc_single_reply_queue=False)
-
-    # TODO(pekowski): Unfortunately remove this test in Havana.
-    # The amqp_rpc_single_reply_queue option will go away in Havana.
-    # There will be no way to send a downlevel RPC in Havana, yet
-    # Havana will be able to receive downlevel RPCs.  We would
-    # need a downlevel caller to test it.
-    def test_single_reply_queue_off_no_ids(
-            self, single_reply_queue_for_callee_on=False):
-        if not self.rpc:
-            self.skipTest('rpc driver not available.')
-
-        self.assertFalse(FLAGS.amqp_rpc_single_reply_queue)
-
-        def my_unpack_context(conf, msg):
-            self.assertTrue('_reply_q' not in msg)
-            if single_reply_queue_for_callee_on:
-                self.config(amqp_rpc_single_reply_queue=True)
-            return self.orig_unpack_context(conf, msg)
-
-        self.orig_unpack_context = rpc_amqp.unpack_context
-        self.stubs.Set(rpc_amqp, 'unpack_context', my_unpack_context)
-
-        self.MulticallWaiter_call_was_called = False
-
-        def my_MulticallWaiter_call(myself, data):
-            #with open('mylog', 'a') as f:
-            #    f.write('my_MulticallWaiter_call: ' + str(data) + '\n')
-            self.assertTrue('_reply_q' not in data)
-            self.MulticallWaiter_call_was_called = True
-            return self.orig_MulticallWaiter_call(myself, data)
-
-        self.orig_MulticallWaiter_call = rpc_amqp.MulticallWaiter.__call__
-        self.stubs.Set(rpc_amqp.MulticallWaiter, '__call__',
-                       my_MulticallWaiter_call)
-
-        value = 42
-        result = self.rpc.call(FLAGS, self.context, self.topic,
-                               {"method": "echo", "args": {"value": value}})
-        self.assertEqual(value, result)
-        self.assertTrue(self.MulticallWaiter_call_was_called)
-
-        self.config(amqp_rpc_single_reply_queue=False)
-        self.stubs.UnsetAll()
-
-    # TODO(pekowski): Remove this test in Havana.
-    def test_single_reply_queue_caller_off_callee_on(self):
-        self.test_single_reply_queue_off_no_ids(
-            single_reply_queue_for_callee_on=True)
-
     def test_single_reply_queue_caller_on_callee_off(self):
-        self.test_single_reply_queue_on_has_ids(
+        self.test_single_reply_queue_caller_on(
             single_reply_queue_for_callee_off=True)
-
-    #TODO(pekowski): remove this test in Havana
-    def test_single_reply_queue_mt_resp_rting(self):
-        if not self.rpc:
-            self.skipTest('rpc driver not available.')
-
-        self.config(amqp_rpc_single_reply_queue=True)
-        self.test_multithreaded_resp_routing()
-        self.config(amqp_rpc_single_reply_queue=False)
 
     def test_duplicate_message_check(self):
         """Test sending *not-dict* to a topic exchange/queue."""
