@@ -82,7 +82,13 @@ def initialize_if_enabled():
             pprint.pprint(val)
     sys.displayhook = displayhook
 
-    sock = eventlet.listen(('localhost', CONF.backdoor_port))
+    try_port = CONF.backdoor_port
+    while True:
+        try:
+            sock = eventlet.listen(('localhost', try_port))
+            break
+        except:
+            try_port += 1
     port = sock.getsockname()[1]
     eventlet.spawn_n(eventlet.backdoor.backdoor_server, sock,
                      locals=backdoor_locals)
