@@ -85,6 +85,41 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         self.assertEqual(expected['module'], failure['module'])
         self.assertEqual(expected['message'], failure['message'])
 
+    def test_serialize_remote_exception_cell_hop(self):
+        # A remote remote (no typo) exception should maintain its type and
+        # module, when being re-serialized, so that through any amount of cell
+        # hops up, it can pop out with the right type
+        expected = {
+            'class': 'OpenstackException',
+            'module': 'openstack.common.exception',
+            'message': exception.OpenstackException.message,
+            'tb': ['raise OpenstackException'],
+        }
+
+        def raise_remote_exception():
+            try:
+                raise exception.OpenstackException()
+            except Exception as e:
+                ex_type = type(e)
+                message = str(e)
+                str_override = lambda self: message
+                new_ex_type = type(ex_type.__name__ + "_Remote", (ex_type,),
+                                   {'__str__': str_override,
+                                    '__unicode__': str_override})
+                new_ex_type.__module__ = '%s_Remote' % e.__class__.__module__
+                e.__class__ = new_ex_type
+                raise e
+
+        try:
+            raise_remote_exception()
+        except Exception:
+            failure = rpc_common.serialize_remote_exception(sys.exc_info())
+
+        failure = jsonutils.loads(failure)
+        self.assertEqual(expected['class'], failure['class'])
+        self.assertEqual(expected['module'], failure['module'])
+        self.assertEqual(expected['message'], failure['message'])
+
     def test_deserialize_remote_exception(self):
         failure = {
             'class': 'NotImplementedError',
@@ -114,6 +149,11 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         self.assertTrue('An unknown' in six.text_type(after_exc))
         #assure the traceback was added
         self.assertTrue('raise OpenstackException' in six.text_type(after_exc))
+        self.assertEqual('OpenstackException_Remote',
+                         after_exc.__class__.__name__)
+        self.assertEqual('openstack.common.exception_Remote',
+                         after_exc.__class__.__module__)
+        self.assertTrue(isinstance(after_exc, exception.OpenstackException))
 
     def test_deserialize_remote_exception_bad_module(self):
         failure = {
