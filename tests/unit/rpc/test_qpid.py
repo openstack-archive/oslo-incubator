@@ -32,6 +32,7 @@ import mox
 from oslo.config import cfg
 
 from openstack.common import context
+from openstack.common import jsonutils
 from openstack.common.rpc import amqp as rpc_amqp
 from tests import utils
 from openstack.common.rpc import common as rpc_common
@@ -499,6 +500,49 @@ class RpcQpidTestCase(utils.BaseTestCase):
 
     def test_multicall(self):
         self._test_call(multi=True)
+
+    def _test_consumer_long_message(self, json=True):
+        """Verify that the Qpid implementation correctly deserializes
+           message content.
+
+        :param json: For compatibility, this code needs to support both
+            messages that are and are not JSON encoded.  This param
+            specifies which is being tested.
+        """
+        def fake_callback(msg):
+            self.received_msg = msg
+
+        # The longest string Qpid can handle itself
+        chars = 65535
+        if json:
+            # The first length that requires JSON encoding
+            chars = 65536
+        raw_msg = {'test': 'a' * chars}
+        if json:
+            fake_message = qpid.messaging.Message(jsonutils.dumps(raw_msg))
+            fake_message.content_type = impl_qpid.JSON_CONTENT_TYPE
+        else:
+            fake_message = qpid.messaging.Message(raw_msg)
+        mock_session = self.mox.CreateMock(self.orig_session)
+        mock_receiver = self.mox.CreateMock(self.orig_receiver)
+        mock_session.receiver(mox.IgnoreArg()).AndReturn(mock_receiver)
+        mock_receiver.fetch().AndReturn(fake_message)
+        mock_session.acknowledge(mox.IgnoreArg())
+        self.mox.ReplayAll()
+
+        consumer = impl_qpid.DirectConsumer(None,
+                                            mock_session,
+                                            'bogus_msg_id',
+                                            fake_callback)
+        consumer.consume()
+
+        self.assertEqual(self.received_msg, raw_msg)
+
+    def test_consumer_long_message(self):
+        self._test_consumer_long_message(json=True)
+
+    def test_consumer_long_message_no_json(self):
+        self._test_consumer_long_message(json=False)
 
 
 #
