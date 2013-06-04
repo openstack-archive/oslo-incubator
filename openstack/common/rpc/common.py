@@ -334,6 +334,12 @@ def deserialize_remote_exception(conf, data):
     name = failure.get('class')
     module = failure.get('module')
 
+    # NOTE(matiu): With cells, it's possible to re-raise remote, remote
+    # exceptions. Lets turn it back into the original exception type.
+    if module.endswith('_Remote') and name.endswith('_Remote'):
+        module = module[:-7]
+        name = name[:-7]
+
     # NOTE(ameade): We DO NOT want to allow just any module to be imported, in
     # order to prevent arbitrary code execution.
     if module not in conf.allowed_rpc_exception_modules:
@@ -353,6 +359,7 @@ def deserialize_remote_exception(conf, data):
     str_override = lambda self: message
     new_ex_type = type(ex_type.__name__ + "_Remote", (ex_type,),
                        {'__str__': str_override, '__unicode__': str_override})
+    new_ex_type.__module__ = '%s_Remote' % module
     try:
         # NOTE(ameade): Dynamically create a new exception type and swap it in
         # as the new type for the exception. This only works on user defined
