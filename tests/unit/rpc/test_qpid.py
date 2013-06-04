@@ -25,16 +25,18 @@ eventlet.monkey_patch()
 
 import fixtures
 import mox
-from oslo.config import cfg
+import uuid
 
 from openstack.common import context
 from openstack.common import jsonutils
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
+from oslo.config import cfg
 from tests import utils
 
 try:
     import qpid
+
     from openstack.common.rpc import impl_qpid
 except ImportError:
     qpid = None
@@ -70,6 +72,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
         self.mock_session = None
         self.mock_sender = None
         self.mock_receiver = None
+        self.mox = mox.Mox()
 
         self.orig_connection = qpid.messaging.Connection
         self.orig_session = qpid.messaging.Session
@@ -88,6 +91,13 @@ class RpcQpidTestCase(utils.BaseTestCase):
         self.useFixture(
             fixtures.MonkeyPatch('qpid.messaging.Receiver',
                                  lambda *_x, **_y: self.mock_receiver))
+
+        self.uuid4 = uuid.uuid4()
+        self.useFixture(
+            fixtures.MonkeyPatch('uuid.uuid4', self.mock_uuid4))
+
+    def mock_uuid4(self):
+        return self.uuid4
 
     def cleanUp(self):
         if impl_qpid:
@@ -266,6 +276,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
             # connection.
             self.mock_session.close()
             self.mock_connection.session().AndReturn(self.mock_session)
+        self.mock_connection.close()
 
         self.mox.ReplayAll()
 
@@ -289,10 +300,8 @@ class RpcQpidTestCase(utils.BaseTestCase):
 
             method(*args)
         finally:
-            while impl_qpid.Connection.pool.free_items:
-                # Pull the mock connection object out of the connection pool so
-                # that it doesn't mess up other test cases.
-                impl_qpid.Connection.pool.get()
+            impl_qpid.cleanup()
+            self.uuid4 = uuid.uuid4()
 
     def test_cast(self):
         self._test_cast(fanout=False)
@@ -331,7 +340,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
         self._setup_to_server_tests(server_params)
         self._test_cast(fanout=True, server_params=server_params)
 
-    def _test_call(self, multi):
+    def _test_call_mock_common(self):
         self.mock_connection = self.mox.CreateMock(self.orig_connection)
         self.mock_session = self.mox.CreateMock(self.orig_session)
         self.mock_sender = self.mox.CreateMock(self.orig_sender)
@@ -348,38 +357,53 @@ class RpcQpidTestCase(utils.BaseTestCase):
             'false}, "durable": true, "name": ".*"}}')
         self.mock_session.receiver(rcv_addr).AndReturn(self.mock_receiver)
         self.mock_receiver.capacity = 1
+        self.mock_connection.opened().AndReturn(False)
+        self.mock_connection.open()
+        self.mock_connection.session().AndReturn(self.mock_session)
         send_addr = (
             'openstack/impl_qpid_test ; {"node": {"x-declare": '
             '{"auto-delete": true, "durable": false}, "type": "topic"}, '
             '"create": "always"}')
         self.mock_session.sender(send_addr).AndReturn(self.mock_sender)
         self.mock_sender.send(mox.IgnoreArg())
-
-        self.mock_session.next_receiver(timeout=mox.IsA(int)).AndReturn(
-            self.mock_receiver)
-        self.mock_receiver.fetch().AndReturn(qpid.messaging.Message(
-            {"result": "foo", "failure": False, "ending": False}))
-        self.mock_session.acknowledge(mox.IgnoreArg())
-        if multi:
-            self.mock_session.next_receiver(timeout=mox.IsA(int)).AndReturn(
-                self.mock_receiver)
-            self.mock_receiver.fetch().AndReturn(
-                qpid.messaging.Message({"result": "bar", "failure": False,
-                                        "ending": False}))
-            self.mock_session.acknowledge(mox.IgnoreArg())
-            self.mock_session.next_receiver(timeout=mox.IsA(int)).AndReturn(
-                self.mock_receiver)
-            self.mock_receiver.fetch().AndReturn(
-                qpid.messaging.Message({"result": "baz", "failure": False,
-                                        "ending": False}))
-            self.mock_session.acknowledge(mox.IgnoreArg())
-        self.mock_session.next_receiver(timeout=mox.IsA(int)).AndReturn(
-            self.mock_receiver)
-        self.mock_receiver.fetch().AndReturn(qpid.messaging.Message(
-            {"failure": False, "ending": True}))
-        self.mock_session.acknowledge(mox.IgnoreArg())
         self.mock_session.close()
         self.mock_connection.session().AndReturn(self.mock_session)
+
+    def _test_call(self, multi):
+        self._test_call_mock_common()
+
+        self.mock_session.next_receiver(timeout=None).AndReturn(
+            self.mock_receiver)
+        self.mock_receiver.fetch().AndReturn(qpid.messaging.Message(
+            {"_msg_id": self.uuid4.hex, "result": "foo", "failure": False,
+             "ending": False}))
+        self.mock_session.acknowledge(mox.IgnoreArg())
+        if multi:
+            self.mock_session.next_receiver(timeout=None).AndReturn(
+                self.mock_receiver)
+            self.mock_receiver.fetch().AndReturn(
+                qpid.messaging.Message({"_msg_id": self.uuid4.hex,
+                                        "result": "bar",
+                                        "failure": False,
+                                        "ending": False}))
+            self.mock_session.acknowledge(mox.IgnoreArg())
+            self.mock_session.next_receiver(timeout=None).AndReturn(
+                self.mock_receiver)
+            self.mock_receiver.fetch().AndReturn(
+                qpid.messaging.Message({"_msg_id": self.uuid4.hex,
+                                        "result": "baz",
+                                        "failure": False,
+                                        "ending": False}))
+            self.mock_session.acknowledge(mox.IgnoreArg())
+        self.mock_session.next_receiver(timeout=None).AndReturn(
+            self.mock_receiver)
+        self.mock_receiver.fetch().AndReturn(qpid.messaging.Message(
+            {"_msg_id": self.uuid4.hex, "failure": False, "ending": True}))
+        self.mock_session.acknowledge(mox.IgnoreArg())
+        # Normally the iterconsume() runs indefinitely, but we have to stop it
+        # here otherwise, the test won't end
+        self.mock_session.next_receiver(timeout=None).AndRaise(StopIteration)
+        self.mock_connection.close()
 
         self.mox.ReplayAll()
 
@@ -399,59 +423,31 @@ class RpcQpidTestCase(utils.BaseTestCase):
             else:
                 self.assertEquals(res, "foo")
         finally:
-            while impl_qpid.Connection.pool.free_items:
-                # Pull the mock connection object out of the connection pool so
-                # that it doesn't mess up other test cases.
-                impl_qpid.Connection.pool.get()
+            impl_qpid.cleanup()
+            self.uuid4 = uuid.uuid4()
 
     def test_call(self):
         self._test_call(multi=False)
 
     def _test_call_with_timeout(self, timeout, expect_failure):
-        # TODO(beagles): should be possible to refactor this method and
-        # _test_call to share common code. Maybe making the messages
-        # and test checks parameters, etc.
-        self.mock_connection = self.mox.CreateMock(self.orig_connection)
-        self.mock_session = self.mox.CreateMock(self.orig_session)
-        self.mock_sender = self.mox.CreateMock(self.orig_sender)
-        self.mock_receiver = self.mox.CreateMock(self.orig_receiver)
+        self._test_call_mock_common()
 
-        self.mock_connection.opened().AndReturn(False)
-        self.mock_connection.open()
-        self.mock_connection.session().AndReturn(self.mock_session)
-        rcv_addr = mox.Regex(
-            r'^.*/.* ; {"node": {"x-declare": {"auto-delete":'
-            ' true, "durable": true, "type": "direct"}, "type": '
-            '"topic"}, "create": "always", "link": {"x-declare": '
-            '{"auto-delete": true, "exclusive": true, "durable": '
-            'false}, "durable": true, "name": ".*"}}')
-        self.mock_session.receiver(rcv_addr).AndReturn(self.mock_receiver)
-        self.mock_receiver.capacity = 1
-        send_addr = (
-            'openstack/impl_qpid_test ; {"node": {"x-declare": '
-            '{"auto-delete": true, "durable": false}, "type": "topic"}, '
-            '"create": "always"}')
-        self.mock_session.sender(send_addr).AndReturn(self.mock_sender)
-        self.mock_sender.send(mox.IgnoreArg())
-
-        if expect_failure:
-            self.mock_session.next_receiver(timeout=mox.IsA(int)).AndRaise(
-                qpid.messaging.exceptions.Empty())
-            self.mock_session.close()
-            self.mock_connection.session().AndReturn(self.mock_session)
-        else:
-            self.mock_session.next_receiver(timeout=mox.IsA(int)).AndReturn(
+        if not expect_failure:
+            self.mock_session.next_receiver(timeout=None).AndReturn(
                 self.mock_receiver)
             self.mock_receiver.fetch().AndReturn(qpid.messaging.Message(
-                {"result": "foo", "failure": False, "ending": False}))
+                {"_msg_id": self.uuid4.hex, "result": "foo", "failure": False,
+                 "ending": False}))
             self.mock_session.acknowledge(mox.IgnoreArg())
-            self.mock_session.next_receiver(timeout=mox.IsA(int)).AndReturn(
+            self.mock_session.next_receiver(timeout=None).AndReturn(
                 self.mock_receiver)
             self.mock_receiver.fetch().AndReturn(qpid.messaging.Message(
-                {"failure": False, "ending": True}))
+                {"_msg_id": self.uuid4.hex, "failure": False, "ending": True}))
             self.mock_session.acknowledge(mox.IgnoreArg())
-            self.mock_session.close()
-            self.mock_connection.session().AndReturn(self.mock_session)
+        # Normally the iterconsume() runs indefinitely, but we have to stop it
+        # here otherwise, the test won't end
+        self.mock_session.next_receiver(timeout=None).AndRaise(StopIteration)
+        self.mock_connection.close()
 
         self.mox.ReplayAll()
 
@@ -472,10 +468,8 @@ class RpcQpidTestCase(utils.BaseTestCase):
                              {"method": "test_method", "args": {}}, timeout)
                 self.assertEquals(res, "foo")
         finally:
-            while impl_qpid.Connection.pool.free_items:
-                # Pull the mock connection object out of the connection pool so
-                # that it doesn't mess up other test cases.
-                impl_qpid.Connection.pool.get()
+            impl_qpid.cleanup()
+            self.uuid4 = uuid.uuid4()
 
     def test_call_with_timeout(self):
         """A little more indepth for a timeout test. Specifically we are
@@ -487,7 +481,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
         sufficient.
         """
         self._test_call_with_timeout(timeout=5, expect_failure=False)
-        self._test_call_with_timeout(timeout=0, expect_failure=True)
+        self._test_call_with_timeout(timeout=0.1, expect_failure=True)
 
     def test_multicall(self):
         self._test_call(multi=True)
