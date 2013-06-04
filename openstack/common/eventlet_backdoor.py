@@ -18,8 +18,11 @@
 
 from __future__ import print_function
 
+import errno
 import gc
+import os
 import pprint
+import socket
 import sys
 import traceback
 
@@ -28,14 +31,32 @@ import eventlet.backdoor
 import greenlet
 from oslo.config import cfg
 
+from openstack.common import log as logging
+
+# TODO(pekowski): remove backdoor_port in I
 eventlet_backdoor_opts = [
     cfg.IntOpt('backdoor_port',
                default=None,
-               help='port for eventlet backdoor to listen')
+               help='(deprecated) port for eventlet backdoor to listen. Set '
+               'to zero to enable the backdoor on a random port and non-zero '
+               'to enable it on a specific port. The chosen port is displayed '
+               'in the service\'s log file.'),
+    cfg.IntOpt('enable_backdoor_with_random_port',
+               default=False,
+               help='enable eventlet backdoor listening on a random port'),
+    cfg.IntOpt('enable_backdoor_with_port_hint',
+               default=None,
+               help='enable eventlet backdoor listening on a port starting at '
+               'the hint and incrementing by one until a free port is found.'),
+    cfg.IntOpt('enable_backdoor_for_unix_socket',
+               default=False,
+               help='enable eventlet backdoor listening a unix socket named '
+               'by openstack_<proccess ID>')
 ]
 
 CONF = cfg.CONF
 CONF.register_opts(eventlet_backdoor_opts)
+LOG = logging.getLogger(__name__)
 
 
 def _dont_use_this():
@@ -69,8 +90,31 @@ def initialize_if_enabled():
         'pnt': _print_nativethreads,
     }
 
-    if CONF.backdoor_port is None:
+    # TODO(pekowski): remove backdoor_port in I
+    if CONF.backdoor_port is not None:
+        msg = 'backdoor_port is deprecated. ' + \
+              'Please replace backdoor_port ' + \
+              'with one of enable_backdoor_with_random_port, ' + \
+              'enable_backdoor_with_port_hint or ' + \
+              'enable_backdoor_for_unix_socket.'
+        LOG.info(_('%s') % msg)
+    ambiguity_count = 0
+    for is_configured in (CONF.backdoor_port is not None,
+                          CONF.enable_backdoor_with_random_port,
+                          CONF.enable_backdoor_with_port_hint is not None,
+                          CONF.enable_backdoor_for_unix_socket):
+        if is_configured:
+            ambiguity_count += 1
+    if ambiguity_count == 0:
         return None
+    elif ambiguity_count > 1:
+        msg = 'Only one of backdoor_port, ' + \
+              'enable_backdoor_with_random_port, ' + \
+              'enable_backdoor_with_port_hint or ' + \
+              'enable_backdoor_for_unix_socket' + \
+              'is allowed. Defaulting to ' + \
+              'enable_backdoor_with_random_port.'
+        LOG.info(_('%s') % msg)
 
     # NOTE(johannes): The standard sys.displayhook will print the value of
     # the last expression and set it to __builtin__._, which overwrites
@@ -82,8 +126,35 @@ def initialize_if_enabled():
             pprint.pprint(val)
     sys.displayhook = displayhook
 
-    sock = eventlet.listen(('localhost', CONF.backdoor_port))
-    port = sock.getsockname()[1]
+    if CONF.enable_backdoor_with_random_port:
+        # zero results in a random port assignment
+        sock = eventlet.listen(('localhost', 0))
+    # TODO(pekowski): Remove backdoor_port in I
+    elif CONF.backdoor_port is not None:
+        sock = eventlet.listen(('localhost', CONF.backdoor_port))
+    elif CONF.enable_backdoor_with_port_hint is not None:
+        try_port = CONF.enable_backdoor_with_port_hint
+        while True:
+            try:
+                sock = eventlet.listen(('localhost', try_port))
+                break
+            except socket.error as exc:
+                if exc.errno == errno.EADDRINUSE:
+                    try_port += 1
+                else:
+                    raise
+    elif CONF.enable_backdoor_for_unix_socket:
+        unix_sock = 'openstack_%d' % os.getpid()
+        sock = eventlet.listen(unix_sock, family=socket.AF_UNIX)
+
+    if CONF.enable_backdoor_for_unix_socket:
+        port = unix_sock
+    else:
+        # In the case of backdoor port being zero, a port number is assigned by
+        # listen().  In any case, pull the port number out here.
+        port = sock.getsockname()[1]
+    LOG.info(_('Eventlet backdoor listening on %(port)s for process %(pid)d') %
+             {'port': port, 'pid': os.getpid()})
     eventlet.spawn_n(eventlet.backdoor.backdoor_server, sock,
                      locals=backdoor_locals)
     return port
