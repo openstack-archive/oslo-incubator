@@ -70,6 +70,8 @@ _RPC_ENVELOPE_VERSION = '2.0'
 _VERSION_KEY = 'oslo.version'
 _MESSAGE_KEY = 'oslo.message'
 
+_REMOTE_POSTFIX = '_Remote'
+
 
 class RPCException(Exception):
     message = _("An unknown RPC related exception occurred.")
@@ -313,9 +315,18 @@ def serialize_remote_exception(failure_info, log_failure=True):
     if hasattr(failure, 'kwargs'):
         kwargs = failure.kwargs
 
+    # NOTE(matiu): With cells, it's possible to re-raise remote, remote
+    # exceptions. Lets turn it back into the original exception type.
+    cls_name = str(failure.__class__.__name__)
+    mod_name = str(failure.__class__.__module__)
+    if (cls_name.endswith(_REMOTE_POSTFIX) and
+            mod_name.endswith(_REMOTE_POSTFIX)):
+        cls_name = cls_name[:-len(_REMOTE_POSTFIX)]
+        mod_name = mod_name[:-len(_REMOTE_POSTFIX)]
+
     data = {
-        'class': str(failure.__class__.__name__),
-        'module': str(failure.__class__.__module__),
+        'class': cls_name,
+        'module': mod_name,
         'message': six.text_type(failure),
         'tb': tb,
         'args': failure.args,
@@ -352,8 +363,9 @@ def deserialize_remote_exception(conf, data):
 
     ex_type = type(failure)
     str_override = lambda self: message
-    new_ex_type = type(ex_type.__name__ + "_Remote", (ex_type,),
+    new_ex_type = type(ex_type.__name__ + _REMOTE_POSTFIX, (ex_type,),
                        {'__str__': str_override, '__unicode__': str_override})
+    new_ex_type.__module__ = '%s%s' % (module, _REMOTE_POSTFIX)
     try:
         # NOTE(ameade): Dynamically create a new exception type and swap it in
         # as the new type for the exception. This only works on user defined
