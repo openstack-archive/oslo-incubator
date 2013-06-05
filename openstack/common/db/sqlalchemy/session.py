@@ -330,6 +330,9 @@ database_opts = [
                 deprecated_name='sql_connection_trace',
                 deprecated_group=DEFAULT,
                 help='Add python stack traces to SQL as comment strings'),
+    cfg.IntOpt('pool_timeout',
+               default=None,
+               help='If set, use this value for pool_timeout with sqlalchemy'),
 ]
 
 CONF = cfg.CONF
@@ -623,6 +626,8 @@ def create_engine(sql_connection, sqlite_fk=False):
         engine_args['pool_size'] = CONF.database.max_pool_size
         if CONF.database.max_overflow is not None:
             engine_args['max_overflow'] = CONF.database.max_overflow
+        if CONF.database.pool_timeout is not None:
+            engine_args['pool_timeout'] = CONF.database.pool_timeout
 
     engine = sqlalchemy.create_engine(sql_connection, **engine_args)
 
