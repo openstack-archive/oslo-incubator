@@ -256,6 +256,15 @@ class Connection(object):
         raise NotImplementedError()
 
 
+def _fix_passwords(d):
+    """Sanitizes the password fields in the dictionary recursively."""
+    for k, v in d.iteritems():
+        if k.lower().find('password') != -1:
+            d[k] = '<SANITIZED>'
+        elif isinstance(v, dict):
+            _fix_passwords(v)
+
+
 def _safe_log(log_func, msg, msg_data):
     """Sanitizes the msg_data field before logging."""
     SANITIZE = {'set_admin_password': [('args', 'new_pass')],
@@ -291,6 +300,8 @@ def _safe_log(log_func, msg, msg_data):
 
     if has_token:
         msg_data['auth_token'] = '<SANITIZED>'
+
+    _fix_passwords(msg_data)
 
     return log_func(msg, msg_data)
 
