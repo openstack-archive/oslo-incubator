@@ -176,8 +176,7 @@ def _copy_pyfile(path, base, dest_dir):
 
 
 def _copy_module(mod, base, dest_dir):
-    print("Copying %s under the %s module in %s" % (mod, base, dest_dir))
-
+    """Copies module to project."""
     copy_pyfile = functools.partial(_copy_pyfile,
                                     base=base, dest_dir=dest_dir)
 
@@ -190,15 +189,20 @@ def _copy_module(mod, base, dest_dir):
 
     mod_path = _mod_to_path('openstack.common.%s' % mod)
     mod_file = '%s.py' % mod_path
+
     if os.path.isfile(mod_file):
+        print("Copying %s under the %s module in %s" % (mod, base, dest_dir))
         copy_pyfile(mod_file)
     elif os.path.isdir(mod_path):
+        print("Copying %s/ under the %s module in %s" % (mod, base, dest_dir))
         dest = os.path.join(dest_dir, _mod_to_path(base),
                             'openstack', 'common', mod)
         _make_dirs(dest)
         sources = filter(lambda x: x[-3:] == '.py', os.listdir(mod_path))
         for s in sources:
             copy_pyfile(os.path.join(mod_path, s))
+    else:
+        print("No module %s found in oslo" % mod)
 
     globs_to_copy = [
         os.path.join('tools', mod + '*'),
@@ -211,6 +215,101 @@ def _copy_module(mod, base, dest_dir):
             dest = os.path.join(dest_dir, match.replace('oslo', base))
             print("Copying %s to %s" % (match, dest))
             _copy_file(match, dest, base)
+
+
+def _remove_unset_modules(dest_dir, base, necessary_modules, conf_file_used):
+    """Removes modules that are not used by project.
+
+    Modules that are not set in configuration file, are removed from oslo
+    already or do not have to be included because of dependencies have
+    to be removed.
+
+    If CLI was used to pass modules to update, do not delete other modules.
+    """
+    dest = os.path.join(dest_dir, _mod_to_path(base))
+    base = os.path.join('openstack', 'common')
+    path = os.path.join(dest, base)
+
+    req_dirs = []
+    req_files = [os.path.join(dest, base, '__init__.py')]
+
+    oslo_removed_modules = []
+    removed_modules = []
+
+    # form the files and dirs to leave
+    # they have to be defined in oslo and in necessary_modules
+    for mod in necessary_modules:
+        mod_path = os.path.join(base, mod)
+        mod_file_path = '%s.py' % mod_path
+
+        if os.path.isfile(mod_file_path):
+            req_files.append(os.path.join(dest, mod_file_path))
+        elif os.path.isdir(mod_path):
+            req_dirs.append(os.path.join(dest, mod_path))
+        else:
+            oslo_removed_modules.append(os.path.join(dest, mod_path))
+            oslo_removed_modules.append(os.path.join(dest, mod_file_path))
+
+    # remove modules, that are set to be updated, but there are no such modules
+    # in current oslo version
+    for oslo_removed_module in oslo_removed_modules:
+        if os.path.isfile(oslo_removed_module):
+            os.remove(oslo_removed_module)
+            removed_modules.append(oslo_removed_module)
+        elif os.path.isdir(oslo_removed_module):
+            for _root, _dirs, _files in os.walk(oslo_removed_module,
+                                                topdown=False):
+                for name in _files:
+                    os.remove(os.path.join(_root, name))
+                for name in _dirs:
+                    os.rmdir(os.path.join(_root, name))
+            removed_modules.append(oslo_removed_module)
+
+    # if modules were passed through configuration file
+    if conf_file_used is not None:
+        for root, dirs, files in os.walk(path):
+            # current modules in the project
+            cur_dirs = [os.path.join(root, _dir) for _dir in dirs]
+            cur_files = [os.path.join(root, _file) for _file in files]
+
+            # remove files if needed
+            for cur_file in cur_files:
+                common_pref = path
+                for req_dir in req_dirs:
+                    pref = os.path.commonprefix([req_dir, cur_file])
+                    if len(pref) > len(common_pref) + 1:
+                        common_pref = pref
+                if cur_file not in req_files and common_pref == path:
+                    os.remove(cur_file)
+                    removed_modules.append(cur_file)
+
+            # remove directories if needed
+            for cur_dir in cur_dirs:
+                common_file_pref = path
+                for req_file in req_files:
+                    pref = os.path.commonprefix([cur_dir, req_file])
+                    if len(pref) > len(common_file_pref) + 1:
+                        common_file_pref = pref
+
+                common_pref = path
+                for req_dir in req_dirs:
+                    pref = os.path.commonprefix([cur_dir, req_dir])
+                    if len(pref) > len(common_pref) + 1:
+                        common_pref = pref
+
+                if (cur_dir not in req_dirs and common_pref == path
+                        and common_file_pref == path):
+                    removed_modules.append(cur_dir)
+
+                    for _root, _dirs, _files in os.walk(cur_dir,
+                                                        topdown=False):
+                        for name in _files:
+                            os.remove(os.path.join(_root, name))
+                        for name in _dirs:
+                            os.rmdir(os.path.join(_root, name))
+
+    if removed_modules:
+        print('\nRemoved modules\n    %s' % '\n    '.join(removed_modules))
 
 
 def _create_module_init(base, dest_dir, *sub_paths):
@@ -297,8 +396,12 @@ def main(argv):
     _create_module_init(conf.base, dest_dir)
     _create_module_init(conf.base, dest_dir, 'common')
 
-    for mod in _complete_module_list(conf.module + conf.modules, conf.nodeps):
+    modules = _complete_module_list(conf.module + conf.modules, conf.nodeps)
+    for mod in modules:
         _copy_module(mod, conf.base, dest_dir)
+
+    conf_file_used = conf._cli_values.get('config_file')
+    _remove_unset_modules(dest_dir, conf.base, modules, conf_file_used)
 
 
 if __name__ == "__main__":
