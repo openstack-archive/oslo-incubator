@@ -29,3 +29,9 @@ class FakeManager(base_service_manager.BaseManager):
 
     def get_project_name(self):
         return 'fake_project'
+
+
+class FakeSchedulerDependentManager(FakeManager,
+                                    base_service_manager.
+                                    BaseSchedulerDependentManager):
+    pass

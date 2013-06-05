@@ -61,6 +61,7 @@ from openstack.common import log as logging
 from openstack.common import periodic_task
 from openstack.common.plugin import pluginmanager
 from openstack.common.rpc import dispatcher as rpc_dispatcher
+from openstack.common.scheduler import base_rpcapi as scheduler_rpcapi
 
 
 LOG = logging.getLogger(__name__)
@@ -162,3 +163,51 @@ class BaseManager(periodic_task.PeriodicTasks):
         for key in CONF:
             config[key] = CONF.get(key, None)
         return config
+
+
+class BaseSchedulerDependentManager(BaseManager):
+    """Periodically send capability updates to the Scheduler services.
+
+    Services that need to update the Scheduler of their capabilities
+    should derive from this class. Otherwise they can derive from
+    manager.Manager directly. Updates are only sent after
+    update_service_capabilities is called with non-None values.
+
+    """
+
+    def __init__(self, host=None, db_driver=None,
+                 service_name='undefined'):
+        self.last_capabilities = None
+        self.service_name = service_name
+        self.scheduler_rpcapi = scheduler_rpcapi.BaseSchedulerAPI()
+        super(BaseSchedulerDependentManager, self).__init__(host,
+                                                            db_driver,
+                                                            service_name)
+
+    def load_plugins(self):
+        project_name = self.get_project_name()
+        if project_name is not None:
+            pluginmgr = pluginmanager.PluginManager(project_name,
+                                                    self.service_name)
+            pluginmgr.load_plugins()
+
+    def update_service_capabilities(self, capabilities):
+        """Remember these capabilities to send on next periodic update."""
+        if not isinstance(capabilities, list):
+            capabilities = [capabilities]
+        self.last_capabilities = capabilities
+
+    @periodic_task.periodic_task
+    def publish_service_capabilities(self, context):
+        self._publish_service_capabilities(context)
+
+    def _publish_service_capabilities(self, context):
+        """Pass data back to the scheduler at a periodic interval."""
+        last_capabilities = self.last_capabilities
+        if not last_capabilities:
+            return
+        LOG.debug(_('Notifying Schedulers of capabilities ...'))
+        self.scheduler_rpcapi.update_service_capabilities(context,
+                                                          self.service_name,
+                                                          self.host,
+                                                          last_capabilities)
