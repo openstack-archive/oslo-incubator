@@ -314,6 +314,16 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
                 'args': {'admin_password': 'gerkin'}}
         rpc_common._safe_log(logger_method, 'foo', data)
 
+    def test_safe_log_sanitizes_any_method(self):
+        def logger_method(msg, data):
+            self.assertEquals('<SANITIZED>', data['args']['service_password'])
+
+        data = {'_context_auth_token': 'banana',
+                'auth_token': 'cheese',
+                'method': 'my_test',
+                'args': {'service_password': 'gerkin'}}
+        rpc_common._safe_log(logger_method, 'foo', data)
+
     def test_safe_log_sanitizes_cells_route_message(self):
         def logger_method(msg, data):
             vals = data['args']['message']['args']['method_info']

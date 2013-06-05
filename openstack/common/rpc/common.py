@@ -292,6 +292,12 @@ def _safe_log(log_func, msg, msg_data):
     if has_token:
         msg_data['auth_token'] = '<SANITIZED>'
 
+    for dict in ('args', 'method_kwargs'):
+        if dict in msg_data:
+            for k, v in msg_data[dict].iteritems():
+                if k.lower().find('password') != -1:
+                    msg_data[dict][k] = '<SANITIZED>'
+
     return log_func(msg, msg_data)
 
 
