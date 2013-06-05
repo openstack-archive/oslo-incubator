@@ -298,7 +298,7 @@ database_opts = [
                help='Minimum number of SQL connections to keep open in a '
                     'pool'),
     cfg.IntOpt('max_pool_size',
-               default=5,
+               default=None,
                deprecated_name='sql_max_pool_size',
                deprecated_group=DEFAULT,
                help='Maximum number of SQL connections to keep open in a '
@@ -330,6 +330,9 @@ database_opts = [
                 deprecated_name='sql_connection_trace',
                 deprecated_group=DEFAULT,
                 help='Add python stack traces to SQL as comment strings'),
+    cfg.IntOpt('pool_timeout',
+               default=None,
+               help='If set, use this value for pool_timeout with sqlalchemy'),
 ]
 
 CONF = cfg.CONF
@@ -343,12 +346,23 @@ _SLAVE_ENGINE = None
 _SLAVE_MAKER = None
 
 
-def set_defaults(sql_connection, sqlite_db):
+def set_defaults(sql_connection, sqlite_db, max_pool_size=None,
+                 max_overflow=None, pool_timeout=None):
     """Set defaults for configuration variables."""
     cfg.set_defaults(database_opts,
                      connection=sql_connection)
     cfg.set_defaults(sqlite_db_opts,
                      sqlite_db=sqlite_db)
+    # Update the QueuePool defaults
+    if max_pool_size is not None:
+        cfg.set_defaults(database_opts,
+                         max_pool_size=max_pool_size)
+    if max_overflow is not None:
+        cfg.set_defaults(database_opts,
+                         max_overflow=max_overflow)
+    if pool_timeout is not None:
+        cfg.set_defaults(database_opts,
+                         pool_timeout=pool_timeout)
 
 
 def cleanup():
@@ -620,9 +634,12 @@ def create_engine(sql_connection, sqlite_fk=False):
             engine_args["poolclass"] = StaticPool
             engine_args["connect_args"] = {'check_same_thread': False}
     else:
-        engine_args['pool_size'] = CONF.database.max_pool_size
+        if CONF.database.max_pool_size is not None:
+            engine_args['pool_size'] = CONF.database.max_pool_size
         if CONF.database.max_overflow is not None:
             engine_args['max_overflow'] = CONF.database.max_overflow
+        if CONF.database.pool_timeout is not None:
+            engine_args['pool_timeout'] = CONF.database.pool_timeout
 
     engine = sqlalchemy.create_engine(sql_connection, **engine_args)
 
