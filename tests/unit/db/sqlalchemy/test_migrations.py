@@ -22,6 +22,7 @@ import ConfigParser
 import os
 import urlparse
 
+import mock
 import sqlalchemy
 import sqlalchemy.exc
 
@@ -195,3 +196,227 @@ class BaseMigrationTestCase(test_utils.BaseTestCase):
                 self.execute_cmd(cmd)
             elif conn_string.startswith('postgresql'):
                 self._reset_pg(conn_pieces)
+
+
+class WalkVersionsMixin(object):
+    def _walk_versions(self, engine=None, snake_walk=False, downgrade=True):
+        # Determine latest version script from the repo, then
+        # upgrade from 1 through to the latest, with no data
+        # in the databases. This just checks that the schema itself
+        # upgrades successfully.
+
+        # Place the database under version control
+        self.migration_api.version_control(engine, self.REPOSITORY,
+                                           self.INIT_VERSION)
+        self.assertEqual(self.INIT_VERSION,
+                         self.migration_api.db_version(engine,
+                                                       self.REPOSITORY))
+
+        LOG.debug('latest version is %s' % self.REPOSITORY.latest)
+        versions = range(self.INIT_VERSION + 1, self.REPOSITORY.latest + 1)
+
+        for version in versions:
+            # upgrade -> downgrade -> upgrade
+            self._migrate_up(engine, version, with_data=True)
+            if snake_walk:
+                downgraded = self._migrate_down(
+                    engine, version - 1, with_data=True)
+                if downgraded:
+                    self._migrate_up(engine, version)
+
+        if downgrade:
+            # Now walk it back down to 0 from the latest, testing
+            # the downgrade paths.
+            for version in reversed(versions):
+                # downgrade -> upgrade -> downgrade
+                downgraded = self._migrate_down(engine, version - 1)
+
+                if snake_walk and downgraded:
+                    self._migrate_up(engine, version)
+                    self._migrate_down(engine, version - 1)
+
+    def _migrate_down(self, engine, version, with_data=False):
+        try:
+            self.migration_api.downgrade(engine, self.REPOSITORY, version)
+        except NotImplementedError:
+            # NOTE(sirp): some migrations, namely release-level
+            # migrations, don't support a downgrade.
+            return False
+
+        self.assertEqual(
+            version, self.migration_api.db_version(engine, self.REPOSITORY))
+
+        # NOTE(sirp): `version` is what we're downgrading to (i.e. the 'target'
+        # version). So if we have any downgrade checks, they need to be run for
+        # the previous (higher numbered) migration.
+        if with_data:
+            post_downgrade = getattr(
+                self, "_post_downgrade_%03d" % (version + 1), None)
+            if post_downgrade:
+                post_downgrade(engine)
+
+        return True
+
+    def _migrate_up(self, engine, version, with_data=False):
+        """migrate up to a new version of the db.
+
+        We allow for data insertion and post checks at every
+        migration version with special _pre_upgrade_### and
+        _check_### functions in the main test.
+        """
+        # NOTE(sdague): try block is here because it's impossible to debug
+        # where a failed data migration happens otherwise
+        try:
+            if with_data:
+                data = None
+                pre_upgrade = getattr(
+                    self, "_pre_upgrade_%03d" % version, None)
+                if pre_upgrade:
+                    data = pre_upgrade(engine)
+
+            self.migration_api.upgrade(engine, self.REPOSITORY, version)
+            self.assertEqual(version,
+                             self.migration_api.db_version(engine,
+                                                           self.REPOSITORY))
+            if with_data:
+                check = getattr(self, "_check_%03d" % version, None)
+                if check:
+                    check(engine, data)
+        except Exception:
+            LOG.error("Failed to migrate to version %s on engine %s" %
+                      (version, engine))
+            raise
+
+
+class TestWalkVersions(test_utils.BaseTestCase, WalkVersionsMixin):
+    def setUp(self):
+        super(TestWalkVersions, self).setUp()
+        self.migration_api = mock.MagicMock()
+        self.engine = mock.MagicMock()
+        self.REPOSITORY = mock.MagicMock()
+        self.INIT_VERSION = 4
+
+    def test_migrate_up(self):
+        self.migration_api.db_version.return_value = 141
+
+        self._migrate_up(self.engine, 141)
+
+        self.migration_api.upgrade.assert_called_with(
+            self.engine, self.REPOSITORY, 141)
+        self.migration_api.db_version.assert_called_with(
+            self.engine, self.REPOSITORY)
+
+    def test_migrate_up_with_data(self):
+        test_value = {"a": 1, "b": 2}
+        self.migration_api.db_version.return_value = 141
+        self._pre_upgrade_141 = mock.MagicMock()
+        self._pre_upgrade_141.return_value = test_value
+        self._check_141 = mock.MagicMock()
+
+        self._migrate_up(self.engine, 141, True)
+
+        self._pre_upgrade_141.assert_called_with(self.engine)
+        self._check_141.assert_called_with(self.engine, test_value)
+
+    def test_migrate_down(self):
+        self.migration_api.db_version.return_value = 42
+
+        self.assertTrue(self._migrate_down(self.engine, 42))
+        self.migration_api.db_version.assert_called_with(
+            self.engine, self.REPOSITORY)
+
+    def test_migrate_down_not_implemented(self):
+        self.migration_api.downgrade.side_effect = NotImplementedError
+        self.assertFalse(self._migrate_down(self.engine, 42))
+
+    def test_migrate_down_with_data(self):
+        self._post_downgrade_043 = mock.MagicMock()
+        self.migration_api.db_version.return_value = 42
+
+        self._migrate_down(self.engine, 42, True)
+
+        self._post_downgrade_043.assert_called_with(self.engine)
+
+    @mock.patch.object(WalkVersionsMixin, '_migrate_up')
+    @mock.patch.object(WalkVersionsMixin, '_migrate_down')
+    def test_walk_versions_all_default(self, _migrate_up, _migrate_down):
+        self.REPOSITORY.latest = 20
+        self.migration_api.db_version.return_value = self.INIT_VERSION
+
+        self._walk_versions()
+
+        self.migration_api.version_control.assert_called_with(
+            None, self.REPOSITORY, self.INIT_VERSION)
+        self.migration_api.db_version.assert_called_with(
+            None, self.REPOSITORY)
+
+        versions = range(self.INIT_VERSION + 1, self.REPOSITORY.latest + 1)
+        upgraded = [mock.call(None, v, with_data=True) for v in versions]
+        self.assertEquals(self._migrate_up.call_args_list, upgraded)
+
+        downgraded = [mock.call(None, v - 1) for v in reversed(versions)]
+        self.assertEquals(self._migrate_down.call_args_list, downgraded)
+
+    @mock.patch.object(WalkVersionsMixin, '_migrate_up')
+    @mock.patch.object(WalkVersionsMixin, '_migrate_down')
+    def test_walk_versions_all_true(self, _migrate_up, _migrate_down):
+        self.REPOSITORY.latest = 20
+        self.migration_api.db_version.return_value = self.INIT_VERSION
+
+        self._walk_versions(self.engine, snake_walk=True, downgrade=True)
+
+        versions = range(self.INIT_VERSION + 1, self.REPOSITORY.latest + 1)
+        upgraded = []
+        for v in versions:
+            upgraded.append(mock.call(self.engine, v, with_data=True))
+            upgraded.append(mock.call(self.engine, v))
+        upgraded.extend(
+            [mock.call(self.engine, v) for v in reversed(versions)]
+        )
+        self.assertEquals(upgraded, self._migrate_up.call_args_list)
+
+        downgraded_1 = [
+            mock.call(self.engine, v - 1, with_data=True) for v in versions
+        ]
+        downgraded_2 = []
+        for v in reversed(versions):
+            downgraded_2.append(mock.call(self.engine, v - 1))
+            downgraded_2.append(mock.call(self.engine, v - 1))
+        downgraded = downgraded_1 + downgraded_2
+        self.assertEquals(self._migrate_down.call_args_list, downgraded)
+
+    @mock.patch.object(WalkVersionsMixin, '_migrate_up')
+    @mock.patch.object(WalkVersionsMixin, '_migrate_down')
+    def test_walk_versions_true_false(self, _migrate_up, _migrate_down):
+        self.REPOSITORY.latest = 20
+        self.migration_api.db_version.return_value = self.INIT_VERSION
+
+        self._walk_versions(self.engine, snake_walk=True, downgrade=False)
+
+        versions = range(self.INIT_VERSION + 1, self.REPOSITORY.latest + 1)
+
+        upgraded = []
+        for v in versions:
+            upgraded.append(mock.call(self.engine, v, with_data=True))
+            upgraded.append(mock.call(self.engine, v))
+        self.assertEquals(upgraded, self._migrate_up.call_args_list)
+
+        downgraded = [
+            mock.call(self.engine, v - 1, with_data=True) for v in versions
+        ]
+        self.assertEquals(self._migrate_down.call_args_list, downgraded)
+
+    @mock.patch.object(WalkVersionsMixin, '_migrate_up')
+    @mock.patch.object(WalkVersionsMixin, '_migrate_down')
+    def test_walk_versions_all_false(self, _migrate_up, _migrate_down):
+        self.REPOSITORY.latest = 20
+        self.migration_api.db_version.return_value = self.INIT_VERSION
+
+        self._walk_versions(self.engine, snake_walk=False, downgrade=False)
+
+        versions = range(self.INIT_VERSION + 1, self.REPOSITORY.latest + 1)
+
+        upgraded = [
+            mock.call(self.engine, v, with_data=True) for v in versions
+        ]
+        self.assertEquals(upgraded, self._migrate_up.call_args_list)
