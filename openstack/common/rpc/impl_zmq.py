@@ -364,7 +364,6 @@ class ZmqBaseReactor(ConsumerBase):
     def __init__(self, conf):
         super(ZmqBaseReactor, self).__init__()
 
-        self.mapping = {}
         self.proxies = {}
         self.threads = []
         self.sockets = []
@@ -372,9 +371,8 @@ class ZmqBaseReactor(ConsumerBase):
 
         self.pool = eventlet.greenpool.GreenPool(conf.rpc_thread_pool_size)
 
-    def register(self, proxy, in_addr, zmq_type_in, out_addr=None,
-                 zmq_type_out=None, in_bind=True, out_bind=True,
-                 subscribe=None):
+    def register(self, proxy, in_addr, zmq_type_in,
+                 in_bind=True, subscribe=None):
 
         LOG.info(_("Registering reactor"))
 
@@ -389,21 +387,6 @@ class ZmqBaseReactor(ConsumerBase):
         self.sockets.append(inq)
 
         LOG.info(_("In reactor registered"))
-
-        if not out_addr:
-            return
-
-        if zmq_type_out not in (zmq.PUSH, zmq.PUB):
-            raise RPCException("Bad output socktype")
-
-        # Items push out.
-        outq = ZmqSocket(out_addr, zmq_type_out, bind=out_bind)
-
-        self.mapping[inq] = outq
-        self.mapping[outq] = inq
-        self.sockets.append(outq)
-
-        LOG.info(_("Out reactor registered"))
 
     def consume_in_thread(self):
         def _consume(sock):
@@ -523,8 +506,7 @@ class ZmqProxy(ZmqBaseReactor):
         try:
             self.register(consumption_proxy,
                           consume_in,
-                          zmq.PULL,
-                          out_bind=True)
+                          zmq.PULL)
         except zmq.ZMQError:
             if os.access(ipc_dir, os.X_OK):
                 with excutils.save_and_reraise_exception():
@@ -621,11 +603,6 @@ class ZmqReactor(ZmqBaseReactor):
             return
 
         zmsg.safe_debug(_("Sending message: %s"))
-
-        if sock in self.mapping:
-            self.mapping[sock].send(data, copy=False)
-            zmsg.safe_debug(_("Relayed out message: %s"))
-            return
 
         proxy = self.proxies[sock]
 
