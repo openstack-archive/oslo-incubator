@@ -212,12 +212,10 @@ class ZmqSocket(object):
 class ZmqClient(object):
     """Client for ZMQ sockets."""
 
-    def __init__(self, addr, socket_type=None, bind=False):
-        if socket_type is None:
-            socket_type = zmq.PUSH
-        self.outq = ZmqSocket(addr, socket_type, bind=bind)
+    def __init__(self, addr):
+        self.outq = ZmqSocket(addr, zmq.PUSH, bind=False)
 
-    def cast(self, msg_id, topic, data, envelope=False):
+    def cast(self, msg_id, topic, data, envelope):
         msg_id = msg_id or 0
 
         if not envelope:
