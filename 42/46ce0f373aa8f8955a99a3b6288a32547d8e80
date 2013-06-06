@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Approved+1: Mark McLoughlin <markmc@redhat.com>
+Code-Review+2: Mark McLoughlin <markmc@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Thu, 06 Jun 2013 15:19:19 +0000
+Reviewed-on: https://review.openstack.org/31565
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
