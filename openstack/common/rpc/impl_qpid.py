@@ -18,7 +18,6 @@
 import functools
 import itertools
 import time
-import uuid
 
 import eventlet
 import greenlet
@@ -95,28 +94,14 @@ class ConsumerBase(object):
         self.session = None
 
         addr_opts = {
-            "create": "always",
-            "node": {
-                "type": "topic",
-                "x-declare": {
-                    "durable": True,
-                    "auto-delete": True,
-                },
-            },
             "link": {
-                "name": link_name,
-                "durable": True,
                 "x-declare": {
-                    "durable": False,
                     "auto-delete": True,
-                    "exclusive": False,
+                    },
                 },
-            },
-        }
-        addr_opts["node"]["x-declare"].update(node_opts)
-        addr_opts["link"]["x-declare"].update(link_opts)
-
+            }
         self.address = "%s ; %s" % (node_name, jsonutils.dumps(addr_opts))
+        LOG.debug(_('Consumer Address: %s ; %s') % ( node_name, addr_opts))
 
         self.reconnect(session)
 
@@ -170,10 +155,10 @@ class DirectConsumer(ConsumerBase):
         """
 
         super(DirectConsumer, self).__init__(session, callback,
-                                             "%s/%s" % (msg_id, msg_id),
-                                             {"type": "direct"},
+                                             "direct/%s" % msg_id,
+                                             {},
                                              msg_id,
-                                             {"exclusive": True})
+                                             {})
 
 
 class TopicConsumer(ConsumerBase):
@@ -192,7 +177,7 @@ class TopicConsumer(ConsumerBase):
 
         exchange_name = exchange_name or rpc_amqp.get_control_exchange(conf)
         super(TopicConsumer, self).__init__(session, callback,
-                                            "%s/%s" % (exchange_name, topic),
+                                            "topic/%s/%s" % (exchange_name, topic),
                                             {}, name or topic, {})
 
 
@@ -209,10 +194,11 @@ class FanoutConsumer(ConsumerBase):
 
         super(FanoutConsumer, self).__init__(
             session, callback,
-            "%s_fanout" % topic,
-            {"durable": False, "type": "fanout"},
-            "%s_fanout_%s" % (topic, uuid.uuid4().hex),
-            {"exclusive": True})
+            "fanout/%s" % topic,
+            {},
+            "",
+            {})
+
 
 
 class Publisher(object):
@@ -225,22 +211,8 @@ class Publisher(object):
         self.sender = None
         self.session = session
 
-        addr_opts = {
-            "create": "always",
-            "node": {
-                "type": "topic",
-                "x-declare": {
-                    "durable": False,
-                    # auto-delete isn't implemented for exchanges in qpid,
-                    # but put in here anyway
-                    "auto-delete": True,
-                },
-            },
-        }
-        if node_opts:
-            addr_opts["node"]["x-declare"].update(node_opts)
-
-        self.address = "%s ; %s" % (node_name, jsonutils.dumps(addr_opts))
+        self.address = "amq.topic/%s" % (node_name)
+        LOG.debug(_('Publisher Address: %s') % ( node_name))
 
         self.reconnect(session)
 
@@ -284,8 +256,9 @@ class DirectPublisher(Publisher):
     """Publisher class for 'direct'."""
     def __init__(self, conf, session, msg_id):
         """Init a 'direct' publisher."""
-        super(DirectPublisher, self).__init__(session, msg_id,
-                                              {"type": "Direct"})
+        direct_address = "direct/%s" % msg_id
+        super(DirectPublisher, self).__init__(session, direct_address,
+                                              {})
 
 
 class TopicPublisher(Publisher):
@@ -295,7 +268,7 @@ class TopicPublisher(Publisher):
         """
         exchange_name = rpc_amqp.get_control_exchange(conf)
         super(TopicPublisher, self).__init__(session,
-                                             "%s/%s" % (exchange_name, topic))
+                                             "topic/%s/%s" % (exchange_name, topic))
 
 
 class FanoutPublisher(Publisher):
@@ -305,7 +278,7 @@ class FanoutPublisher(Publisher):
         """
         super(FanoutPublisher, self).__init__(
             session,
-            "%s_fanout" % topic, {"type": "fanout"})
+            "fanout/%s" % topic, {})
 
 
 class NotifyPublisher(Publisher):
@@ -315,8 +288,8 @@ class NotifyPublisher(Publisher):
         """
         exchange_name = rpc_amqp.get_control_exchange(conf)
         super(NotifyPublisher, self).__init__(session,
-                                              "%s/%s" % (exchange_name, topic),
-                                              {"durable": True})
+                                              "topic/%s/%s" % (exchange_name, topic),
+                                              {})
 
 
 class Connection(object):
