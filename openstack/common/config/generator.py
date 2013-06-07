@@ -207,7 +207,7 @@ def _print_opt(opt):
     opt_type = None
     try:
         opt_type = OPTION_REGEX.search(str(type(opt))).group(0)
-    except (ValueError, AttributeError), err:
+    except (ValueError, AttributeError) as err:
         sys.stderr.write("%s\n" % str(err))
         sys.exit(1)
     opt_help += ' (' + OPT_TYPES[opt_type] + ')'
