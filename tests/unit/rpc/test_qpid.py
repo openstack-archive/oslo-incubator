@@ -119,21 +119,13 @@ class RpcQpidTestCase(utils.BaseTestCase):
         self.mock_connection.open()
         self.mock_connection.session().AndReturn(self.mock_session)
         if fanout:
-            # The link name includes a UUID, so match it with a regex.
-            expected_address = mox.Regex(
-                r'^impl_qpid_test_fanout ; '
-                '{"node": {"x-declare": {"auto-delete": true, "durable": '
-                'false, "type": "fanout"}, "type": "topic"}, "create": '
-                '"always", "link": {"x-declare": {"auto-delete": true, '
-                '"exclusive": true, "durable": false}, "durable": true, '
-                '"name": "impl_qpid_test_fanout_.*"}}$')
+            expected_address = (
+                'fanout/impl_qpid_test ; '
+                '{"link": {"x-declare": {"auto-delete": true}}}')
         else:
             expected_address = (
-                'openstack/impl_qpid_test ; {"node": {"x-declare": '
-                '{"auto-delete": true, "durable": true}, "type": "topic"}, '
-                '"create": "always", "link": {"x-declare": {"auto-delete": '
-                'true, "exclusive": false, "durable": false}, "durable": '
-                'true, "name": "impl_qpid_test"}}')
+                'topic/openstack/impl_qpid_test ; {"link": '
+                '{"x-declare": {"auto-delete": true}}}')
         self.mock_session.receiver(expected_address).AndReturn(
             self.mock_receiver)
         self.mock_receiver.capacity = 1
@@ -162,11 +154,8 @@ class RpcQpidTestCase(utils.BaseTestCase):
         self.mock_connection.open()
         self.mock_connection.session().AndReturn(self.mock_session)
         expected_address = (
-            'openstack/impl_qpid_test ; {"node": {"x-declare": '
-            '{"auto-delete": true, "durable": true}, "type": "topic"}, '
-            '"create": "always", "link": {"x-declare": {"auto-delete": '
-            'true, "exclusive": false, "durable": false}, "durable": '
-            'true, "name": "impl.qpid.test.workers"}}')
+            'topic/openstack/impl_qpid_test ; {"link": {"x-declare": '
+            '{"auto-delete": true}}}')
         self.mock_session.receiver(expected_address).AndReturn(
             self.mock_receiver)
         self.mock_receiver.capacity = 1
@@ -190,11 +179,8 @@ class RpcQpidTestCase(utils.BaseTestCase):
         self.mock_connection.open()
         self.mock_connection.session().AndReturn(self.mock_session)
         expected_address = (
-            'exchange-name/impl_qpid_test ; {"node": {"x-declare": '
-            '{"auto-delete": true, "durable": true}, "type": "topic"}, '
-            '"create": "always", "link": {"x-declare": {"auto-delete": '
-            'true, "exclusive": false, "durable": false}, "durable": '
-            'true, "name": "impl.qpid.test.consumer.pool"}}')
+            'topic/exchange-name/impl_qpid_test ; '
+            '{"link": {"x-declare": {"auto-delete": true}}}')
         self.mock_session.receiver(expected_address).AndReturn(
             self.mock_receiver)
         self.mock_receiver.capacity = 1
@@ -220,11 +206,8 @@ class RpcQpidTestCase(utils.BaseTestCase):
         self.mock_connection.open()
         self.mock_connection.session().AndReturn(self.mock_session)
         expected_address = (
-            'foobar/impl_qpid_test ; {"node": {"x-declare": '
-            '{"auto-delete": true, "durable": true}, "type": "topic"}, '
-            '"create": "always", "link": {"x-declare": {"auto-delete": '
-            'true, "exclusive": false, "durable": false}, "durable": '
-            'true, "name": "impl.qpid.test.workers"}}')
+            'topic/foobar/impl_qpid_test ; {"link": {"x-declare":'
+            ' {"auto-delete": true}}}')
         self.mock_session.receiver(expected_address).AndReturn(
             self.mock_receiver)
         self.mock_receiver.capacity = 1
@@ -250,15 +233,10 @@ class RpcQpidTestCase(utils.BaseTestCase):
         self.mock_connection.session().AndReturn(self.mock_session)
         if fanout:
             expected_address = (
-                'impl_qpid_test_fanout ; '
-                '{"node": {"x-declare": {"auto-delete": true, '
-                '"durable": false, "type": "fanout"}, '
-                '"type": "topic"}, "create": "always"}')
+                'amq.topic/fanout/impl_qpid_test')
         else:
             expected_address = (
-                'openstack/impl_qpid_test ; {"node": {"x-declare": '
-                '{"auto-delete": true, "durable": false}, "type": "topic"}, '
-                '"create": "always"}')
+                'amq.topic/topic/openstack/impl_qpid_test')
         self.mock_session.sender(expected_address).AndReturn(self.mock_sender)
         self.mock_sender.send(mox.IgnoreArg())
         if not server_params:
@@ -342,17 +320,12 @@ class RpcQpidTestCase(utils.BaseTestCase):
         self.mock_connection.open()
         self.mock_connection.session().AndReturn(self.mock_session)
         rcv_addr = mox.Regex(
-            r'^.*/.* ; {"node": {"x-declare": {"auto-delete":'
-            ' true, "durable": true, "type": "direct"}, "type": '
-            '"topic"}, "create": "always", "link": {"x-declare": '
-            '{"auto-delete": true, "exclusive": true, "durable": '
-            'false}, "durable": true, "name": ".*"}}')
+            r'^.*/.* ; {"link": {"x-declare": '
+            '{"auto-delete": true}}}')
         self.mock_session.receiver(rcv_addr).AndReturn(self.mock_receiver)
         self.mock_receiver.capacity = 1
         send_addr = (
-            'openstack/impl_qpid_test ; {"node": {"x-declare": '
-            '{"auto-delete": true, "durable": false}, "type": "topic"}, '
-            '"create": "always"}')
+            'amq.topic/topic/openstack/impl_qpid_test')
         self.mock_session.sender(send_addr).AndReturn(self.mock_sender)
         self.mock_sender.send(mox.IgnoreArg())
 
@@ -421,17 +394,12 @@ class RpcQpidTestCase(utils.BaseTestCase):
         self.mock_connection.open()
         self.mock_connection.session().AndReturn(self.mock_session)
         rcv_addr = mox.Regex(
-            r'^.*/.* ; {"node": {"x-declare": {"auto-delete":'
-            ' true, "durable": true, "type": "direct"}, "type": '
-            '"topic"}, "create": "always", "link": {"x-declare": '
-            '{"auto-delete": true, "exclusive": true, "durable": '
-            'false}, "durable": true, "name": ".*"}}')
+            r'^.*/.* ; {"link": {"x-declare": '
+            '{"auto-delete": true}}}')
         self.mock_session.receiver(rcv_addr).AndReturn(self.mock_receiver)
         self.mock_receiver.capacity = 1
         send_addr = (
-            'openstack/impl_qpid_test ; {"node": {"x-declare": '
-            '{"auto-delete": true, "durable": false}, "type": "topic"}, '
-            '"create": "always"}')
+            'amq.topic/topic/openstack/impl_qpid_test')
         self.mock_session.sender(send_addr).AndReturn(self.mock_sender)
         self.mock_sender.send(mox.IgnoreArg())
 
