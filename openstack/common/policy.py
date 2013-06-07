@@ -119,8 +119,7 @@ class Rules(dict):
     def __missing__(self, key):
         """Implements the default rule handling."""
 
-        # If the default rule isn't actually defined, do something
-        # reasonably intelligent
+        # If the default rule isn't defined, Fail
         if not self.default_rule or self.default_rule not in self:
             raise KeyError(key)
 
@@ -511,9 +510,9 @@ def _parse_list_rule(rule):
     list-of-lists syntax into a tree of Check objects.
     """
 
-    # Empty rule defaults to True
+    # Empty rule defaults to False
     if not rule:
-        return TrueCheck()
+        return FalseCheck()
 
     # Outer list is joined by "or"; inner list by "and"
     or_list = []
@@ -763,9 +762,9 @@ def _parse_text_rule(rule):
     Check objects.
     """
 
-    # Empty rule means always accept
+    # Empty rule means always reject
     if not rule:
-        return TrueCheck()
+        return FalseCheck()
 
     # Parse the token stream
     state = ParseState()

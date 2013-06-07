@@ -376,8 +376,8 @@ class ParseListRuleTestCase(utils.BaseTestCase):
     def test_empty(self):
         result = policy._parse_list_rule([])
 
-        self.assertTrue(isinstance(result, policy.TrueCheck))
-        self.assertEqual(str(result), '@')
+        self.assertTrue(isinstance(result, policy.FalseCheck))
+        self.assertEqual(str(result), '!')
 
     @mock.patch.object(policy, '_parse_check', FakeCheck)
     def test_oneele_zeroele(self):
@@ -665,7 +665,7 @@ class ParseTextRuleTestCase(utils.BaseTestCase):
     def test_empty(self):
         result = policy._parse_text_rule('')
 
-        self.assertTrue(isinstance(result, policy.TrueCheck))
+        self.assertTrue(isinstance(result, policy.FalseCheck))
 
     @mock.patch.object(policy, '_parse_tokenize',
                        return_value=[('tok1', 'val1'), ('tok2', 'val2')])
