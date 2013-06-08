@@ -725,10 +725,23 @@ class Connection(object):
     def consume_in_thread(self):
         """Consumer from all queues/consumers in a greenthread."""
         def _consumer_thread():
-            try:
-                self.consume()
-            except greenlet.GreenletExit:
-                return
+            last_log_time = 0
+            while True:
+                try:
+                    self.consume()
+                except greenlet.GreenletExit:
+                    return
+                except Exception as exc:
+                    # Do not log any more frequently than once a minute
+                    cur_time = int(time.time())
+                    if cur_time - last_log_time > 60:
+                        last_log_time = cur_time
+                        LOG.exception(_('Consumer thread hit an '
+                                      'unexpected exception: %s. '
+                                      'Retrying...') % str(exc))
+                    # This should be a very rare event. In case it isn't, do
+                    # a sleep.
+                    time.sleep(1)
         if self.consumer_thread is None:
             self.consumer_thread = eventlet.spawn(_consumer_thread)
         return self.consumer_thread

@@ -531,6 +531,47 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
                 topic='topic.name',
             )
 
+    def test_service_consume_thread_handles_exceptions(self):
+
+        def my_TopicConsumer_consume(myself, *args, **kwargs):
+            self.consume_calls += 1
+	    # see if it can sustain three failures
+            if self.consume_calls < 3:
+                raise Exception('unexpected exception')
+            else:
+                self.orig_TopicConsumer_consume(myself, *args, **kwargs)
+
+        self.consume_calls = 0
+        self.orig_TopicConsumer_consume = impl_kombu.TopicConsumer.consume
+        self.stubs.Set(impl_kombu.TopicConsumer, 'consume', my_TopicConsumer_consume)
+
+        value = 42
+        result = self.rpc.call(FLAGS, self.context, self.topic,
+                               {"method": "echo",
+                                "args": {"value": value}})
+        self.assertEqual(value, result)
+        self.stubs.UnsetAll()
+
+    # TODO(pekowski): Enable this when single reply queue is enabled as default
+    #def test_replyproxy_consume_thread_handles_exceptions(self):
+
+    #    def my_DirectConsumer_consume(myself, *args, **kwargs):
+    #        self.consume_calls += 1
+    #        if self.consume_calls % 2:
+    #            self.orig_DirectConsumer_consume(myself, *args, **kwargs)
+    #        else:
+    #            raise Exception('unexpected exception')
+
+    #    self.consume_calls = 1
+    #    self.orig_DirectConsumer_consume = impl_kombu.DirectConsumer.consume
+    #    self.stubs.Set(impl_kombu.DirectConsumer, 'consume', my_DirectConsumer_consume)
+
+    #    value = 42
+    #    result = self.rpc.call(FLAGS, self.context, self.topic,
+    #                           {"method": "echo",
+    #                            "args": {"value": value}})
+    #    self.assertEqual(value, result)
+    #    self.stubs.UnsetAll()
 
 class RpcKombuHATestCase(utils.BaseTestCase):
     def setUp(self):
