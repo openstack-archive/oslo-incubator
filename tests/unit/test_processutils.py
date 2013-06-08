@@ -114,7 +114,7 @@ echo $runs > "$1"
 exit 1
 ''')
             fp.close()
-            os.chmod(tmpfilename, 0755)
+            os.chmod(tmpfilename, 0o755)
             self.assertRaises(processutils.ProcessExecutionError,
                               processutils.execute,
                               tmpfilename, tmpfilename2, attempts=10,
@@ -159,7 +159,7 @@ echo foo > "$1"
 grep foo
 """)
             fp.close()
-            os.chmod(tmpfilename, 0755)
+            os.chmod(tmpfilename, 0o755)
             processutils.execute(tmpfilename,
                                  tmpfilename2,
                                  process_input='foo',
