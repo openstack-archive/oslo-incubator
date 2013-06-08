@@ -20,9 +20,11 @@ Exceptions common to OpenStack projects
 """
 
 import logging
+import time
 
 from openstack.common.gettextutils import _
 
+LOG = logging.getLogger(__name__)
 _FATAL_EXCEPTION_FORMAT_ERRORS = False
 
 
@@ -140,3 +142,22 @@ class MalformedRequestBody(OpenstackException):
 
 class InvalidContentType(OpenstackException):
     message = "Invalid content type %(content_type)s"
+
+
+def robust_thread(infunc):
+    def inner_func(*args, **kwargs):
+        last_log_time = 0
+        while True:
+            try:
+                return infunc(*args, **kwargs)
+            except Exception as exc:
+                # Do not log any more frequently than once a minute
+                cur_time = int(time.time())
+                if cur_time - last_log_time > 60:
+                    last_log_time = cur_time
+                    LOG.exception(_('Unexpected exception: %s. '
+                                  'Retrying...') % str(exc))
+                # This should be a very rare event. In case it isn't, do
+                # a sleep.
+                time.sleep(1)
+    return inner_func
