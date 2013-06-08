@@ -144,7 +144,8 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
                         six.text_type(after_exc))
 
     def test_deserialize_remote_exception_args_and_kwargs(self):
-        """
+        """Ensure raise user defined exception.
+
         Ensure a user defined exception will be supplied the correct args and
         kwargs while being deserialized.
         """

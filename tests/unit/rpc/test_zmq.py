@@ -42,9 +42,7 @@ FLAGS = cfg.CONF
 
 
 def get_unused_port():
-    """
-    Returns an unused port on localhost.
-    """
+    """Returns an unused port on localhost."""
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(('localhost', 0))
     addr, port = s.getsockname()
@@ -117,7 +115,8 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
 
 
 class RpcZmqBaseTopicTestCase(_RpcZmqBaseTestCase):
-    """
+    """Topic Test cases.
+
     This tests with topics such as 'test' and 'nested',
     without any .host appended. Stresses the matchmaker.
     """
@@ -125,7 +124,8 @@ class RpcZmqBaseTopicTestCase(_RpcZmqBaseTestCase):
 
 
 class RpcZmqDirectTopicTestCase(_RpcZmqBaseTestCase):
-    """
+    """Direct Communication Test Case.
+
     Test communication directly to a host,
     tests use 'localhost'.
     """

@@ -43,8 +43,7 @@ LOG = logging.getLogger(__name__)
 
 
 class RingExchange(mm.Exchange):
-    """
-    Match Maker where hosts are loaded from a static file containing
+    """Match Maker where hosts are loaded from a static file containing
     a hashmap (JSON formatted).
 
     __init__ takes optional ring dictionary argument, otherwise
@@ -104,9 +103,7 @@ class FanoutRingExchange(RingExchange):
 
 
 class MatchMakerRing(mm.MatchMakerBase):
-    """
-    Match Maker where hosts are loaded from a static hashmap.
-    """
+    """Match Maker where hosts are loaded from a static hashmap."""
     def __init__(self, ring=None):
         super(MatchMakerRing, self).__init__()
         self.add_binding(mm.FanoutBinding(), FanoutRingExchange(ring))

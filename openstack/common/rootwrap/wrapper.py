@@ -31,8 +31,7 @@ class NoFilterMatched(Exception):
 
 
 class FilterMatchNotExecutable(Exception):
-    """
-    This exception is raised when a filter matched but no executable was
+    """This exception is raised when a filter matched but no executable was
     found.
     """
     def __init__(self, match=None, **kwargs):
@@ -122,7 +121,8 @@ def load_filters(filters_path):
 
 
 def match_filter(filter_list, userargs, exec_dirs=[]):
-    """
+    """Match a filter list.
+
     Checks user command and arguments through command filters and
     returns the first matching filter.
     Raises NoFilterMatched if no filter matched.

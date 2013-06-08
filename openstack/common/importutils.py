@@ -41,7 +41,8 @@ def import_object(import_str, *args, **kwargs):
 
 
 def import_object_ns(name_space, import_str, *args, **kwargs):
-    """
+    """Import a class and return an instance of it via namespaces.
+
     Import a class and return an instance of it, first by trying
     to find the class in a default namespace, then failing back to
     a full path if not found in the default namespace.

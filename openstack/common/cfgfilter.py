@@ -60,7 +60,8 @@ from oslo.config import cfg
 
 class ConfigFilter(collections.Mapping):
 
-    """
+    """Helper Class.
+
     A helper class which wraps a ConfigOpts object and enforces the
     explicit declaration of dependencies on external options.
     """
@@ -198,7 +199,8 @@ class ConfigFilter(collections.Mapping):
 
     class GroupAttr(collections.Mapping):
 
-        """
+        """Group Helper Class.
+
         A helper class representing the option values of a group as a mapping
         and attributes.
         """

@@ -33,7 +33,8 @@ def generate_request_id():
 
 class RequestContext(object):
 
-    """
+    """Request Context class.
+
     Stores information about the security context under which the user
     accesses the system, as well as additional request information.
     """

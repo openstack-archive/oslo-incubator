@@ -124,7 +124,8 @@ class Timeout(RPCException):
                 'info: "%(info)s"')
 
     def __init__(self, info=None, topic=None, method=None):
-        """
+        """Initialize Timeout.
+
         :param info: Extra info to convey to the user
         :param topic: The topic that the rpc call was sent to
         :param rpc_method_name: The name of the rpc method being

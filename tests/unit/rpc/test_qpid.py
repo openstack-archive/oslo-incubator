@@ -45,8 +45,7 @@ FLAGS = cfg.CONF
 
 
 class RpcQpidTestCase(utils.BaseTestCase):
-    """
-    Exercise the public API of impl_qpid utilizing mox.
+    """Exercise the public API of impl_qpid utilizing mox.
 
     This set of tests utilizes mox to replace the Qpid objects and ensures
     that the right operations happen on them when the various public rpc API

@@ -62,9 +62,7 @@ class ServiceWithTimer(service.Service):
 
 
 class ServiceLauncherTest(utils.BaseTestCase):
-    """
-    Originally from nova/tests/integrated/test_multiprocess_api.py
-    """
+    """Originally from nova/tests/integrated/test_multiprocess_api.py."""
 
     def _spawn(self):
         self.workers = 2

@@ -370,8 +370,7 @@ def cleanup():
 
 
 class SqliteForeignKeysListener(PoolListener):
-    """
-    Ensures that the foreign key constraints are enforced in SQLite.
+    """Ensures that the foreign key constraints are enforced in SQLite.
 
     The foreign key constraints are disabled by default in SQLite,
     so the foreign key constraints will be enabled here for every
@@ -430,7 +429,8 @@ _DUP_KEY_RE_DB = {
 
 
 def _raise_if_duplicate_entry_error(integrity_error, engine_name):
-    """
+    """Raise DBDuplicateEntry on constraint violation.
+
     In this function will be raised DBDuplicateEntry exception if integrity
     error wrap unique constraint violation.
     """
@@ -473,8 +473,7 @@ _DEADLOCK_RE_DB = {
 
 
 def _raise_if_deadlock_error(operational_error, engine_name):
-    """
-    Raise DBDeadlock exception if OperationalError contains a Deadlock
+    """Raise DBDeadlock exception if OperationalError contains a Deadlock
     condition.
     """
     re = _DEADLOCK_RE_DB.get(engine_name)
@@ -552,7 +551,8 @@ def _add_regexp_listener(dbapi_con, con_record):
 
 
 def _greenthread_yield(dbapi_con, con_record):
-    """
+    """Yield the thread.
+
     Ensure other greenthreads get a chance to execute by forcing a context
     switch. With common database backends (eg MySQLdb and sqlite), there is
     no implicit yield caused by network I/O since they are implemented by
@@ -562,7 +562,8 @@ def _greenthread_yield(dbapi_con, con_record):
 
 
 def _ping_listener(dbapi_conn, connection_rec, connection_proxy):
-    """
+    """Check liveness of connections.
+
     Ensures that MySQL connections checked out of the
     pool are alive.
 

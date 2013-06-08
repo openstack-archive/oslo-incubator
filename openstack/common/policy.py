@@ -94,15 +94,14 @@ class PolicyNotAuthorized(Exception):
 
 
 class Rules(dict):
-    """
-    A store for rules.  Handles the default_rule setting directly.
+    """A store for rules.
+
+    Handles the default_rule setting directly.
     """
 
     @classmethod
     def load_json(cls, data, default_rule=None):
-        """
-        Allow loading of JSON rule data.
-        """
+        """Allow loading of JSON rule data."""
 
         # Suck in the JSON data and parse the rules
         rules = dict((k, parse_rule(v)) for k, v in
@@ -143,8 +142,7 @@ class Rules(dict):
 
 
 class Enforcer(object):
-    """
-    Responsible for loading and enforcing rules
+    """Responsible for loading and enforcing rules
 
     :param policy_file: Custom policy file to use, if none is
                         specified, `CONF.policy_file` will be
@@ -165,8 +163,7 @@ class Enforcer(object):
         self.policy_file = policy_file or CONF.policy_file
 
     def set_rules(self, rules, overwrite=True):
-        """
-        Create a new Rules object based on the provided dict of rules
+        """Create a new Rules object based on the provided dict of rules
 
         :param rules: New rules to use. It should be an instance of dict.
         :param overwrite: Whether to overwrite current rules or update them
@@ -183,17 +180,14 @@ class Enforcer(object):
             self.update(rules)
 
     def clear(self):
-        """
-        Clears Enforcer rules,  policy's cache
-        and policy's path.
-        """
+        """Clears Enforcer rules,  policy's cache and policy's path."""
         self.set_rules({})
         self.policy_path = None
 
     def load_rules(self, force_reload=False):
-        """
-        Loads policy_path's rules. Policy file is cached
-        and will be reloaded if modified.
+        """Load policy_path's rules.
+
+        Policy file is cached and will be reloaded if modified.
 
         :param force_reload: Whether to overwrite current rules.
         """
@@ -210,8 +204,7 @@ class Enforcer(object):
             LOG.debug(_("Rules successfully reloaded"))
 
     def _get_policy_path(self):
-        """
-        Locate the policy json data file
+        """Locate the policy json data file.
 
         :param policy_file: Custom policy file to locate.
 
@@ -229,8 +222,7 @@ class Enforcer(object):
 
     def enforce(self, rule, target, creds, do_raise=False,
                 exc=None, *args, **kwargs):
-        """
-        Checks authorization of a rule against the target and credentials.
+        """Checks authorization of rule against target and credentials.
 
         :param rule: A string or BaseCheck instance specifying the rule
                     to evaluate.
@@ -285,15 +277,14 @@ class Enforcer(object):
 
 
 class BaseCheck(object):
-    """
-    Abstract base class for Check classes.
-    """
+    """Abstract base class for Check classes."""
 
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def __str__(self):
-        """
+        """Return string representation.
+
         Retrieve a string representation of the Check tree rooted at
         this node.
         """
@@ -302,8 +293,9 @@ class BaseCheck(object):
 
     @abc.abstractmethod
     def __call__(self, target, cred):
-        """
-        Perform the check.  Returns False to reject the access or a
+        """Perform the check.
+
+        Returns False to reject the access or a
         true value (not necessary True) to accept the access.
         """
 
@@ -311,13 +303,9 @@ class BaseCheck(object):
 
 
 class FalseCheck(BaseCheck):
-    """
-    A policy check that always returns False (disallow).
-    """
+    """A policy check that always returns False (disallow)."""
 
     def __str__(self):
-        """Return a string representation of this check."""
-
         return "!"
 
     def __call__(self, target, cred):
@@ -327,13 +315,9 @@ class FalseCheck(BaseCheck):
 
 
 class TrueCheck(BaseCheck):
-    """
-    A policy check that always returns True (allow).
-    """
+    """A policy check that always returns True (allow)."""
 
     def __str__(self):
-        """Return a string representation of this check."""
-
         return "@"
 
     def __call__(self, target, cred):
@@ -343,12 +327,11 @@ class TrueCheck(BaseCheck):
 
 
 class Check(BaseCheck):
-    """
-    A base class to allow for user-defined policy checks.
-    """
+    """A base class to allow for user-defined policy checks."""
 
     def __init__(self, kind, match):
-        """
+        """Initialize the Check.
+
         :param kind: The kind of the check, i.e., the field before the
                      ':'.
         :param match: The match of the check, i.e., the field after
@@ -359,20 +342,14 @@ class Check(BaseCheck):
         self.match = match
 
     def __str__(self):
-        """Return a string representation of this check."""
-
         return "%s:%s" % (self.kind, self.match)
 
 
 class NotCheck(BaseCheck):
-    """
-    A policy check that inverts the result of another policy check.
-    Implements the "not" operator.
-    """
+    """This inverts the result of another policy check ("not" operator)."""
 
     def __init__(self, rule):
-        """
-        Initialize the 'not' check.
+        """Initialize the 'not' check.
 
         :param rule: The rule to negate.  Must be a Check.
         """
@@ -380,28 +357,24 @@ class NotCheck(BaseCheck):
         self.rule = rule
 
     def __str__(self):
-        """Return a string representation of this check."""
-
         return "not %s" % self.rule
 
     def __call__(self, target, cred):
-        """
-        Check the policy.  Returns the logical inverse of the wrapped
-        check.
+        """Check the policy.
+
+        Returns the logical inverse of the wrapped check.
         """
 
         return not self.rule(target, cred)
 
 
 class AndCheck(BaseCheck):
-    """
-    A policy check that requires that a list of other checks all
+    """A policy check that requires that a list of other checks all
     return True.  Implements the "and" operator.
     """
 
     def __init__(self, rules):
-        """
-        Initialize the 'and' check.
+        """Initialize the 'and' check.
 
         :param rules: A list of rules that will be tested.
         """
@@ -409,14 +382,12 @@ class AndCheck(BaseCheck):
         self.rules = rules
 
     def __str__(self):
-        """Return a string representation of this check."""
-
         return "(%s)" % ' and '.join(str(r) for r in self.rules)
 
     def __call__(self, target, cred):
-        """
-        Check the policy.  Requires that all rules accept in order to
-        return True.
+        """Check the policy.
+
+        Requires that all rules accept in order to return True.
         """
 
         for rule in self.rules:
@@ -426,7 +397,8 @@ class AndCheck(BaseCheck):
         return True
 
     def add_check(self, rule):
-        """
+        """Adds another rule to list of rules.
+
         Allows addition of another rule to the list of rules that will
         be tested.  Returns the AndCheck object for convenience.
         """
@@ -436,14 +408,12 @@ class AndCheck(BaseCheck):
 
 
 class OrCheck(BaseCheck):
-    """
-    A policy check that requires that at least one of a list of other
+    """A policy check that requires that at least one of a list of other
     checks returns True.  Implements the "or" operator.
     """
 
     def __init__(self, rules):
-        """
-        Initialize the 'or' check.
+        """Initialize the 'or' check.
 
         :param rules: A list of rules that will be tested.
         """
@@ -451,13 +421,12 @@ class OrCheck(BaseCheck):
         self.rules = rules
 
     def __str__(self):
-        """Return a string representation of this check."""
-
         return "(%s)" % ' or '.join(str(r) for r in self.rules)
 
     def __call__(self, target, cred):
-        """
-        Check the policy.  Requires that at least one rule accept in
+        """Check the policy.
+
+        Requires that at least one rule accept in
         order to return True.
         """
 
@@ -468,7 +437,8 @@ class OrCheck(BaseCheck):
         return False
 
     def add_check(self, rule):
-        """
+        """Adds another rule to list of rules.
+
         Allows addition of another rule to the list of rules that will
         be tested.  Returns the OrCheck object for convenience.
         """
@@ -478,8 +448,7 @@ class OrCheck(BaseCheck):
 
 
 def _parse_check(rule):
-    """
-    Parse a single base check rule into an appropriate Check object.
+    """Parse a single base check rule into an appropriate Check object.
     """
 
     # Handle the special checks
@@ -506,7 +475,8 @@ def _parse_check(rule):
 
 
 def _parse_list_rule(rule):
-    """
+    """Backwards compatibility.
+
     Provided for backwards compatibility.  Translates the old
     list-of-lists syntax into a tree of Check objects.
     """
@@ -549,8 +519,7 @@ _tokenize_re = re.compile(r'\s+')
 
 
 def _parse_tokenize(rule):
-    """
-    Tokenizer for the policy language.
+    """Tokenizer for the policy language.
 
     Most of the single-character tokens are specified in the
     _tokenize_re; however, parentheses need to be handled specially,
@@ -599,14 +568,15 @@ def _parse_tokenize(rule):
 
 
 class ParseStateMeta(type):
-    """
-    Metaclass for the ParseState class.  Facilitates identifying
-    reduction methods.
+    """Metaclass for the ParseState class.
+
+    Facilitates identifying reduction methods.
     """
 
     def __new__(mcs, name, bases, cls_dict):
-        """
-        Create the class.  Injects the 'reducers' list, a list of
+        """Create the class.
+
+        Injects the 'reducers' list, a list of
         tuples matching token sequences to the names of the
         corresponding reduction methods.
         """
@@ -625,10 +595,10 @@ class ParseStateMeta(type):
 
 
 def reducer(*tokens):
-    """
-    Decorator for reduction methods.  Arguments are a sequence of
-    tokens, in order, which should trigger running this reduction
-    method.
+    """Decorator for reduction methods.
+
+    Arguments are a sequence of tokens, in order, which should
+    trigger running this reduction method.
     """
 
     def decorator(func):
@@ -645,10 +615,11 @@ def reducer(*tokens):
 
 
 class ParseState(object):
-    """
-    Implement the core of parsing the policy language.  Uses a greedy
-    reduction algorithm to reduce a sequence of tokens into a single
-    terminal, the value of which will be the root of the Check tree.
+    """Implement the core of parsing the policy language.
+
+    Uses a greedy reduction algorithm to reduce a sequence of
+    tokens into a single terminal, the value of which will be
+    the root of the Check tree.
 
     Note: error reporting is rather lacking.  The best we can get with
     this parser formulation is an overall "parse failed" error.
@@ -665,11 +636,11 @@ class ParseState(object):
         self.values = []
 
     def reduce(self):
-        """
-        Perform a greedy reduction of the token stream.  If a reducer
-        method matches, it will be executed, then the reduce() method
-        will be called recursively to search for any more possible
-        reductions.
+        """Perform a greedy reduction of the token stream.
+
+        If a reducer method matches, it will be executed, then
+        the reduce() method will be called recursively to search
+        for any more possible reductions.
         """
 
         for reduction, methname in self.reducers:
@@ -699,9 +670,9 @@ class ParseState(object):
 
     @property
     def result(self):
-        """
-        Obtain the final result of the parse.  Raises ValueError if
-        the parse failed to reduce to a single result.
+        """Get the final result of the parse.
+
+        Raises ValueError if the parse failed to reduce to a single result.
         """
 
         if len(self.values) != 1:
@@ -718,8 +689,7 @@ class ParseState(object):
 
     @reducer('check', 'and', 'check')
     def _make_and_expr(self, check1, _and, check2):
-        """
-        Create an 'and_expr' from two checks joined by the 'and'
+        """Create an 'and_expr' from two checks joined by the 'and'
         operator.
         """
 
@@ -727,16 +697,13 @@ class ParseState(object):
 
     @reducer('and_expr', 'and', 'check')
     def _extend_and_expr(self, and_expr, _and, check):
-        """
-        Extend an 'and_expr' by adding one more check.
-        """
+        """Extend an 'and_expr' by adding one more check."""
 
         return [('and_expr', and_expr.add_check(check))]
 
     @reducer('check', 'or', 'check')
     def _make_or_expr(self, check1, _or, check2):
-        """
-        Create an 'or_expr' from two checks joined by the 'or'
+        """Create an 'or_expr' from two checks joined by the 'or'
         operator.
         """
 
@@ -744,9 +711,7 @@ class ParseState(object):
 
     @reducer('or_expr', 'or', 'check')
     def _extend_or_expr(self, or_expr, _or, check):
-        """
-        Extend an 'or_expr' by adding one more check.
-        """
+        """Extend an 'or_expr' by adding one more check."""
 
         return [('or_expr', or_expr.add_check(check))]
 
@@ -758,8 +723,7 @@ class ParseState(object):
 
 
 def _parse_text_rule(rule):
-    """
-    Translates a policy written in the policy language into a tree of
+    """Translates a policy written in the policy language into a tree of
     Check objects.
     """
 
@@ -783,9 +747,7 @@ def _parse_text_rule(rule):
 
 
 def parse_rule(rule):
-    """
-    Parses a policy rule into a tree of Check objects.
-    """
+    """Parses a policy rule into a tree of Check objects."""
 
     # If the rule is a string, it's in the policy language
     if isinstance(rule, basestring):
@@ -794,8 +756,7 @@ def parse_rule(rule):
 
 
 def register(name, func=None):
-    """
-    Register a function or Check class as a policy check.
+    """Register a function or Check class as a policy check.
 
     :param name: Gives the name of the check type, e.g., 'rule',
                  'role', etc.  If name is None, a default check type
@@ -823,9 +784,7 @@ def register(name, func=None):
 @register("rule")
 class RuleCheck(Check):
     def __call__(self, target, creds, enforcer):
-        """
-        Recursively checks credentials based on the defined rules.
-        """
+        """Recursively checks credentials based on the defined rules."""
 
         try:
             return enforcer.rules[self.match](target, creds, enforcer)
@@ -845,8 +804,7 @@ class RoleCheck(Check):
 @register('http')
 class HttpCheck(Check):
     def __call__(self, target, creds, enforcer):
-        """
-        Check http: rules by calling to a remote server.
+        """Check http: rules by calling to a remote server.
 
         This example implementation simply verifies that the response
         is exactly 'True'.
@@ -863,8 +821,7 @@ class HttpCheck(Check):
 @register(None)
 class GenericCheck(Check):
     def __call__(self, target, creds, enforcer):
-        """
-        Check an individual match.
+        """Check an individual match.
 
         Matches look like:
 

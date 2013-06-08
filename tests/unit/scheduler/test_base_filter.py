@@ -51,8 +51,8 @@ class BaseFakeFilter(base_filter.BaseFilter):
 
 
 class FakeFilter1(BaseFakeFilter):
-    """
-    * Should be included in the output of all_classes
+    """Should be included in the output of all_classes
+
     * It derives from BaseFakeFilter
     * AND
     * It has a fake entry point defined (is returned by fake ExtensionManager)
@@ -61,8 +61,8 @@ class FakeFilter1(BaseFakeFilter):
 
 
 class FakeFilter2(BaseFakeFilter):
-    """
-    * Should be NOT included in all_classes
+    """Should be NOT included in all_classes
+
     * Derives from BaseFakeFilter
     * BUT
     * It has no entry point
@@ -71,16 +71,16 @@ class FakeFilter2(BaseFakeFilter):
 
 
 class FakeFilter3(base_filter.BaseFilter):
-    """
-    * Should NOT be included
+    """Should NOT be included
+
     * Does NOT derive from BaseFakeFilter
     """
     pass
 
 
 class FakeFilter4(BaseFakeFilter):
-    """
-    Should be included
+    """Should be included
+
     * Derives from BaseFakeFilter
     * AND
     * It has an entrypoint
@@ -89,8 +89,8 @@ class FakeFilter4(BaseFakeFilter):
 
 
 class FakeFilter5(BaseFakeFilter):
-    """
-    Should NOT be included
+    """Should NOT be included
+
     * Derives from BaseFakeFilter
     * BUT
     * It has NO entrypoint

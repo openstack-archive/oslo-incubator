@@ -48,8 +48,8 @@ class MatchMakerException(Exception):
 
 
 class Exchange(object):
-    """
-    Implements lookups.
+    """Implements lookups.
+
     Subclass this to support hashtables, dns, etc.
     """
     def __init__(self):
@@ -60,9 +60,7 @@ class Exchange(object):
 
 
 class Binding(object):
-    """
-    A binding on which to perform a lookup.
-    """
+    """A binding on which to perform a lookup."""
     def __init__(self):
         pass
 
@@ -71,8 +69,8 @@ class Binding(object):
 
 
 class MatchMakerBase(object):
-    """
-    Match Maker Base Class.
+    """Match Maker Base Class.
+
     Build off HeartbeatMatchMakerBase if building a
     heartbeat-capable MatchMaker.
     """
@@ -84,15 +82,15 @@ class MatchMakerBase(object):
                                   'registration or heartbeat.')
 
     def register(self, key, host):
-        """
-        Register a host on a backend.
+        """Register a host on a backend.
+
         Heartbeats, if applicable, may keepalive registration.
         """
         pass
 
     def ack_alive(self, key, host):
-        """
-        Acknowledge that a key.host is alive.
+        """Acknowledge that a key.host is alive.
+
         Used internally for updating heartbeats,
         but may also be used publically to acknowledge
         a system is alive (i.e. rpc message successfully
@@ -101,41 +99,31 @@ class MatchMakerBase(object):
         pass
 
     def is_alive(self, topic, host):
-        """
-        Checks if a host is alive.
-        """
+        """Checks if a host is alive."""
         pass
 
     def expire(self, topic, host):
-        """
-        Explicitly expire a host's registration.
-        """
+        """Explicitly expire a host's registration."""
         pass
 
     def send_heartbeats(self):
-        """
-        Send all heartbeats.
+        """Send all heartbeats.
+
         Use start_heartbeat to spawn a heartbeat greenthread,
         which loops this method.
         """
         pass
 
     def unregister(self, key, host):
-        """
-        Unregister a topic.
-        """
+        """Unregister a topic."""
         pass
 
     def start_heartbeat(self):
-        """
-        Spawn heartbeat greenthread.
-        """
+        """Spawn heartbeat greenthread."""
         pass
 
     def stop_heartbeat(self):
-        """
-        Destroys the heartbeat greenthread.
-        """
+        """Destroys the heartbeat greenthread."""
         pass
 
     def add_binding(self, binding, rule, last=True):
@@ -162,8 +150,8 @@ class MatchMakerBase(object):
 
 
 class HeartbeatMatchMakerBase(MatchMakerBase):
-    """
-    Base for a heart-beat capable MatchMaker.
+    """Base for a heart-beat capable MatchMaker.
+
     Provides common methods for registering,
     unregistering, and maintaining heartbeats.
     """
@@ -175,8 +163,8 @@ class HeartbeatMatchMakerBase(MatchMakerBase):
         super(HeartbeatMatchMakerBase, self).__init__()
 
     def send_heartbeats(self):
-        """
-        Send all heartbeats.
+        """Send all heartbeats.
+
         Use start_heartbeat to spawn a heartbeat greenthread,
         which loops this method.
         """
@@ -184,8 +172,8 @@ class HeartbeatMatchMakerBase(MatchMakerBase):
             self.ack_alive(key, host)
 
     def ack_alive(self, key, host):
-        """
-        Acknowledge that a host.topic is alive.
+        """Acknowledge that a host.topic is alive.
+
         Used internally for updating heartbeats,
         but may also be used publically to acknowledge
         a system is alive (i.e. rpc message successfully
@@ -194,22 +182,22 @@ class HeartbeatMatchMakerBase(MatchMakerBase):
         raise NotImplementedError("Must implement ack_alive")
 
     def backend_register(self, key, host):
-        """
-        Implements registration logic.
+        """Implements registration logic.
+
         Called by register(self,key,host)
         """
         raise NotImplementedError("Must implement backend_register")
 
     def backend_unregister(self, key, key_host):
-        """
-        Implements de-registration logic.
+        """Implements de-registration logic.
+
         Called by unregister(self,key,host)
         """
         raise NotImplementedError("Must implement backend_unregister")
 
     def register(self, key, host):
-        """
-        Register a host on a backend.
+        """Register a host on a backend.
+
         Heartbeats, if applicable, may keepalive registration.
         """
         self.hosts.add(host)
@@ -221,9 +209,8 @@ class HeartbeatMatchMakerBase(MatchMakerBase):
         self.ack_alive(key, host)
 
     def unregister(self, key, host):
-        """
-        Unregister a topic.
-        """
+        """Unregister a topic."""
+
         if (key, host) in self.host_topic:
             del self.host_topic[(key, host)]
 
@@ -234,8 +221,8 @@ class HeartbeatMatchMakerBase(MatchMakerBase):
                  {'key': key, 'host': host})
 
     def start_heartbeat(self):
-        """
-        Implementation of MatchMakerBase.start_heartbeat
+        """Implementation of MatchMakerBase.start_heartbeat
+
         Launches greenthread looping send_heartbeats(),
         yielding for CONF.matchmaker_heartbeat_freq seconds
         between iterations.
@@ -252,16 +239,15 @@ class HeartbeatMatchMakerBase(MatchMakerBase):
         self._heart = eventlet.spawn(do_heartbeat)
 
     def stop_heartbeat(self):
-        """
-        Destroys the heartbeat greenthread.
-        """
+        """Destroys the heartbeat greenthread."""
+
         if self._heart:
             self._heart.kill()
 
 
 class DirectBinding(Binding):
-    """
-    Specifies a host in the key via a '.' character
+    """Specifies a host in the key via a '.' character
+
     Although dots are used in the key, the behavior here is
     that it maps directly to a host, thus direct.
     """
@@ -272,8 +258,8 @@ class DirectBinding(Binding):
 
 
 class TopicBinding(Binding):
-    """
-    Where a 'bare' key without dots.
+    """Where a 'bare' key without dots.
+
     AMQP generally considers topic exchanges to be those *with* dots,
     but we deviate here in terminology as the behavior here matches
     that of a topic exchange (whereas where there are dots, behavior
@@ -310,7 +296,8 @@ class LocalhostExchange(Exchange):
 
 
 class DirectExchange(Exchange):
-    """
+    """Direct Exchange.
+
     Exchange where all topic keys are split, sending to second half.
     i.e. "compute.host" sends a message to "compute.host" running on "host"
     """
@@ -323,8 +310,8 @@ class DirectExchange(Exchange):
 
 
 class MatchMakerLocalhost(MatchMakerBase):
-    """
-    Match Maker where all bare topics resolve to localhost.
+    """Match Maker where all bare topics resolve to localhost.
+
     Useful for testing.
     """
     def __init__(self, host='localhost'):
@@ -335,8 +322,8 @@ class MatchMakerLocalhost(MatchMakerBase):
 
 
 class MatchMakerStub(MatchMakerBase):
-    """
-    Match Maker where topics are untouched.
+    """Match Maker where topics are untouched.
+
     Useful for testing, or for AMQP/brokered queues.
     Will not work where knowledge of hosts is known (i.e. zeromq)
     """

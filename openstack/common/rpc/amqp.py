@@ -360,7 +360,8 @@ class CallbackWrapper(_ThreadPoolWithWait):
     """
 
     def __init__(self, conf, callback, connection_pool):
-        """
+        """Initialize CallbackWrapper.
+
         :param conf: cfg.CONF instance
         :param callback: a callable (probably a function)
         :param connection_pool: connection pool as returned by
