@@ -185,16 +185,19 @@ class StrUtilsTest(utils.BaseTestCase):
             '0KB': 0,
             '0TB': 0,
             '': 0,
+            'B': 0,
+            'k': 0,
+            'Mb': 0,
+            'tB': 0,
         }
         for (in_value, expected_value) in working_examples.items():
             b_value = strutils.to_bytes(in_value)
             self.assertEquals(expected_value, b_value)
-            if in_value:
-                in_value = "-" + in_value
-                b_value = strutils.to_bytes(in_value)
-                self.assertEquals(expected_value * -1, b_value)
+            in_value = "-" + in_value
+            b_value = strutils.to_bytes(in_value)
+            self.assertEquals(expected_value * -1, b_value)
         breaking_examples = [
-            'junk1KB', '1023BBBB',
+            'KxB', 'mx', 'junk1KB', '1023BBBB',
         ]
         for v in breaking_examples:
             self.assertRaises(TypeError, strutils.to_bytes, v)
