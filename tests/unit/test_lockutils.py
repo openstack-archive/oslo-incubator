@@ -22,6 +22,7 @@ import tempfile
 import eventlet
 from eventlet import greenpool
 from eventlet import greenthread
+from eventlet import semaphore
 
 from openstack.common import lockutils
 from tests import utils
@@ -234,6 +235,59 @@ class LockTestCase(utils.BaseTestCase):
             test()
             test_without_hypen()
             test_without_prefix()
+        finally:
+            if os.path.exists(lock_dir):
+                shutil.rmtree(lock_dir, ignore_errors=True)
+
+    def test_contextlock(self):
+        lock_dir = tempfile.mkdtemp()
+
+        try:
+            # Note(flaper87): Lock is not external, which means
+            # a semaphore will be yielded
+            with lockutils.lock("test") as sem:
+                self.assertTrue(isinstance(sem, semaphore.Semaphore))
+
+                # NOTE(flaper87): Lock is external so an InterProcessLock
+                # will be yielded.
+                with lockutils.lock("test2", external=True,
+                                    lock_path=lock_dir):
+                    path = os.path.join(lock_dir, "test2")
+                    self.assertTrue(os.path.exists(path))
+
+                with lockutils.lock("test1",
+                                    external=True,
+                                    lock_path=lock_dir) as lock1:
+                    self.assertTrue(isinstance(lock1,
+                                               lockutils.InterProcessLock))
+        finally:
+            if os.path.exists(lock_dir):
+                shutil.rmtree(lock_dir, ignore_errors=True)
+
+    def test_contextlock_unlocks(self):
+        lock_dir = tempfile.mkdtemp()
+
+        sem = None
+
+        try:
+            with lockutils.lock("test") as sem:
+                self.assertTrue(isinstance(sem, semaphore.Semaphore))
+
+                with lockutils.lock("test2", external=True,
+                                    lock_path=lock_dir):
+                    path = os.path.join(lock_dir, "test2")
+                    self.assertTrue(os.path.exists(path))
+
+                # NOTE(flaper87): Lock should be free
+                with lockutils.lock("test2", external=True,
+                                    lock_path=lock_dir):
+                    path = os.path.join(lock_dir, "test2")
+                    self.assertTrue(os.path.exists(path))
+
+            # NOTE(flaper87): Lock should be free
+            # but semaphore should already exist.
+            with lockutils.lock("test") as sem2:
+                self.assertEqual(sem, sem2)
         finally:
             if os.path.exists(lock_dir):
                 shutil.rmtree(lock_dir, ignore_errors=True)
