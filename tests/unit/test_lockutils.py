@@ -291,3 +291,29 @@ class LockTestCase(utils.BaseTestCase):
         finally:
             if os.path.exists(lock_dir):
                 shutil.rmtree(lock_dir, ignore_errors=True)
+
+    def test_dynamicrwlock(self):
+        lock_dir = tempfile.mkdtemp()
+        name = 'mylock'
+        prefix = 'mypfix-'
+        name_prefix = prefix + name
+
+        locker = lockutils.DynamicRWLock(prefix, True, lock_dir)
+
+        try:
+            with locker.read(name) as lock:
+                dreader = os.path.join(lock_dir, "%s-reader" % name_prefix)
+                self.assertTrue(os.path.exists(dreader))
+                self.assertEqual(lock.lockfile.name, dreader)
+
+                with locker.write(name):
+                    dwriter = os.path.join(lock_dir, "%s-writer" % name_prefix)
+                    self.assertTrue(os.path.exists(dwriter))
+
+                    with locker.read(name + "2"):
+                        dreader2 = os.path.join(lock_dir,
+                                                "%s2-reader" % name_prefix)
+                        self.assertTrue(os.path.exists(dreader2))
+        finally:
+            if os.path.exists(lock_dir):
+                shutil.rmtree(lock_dir, ignore_errors=True)
