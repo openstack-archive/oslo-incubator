@@ -18,6 +18,8 @@
 
 """Unit tests for SQLAlchemy specific code."""
 
+import os
+
 from sqlalchemy import Column, MetaData, Table, UniqueConstraint
 from sqlalchemy import DateTime, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -28,7 +30,7 @@ from openstack.common.db.sqlalchemy import session
 from tests import utils as test_utils
 
 BASE = declarative_base()
-_TABLE_NAME = '__tmp__test__tmp__'
+_TABLE_NAME = '__tmp__test__tmp__{0}_'.format(os.getpid())
 
 
 class TmpTable(BASE, models.ModelBase):
