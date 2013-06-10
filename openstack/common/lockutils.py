@@ -135,7 +135,7 @@ else:
 _semaphores = weakref.WeakValueDictionary()
 
 
-def synchronized(name, lock_file_prefix, external=False, lock_path=None):
+def synchronized(name, lock_file_prefix=None, external=False, lock_path=None):
     """Synchronization decorator.
 
     Decorating a method like so::
@@ -159,8 +159,7 @@ def synchronized(name, lock_file_prefix, external=False, lock_path=None):
     This way only one of either foo or bar can be executing at a time.
 
     :param lock_file_prefix: The lock_file_prefix argument is used to provide
-    lock files on disk with a meaningful prefix. The prefix should end with a
-    hyphen ('-') if specified.
+    lock files on disk with a meaningful prefix.
 
     :param external: The external keyword argument denotes whether this lock
     should work across multiple processes. This means that if two different
@@ -217,7 +216,16 @@ def synchronized(name, lock_file_prefix, external=False, lock_path=None):
                         # NOTE(mikal): the lock name cannot contain directory
                         # separators
                         safe_name = name.replace(os.sep, '_')
-                        lock_file_name = '%s%s' % (lock_file_prefix, safe_name)
+
+                        lock_file_name = safe_name
+                        if lock_file_prefix:
+                            # NOTE(flaper87): Needed to avoid reference
+                            # error
+                            prefix = lock_file_prefix
+                            if not prefix.endswith('-'):
+                                prefix += '-'
+                            lock_file_name = '%s%s' % (prefix, safe_name)
+
                         lock_file_path = os.path.join(local_lock_path,
                                                       lock_file_name)
 
@@ -273,7 +281,7 @@ def synchronized_with_prefix(lock_file_prefix):
            ...
 
     The lock_file_prefix argument is used to provide lock files on disk with a
-    meaningful prefix. The prefix should end with a hyphen ('-') if specified.
+    meaningful prefix.
     """
 
     return functools.partial(synchronized, lock_file_prefix=lock_file_prefix)
