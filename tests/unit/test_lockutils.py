@@ -22,12 +22,14 @@ import tempfile
 import eventlet
 from eventlet import greenpool
 from eventlet import greenthread
+from eventlet import semaphore
 
 from openstack.common import lockutils
 from tests import utils
 
 
 class TestFileLocks(utils.BaseTestCase):
+
     def test_concurrent_green_lock_succeeds(self):
         """Verify spawn_n greenthreads with two locks run concurrently."""
         tmpdir = tempfile.mkdtemp()
@@ -63,6 +65,7 @@ class TestFileLocks(utils.BaseTestCase):
 
 
 class LockTestCase(utils.BaseTestCase):
+
     def test_synchronized_wrapped_function_metadata(self):
         @lockutils.synchronized('whatever', 'test-')
         def foo():
@@ -74,16 +77,16 @@ class LockTestCase(utils.BaseTestCase):
         self.assertEquals(foo.__name__, 'foo', "Wrapped function's name "
                                                "got mangled")
 
-    def test_synchronized_internally(self):
+    def test_lock_internally(self):
         """We can lock across multiple green threads."""
         saved_sem_num = len(lockutils._semaphores)
         seen_threads = list()
 
-        @lockutils.synchronized('testlock2', 'test-', external=False)
-        def f(id):
-            for x in range(10):
-                seen_threads.append(id)
-                greenthread.sleep(0)
+        def f(_id):
+            with lockutils.lock('testlock2', 'test-', external=False):
+                for x in range(10):
+                    seen_threads.append(_id)
+                    greenthread.sleep(0)
 
         threads = []
         pool = greenpool.GreenPool(10)
@@ -104,7 +107,7 @@ class LockTestCase(utils.BaseTestCase):
         self.assertEqual(saved_sem_num, len(lockutils._semaphores),
                          "Semaphore leak detected")
 
-    def test_nested_external_works(self):
+    def test_nested_synchronized_external_works(self):
         """We can nest external syncs."""
         tempdir = tempfile.mkdtemp()
         try:
@@ -125,34 +128,35 @@ class LockTestCase(utils.BaseTestCase):
             if os.path.exists(tempdir):
                 shutil.rmtree(tempdir)
 
-    def _do_test_synchronized_externally(self):
+    def _do_test_lock_externally(self):
         """We can lock across multiple processes."""
 
-        @lockutils.synchronized('external', 'test-', external=True)
         def lock_files(handles_dir):
-            # Open some files we can use for locking
-            handles = []
-            for n in range(50):
-                path = os.path.join(handles_dir, ('file-%s' % n))
-                handles.append(open(path, 'w'))
 
-            # Loop over all the handles and try locking the file
-            # without blocking, keep a count of how many files we
-            # were able to lock and then unlock. If the lock fails
-            # we get an IOError and bail out with bad exit code
-            count = 0
-            for handle in handles:
-                try:
-                    fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    count += 1
-                    fcntl.flock(handle, fcntl.LOCK_UN)
-                except IOError:
-                    os._exit(2)
-                finally:
-                    handle.close()
+            with lockutils.lock('external', 'test-', external=True):
+                # Open some files we can use for locking
+                handles = []
+                for n in range(50):
+                    path = os.path.join(handles_dir, ('file-%s' % n))
+                    handles.append(open(path, 'w'))
 
-            # Check if we were able to open all files
-            self.assertEqual(50, count)
+                # Loop over all the handles and try locking the file
+                # without blocking, keep a count of how many files we
+                # were able to lock and then unlock. If the lock fails
+                # we get an IOError and bail out with bad exit code
+                count = 0
+                for handle in handles:
+                    try:
+                        fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                        count += 1
+                        fcntl.flock(handle, fcntl.LOCK_UN)
+                    except IOError:
+                        os._exit(2)
+                    finally:
+                        handle.close()
+
+                # Check if we were able to open all files
+                self.assertEqual(50, count)
 
         handles_dir = tempfile.mkdtemp()
         try:
@@ -175,23 +179,23 @@ class LockTestCase(utils.BaseTestCase):
             if os.path.exists(handles_dir):
                 shutil.rmtree(handles_dir, ignore_errors=True)
 
-    def test_synchronized_externally(self):
+    def test_lock_externally(self):
         lock_dir = tempfile.mkdtemp()
         self.config(lock_path=lock_dir)
 
         try:
-            self._do_test_synchronized_externally()
+            self._do_test_lock_externally()
         finally:
             if os.path.exists(lock_dir):
                 shutil.rmtree(lock_dir, ignore_errors=True)
 
-    def test_synchronized_externally_lock_dir_not_exist(self):
+    def test_lock_externally_lock_dir_not_exist(self):
         lock_dir = tempfile.mkdtemp()
         os.rmdir(lock_dir)
         self.config(lock_path=lock_dir)
 
         try:
-            self._do_test_synchronized_externally()
+            self._do_test_lock_externally()
         finally:
             if os.path.exists(lock_dir):
                 shutil.rmtree(lock_dir, ignore_errors=True)
@@ -236,6 +240,59 @@ class LockTestCase(utils.BaseTestCase):
 
         try:
             test_without_hypen()
+        finally:
+            if os.path.exists(lock_dir):
+                shutil.rmtree(lock_dir, ignore_errors=True)
+
+    def test_contextlock(self):
+        lock_dir = tempfile.mkdtemp()
+
+        try:
+            # Note(flaper87): Lock is not external, which means
+            # a semaphore will be yielded
+            with lockutils.lock("test") as sem:
+                self.assertTrue(isinstance(sem, semaphore.Semaphore))
+
+                # NOTE(flaper87): Lock is external so an InterProcessLock
+                # will be yielded.
+                with lockutils.lock("test2", external=True,
+                                    lock_path=lock_dir):
+                    path = os.path.join(lock_dir, "test2")
+                    self.assertTrue(os.path.exists(path))
+
+                with lockutils.lock("test1",
+                                    external=True,
+                                    lock_path=lock_dir) as lock1:
+                    self.assertTrue(isinstance(lock1,
+                                               lockutils.InterProcessLock))
+        finally:
+            if os.path.exists(lock_dir):
+                shutil.rmtree(lock_dir, ignore_errors=True)
+
+    def test_contextlock_unlocks(self):
+        lock_dir = tempfile.mkdtemp()
+
+        sem = None
+
+        try:
+            with lockutils.lock("test") as sem:
+                self.assertTrue(isinstance(sem, semaphore.Semaphore))
+
+                with lockutils.lock("test2", external=True,
+                                    lock_path=lock_dir):
+                    path = os.path.join(lock_dir, "test2")
+                    self.assertTrue(os.path.exists(path))
+
+                # NOTE(flaper87): Lock should be free
+                with lockutils.lock("test2", external=True,
+                                    lock_path=lock_dir):
+                    path = os.path.join(lock_dir, "test2")
+                    self.assertTrue(os.path.exists(path))
+
+            # NOTE(flaper87): Lock should be free
+            # but semaphore should already exist.
+            with lockutils.lock("test") as sem2:
+                self.assertEqual(sem, sem2)
         finally:
             if os.path.exists(lock_dir):
                 shutil.rmtree(lock_dir, ignore_errors=True)
