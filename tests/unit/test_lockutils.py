@@ -275,3 +275,25 @@ class LockTestCase(utils.BaseTestCase):
         # but semaphore should already exist.
         with lockutils.lock("test") as sem2:
             self.assertEqual(sem, sem2)
+
+    def test_dynamicrwlock(self):
+        handles_dir = tempfile.mkdtemp()
+        name = 'mylock'
+        prefix = 'mypfix-'
+        name_prefix = prefix + name
+
+        locker = lockutils.DynamicRWLock(prefix, True, handles_dir)
+
+        with locker.read(name) as lock:
+            dreader = os.path.join(handles_dir, "%s-reader" % name_prefix)
+            self.assertTrue(os.path.exists(dreader))
+            self.assertEqual(lock.lockfile.name, dreader)
+
+            with locker.write(name):
+                dwriter = os.path.join(handles_dir, "%s-writer" % name_prefix)
+                self.assertTrue(os.path.exists(dwriter))
+
+                with locker.read(name + "2"):
+                    dreader2 = os.path.join(handles_dir,
+                                            "%s2-reader" % name_prefix)
+                    self.assertTrue(os.path.exists(dreader2))
