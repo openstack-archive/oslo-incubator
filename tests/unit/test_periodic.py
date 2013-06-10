@@ -54,7 +54,7 @@ class PeriodicTasksTestCase(utils.BaseTestCase):
         serv = AService()
         serv.run_periodic_tasks(None)
         self.assertTrue(serv.called['doit'])
-        self.assertTrue(len(serv.called) == 2)
+        self.assertEqual(len(serv.called), 2)
 
     def test_called_twice(self):
         serv = AService()
@@ -62,7 +62,7 @@ class PeriodicTasksTestCase(utils.BaseTestCase):
         serv.run_periodic_tasks(None)
         # expect doit_with_kwargs to be called twice
         # and doit_with_kwargs_odd to be called once.
-        self.assertTrue(len(serv.called) == 3)
+        self.assertEqual(len(serv.called), 3)
 
     def test_raises(self):
         serv = AService()
