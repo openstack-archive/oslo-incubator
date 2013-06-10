@@ -226,6 +226,35 @@ def lock(name, lock_file_prefix=None, external=False, lock_path=None):
             local.strong_store.locks_held.remove(name)
 
 
+class DynamicRWLock(object):
+    """Dynamic read-write lock.
+
+    This class implements a read-write lock whose name can be set dynamically.
+
+    :param lock_file_prefix: The lock_file_prefix argument is used to provide
+    lock files on disk with a meaningful prefix.
+
+    :param external: The external keyword argument denotes whether this lock
+    should work across multiple processes. This means that if two different
+    workers both run a method decorated with @synchronized('mylock',
+    external=True), only one of them will execute at a time.
+
+    :param lock_path: The lock_path keyword argument is used to specify a
+    special location for external lock files to live. If nothing is set, then
+    CONF.lock_path is used as a default.
+    """
+
+    def __init__(self, lock_file_prefix=None, external=False, lock_path=None):
+        self._lock = functools.partial(lock, lock_file_prefix=lock_file_prefix,
+                                       external=external, lock_path=lock_path)
+
+    def read(self, name):
+        return self._lock(name=name + "-reader")
+
+    def write(self, name):
+        return self._lock(name=name + "-writer")
+
+
 def synchronized(name, lock_file_prefix=None, external=False, lock_path=None):
     """Synchronization decorator.
 
