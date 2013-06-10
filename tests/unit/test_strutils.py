@@ -198,3 +198,18 @@ class StrUtilsTest(utils.BaseTestCase):
         ]
         for v in breaking_examples:
             self.assertRaises(TypeError, strutils.to_bytes, v)
+
+    def test_slugify(self):
+        to_slug = strutils.to_slug
+        self.assertRaises(TypeError, to_slug, True)
+        self.assertEqual(six.u("hello"), to_slug("hello"))
+        self.assertEqual(six.u("two-words"), to_slug("Two Words"))
+        self.assertEqual(six.u("ma-any-spa-ce-es"),
+                         to_slug("Ma-any\t spa--ce- es"))
+        self.assertEqual(six.u("excamation"), to_slug("exc!amation!"))
+        self.assertEqual(six.u("ampserand"), to_slug("&ampser$and"))
+        self.assertEqual(six.u("ju5tnum8er"), to_slug("ju5tnum8er"))
+        self.assertEqual(six.u("strip-"), to_slug(" strip - "))
+        self.assertEqual(six.u("perche"), to_slug("perch\xc3\xa9"))
+        self.assertEqual(six.u("strange"),
+                         to_slug("\x80strange", errors="ignore"))
