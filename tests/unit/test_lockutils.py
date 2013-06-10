@@ -211,3 +211,25 @@ class LockTestCase(utils.BaseTestCase):
         self.config(lock_path=lock_dir)
 
         self.assertTrue(bar(lock_dir, lock_pfix, lock_name))
+
+    def test_optional_prefix(self):
+        lock_dir = tempfile.mkdtemp()
+
+        @lockutils.synchronized('lock', 'test-', True, lock_dir)
+        def test():
+            path = os.path.join(lock_dir, "test-lock")
+            self.assertTrue(os.path.exists(path))
+
+        @lockutils.synchronized('lock', external=True, lock_path=lock_dir)
+        def test_without_prefix():
+            path = os.path.join(lock_dir, "lock")
+            self.assertTrue(os.path.exists(path))
+
+        @lockutils.synchronized('lock', 'hypen', True, lock_dir)
+        def test_without_hypen():
+            path = os.path.join(lock_dir, "hypen-lock")
+            self.assertTrue(os.path.exists(path))
+
+        test()
+        test_without_hypen()
+        test_without_prefix()
