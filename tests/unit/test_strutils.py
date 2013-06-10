@@ -198,3 +198,15 @@ class StrUtilsTest(utils.BaseTestCase):
         ]
         for v in breaking_examples:
             self.assertRaises(TypeError, strutils.to_bytes, v)
+
+    def test_slugify(self):
+        slugify = strutils.slugify
+        self.assertRaises(TypeError, slugify, True)
+        self.assertEqual("hello", slugify("hello"))
+        self.assertEqual("two-words", slugify("Two Words"))
+        self.assertEqual("excamation", slugify("exc!amation!"))
+        self.assertEqual("ampserand", slugify("&ampser$and"))
+        self.assertEqual("ju5tnum8er", slugify("ju5tnum8er"))
+        self.assertEqual("perche", slugify("perch\xc3\xa9"))
+        self.assertEqual(six.u("strange"), slugify('\x80strange',
+                                                   errors='ignore'))

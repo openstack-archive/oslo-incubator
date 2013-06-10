@@ -19,7 +19,10 @@
 System-level utilities and helper functions.
 """
 
+import re
 import sys
+
+import unicodedata
 
 from openstack.common.gettextutils import _
 
@@ -187,3 +190,21 @@ def to_bytes(text, default=0):
         raise TypeError(msg)
     except ValueError:
         return default
+
+
+_slugify_strip_re = re.compile(r"[^\w\s-]")
+_slugify_hyphenate_re = re.compile(r"[-\s]+")
+
+
+def slugify(value, incoming=None, errors='strict'):
+    """Normalizes string.
+
+    Converts to lowercase, removes non-alpha characters,
+    and converts spaces to hyphens.
+
+    From Django's "django/template/defaultfilters.py".
+    """
+    value = safe_decode(value, incoming, errors)
+    value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore")
+    value = unicode(_slugify_strip_re.sub("", value).strip().lower())
+    return _slugify_hyphenate_re.sub("-", value)
