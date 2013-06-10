@@ -52,15 +52,15 @@ sql_max_overflow=50
 sql_connection_debug=60
 sql_connection_trace=True
 """)])
-        test_utils.CONF(['--config-file', paths[0]])
-        self.assertEquals(test_utils.CONF.database.connection, 'x://y.z')
-        self.assertEquals(test_utils.CONF.database.min_pool_size, 10)
-        self.assertEquals(test_utils.CONF.database.max_pool_size, 20)
-        self.assertEquals(test_utils.CONF.database.max_retries, 30)
-        self.assertEquals(test_utils.CONF.database.retry_interval, 40)
-        self.assertEquals(test_utils.CONF.database.max_overflow, 50)
-        self.assertEquals(test_utils.CONF.database.connection_debug, 60)
-        self.assertEquals(test_utils.CONF.database.connection_trace, True)
+        self.conf(['--config-file', paths[0]])
+        self.assertEquals(self.conf.database.connection, 'x://y.z')
+        self.assertEquals(self.conf.database.min_pool_size, 10)
+        self.assertEquals(self.conf.database.max_pool_size, 20)
+        self.assertEquals(self.conf.database.max_retries, 30)
+        self.assertEquals(self.conf.database.retry_interval, 40)
+        self.assertEquals(self.conf.database.max_overflow, 50)
+        self.assertEquals(self.conf.database.connection_debug, 60)
+        self.assertEquals(self.conf.database.connection_trace, True)
 
     def test_session_parameters(self):
         paths = self.create_tempfiles([('test', """[database]
@@ -74,16 +74,16 @@ connection_debug=60
 connection_trace=True
 pool_timeout=7
 """)])
-        test_utils.CONF(['--config-file', paths[0]])
-        self.assertEquals(test_utils.CONF.database.connection, 'x://y.z')
-        self.assertEquals(test_utils.CONF.database.min_pool_size, 10)
-        self.assertEquals(test_utils.CONF.database.max_pool_size, 20)
-        self.assertEquals(test_utils.CONF.database.max_retries, 30)
-        self.assertEquals(test_utils.CONF.database.retry_interval, 40)
-        self.assertEquals(test_utils.CONF.database.max_overflow, 50)
-        self.assertEquals(test_utils.CONF.database.connection_debug, 60)
-        self.assertEquals(test_utils.CONF.database.connection_trace, True)
-        self.assertEquals(test_utils.CONF.database.pool_timeout, 7)
+        self.conf(['--config-file', paths[0]])
+        self.assertEquals(self.conf.database.connection, 'x://y.z')
+        self.assertEquals(self.conf.database.min_pool_size, 10)
+        self.assertEquals(self.conf.database.max_pool_size, 20)
+        self.assertEquals(self.conf.database.max_retries, 30)
+        self.assertEquals(self.conf.database.retry_interval, 40)
+        self.assertEquals(self.conf.database.max_overflow, 50)
+        self.assertEquals(self.conf.database.connection_debug, 60)
+        self.assertEquals(self.conf.database.connection_trace, True)
+        self.assertEquals(self.conf.database.pool_timeout, 7)
 
     def test_dbapi_database_deprecated_parameters(self):
         paths = self.create_tempfiles([('test',
@@ -97,17 +97,16 @@ pool_timeout=7
                                         'sqlalchemy_max_overflow=101\n'
                                         'sqlalchemy_pool_timeout=5\n'
                                         )])
-
-        test_utils.CONF(['--config-file', paths[0]])
-        self.assertEquals(test_utils.CONF.database.connection,
+        self.conf(['--config-file', paths[0]])
+        self.assertEquals(self.conf.database.connection,
                           'fake_connection')
-        self.assertEquals(test_utils.CONF.database.idle_timeout, 100)
-        self.assertEquals(test_utils.CONF.database.min_pool_size, 99)
-        self.assertEquals(test_utils.CONF.database.max_pool_size, 199)
-        self.assertEquals(test_utils.CONF.database.max_retries, 22)
-        self.assertEquals(test_utils.CONF.database.retry_interval, 17)
-        self.assertEquals(test_utils.CONF.database.max_overflow, 101)
-        self.assertEquals(test_utils.CONF.database.pool_timeout, 5)
+        self.assertEquals(self.conf.database.idle_timeout, 100)
+        self.assertEquals(self.conf.database.min_pool_size, 99)
+        self.assertEquals(self.conf.database.max_pool_size, 199)
+        self.assertEquals(self.conf.database.max_retries, 22)
+        self.assertEquals(self.conf.database.retry_interval, 17)
+        self.assertEquals(self.conf.database.max_overflow, 101)
+        self.assertEquals(self.conf.database.pool_timeout, 5)
 
 
 class SessionErrorWrapperTestCase(test_base.DbTestCase):
