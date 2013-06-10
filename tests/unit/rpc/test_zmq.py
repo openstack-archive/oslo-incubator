@@ -62,6 +62,7 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
         self.reactor = None
         self.rpc = impl_zmq
 
+        self.conf = FLAGS
         self.config(rpc_zmq_bind_address='127.0.0.1')
         self.config(rpc_zmq_host='127.0.0.1')
         self.config(rpc_response_timeout=5)

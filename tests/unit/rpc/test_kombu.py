@@ -69,6 +69,7 @@ class KombuStubs:
     @staticmethod
     def setUp(self):
         if kombu:
+            self.conf = FLAGS
             self.config(fake_rabbit=True)
             self.config(rpc_response_timeout=5)
             self.rpc = impl_kombu

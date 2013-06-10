@@ -40,9 +40,9 @@ class DBAPITestCase(test_utils.BaseTestCase):
                                         'dbapi_use_tpool=True\n'
                                         )])
 
-        test_utils.CONF(['--config-file', paths[0]])
-        self.assertEquals(test_utils.CONF.database.backend, 'test_123')
-        self.assertEquals(test_utils.CONF.database.use_tpool, True)
+        self.conf(['--config-file', paths[0]])
+        self.assertEquals(self.conf.database.backend, 'test_123')
+        self.assertEquals(self.conf.database.use_tpool, True)
 
     def test_dbapi_parameters(self):
         paths = self.create_tempfiles([('test',
@@ -51,9 +51,9 @@ class DBAPITestCase(test_utils.BaseTestCase):
                                         'use_tpool=True\n'
                                         )])
 
-        test_utils.CONF(['--config-file', paths[0]])
-        self.assertEquals(test_utils.CONF.database.backend, 'test_123')
-        self.assertEquals(test_utils.CONF.database.use_tpool, True)
+        self.conf(['--config-file', paths[0]])
+        self.assertEquals(self.conf.database.backend, 'test_123')
+        self.assertEquals(self.conf.database.use_tpool, True)
 
     def test_dbapi_api_class_method_and_tpool_false(self):
         backend_mapping = {'test_known': 'tests.unit.db.test_api'}

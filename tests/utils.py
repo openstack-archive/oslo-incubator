@@ -27,17 +27,16 @@ import testtools
 from openstack.common import exception
 from openstack.common.fixture import moxstubout
 
-CONF = cfg.CONF
-
 
 class BaseTestCase(testtools.TestCase):
 
-    def setUp(self):
+    def setUp(self, conf=cfg.CONF):
         super(BaseTestCase, self).setUp()
         moxfixture = self.useFixture(moxstubout.MoxStubout())
         self.mox = moxfixture.mox
         self.stubs = moxfixture.stubs
-        self.addCleanup(CONF.reset)
+        self.conf = conf
+        self.addCleanup(self.conf.reset)
         self.useFixture(fixtures.FakeLogger('openstack.common'))
         self.useFixture(fixtures.Timeout(30, True))
         self.stubs.Set(exception, '_FATAL_EXCEPTION_FORMAT_ERRORS', True)
@@ -46,7 +45,7 @@ class BaseTestCase(testtools.TestCase):
 
     def tearDown(self):
         super(BaseTestCase, self).tearDown()
-        CONF.reset()
+        self.conf.reset()
         self.stubs.UnsetAll()
         self.stubs.SmartUnsetAll()
 
@@ -80,4 +79,4 @@ class BaseTestCase(testtools.TestCase):
         """
         group = kw.pop('group', None)
         for k, v in kw.iteritems():
-            CONF.set_override(k, v, group)
+            self.conf.set_override(k, v, group)
