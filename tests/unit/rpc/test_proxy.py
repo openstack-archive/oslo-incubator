@@ -209,3 +209,13 @@ class RpcProxyTestCase(utils.BaseTestCase):
         msg = rpc_proxy.make_msg('foo', a=1, b=2)
         result = rpc_proxy.call(ctxt, msg)
         self.assertEqual(result, 'worked!')
+
+    def test_can_send_version(self):
+        proxy_obj = proxy.RpcProxy('fake', '1.0', version_cap='1.5')
+        self.assertTrue(proxy_obj.can_send_version('1.5'))
+        self.assertFalse(proxy_obj.can_send_version('1.6'))
+
+    def test_can_send_version_with_no_cap(self):
+        proxy_obj = proxy.RpcProxy('fake', '1.0')
+        self.assertTrue(proxy_obj.can_send_version('1.5'))
+        self.assertTrue(proxy_obj.can_send_version('1.99'))
