@@ -53,3 +53,13 @@ class MatchMakerDirectExchangeTestCase(utils.BaseTestCase, common.
         self.driver = matchmaker.MatchMakerLocalhost()
         self.topic = "test.localhost"
         self.hosts = ['localhost']
+
+
+class MatchMakerStubTestCase(utils.BaseTestCase,
+                             common._MatchMakerDirectedTopicTestCase):
+    """Test lookups against the stub/no-op matchmaker."""
+    def setUp(self):
+        super(MatchMakerStubTestCase, self).setUp()
+        self.driver = matchmaker.MatchMakerStub()
+        self.topic = "test.localhost"
+        self.hosts = ['localhost']

@@ -341,7 +341,7 @@ class MatchMakerStub(MatchMakerBase):
     Will not work where knowledge of hosts is known (i.e. zeromq)
     """
     def __init__(self):
-        super(MatchMakerLocalhost, self).__init__()
+        super(MatchMakerStub, self).__init__()
 
         self.add_binding(FanoutBinding(), StubExchange())
         self.add_binding(DirectBinding(), StubExchange())
