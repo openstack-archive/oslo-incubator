@@ -40,6 +40,32 @@ class RootwrapTestCase(utils.BaseTestCase):
             filters.CommandFilter("/bin/cat", "root")  # Keep this one last
         ]
 
+    def test_CommandFilter(self):
+        f = filters.CommandFilter("sleep", 'root', '10')
+        self.assertFalse(f.match(["sleep2"]))
+
+        # verify that any arguments are accepted
+        self.assertTrue(f.match(["sleep"]))
+        self.assertTrue(f.match(["sleep", "anything"]))
+        self.assertTrue(f.match(["sleep", "10"]))
+        f = filters.CommandFilter("sleep", 'root')
+        self.assertTrue(f.match(["sleep", "10"]))
+
+    def test_empty_commandfilter(self):
+        f = filters.CommandFilter("sleep", "root")
+        self.assertFalse(f.match([]))
+        self.assertFalse(f.match(None))
+
+    def test_empty_regexpfilter(self):
+        f = filters.RegExpFilter("sleep", "root", "sleep")
+        self.assertFalse(f.match([]))
+        self.assertFalse(f.match(None))
+
+    def test_empty_invalid_regexpfilter(self):
+        f = filters.RegExpFilter("sleep", "root")
+        self.assertFalse(f.match(["anything"]))
+        self.assertFalse(f.match([]))
+
     def test_RegExpFilter_match(self):
         usercmd = ["ls", "/root"]
         filtermatch = wrapper.match_filter(self.filters, usercmd)
@@ -135,6 +161,9 @@ class RootwrapTestCase(utils.BaseTestCase):
         # Providing something that is not a pid should be False
         usercmd = ['kill', 'notapid']
         self.assertFalse(f.match(usercmd))
+        # no arguments should also be fine
+        self.assertFalse(f.match([]))
+        self.assertFalse(f.match(None))
 
     def test_KillFilter_deleted_exe(self):
         """Makes sure deleted exe's are killed correctly."""
@@ -168,6 +197,12 @@ class RootwrapTestCase(utils.BaseTestCase):
         usercmd = ['cat', goodfn]
         self.assertEqual(f.get_command(usercmd), ['/bin/cat', goodfn])
         self.assertTrue(f.match(usercmd))
+
+    def test_ReadFileFilter_empty_args(self):
+        goodfn = '/good/file.name'
+        f = filters.ReadFileFilter(goodfn)
+        self.assertFalse(f.match([]))
+        self.assertFalse(f.match(None))
 
     def test_exec_dirs_search(self):
         # This test supposes you have /bin/cat or /usr/bin/cat locally
@@ -261,6 +296,10 @@ class PathFilterTestCase(utils.BaseTestCase):
 
         self.SYMLINK_OUTSIDE_DIR = os.path.join(tmpdir.path, gen_name())
         os.symlink(os.path.join('/tmp', 'some_file'), self.SYMLINK_OUTSIDE_DIR)
+
+    def test_empty_args(self):
+        self.assertFalse(self.f.match([]))
+        self.assertFalse(self.f.match(None))
 
     def test_argument_pass_constraint(self):
         f = filters.PathFilter('/bin/chown', 'root', 'pass', 'pass')
