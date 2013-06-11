@@ -96,12 +96,12 @@ class ConsumerBase(object):
         addr_opts = {
             "link": {
                 "x-declare": {
-                    "auto-delete": True,
-                    },
+                    "auto-delete": True
                 },
-            }
+            },
+        }
         self.address = "%s ; %s" % (node_name, jsonutils.dumps(addr_opts))
-        LOG.debug(_('Consumer Address: %s ; %s') % ( node_name, addr_opts))
+        LOG.debug(_("Consumer Address: %s") % (self.address))
 
         self.reconnect(session)
 
@@ -176,9 +176,10 @@ class TopicConsumer(ConsumerBase):
         """
 
         exchange_name = exchange_name or rpc_amqp.get_control_exchange(conf)
-        super(TopicConsumer, self).__init__(session, callback,
-                                            "topic/%s/%s" % (exchange_name, topic),
-                                            {}, name or topic, {})
+        super(TopicConsumer, self).__init__(
+            session, callback,
+            "topic/%s/%s" % (exchange_name, topic),
+            {}, name or topic, {})
 
 
 class FanoutConsumer(ConsumerBase):
@@ -200,7 +201,6 @@ class FanoutConsumer(ConsumerBase):
             {})
 
 
-
 class Publisher(object):
     """Base Publisher class."""
 
@@ -212,7 +212,7 @@ class Publisher(object):
         self.session = session
 
         self.address = "amq.topic/%s" % (node_name)
-        LOG.debug(_('Publisher Address: %s') % ( node_name))
+        LOG.debug(_('Publisher Address: %s') % (node_name))
 
         self.reconnect(session)
 
@@ -267,8 +267,9 @@ class TopicPublisher(Publisher):
         """init a 'topic' publisher.
         """
         exchange_name = rpc_amqp.get_control_exchange(conf)
-        super(TopicPublisher, self).__init__(session,
-                                             "topic/%s/%s" % (exchange_name, topic))
+        super(TopicPublisher, self).__init__(
+            session,
+            "topic/%s/%s" % (exchange_name, topic))
 
 
 class FanoutPublisher(Publisher):
@@ -287,9 +288,10 @@ class NotifyPublisher(Publisher):
         """init a 'topic' publisher.
         """
         exchange_name = rpc_amqp.get_control_exchange(conf)
-        super(NotifyPublisher, self).__init__(session,
-                                              "topic/%s/%s" % (exchange_name, topic),
-                                              {})
+        super(NotifyPublisher, self).__init__(
+            session,
+            "topic/%s/%s" % (exchange_name, topic),
+            {})
 
 
 class Connection(object):
