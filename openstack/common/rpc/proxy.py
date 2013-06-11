@@ -76,6 +76,10 @@ class RpcProxy(object):
         """Return the topic to use for a message."""
         return topic if topic else self.topic
 
+    def can_send_version(self, version):
+        """Check to see if a version is compatible with the version cap."""
+        return rpc_common.version_is_compatible(self.version_cap, version)
+
     @staticmethod
     def make_namespaced_msg(method, namespace, **kwargs):
         return {'method': method, 'namespace': namespace, 'args': kwargs}
