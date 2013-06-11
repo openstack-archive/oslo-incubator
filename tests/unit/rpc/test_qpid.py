@@ -26,6 +26,7 @@ eventlet.monkey_patch()
 import fixtures
 import mox
 from oslo.config import cfg
+import time
 import uuid
 
 from openstack.common import context
@@ -219,7 +220,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
         )
         connection.close()
 
-    def test_topic_consumer(self):
+    def test_topic_consumer(self, consume_thread_exc=False):
         self.mock_connection = self.mox.CreateMock(self.orig_connection)
         self.mock_session = self.mox.CreateMock(self.orig_session)
         self.mock_receiver = self.mox.CreateMock(self.orig_receiver)
@@ -236,6 +237,9 @@ class RpcQpidTestCase(utils.BaseTestCase):
         self.mock_session.receiver(expected_address).AndReturn(
             self.mock_receiver)
         self.mock_receiver.capacity = 1
+        if consume_thread_exc:
+            self.mock_session.next_receiver(timeout=None).AndRaise(
+                Exception('unexpected exception'))
         self.mock_connection.close()
 
         self.mox.ReplayAll()
@@ -245,7 +249,13 @@ class RpcQpidTestCase(utils.BaseTestCase):
                                           lambda *_x, **_y: None,
                                           queue_name='impl.qpid.test.workers',
                                           exchange_name='foobar')
+        if consume_thread_exc:
+            connection.consume_in_thread()
+            time.sleep(1)
         connection.close()
+
+    def test_consume_thread_exception(self):
+        self.test_topic_consumer(consume_thread_exc=True)
 
     def _test_cast(self, fanout, server_params=None):
         self.mock_connection = self.mox.CreateMock(self.orig_connection)
@@ -368,9 +378,12 @@ class RpcQpidTestCase(utils.BaseTestCase):
         self.mock_session.close()
         self.mock_connection.session().AndReturn(self.mock_session)
 
-    def _test_call(self, multi):
+    def _test_call(self, multi, reply_proxy_exc):
         self._test_call_mock_common()
 
+        if reply_proxy_exc:
+            self.mock_session.next_receiver(timeout=None).AndRaise(
+                Exception('unexpected exception'))
         self.mock_session.next_receiver(timeout=None).AndReturn(
             self.mock_receiver)
         self.mock_receiver.fetch().AndReturn(qpid.messaging.Message(
@@ -394,6 +407,9 @@ class RpcQpidTestCase(utils.BaseTestCase):
                                         "failure": False,
                                         "ending": False}))
             self.mock_session.acknowledge(mox.IgnoreArg())
+        if reply_proxy_exc:
+            self.mock_session.next_receiver(timeout=None).AndRaise(
+                Exception('unexpected exception'))
         self.mock_session.next_receiver(timeout=None).AndReturn(
             self.mock_receiver)
         self.mock_receiver.fetch().AndReturn(qpid.messaging.Message(
@@ -426,7 +442,10 @@ class RpcQpidTestCase(utils.BaseTestCase):
             self.uuid4 = uuid.uuid4()
 
     def test_call(self):
-        self._test_call(multi=False)
+        self._test_call(multi=False, reply_proxy_exc=False)
+
+    def test_replyproxy_consume_thread_unexpected_exceptions(self):
+        self._test_call(multi=False, reply_proxy_exc=True)
 
     def _test_call_with_timeout(self, timeout, expect_failure):
         self._test_call_mock_common()
@@ -483,7 +502,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
         self._test_call_with_timeout(timeout=0.1, expect_failure=True)
 
     def test_multicall(self):
-        self._test_call(multi=True)
+        self._test_call(multi=True, reply_proxy_exc=False)
 
     def _test_publisher(self, message=True):
         """Test that messages containing long strings are correctly serialized
