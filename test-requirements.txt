@@ -1,6 +1,3 @@
-# Packages needed for dev testing
-distribute>=0.6.24
-
 coverage
 fixtures>=0.3.12
 flake8==2.0
