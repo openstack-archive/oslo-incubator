@@ -18,18 +18,16 @@ import webob.dec
 
 
 class Middleware(object):
-    """
-    Base WSGI middleware wrapper. These classes require an application to be
-    initialized that will be called next.  By default the middleware will
-    simply call its wrapped app, or you can override __call__ to customize its
-    behavior.
+    """Base WSGI middleware wrapper.
+
+    These classes require an application to be initialized that will be called
+    next.  By default the middleware will simply call its wrapped app, or you
+    can override __call__ to customize its behavior.
     """
 
     @classmethod
     def factory(cls, global_conf, **local_conf):
-        """
-        Factory method for paste.deploy
-        """
+        """Factory method for paste.deploy."""
 
         def filter(app):
             return cls(app)
@@ -40,8 +38,7 @@ class Middleware(object):
         self.application = application
 
     def process_request(self, req):
-        """
-        Called on each request.
+        """Called on each request.
 
         If this returns None, the next application down the stack will be
         executed. If it returns a response then that response will be returned

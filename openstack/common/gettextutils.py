@@ -75,9 +75,10 @@ def get_lazy_gettext(domain):
     """
 
     def _lazy_gettext(msg):
-        """
-        Create and return a Message object encapsulating a string
-        so that we can translate it later when needed.
+        """Create and return a Message object.
+
+        Message encapsulates a string so that we can translate it later when
+        needed.
         """
         return Message(msg, domain)
 
@@ -207,8 +208,7 @@ class LocaleHandler(logging.Handler):
     """
 
     def __init__(self, locale, target):
-        """
-        Initialize a LocaleHandler
+        """Initialize a LocaleHandler
 
         :param locale: locale to use for translating messages
         :param target: logging.Handler object to forward

@@ -24,9 +24,10 @@ from openstack.common.middleware import base
 
 
 class Debug(base.Middleware):
-    """
-    Helper class that can be inserted into any WSGI application chain
-    to get information about the request and response.
+    """Helper class that returns debug information.
+
+    Can be inserted into any WSGI application chain to get information about
+    the request and response.
     """
 
     @webob.dec.wsgify
@@ -48,10 +49,7 @@ class Debug(base.Middleware):
 
     @staticmethod
     def print_generator(app_iter):
-        """
-        Iterator that prints the contents of a wrapper string iterator
-        when iterated.
-        """
+        """Prints the contents of a wrapper string iterator when iterated."""
         print(("*" * 40) + " BODY")
         for part in app_iter:
             sys.stdout.write(part)

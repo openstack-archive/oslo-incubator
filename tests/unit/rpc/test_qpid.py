@@ -45,8 +45,7 @@ FLAGS = cfg.CONF
 
 
 class RpcQpidTestCase(utils.BaseTestCase):
-    """
-    Exercise the public API of impl_qpid utilizing mox.
+    """Exercise the public API of impl_qpid utilizing mox.
 
     This set of tests utilizes mox to replace the Qpid objects and ensures
     that the right operations happen on them when the various public rpc API
@@ -479,10 +478,11 @@ class RpcQpidTestCase(utils.BaseTestCase):
                 impl_qpid.Connection.pool.get()
 
     def test_call_with_timeout(self):
-        """A little more indepth for a timeout test. Specifically we are
-        looking to simulate the event sent to qpid dying on the vine due
-        to a TTL. A string test that actually involved qpid would be
-        excellent, but this at least verifies that the exceptions flow
+        """A little more indepth for a timeout test.
+
+        Specifically we are looking to simulate the event sent to qpid dying
+        on the vine due to a TTL. A string test that actually involved qpid
+        would be excellent, but this at least verifies that the exceptions flow
         like they should.  TODO(beagles): is this really necessary or is
         the the case for qpid at least the basic timeout test is
         sufficient.
