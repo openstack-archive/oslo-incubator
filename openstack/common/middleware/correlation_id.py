@@ -17,11 +17,11 @@
 
 """Middleware that attaches a correlation id to WSGI request"""
 
+from openstack.common.middleware import base
 from openstack.common import uuidutils
-from openstack.common import wsgi
 
 
-class CorrelationIdMiddleware(wsgi.Middleware):
+class CorrelationIdMiddleware(base.Middleware):
 
     def process_request(self, req):
         correlation_id = (req.headers.get("X_CORRELATION_ID") or

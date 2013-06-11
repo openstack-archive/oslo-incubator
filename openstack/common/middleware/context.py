@@ -21,10 +21,10 @@ Middleware that attaches a context to the WSGI request
 
 from openstack.common import context
 from openstack.common import importutils
-from openstack.common import wsgi
+from openstack.common.middleware import base
 
 
-class ContextMiddleware(wsgi.Middleware):
+class ContextMiddleware(base.Middleware):
     def __init__(self, app, options):
         self.options = options
         super(ContextMiddleware, self).__init__(app)

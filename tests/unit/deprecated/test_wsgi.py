@@ -24,12 +24,13 @@ import routes
 import six
 import webob
 
+from openstack.common.deprecated import wsgi
 from openstack.common import exception
-from openstack.common import wsgi
+
 from tests import utils
 
 TEST_VAR_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__),
-                               '..', 'var'))
+                                            '..', '..', 'var'))
 
 
 class RequestTest(utils.BaseTestCase):
