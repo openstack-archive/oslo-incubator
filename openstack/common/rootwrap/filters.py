@@ -47,7 +47,7 @@ class CommandFilter(object):
 
     def match(self, userargs):
         """Only check that the first argument (command) matches exec_path."""
-        return os.path.basename(self.exec_path) == userargs[0]
+        return userargs and os.path.basename(self.exec_path) == userargs[0]
 
     def get_command(self, userargs, exec_dirs=[]):
         """Returns command to execute (with sudo -u if run_as != root)."""
@@ -67,7 +67,7 @@ class RegExpFilter(CommandFilter):
 
     def match(self, userargs):
         # Early skip if command or number of args don't match
-        if (len(self.args) != len(userargs)):
+        if (not userargs or len(self.args) != len(userargs)):
             # DENY: argument numbers don't match
             return False
         # Compare each arg (anchoring pattern explicitly at end of string)
@@ -101,6 +101,9 @@ class PathFilter(CommandFilter):
     """
 
     def match(self, userargs):
+        if not userargs or len(userargs) < 2:
+            return False
+
         command, arguments = userargs[0], userargs[1:]
 
         equal_args_num = len(self.args) == len(arguments)
@@ -176,7 +179,7 @@ class KillFilter(CommandFilter):
         super(KillFilter, self).__init__("/bin/kill", *args)
 
     def match(self, userargs):
-        if userargs[0] != "kill":
+        if not userargs or userargs[0] != "kill":
             return False
         args = list(userargs)
         if len(args) == 3:
@@ -219,10 +222,4 @@ class ReadFileFilter(CommandFilter):
         super(ReadFileFilter, self).__init__("/bin/cat", "root", *args)
 
     def match(self, userargs):
-        if userargs[0] != 'cat':
-            return False
-        if userargs[1] != self.file_path:
-            return False
-        if len(userargs) != 2:
-            return False
-        return True
+        return (userargs == ['cat', self.file_path])
