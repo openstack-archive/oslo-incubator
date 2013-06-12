@@ -21,7 +21,7 @@ Unit Tests for eventlet backdoor
 """
 import errno
 import eventlet
-import mox
+from mox3 import mox
 import socket
 
 from openstack.common import eventlet_backdoor
