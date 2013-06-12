@@ -114,7 +114,7 @@ def execute(*cmd, **kwargs):
     delay_on_retry = kwargs.pop('delay_on_retry', True)
     attempts = kwargs.pop('attempts', 1)
     run_as_root = kwargs.pop('run_as_root', False)
-    root_helper = kwargs.pop('root_helper', '')
+    root_helper = kwargs.pop('root_helper', 'sudo')
     shell = kwargs.pop('shell', False)
 
     if isinstance(check_exit_code, bool):
