@@ -21,7 +21,6 @@ import errno
 import socket
 
 import eventlet
-import mox
 
 from openstack.common import eventlet_backdoor
 from openstack.common.fixture import config
@@ -56,7 +55,7 @@ class BackdoorPortTest(test.BaseTestCase):
         eventlet.listen(('localhost', 8800)).AndReturn(self.sock)
         self.sock.getsockname().AndReturn(('127.0.0.1', 8800))
         eventlet.spawn_n(eventlet.backdoor.backdoor_server, self.sock,
-                         locals=mox.IsA(dict))
+                         locals=moxstubout.mox.IsA(dict))
         self.mox.ReplayAll()
         port = eventlet_backdoor.initialize_if_enabled()
         self.assertEqual(port, 8800)
