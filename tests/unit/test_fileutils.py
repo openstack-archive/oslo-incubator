@@ -18,8 +18,8 @@ import os
 import shutil
 import tempfile
 
-import mox
-from six import moves
+from six.moves import builtins
+from six.moves import mox  # noqa
 
 from openstack.common import fileutils
 from openstack.common import test
@@ -59,7 +59,7 @@ class TestCachedFile(test.BaseTestCase):
 
     def test_read_modified_cached_file(self):
         self.mox.StubOutWithMock(os.path, "getmtime")
-        self.mox.StubOutWithMock(moves.builtins, 'open')
+        self.mox.StubOutWithMock(builtins, 'open')
         os.path.getmtime(mox.IgnoreArg()).AndReturn(2)
 
         fake_contents = "lorem ipsum"
@@ -71,7 +71,8 @@ class TestCachedFile(test.BaseTestCase):
                                       mox.IgnoreArg(),
                                       mox.IgnoreArg())
 
-        moves.builtins.open(mox.IgnoreArg()).AndReturn(fake_context_manager)
+        builtins.open(mox.IgnoreArg()).AndReturn(
+            fake_context_manager)
 
         self.mox.ReplayAll()
         fileutils._FILE_CACHE = {
