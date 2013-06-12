@@ -21,7 +21,7 @@ import errno
 import socket
 
 import eventlet
-import mox
+from six.moves import mox
 
 from openstack.common import eventlet_backdoor
 from openstack.common.fixture import config
