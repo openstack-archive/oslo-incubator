@@ -20,7 +20,7 @@ import os
 import shutil
 import tempfile
 
-import mox
+from mox3 import mox
 from six import moves
 
 from openstack.common import fileutils

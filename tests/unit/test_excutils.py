@@ -15,7 +15,7 @@
 #    under the License.
 
 import logging
-import mox
+from mox3 import mox
 import time
 
 from openstack.common import excutils
