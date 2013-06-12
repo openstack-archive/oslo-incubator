@@ -24,7 +24,7 @@ from __future__ import print_function
 
 import errno
 import eventlet
-import mox
+from mox3 import mox
 import multiprocessing
 import os
 import signal
