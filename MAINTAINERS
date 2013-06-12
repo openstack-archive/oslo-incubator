@@ -121,6 +121,12 @@ M: Monty Taylor <mordred@inaugust.com>
 S: Maintained
 F: fixture/
 
+== funcutils ==
+
+M: Joshua Harlow <harlowja@yahoo-inc.com>
+S: Maintained
+F: funcutils.py
+
 == gettextutils ==
 
 M: Mark McLoughlin <markmc@redhat.com>
