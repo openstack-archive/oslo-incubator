@@ -114,7 +114,7 @@ def execute(*cmd, **kwargs):
     delay_on_retry = kwargs.pop('delay_on_retry', True)
     attempts = kwargs.pop('attempts', 1)
     run_as_root = kwargs.pop('run_as_root', False)
-    root_helper = kwargs.pop('root_helper', '')
+    root_helper = kwargs.pop('root_helper', 'sudo')
     shell = kwargs.pop('shell', False)
 
     if isinstance(check_exit_code, bool):
@@ -128,10 +128,6 @@ def execute(*cmd, **kwargs):
                                      'to utils.execute: %r') % kwargs)
 
     if run_as_root and os.geteuid() != 0:
-        if not root_helper:
-            raise NoRootWrapSpecified(
-                message=('Command requested root, but did not specify a root '
-                         'helper.'))
         cmd = shlex.split(root_helper) + list(cmd)
 
     cmd = map(str, cmd)
