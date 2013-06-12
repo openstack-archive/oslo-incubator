@@ -24,7 +24,10 @@ from __future__ import print_function
 
 import errno
 import eventlet
-import mox
+try:
+    from mox3 import mox
+except ImportError:
+    import mox
 import multiprocessing
 import os
 import signal

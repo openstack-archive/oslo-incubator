@@ -1,0 +1,16 @@
+coverage>=3.6
+discover
+fixtures>=0.3.14
+flake8==2.0
+hacking>=0.5.6,<0.8
+mock>=1.0
+mox3>=0.7.0
+pep8==1.4.5
+pyflakes==0.7.2
+pylint==0.25.2
+redis
+sphinx>=1.1.2
+testrepository>=0.0.17
+testtools>=0.9.32
+# Only temporary until we can load all tests
+nose
