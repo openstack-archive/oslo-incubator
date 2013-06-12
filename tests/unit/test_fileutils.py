@@ -20,7 +20,6 @@ import os
 import shutil
 import tempfile
 
-import mox
 from six import moves
 
 from openstack.common import fileutils
@@ -44,12 +43,12 @@ class TestCachedFile(test.BaseTestCase):
 
     def setUp(self):
         super(TestCachedFile, self).setUp()
-        self.mox = mox.Mox()
+        self.mox = moves.mox.Mox()
         self.addCleanup(self.mox.UnsetStubs)
 
     def test_read_cached_file(self):
         self.mox.StubOutWithMock(os.path, "getmtime")
-        os.path.getmtime(mox.IgnoreArg()).AndReturn(1)
+        os.path.getmtime(moves.mox.IgnoreArg()).AndReturn(1)
         self.mox.ReplayAll()
 
         fileutils._FILE_CACHE = {
@@ -62,18 +61,19 @@ class TestCachedFile(test.BaseTestCase):
     def test_read_modified_cached_file(self):
         self.mox.StubOutWithMock(os.path, "getmtime")
         self.mox.StubOutWithMock(moves.builtins, 'open')
-        os.path.getmtime(mox.IgnoreArg()).AndReturn(2)
+        os.path.getmtime(moves.mox.IgnoreArg()).AndReturn(2)
 
         fake_contents = "lorem ipsum"
         fake_file = self.mox.CreateMockAnything()
         fake_file.read().AndReturn(fake_contents)
         fake_context_manager = self.mox.CreateMockAnything()
         fake_context_manager.__enter__().AndReturn(fake_file)
-        fake_context_manager.__exit__(mox.IgnoreArg(),
-                                      mox.IgnoreArg(),
-                                      mox.IgnoreArg())
+        fake_context_manager.__exit__(moves.mox.IgnoreArg(),
+                                      moves.mox.IgnoreArg(),
+                                      moves.mox.IgnoreArg())
 
-        moves.builtins.open(mox.IgnoreArg()).AndReturn(fake_context_manager)
+        moves.builtins.open(moves.mox.IgnoreArg()).AndReturn(
+            fake_context_manager)
 
         self.mox.ReplayAll()
         fileutils._FILE_CACHE = {

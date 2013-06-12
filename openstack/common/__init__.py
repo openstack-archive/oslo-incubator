@@ -17,3 +17,5 @@
 
 # TODO(jaypipes) Code in this module is intended to be ported to the eventual
 #                openstack-common library
+import six
+six.add_move(six.MovedModule('mox', 'mox', 'mox3.mox'))

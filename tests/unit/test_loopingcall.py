@@ -17,7 +17,7 @@
 import datetime
 
 from eventlet import greenthread
-import mox
+from six.moves import mox
 
 from openstack.common import loopingcall
 from openstack.common import test
