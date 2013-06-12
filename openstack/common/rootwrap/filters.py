@@ -79,8 +79,8 @@ class RegExpFilter(CommandFilter):
                 # DENY: Badly-formed filter
                 return False
         else:
-            # ALLOW: All arguments matched
-            return True
+            # All arguments matched, verify that userargs[0] matches direct
+            return super(RegExpFilter, self).match(userargs)
 
         # DENY: Some arguments did not match
         return False

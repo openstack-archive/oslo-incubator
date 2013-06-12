@@ -47,6 +47,11 @@ class RootwrapTestCase(utils.BaseTestCase):
         self.assertEqual(filtermatch.get_command(usercmd),
                          ["/bin/ls", "/root"])
 
+    def test_RegExpFilter_match_regexpchars(self):
+        f = filters.RegExpFilter("python2.7", "root", "python2.7")
+        self.assertFalse(f.match(["python2x7"]))
+        self.assertTrue(f.match(["python2.7"]))
+
     def test_RegExpFilter_reject(self):
         usercmd = ["ls", "root"]
         self.assertRaises(wrapper.NoFilterMatched,
