@@ -24,8 +24,7 @@ from __future__ import print_function
 
 import errno
 import eventlet
-import mox
-import multiprocessing
+from mox3 import mox
 import os
 import signal
 import socket
