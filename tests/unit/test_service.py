@@ -32,7 +32,10 @@ import traceback
 
 import eventlet
 from eventlet import event
-import mox
+try:
+    from mox3 import mox
+except ImportError:
+    import mox
 
 from openstack.common import eventlet_backdoor
 from openstack.common.fixture import config

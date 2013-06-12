@@ -23,7 +23,10 @@ import errno
 import socket
 
 import eventlet
-import mox
+try:
+    from mox3 import mox
+except ImportError:
+    import mox
 
 from openstack.common import eventlet_backdoor
 from openstack.common.fixture import config

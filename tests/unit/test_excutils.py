@@ -17,7 +17,10 @@
 import logging
 import time
 
-import mox
+try:
+    from mox3 import mox
+except ImportError:
+    import mox
 
 from openstack.common import excutils
 from openstack.common.fixture import moxstubout

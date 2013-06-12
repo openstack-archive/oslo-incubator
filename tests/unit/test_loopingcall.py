@@ -17,8 +17,10 @@
 import datetime
 
 from eventlet import greenthread
-import mox
-
+try:
+    from mox3 import mox
+except ImportError:
+    import mox
 from openstack.common import loopingcall
 from openstack.common import test
 from openstack.common import timeutils
