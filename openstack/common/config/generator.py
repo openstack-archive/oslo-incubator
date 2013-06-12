@@ -56,7 +56,8 @@ OPTION_REGEX = re.compile(r"(%s)" % "|".join([STROPT, BOOLOPT, INTOPT,
                                               MULTISTROPT]))
 
 PY_EXT = ".py"
-BASEDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+BASEDIR = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                       "../../../../"))
 WORDWRAP_WIDTH = 60
 
 
@@ -193,7 +194,7 @@ def _sanitize_default(s):
         return s.replace(BASEDIR, '')
     elif s == _get_my_ip():
         return '10.0.0.1'
-    elif s == socket.getfqdn():
+    elif s == socket.gethostname():
         return 'oslo'
     elif s.strip() != s:
         return '"%s"' % s
