@@ -19,7 +19,9 @@
 System-level utilities and helper functions.
 """
 
+import re
 import sys
+import unicodedata
 
 from openstack.common.gettextutils import _
 
@@ -37,6 +39,9 @@ BYTE_MULTIPLIERS = {
 
 TRUE_STRINGS = ('1', 't', 'true', 'on', 'y', 'yes')
 FALSE_STRINGS = ('0', 'f', 'false', 'off', 'n', 'no')
+
+SLUGIFY_STRIP_RE = re.compile(r"[^\w\s-]")
+SLUGIFY_HYPHENATE_RE = re.compile(r"[-\s]+")
 
 
 def int_from_bool_as_string(subject):
@@ -182,3 +187,28 @@ def to_bytes(text, default=0):
         raise TypeError(msg)
     except ValueError:
         return default
+
+
+def to_slug(value, incoming=None, errors="strict"):
+    """Normalize string.
+
+    Convert to lowercase, remove non-word characters, and convert spaces
+    to hyphens.
+
+    Inspired by Django's `slugify` filter.
+
+    :param value: Text to slugify
+    :param incoming: Text's current encoding
+    :param errors: Errors handling policy. See here for valid
+        values http://docs.python.org/2/library/codecs.html
+    :returns: slugified unicode representation of `value`
+    :raises TypeError: If text is not an instance of basestring
+    """
+    value = safe_decode(value, incoming, errors)
+    # NOTE(aababilov): no need to use safe_(encode|decode) here:
+    # encodings are always "ascii", error handling is always "ignore"
+    # and types are always known (first: unicode; second: str)
+    value = unicodedata.normalize("NFKD", value).encode(
+        "ascii", "ignore").decode("ascii")
+    value = SLUGIFY_STRIP_RE.sub("", value).strip().lower()
+    return SLUGIFY_HYPHENATE_RE.sub("-", value)
