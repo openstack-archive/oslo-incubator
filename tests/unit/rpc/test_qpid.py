@@ -24,7 +24,7 @@ import eventlet
 eventlet.monkey_patch()
 
 import fixtures
-import mox
+from mox3 import mox
 import time
 import uuid
 
