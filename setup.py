@@ -15,7 +15,12 @@
 # limitations under the License.
 
 # THIS FILE IS MANAGED BY THE GLOBAL REQUIREMENTS REPO - DO NOT EDIT
+import os
 import setuptools
+import sys
+
+if sys.version_info[0] == 3:
+    os.environ['PBR_REQUIREMENTS_FILES'] = 'requirements-py3.txt'
 
 setuptools.setup(
     setup_requires=['pbr>=0.5.21,<1.0'],
