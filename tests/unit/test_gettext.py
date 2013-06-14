@@ -21,8 +21,6 @@ import gettext
 import logging.handlers
 import os
 
-import mock
-
 from openstack.common import gettextutils
 from tests import utils
 
@@ -34,18 +32,6 @@ class GettextTest(utils.BaseTestCase):
 
     def test_gettext_does_not_blow_up(self):
         LOG.info(gettextutils._('test'))
-
-    def test_gettext_install_looks_up_localedir(self):
-        with mock.patch('os.environ.get') as environ_get:
-            with mock.patch('gettext.install') as gettext_install:
-                environ_get.return_value = '/foo/bar'
-
-                gettextutils.install('blaa')
-
-                environ_get.assert_called_once_with('BLAA_LOCALEDIR')
-                gettext_install.assert_called_once_with('blaa',
-                                                        localedir='/foo/bar',
-                                                        unicode=True)
 
 
 class MessageTestCase(utils.BaseTestCase):

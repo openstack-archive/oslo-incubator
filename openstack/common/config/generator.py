@@ -29,10 +29,8 @@ import textwrap
 
 from oslo.config import cfg
 
-from openstack.common import gettextutils
 from openstack.common import importutils
 
-gettextutils.install('oslo')
 
 STROPT = "StrOpt"
 BOOLOPT = "BoolOpt"
