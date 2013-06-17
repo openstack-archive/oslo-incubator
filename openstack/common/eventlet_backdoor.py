@@ -18,8 +18,11 @@
 
 from __future__ import print_function
 
+import errno
 import gc
+import os
 import pprint
+import socket
 import sys
 import traceback
 
@@ -28,14 +31,25 @@ import eventlet.backdoor
 import greenlet
 from oslo.config import cfg
 
+from openstack.common import log as logging
+
+help_for_backdoor_port = 'Enable eventlet backdoor. Acceptable ' + \
+    'settings are 0, <port> and hint:<port>, where 0 results in ' + \
+    'listening on a random tcp port number, <port> results in ' + \
+    'listening on the specified port number and not enabling backdoor' + \
+    'if it is in use and hint:<port> results in listening on the ' + \
+    'closest unused port number greater than or equal to the ' + \
+    'specified port.  The chosen port is displayed in the service\'s ' + \
+    'log file.'
 eventlet_backdoor_opts = [
-    cfg.IntOpt('backdoor_port',
+    cfg.StrOpt('backdoor_port',
                default=None,
-               help='port for eventlet backdoor to listen')
+               help=help_for_backdoor_port)
 ]
 
 CONF = cfg.CONF
 CONF.register_opts(eventlet_backdoor_opts)
+LOG = logging.getLogger(__name__)
 
 
 def _dont_use_this():
@@ -71,6 +85,18 @@ def initialize_if_enabled():
 
     if CONF.backdoor_port is None:
         return None
+    else:
+        port_hint_prefix_parse = str(CONF.backdoor_port)[0:len('hint:')]
+        port_hint_value_parse = str(CONF.backdoor_port)[len('hint:'):]
+        if (str(CONF.backdoor_port).isdigit() or
+            (port_hint_prefix_parse == 'hint:' and
+             port_hint_value_parse.isdigit())):
+            pass
+        else:
+            msg = 'Invalid setting for backdoor_port. %s' % \
+                help_for_backdoor_port
+            LOG.error(_('%s') % msg)
+            return None
 
     # NOTE(johannes): The standard sys.displayhook will print the value of
     # the last expression and set it to __builtin__._, which overwrites
@@ -82,8 +108,27 @@ def initialize_if_enabled():
             pprint.pprint(val)
     sys.displayhook = displayhook
 
-    sock = eventlet.listen(('localhost', CONF.backdoor_port))
+    if str(CONF.backdoor_port).isdigit():
+        # zero results in a random port assignment
+        sock = eventlet.listen(('localhost', CONF.backdoor_port))
+    else:
+        # only other possibility is hing:<port>
+        try_port = int(port_hint_value_parse)
+        while True:
+            try:
+                sock = eventlet.listen(('localhost', try_port))
+                break
+            except socket.error as exc:
+                if exc.errno == errno.EADDRINUSE:
+                    try_port += 1
+                else:
+                    raise
+
+    # In the case of backdoor port being zero, a port number is assigned by
+    # listen().  In any case, pull the port number out here.
     port = sock.getsockname()[1]
+    LOG.info(_('Eventlet backdoor listening on %(port)s for process %(pid)d') %
+             {'port': port, 'pid': os.getpid()})
     eventlet.spawn_n(eventlet.backdoor.backdoor_server, sock,
                      locals=backdoor_locals)
     return port
