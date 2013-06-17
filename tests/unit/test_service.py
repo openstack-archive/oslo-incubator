@@ -67,7 +67,41 @@ class ServiceWithTimer(service.Service):
         self.timer_fired = self.timer_fired + 1
 
 
-class ServiceLauncherTest(utils.BaseTestCase):
+class ServiceTestBase(utils.BaseTestCase):
+    """A base class for ServiceLauncherTest and ServiceRestartTest."""
+
+    def _wait(self, cond, timeout):
+        start = time.time()
+        while not cond():
+            if time.time() - start > timeout:
+                break
+            time.sleep(.1)
+
+    def setUp(self):
+        super(ServiceTestBase, self).setUp()
+        # FIXME(markmc): Ugly hack to workaround bug #1073732
+        CONF.unregister_opts(notifier_api.notifier_opts)
+        # NOTE(markmc): ConfigOpts.log_opt_values() uses CONF.config-file
+        CONF(args=[], default_config_files=[])
+        self.addCleanup(CONF.reset)
+        self.addCleanup(CONF.register_opts, notifier_api.notifier_opts)
+        self.addCleanup(self._reap_pid)
+
+    def _reap_pid(self):
+        if self.pid:
+            # Make sure all processes are stopped
+            os.kill(self.pid, signal.SIGTERM)
+
+            # Make sure we reap our test process
+            self._reap_test()
+
+    def _reap_test(self):
+        pid, status = os.waitpid(self.pid, 0)
+        self.pid = None
+        return status
+
+
+class ServiceLauncherTest(ServiceTestBase):
     """Originally from nova/tests/integrated/test_multiprocess_api.py."""
 
     def _spawn(self):
@@ -110,38 +144,6 @@ class ServiceLauncherTest(utils.BaseTestCase):
         workers = self._get_workers()
         self.assertEqual(len(workers), self.workers)
         return workers
-
-    def _wait(self, cond, timeout):
-        start = time.time()
-        while True:
-            if cond():
-                break
-            if time.time() - start > timeout:
-                break
-            time.sleep(.1)
-
-    def setUp(self):
-        super(ServiceLauncherTest, self).setUp()
-        # FIXME(markmc): Ugly hack to workaround bug #1073732
-        CONF.unregister_opts(notifier_api.notifier_opts)
-        # NOTE(markmc): ConfigOpts.log_opt_values() uses CONF.config-file
-        CONF(args=[], default_config_files=[])
-        self.addCleanup(CONF.reset)
-        self.addCleanup(CONF.register_opts, notifier_api.notifier_opts)
-        self.addCleanup(self._reap_pid)
-
-    def _reap_pid(self):
-        if self.pid:
-            # Make sure all processes are stopped
-            os.kill(self.pid, signal.SIGTERM)
-
-            # Make sure we reap our test process
-            self._reap_test()
-
-    def _reap_test(self):
-        pid, status = os.waitpid(self.pid, 0)
-        self.pid = None
-        return status
 
     def _get_workers(self):
         f = os.popen('ps ax -o pid,ppid,command')
@@ -191,6 +193,92 @@ class ServiceLauncherTest(utils.BaseTestCase):
 
     def test_terminate_sigterm(self):
         self._terminate_with_signal(signal.SIGTERM)
+        status = self._reap_test()
+        self.assertTrue(os.WIFEXITED(status))
+        self.assertEqual(os.WEXITSTATUS(status), 0)
+
+    def test_child_signal_sighup(self):
+        start_workers = self._spawn()
+
+        os.kill(start_workers[0], signal.SIGHUP)
+        # Wait at most 5 seconds to respawn a worker
+        cond = lambda: start_workers == self._get_workers()
+        timeout = 5
+        self._wait(cond, timeout)
+
+        # Make sure worker pids match
+        end_workers = self._get_workers()
+        LOG.info('workers: %r' % end_workers)
+        self.assertEqual(start_workers, end_workers)
+
+    def test_parent_signal_sighup(self):
+        start_workers = self._spawn()
+
+        os.kill(self.pid, signal.SIGHUP)
+        # Wait at most 5 seconds to respawn a worker
+        cond = lambda: start_workers == self._get_workers()
+        timeout = 5
+        self._wait(cond, timeout)
+
+        # Make sure worker pids match
+        end_workers = self._get_workers()
+        LOG.info('workers: %r' % end_workers)
+        self.assertEqual(start_workers, end_workers)
+
+
+class ServiceRestartTest(ServiceTestBase):
+
+    def _check_process_alive(self):
+        f = os.popen('ps ax -o pid,stat,cmd')
+        f.readline()
+        pid_stat = [tuple(p for p in line.strip().split()[:2])
+                    for line in f.readlines()]
+        for p, stat in pid_stat:
+            if int(p) == self.pid:
+                if stat in ['Z', 'T', 'Z+']:
+                    return False
+                else:
+                    return True
+        return False
+
+    def _spawn_service(self):
+        pid = os.fork()
+        status = 0
+        if pid == 0:
+            try:
+                serv = ServiceWithTimer()
+                launcher = service.ServiceLauncher()
+                launcher.launch_service(serv)
+                launcher.wait()
+            except SystemExit as exc:
+                status = exc.code
+            os._exit(status)
+        self.pid = pid
+
+    def test_service_restart(self):
+        self._spawn_service()
+
+        cond = self._check_process_alive
+        timeout = 5
+        self._wait(cond, timeout)
+
+        ret = self._check_process_alive()
+        self.assertTrue(ret)
+
+        os.kill(self.pid, signal.SIGHUP)
+        self._wait(cond, timeout)
+
+        ret_restart = self._check_process_alive()
+        self.assertTrue(ret_restart)
+
+    def test_terminate_sigterm(self):
+        self._spawn_service()
+        cond = self._check_process_alive
+        timeout = 5
+        self._wait(cond, timeout)
+
+        os.kill(self.pid, signal.SIGTERM)
+
         status = self._reap_test()
         self.assertTrue(os.WIFEXITED(status))
         self.assertEqual(os.WEXITSTATUS(status), 0)
