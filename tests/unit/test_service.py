@@ -22,13 +22,18 @@ Unit Tests for remote procedure calls using queue
 
 from __future__ import print_function
 
+import errno
+import eventlet
 import os
 import signal
+import socket
+import sys
 import time
 import traceback
 
 from oslo.config import cfg
 
+from openstack.common import eventlet_backdoor
 from openstack.common import log as logging
 from openstack.common.notifier import api as notifier_api
 from openstack.common import service
@@ -198,3 +203,141 @@ class LauncherTest(utils.BaseTestCase):
         launcher = service.launch(svc)
         self.assertEqual(1234, svc.backdoor_port)
         launcher.stop()
+
+    def test_backdoor_port_range(self):
+        # backdoor port should get passed to the service being launched
+        self.config(backdoor_port='8800:8899')
+        svc1 = service.Service()
+        launcher1 = service.launch(svc1)
+        self.assertEqual(8800, svc1.backdoor_port)
+        svc2 = service.Service()
+        launcher2 = service.launch(svc2)
+        self.assertEqual(8801, svc2.backdoor_port)
+        launcher1.stop()
+        launcher2.stop()
+
+    def test_backdoor_port_negative_range(self):
+        # for some reason this does not fail on python 2.6
+        if sys.hexversion < 0x02070000:
+            self.skipTest('python version less than 2.7')
+        # backdoor port should get passed to the service being launched
+        self.config(backdoor_port='-1:100')
+        svc = service.Service()
+        self.assertRaises(Exception, service.launch, svc)
+
+    def test_backdoor_port_out_of_range(self):
+        # for some reason this does not fail on python 2.6
+        if sys.hexversion < 0x02070000:
+            self.skipTest('python version less than 2.7')
+        # backdoor port should get passed to the service being launched
+        self.config(backdoor_port='65536:99999')
+        svc = service.Service()
+        self.assertRaises(Exception, service.launch, svc)
+
+    def test_backdoor_port_reverse_range(self):
+        # backdoor port should get passed to the service being launched
+        self.config(backdoor_port='8888:7777')
+        svc = service.Service()
+        self.assertRaises(Exception, service.launch, svc)
+
+
+class BackdoorPortTest(utils.BaseTestCase):
+
+    class MySock():
+        def __init__(self, port):
+            self.port = port
+
+        def getsockname(self):
+            return (None, self.port)
+
+    def my_eventlet_listen(self, addr):
+        host, port = addr
+        self.eventlet_listen_calls += 1
+        if self.listen_action == 'in use exception':
+            raise socket.error(errno.EADDRINUSE,
+                               errno.errorcode[errno.EADDRINUSE])
+        if (self.listen_action == 'in use exception then suceed' and
+           self.eventlet_listen_calls == 1):
+            raise socket.error(errno.EADDRINUSE,
+                               errno.errorcode[errno.EADDRINUSE])
+        return self.MySock(port)
+
+    def my_eventlet_spawn_n(self, server, *args, **kwargs):
+        return None
+
+    def my_info_logger(self, msg, *args, **kwargs):
+        self.info_logger_calls += 1
+        self.assertTrue('Eventlet backdoor listening on' in msg)
+        self.orig_info_logger(msg, *args, **kwargs)
+
+    def common_backdoor_port_setup(self):
+        self.stubs.Set(eventlet, 'listen', self.my_eventlet_listen)
+        self.stubs.Set(eventlet, 'spawn_n', self.my_eventlet_spawn_n)
+        self.orig_info_logger = eventlet_backdoor.LOG.info
+        self.stubs.Set(eventlet_backdoor.LOG, 'info', self.my_info_logger)
+        self.info_logger_calls = 0
+        self.eventlet_listen_calls = 0
+
+    def test_backdoor_port(self):
+        self.port_to_test = 1234
+        self.config(backdoor_port=self.port_to_test)
+        self.listen_action = 'succeed'
+        self.common_backdoor_port_setup()
+        port = eventlet_backdoor.initialize_if_enabled()
+        self.assertEqual(self.info_logger_calls, 1)
+        self.assertEqual(self.eventlet_listen_calls, 1)
+        self.assertEqual(self.port_to_test, port)
+        self.stubs.UnsetAll()
+
+    def test_backdoor_port_inuse(self):
+        self.port_to_test = 2345
+        self.config(backdoor_port=self.port_to_test)
+        self.listen_action = 'in use exception'
+        self.common_backdoor_port_setup()
+        self.assertRaises(socket.error,
+                          eventlet_backdoor.initialize_if_enabled)
+        self.assertEqual(self.info_logger_calls, 0)
+        self.assertEqual(self.eventlet_listen_calls, 1)
+        self.stubs.UnsetAll()
+
+    def test_backdoor_port_range(self):
+        self.port_to_test = 8800
+        self.config(backdoor_port='8800:8899')
+        self.listen_action = 'succeed'
+        self.common_backdoor_port_setup()
+        port = eventlet_backdoor.initialize_if_enabled()
+        self.assertEqual(self.info_logger_calls, 1)
+        self.assertEqual(self.eventlet_listen_calls, 1)
+        self.assertEqual(self.port_to_test, port)
+        self.stubs.UnsetAll()
+
+    def test_backdoor_port_range_all_inuse(self):
+        self.port_to_test = 8800
+        self.config(backdoor_port='8800:8899')
+        self.listen_action = 'in use exception'
+        self.common_backdoor_port_setup()
+        self.assertRaises(socket.error,
+                          eventlet_backdoor.initialize_if_enabled)
+        self.assertEqual(self.info_logger_calls, 0)
+        self.assertEqual(self.eventlet_listen_calls, 100)
+        self.stubs.UnsetAll()
+
+    def test_backdoor_port_range_one_inuse(self):
+        self.port_to_test = 8800
+        self.config(backdoor_port='8800:8899')
+        self.listen_action = 'in use exception then suceed'
+        self.common_backdoor_port_setup()
+        port = eventlet_backdoor.initialize_if_enabled()
+        self.assertEqual(self.info_logger_calls, 1)
+        self.assertEqual(self.eventlet_listen_calls, 2)
+        self.assertEqual(self.port_to_test + 1, port)
+        self.stubs.UnsetAll()
+
+    def test_backdoor_port_bad(self):
+        self.config(backdoor_port='abc')
+        self.common_backdoor_port_setup()
+        self.assertRaises(eventlet_backdoor.EventletBackdoorConfigValueError,
+                          eventlet_backdoor.initialize_if_enabled)
+        self.assertEqual(self.info_logger_calls, 0)
+        self.assertEqual(self.eventlet_listen_calls, 0)
+        self.stubs.UnsetAll()
