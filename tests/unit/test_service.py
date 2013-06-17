@@ -190,6 +190,87 @@ class ServiceLauncherTest(utils.BaseTestCase):
         self.assertEqual(os.WEXITSTATUS(status), 0)
 
 
+class ServiceRestartTest(utils.BaseTestCase):
+    def _get_pid(self):
+        f = os.popen('ps ax -o pid')
+        f.readline()
+        for line in f.readlines():
+            process_id = int(line.strip())
+            if process_id == self.pid:
+                return process_id
+
+    def _spawn_service(self):
+        pid = os.fork()
+        status = 0
+        if pid == 0:
+            status = 0
+            try:
+                serv = ServiceWithTimer()
+                launcher = service.launch(serv)
+                launcher.wait()
+            except SystemExit as exc:
+                status = exc.code
+            except BaseException:
+                try:
+                    traceback.print_exc()
+                except BaseException:
+                    print("Couldn't print traceback")
+                status = 2
+            os._exit(status)
+        self.pid = pid
+
+    def _wait(self, cond, timeout):
+        start = time.time()
+        while True:
+            if cond():
+                break
+            if time.time() - start > timeout:
+                break
+            time.sleep(.1)
+
+    def setUp(self):
+        #Same as ServiceLauncherTest.setUp()
+        super(ServiceRestartTest, self).setUp()
+        CONF.unregister_opts(notifier_api.notifier_opts)
+        CONF(args=[], default_config_files=[])
+        self.addCleanup(CONF.reset)
+        self.addCleanup(CONF.register_opts, notifier_api.notifier_opts)
+        self.addCleanup(self._reap_pid)
+
+    def _reap_pid(self):
+        #Same as ServiceLauncherTest._reap_pid()
+        if self.pid:
+            # Make sure all processes are stopped
+            os.kill(self.pid, signal.SIGTERM)
+            # Make sure we reap our test process
+            self._reap_test()
+
+    def _reap_test(self):
+        #same as ServiceLauncherTest._reap_test()
+        pid, status = os.waitpid(self.pid, 0)
+        self.pid = None
+        return status
+
+    def test_service_restart(self):
+        self._spawn_service()
+
+        cond = self._get_pid
+        timeout = 5
+        self._wait(cond, timeout)
+
+        pid = self._get_pid()
+        LOG.info('pid: %r' % pid)
+        self.assertTrue(pid)
+
+        os.kill(self.pid, signal.SIGHUP)
+
+        self._wait(cond, timeout)
+
+        pid_restart = self._get_pid()
+        LOG.info('pid_restart: %r' % pid_restart)
+        self.assertTrue(pid_restart)
+
+
 class LauncherTest(utils.BaseTestCase):
     def test_backdoor_port(self):
         # backdoor port should get passed to the service being launched
