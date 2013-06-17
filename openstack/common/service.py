@@ -62,6 +62,7 @@ class Launcher(object):
         :returns: None
 
         """
+        self._saved_service = service
         service.backdoor_port = self.backdoor_port
         self.services.add(service)
 
@@ -81,6 +82,17 @@ class Launcher(object):
         """
         self.services.wait()
 
+    def restart(self):
+        """Restart service. Reload config files and launch service.
+
+        :returns: None
+
+        """
+        cfg.CONF.reload_config_files()
+        self._saved_service.create_event()
+        self.services.create_event()
+        self.launch_service(self._saved_service)
+
 
 class SignalExit(SystemExit):
     def __init__(self, signo, exccode=1):
@@ -93,35 +105,47 @@ class ServiceLauncher(Launcher):
         # Allow the process to be killed again and die from natural causes
         signal.signal(signal.SIGTERM, signal.SIG_DFL)
         signal.signal(signal.SIGINT, signal.SIG_DFL)
+        signal.signal(signal.SIGHUP, signal.SIG_DFL)
 
         raise SignalExit(signo)
 
     def wait(self):
-        signal.signal(signal.SIGTERM, self._handle_signal)
-        signal.signal(signal.SIGINT, self._handle_signal)
+        #Set a loop here, exit when receive SIGTERM OR SIGINT signal.
+        #Stay in loop when receive SIGHUP signal
+        while True:
+            signal.signal(signal.SIGTERM, self._handle_signal)
+            signal.signal(signal.SIGINT, self._handle_signal)
+            signal.signal(signal.SIGHUP, self._handle_signal)
 
-        LOG.debug(_('Full set of CONF:'))
-        CONF.log_opt_values(LOG, std_logging.DEBUG)
+            LOG.debug(_('Full set of CONF:'))
+            CONF.log_opt_values(LOG, std_logging.DEBUG)
 
-        status = None
-        try:
-            super(ServiceLauncher, self).wait()
-        except SignalExit as exc:
-            signame = {signal.SIGTERM: 'SIGTERM',
-                       signal.SIGINT: 'SIGINT'}[exc.signo]
-            LOG.info(_('Caught %s, exiting'), signame)
-            status = exc.code
-        except SystemExit as exc:
-            status = exc.code
-        finally:
-            self.stop()
-            if rpc:
-                try:
-                    rpc.cleanup()
-                except Exception:
+            status = None
+            signo = 0
+            try:
+                super(ServiceLauncher, self).wait()
+            except SignalExit as exc:
+                signame = {signal.SIGTERM: 'SIGTERM',
+                           signal.SIGINT: 'SIGINT',
+                           signal.SIGHUP: 'SIGHUP'}[exc.signo]
+                LOG.info(_('Caught %s, exiting'), signame)
+                signo = exc.signo
+                status = exc.code
+            except SystemExit as exc:
+                status = exc.code
+            finally:
+                self.stop()
+                if rpc:
+                    try:
+                        rpc.cleanup()
+                    except Exception:
                     # We're shutting down, so it doesn't matter at this point.
-                    LOG.exception(_('Exception during rpc cleanup.'))
-        return status
+                        LOG.exception(_('Exception during rpc cleanup.'))
+
+                if signo == signal.SIGHUP:
+                    self.restart()
+                else:
+                    return status
 
 
 class ServiceWrapper(object):
@@ -309,6 +333,9 @@ class Service(object):
         self.tg = threadgroup.ThreadGroup(threads)
 
         # signal that the service is done shutting itself down:
+        self.create_event()
+
+    def create_event(self):
         self._done = event.Event()
 
     def start(self):
@@ -330,6 +357,9 @@ class Services(object):
     def __init__(self):
         self.services = []
         self.tg = threadgroup.ThreadGroup()
+        self.create_event()
+
+    def create_event(self):
         self.done = event.Event()
 
     def add(self, service):
