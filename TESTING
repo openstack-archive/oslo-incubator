@@ -1,0 +1,34 @@
+Testing Your OpenStack Code
+
+Install tox:
+`pip install tox`
+
+Navigate to the root directory and execute:
+`tox`
+
+Information about tox can be found here: http://testrun.org/tox/latest/
+
+Tox will run your entire test suite in the environments specified in tox.ini
+[tox] envlist.
+
+To run the test suite in just one of the environments in envlist execute:
+`tox -e <env>`
+so for example to run the test suite in py26:
+`tox -e py26`
+
+To run individual tests with tox:
+if tox.ini [testenv] lists testr
+`tox -e <env> -- path.to.module:Class.test`
+so for example:
+`tox -e py27 -- nova.tests.test_claims:ClaimTestCase.test_cpu_unlimited`
+
+if tox.ini [testenv] lists nose
+`tox -e <env> -- --tests path.to.module:Class.test`
+so for example:
+tox -e py27 -- --tests glance.tests.unit.test_auth.py:TestImageRepoProxy.test_list
+
+More information about testr: https://wiki.openstack.org/wiki/Testr
+More information about nose: https://nose.readthedocs.org/en/latest/
+
+More information about Testing OpenStack Code can be found here:
+https://wiki.openstack.org/wiki/Testing
