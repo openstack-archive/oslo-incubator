@@ -217,7 +217,8 @@ class KillFilter(CommandFilter):
 
         return (os.path.isabs(command) and
                 kill_command == os.path.basename(command) and
-                os.path.dirname(command) in os.environ['PATH'].split(':'))
+                os.path.dirname(command) in os.environ.get('PATH', ''
+                                                           ).split(':'))
 
 
 class ReadFileFilter(CommandFilter):
