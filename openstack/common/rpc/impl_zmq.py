@@ -102,6 +102,67 @@ def _deserialize(data):
     return jsonutils.loads(data)
 
 
+class ZmqMsgInvalid(Exception):
+    pass
+
+
+class ZmqMsg(object):
+    """ZeroMQ Message."""
+    def __init__(self, data):
+        self._rpcctx = None
+        self._rpcmsg = None
+        self._ctx = None
+        self._envelope = None
+
+        self.raw = data
+
+        emsg = _("ZMQ Envelope version unsupported or unknown.")
+        try:
+            if data[2] == 'impl_zmq_v2':
+                self.version = 2
+                self.packenv = data[4:]
+                self._ctx = data[3]
+            elif data[2] == 'cast':
+                # v1 support may be removed in the I release or later.
+                self.version = 1
+                self.packenv = data[3]
+            else:
+                raise ZmqMsgInvalid(emsg)
+        except IndexError:
+            raise ZmqMsgInvalid(emsg)
+
+    def _deserialize_v1(self, msg):
+        if self._ctx and self._envelope:
+            return self._ctx, self._envelope
+        self._ctx, self._envelope = _deserialize(msg)
+        return self._ctx, self._envelope
+
+    @property
+    def context(self):
+        if self._rpcctx:
+            return self._rpcctx
+
+        if self.version == 2:
+            self._rpcctx = RpcContext.unmarshal(self._ctx)
+        elif self.version == 1:
+            ctx, envelope = self._deserialize_v1(self.packenv)
+            self._rpcctx = RpcContext.unmarshal(ctx)
+        return self._rpcctx
+
+    @property
+    def message(self):
+        if self._rpcmsg:
+            return self._rpcmsg
+
+        if self.version == 2:
+            envelope = unflatten_envelope(self.packenv)
+        elif self.version == 1:
+            ctx, envelope = self._deserialize_v1(self.packenv)
+
+        self._rpcmsg = rpc_common.deserialize_msg(envelope)
+        return self._rpcmsg
+
+
 class ZmqSocket(object):
     """A tiny wrapper around ZeroMQ.
 
@@ -542,27 +603,10 @@ class ZmqReactor(ZmqBaseReactor):
         data = sock.recv()
         LOG.debug(_("CONSUMER RECEIVED DATA: %s"), data)
 
+        zmsg = ZmqMsg(data)
+
         proxy = self.proxies[sock]
-
-        if data[2] == 'cast':  # Legacy protocol
-            packenv = data[3]
-
-            ctx, msg = _deserialize(packenv)
-            request = rpc_common.deserialize_msg(msg)
-            ctx = RpcContext.unmarshal(ctx)
-        elif data[2] == 'impl_zmq_v2':
-            packenv = data[4:]
-
-            msg = unflatten_envelope(packenv)
-            request = rpc_common.deserialize_msg(msg)
-
-            # Unmarshal only after verifying the message.
-            ctx = RpcContext.unmarshal(data[3])
-        else:
-            LOG.error(_("ZMQ Envelope version unsupported or unknown."))
-            return
-
-        self.pool.spawn_n(self.process, proxy, ctx, request)
+        self.pool.spawn_n(self.process, proxy, zmsg.context, zmsg.message)
 
 
 class Connection(rpc_common.Connection):
@@ -677,25 +721,20 @@ def _call(addr, context, topic, msg, timeout=None,
 
             LOG.debug(_("Cast sent; Waiting reply"))
             # Blocks until receives reply
-            msg = msg_waiter.recv()
-            LOG.debug(_("Received message: %s"), msg)
-            LOG.debug(_("Unpacking response"))
+            data = msg_waiter.recv()
 
-            if msg[2] == 'cast':  # Legacy version
-                raw_msg = _deserialize(msg[-1])[-1]
-            elif msg[2] == 'impl_zmq_v2':
-                rpc_envelope = unflatten_envelope(msg[4:])
-                raw_msg = rpc_common.deserialize_msg(rpc_envelope)
-            else:
+            LOG.debug(_("Received message: %s"), data)
+
+            try:
+                zmsg = ZmqMsg(data)
+            except ZmqMsgInvalid:
                 raise rpc_common.UnsupportedRpcEnvelopeVersion(
                     _("Unsupported or unknown ZMQ envelope returned."))
 
-            responses = raw_msg['args']['response']
+            responses = zmsg.message['args']['response']
         # ZMQError trumps the Timeout error.
         except zmq.ZMQError:
             raise RPCException("ZMQ Socket Error")
-        except (IndexError, KeyError):
-            raise RPCException(_("RPC Message Invalid."))
         finally:
             if 'msg_waiter' in vars():
                 msg_waiter.close()
