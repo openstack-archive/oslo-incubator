@@ -46,8 +46,10 @@ class RootwrapConfig(object):
         if config.has_option("DEFAULT", "exec_dirs"):
             self.exec_dirs = config.get("DEFAULT", "exec_dirs").split(",")
         else:
-            # Use system PATH if exec_dirs is not specified
-            self.exec_dirs = os.environ["PATH"].split(':')
+            self.exec_dirs = []
+            if "PATH" in os.environ:
+                # Use system PATH if exec_dirs is not specified
+                self.exec_dirs = os.environ["PATH"].split(':')
 
         # syslog_log_facility
         if config.has_option("DEFAULT", "syslog_log_facility"):

@@ -217,6 +217,7 @@ class KillFilter(CommandFilter):
 
         return (os.path.isabs(command) and
                 kill_command == os.path.basename(command) and
+                'PATH' in os.environ and
                 os.path.dirname(command) in os.environ['PATH'].split(':'))
 
 
