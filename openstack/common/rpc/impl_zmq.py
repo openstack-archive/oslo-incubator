@@ -386,7 +386,11 @@ class ZmqBaseReactor(ConsumerBase):
         def _consume(sock):
             LOG.info(_("Consuming socket"))
             while True:
-                self.consume(sock)
+                try:
+                    self.consume(sock)
+                except Exception:
+                    LOG.error(_("Ignoring exception consuming message: %s",
+                              str(stderr))
 
         for k in self.proxies.keys():
             self.threads.append(
