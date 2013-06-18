@@ -195,6 +195,11 @@ class RootwrapTestCase(utils.BaseTestCase):
         config = wrapper.RootwrapConfig(raw)
         self.assertEqual(config.filters_path, ['/a', '/b'])
         self.assertEqual(config.exec_dirs, os.environ["PATH"].split(':'))
+
+        with fixtures.EnvironmentVariable("PATH"):
+            c = wrapper.RootwrapConfig(raw)
+            self.assertEqual(c.exec_dirs, [])
+
         self.assertFalse(config.use_syslog)
         self.assertEqual(config.syslog_log_facility,
                          logging.handlers.SysLogHandler.LOG_SYSLOG)
