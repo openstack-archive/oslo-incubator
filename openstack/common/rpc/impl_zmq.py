@@ -103,64 +103,57 @@ def _deserialize(data):
 
 
 class ZmqMsgInvalid(Exception):
-    pass
+
+    def __init__(self):
+        emsg = _("ZMQ Envelope version unsupported or unknown.")
+        super(ZmqMsgInvalid, self).__init__(emsg)
 
 
 class ZmqMsg(object):
     """ZeroMQ Message."""
+
     def __init__(self, data):
-        self._rpcctx = None
-        self._rpcmsg = None
-        self._ctx = None
-        self._envelope = None
+        self.data = data
+        self._msg = None
 
-        self.raw = data
-
-        emsg = _("ZMQ Envelope version unsupported or unknown.")
+    @staticmethod
+    def _deserialize(data):
+        version = None
         try:
             if data[2] == 'impl_zmq_v2':
-                self.version = 2
-                self.packenv = data[4:]
-                self._ctx = data[3]
+                version = 2
+                packenv = data[4:]
+                ctx = data[3]
             elif data[2] == 'cast':
                 # v1 support may be removed in the I release or later.
-                self.version = 1
-                self.packenv = data[3]
-            else:
-                raise ZmqMsgInvalid(emsg)
+                version = 1
+                packenv = data[3]
+                ctx = None
         except IndexError:
-            raise ZmqMsgInvalid(emsg)
+            pass
 
-    def _deserialize_v1(self, msg):
-        if self._ctx and self._envelope:
-            return self._ctx, self._envelope
-        self._ctx, self._envelope = _deserialize(msg)
-        return self._ctx, self._envelope
+        if version is None:
+            raise ZmqMsgInvalid()
+        elif version == 2:
+            assert ctx is not None
+            envelope = unflatten_envelope(packenv)
+        elif version == 1:
+            ctx, envelope = _deserialize(packenv)
 
-    @property
-    def context(self):
-        if self._rpcctx:
-            return self._rpcctx
-
-        if self.version == 2:
-            self._rpcctx = RpcContext.unmarshal(self._ctx)
-        elif self.version == 1:
-            ctx, envelope = self._deserialize_v1(self.packenv)
-            self._rpcctx = RpcContext.unmarshal(ctx)
-        return self._rpcctx
+        return (rpc_common.deserialize_msg(envelope),
+                RpcContext.unmarshal(ctx))
 
     @property
     def message(self):
-        if self._rpcmsg:
-            return self._rpcmsg
+        if self._msg is None:
+            self._msg = self._deserialize(self.data)
+        return self._msg[0]
 
-        if self.version == 2:
-            envelope = unflatten_envelope(self.packenv)
-        elif self.version == 1:
-            ctx, envelope = self._deserialize_v1(self.packenv)
-
-        self._rpcmsg = rpc_common.deserialize_msg(envelope)
-        return self._rpcmsg
+    @property
+    def context(self):
+        if self._msg is None:
+            self._msg = self._deserialize(self.data)
+        return self._msg[1]
 
 
 class ZmqSocket(object):
