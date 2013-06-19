@@ -406,6 +406,7 @@ class ZmqBaseReactor(ConsumerBase):
         LOG.info(_("Out reactor registered"))
 
     def consume_in_thread(self):
+        @excutils.forever_retry_uncaught_exceptions
         def _consume(sock):
             LOG.info(_("Consuming socket"))
             while True:
