@@ -199,12 +199,6 @@ M: Michael Still <mikal@stillhq.com>
 S: Maintained
 F: periodic_task.py
 
-== plugins ==
-
-M:
-S: Orphan
-F: plugin/
-
 == policy ==
 
 M:
