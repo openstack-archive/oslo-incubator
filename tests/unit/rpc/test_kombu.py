@@ -23,6 +23,7 @@ import eventlet
 eventlet.monkey_patch()
 
 import contextlib
+import functools
 import logging
 
 import mock
@@ -77,6 +78,20 @@ class KombuStubs:
             self.rpc = None
 
 
+class FakeMessage(object):
+    acked = False
+    rejected = False
+
+    def __init__(self, payload):
+        self.payload = payload
+
+    def ack(self):
+        self.acked = True
+
+    def reject(self):
+        self.rejected = True
+
+
 class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
     def setUp(self):
         KombuStubs.setUp(self)
@@ -111,6 +126,74 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         conn.close()
 
         self.assertEqual(self.received_message, message)
+
+    def test_callback_handler_ack_on_error(self):
+
+        def _callback(msg):
+            pass
+
+        conn = self.rpc.create_connection(FLAGS)
+        consumer = conn.declare_consumer(functools.partial(
+                                         impl_kombu.TopicConsumer,
+                                         name=None,
+                                         exchange_name=None,
+                                         ack_on_error=True),
+                                         "a_topic", _callback)
+        message = FakeMessage("some message")
+        consumer._callback_handler(message, _callback)
+        self.assertTrue(message.acked)
+        self.assertFalse(message.rejected)
+
+    def test_callback_handler_ack_on_error_exception(self):
+
+        def _callback(msg):
+            raise MyException()
+
+        conn = self.rpc.create_connection(FLAGS)
+        consumer = conn.declare_consumer(functools.partial(
+                                         impl_kombu.TopicConsumer,
+                                         name=None,
+                                         exchange_name=None,
+                                         ack_on_error=True),
+                                         "a_topic", _callback)
+        message = FakeMessage("some message")
+        consumer._callback_handler(message, _callback)
+        self.assertTrue(message.acked)
+        self.assertFalse(message.rejected)
+
+    def test_callback_handler_no_ack_on_error_exception(self):
+
+        def _callback(msg):
+            raise MyException()
+
+        conn = self.rpc.create_connection(FLAGS)
+        consumer = conn.declare_consumer(functools.partial(
+                                         impl_kombu.TopicConsumer,
+                                         name=None,
+                                         exchange_name=None,
+                                         ack_on_error=False),
+                                         "a_topic", _callback)
+        message = FakeMessage("some message")
+        consumer._callback_handler(message, _callback)
+        self.assertFalse(message.acked)
+        self.assertTrue(message.rejected)
+
+    def test_callback_handler_no_ack_on_error(self):
+
+        def _callback(msg):
+            pass
+
+        conn = self.rpc.create_connection(FLAGS)
+        consumer = conn.declare_consumer(functools.partial(
+                                         impl_kombu.TopicConsumer,
+                                         name=None,
+                                         exchange_name=None,
+                                         ack_on_error=False),
+                                         "a_topic", _callback)
+        message = FakeMessage("some message")
+        consumer._callback_handler(message, _callback)
+        self.assertTrue(message.acked)
+        self.assertFalse(message.rejected)
 
     def test_message_ttl_on_timeout(self):
         """Test message ttl being set by request timeout. The message
@@ -514,7 +597,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
                 'pool.name',
             )
 
-    def test_join_consumer_pool(self):
+    def test_join_consumer_pool_default(self):
         meth = 'declare_topic_consumer'
         with mock.patch.object(self.rpc.Connection, meth) as p:
             conn = self.rpc.create_connection(FLAGS)
@@ -529,6 +612,26 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
                 queue_name='pool.name',
                 exchange_name='exchange.name',
                 topic='topic.name',
+                ack_on_error=True,
+            )
+
+    def test_join_consumer_pool_no_ack(self):
+        meth = 'declare_topic_consumer'
+        with mock.patch.object(self.rpc.Connection, meth) as p:
+            conn = self.rpc.create_connection(FLAGS)
+            conn.join_consumer_pool(
+                callback=lambda *a, **k: (a, k),
+                pool_name='pool.name',
+                topic='topic.name',
+                exchange_name='exchange.name',
+                ack_on_error=False,
+            )
+            p.assert_called_with(
+                callback=mock.ANY,  # the callback wrapper
+                queue_name='pool.name',
+                exchange_name='exchange.name',
+                topic='topic.name',
+                ack_on_error=False,
             )
 
 
