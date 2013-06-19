@@ -1,0 +1,12 @@
+This generate_sample.sh tool is used to generate sample config files
+from OpenStack project source trees.
+
+Run it by passing the base directory and package name i.e.
+
+  $> generate_sample.sh --base-dir /opt/stack/nova --package-name nova \
+                        --output-dir /opt/stack/nova/etc
+  $> generate_sample.sh -b /opt/stack/quantum -p nova -o /opt/stack/quantum/etc
+
+Watch out for warnings about modules like libvirt, qpid and zmq not
+being found - these warnings are significant because they result
+in options not appearing in the generated config file.
