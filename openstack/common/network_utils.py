@@ -19,11 +19,6 @@
 Network-related utilities and helper functions.
 """
 
-from openstack.common import log as logging
-
-
-LOG = logging.getLogger(__name__)
-
 
 def parse_host_port(address, default_port=None):
     """Interpret a string as a host:port pair.
