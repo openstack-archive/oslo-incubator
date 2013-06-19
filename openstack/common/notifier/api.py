@@ -153,12 +153,12 @@ def _get_drivers():
     if _drivers is None:
         _drivers = {}
         for notification_driver in CONF.notification_driver:
-            add_driver(notification_driver)
+            _add_driver(notification_driver)
 
     return _drivers.values()
 
 
-def add_driver(notification_driver):
+def _add_driver(notification_driver):
     """Add a notification driver at runtime."""
     # Make sure the driver list is initialized.
     _get_drivers()

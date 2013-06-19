@@ -200,14 +200,6 @@ class NotifierTestCase(test_utils.BaseTestCase):
         self.assertEqual(self.context_arg, None)
 
 
-class SimpleNotifier(object):
-    def __init__(self):
-        self.notified = False
-
-    def notify(self, *args):
-        self.notified = True
-
-
 class MultiNotifierTestCase(test_utils.BaseTestCase):
     """Test case for notifications."""
 
@@ -278,33 +270,4 @@ class MultiNotifierTestCase(test_utils.BaseTestCase):
                             notifier_api.WARN,
                             dict(a=3))
         self.assertEqual(self.exception_count, 2)
-        self.assertEqual(self.notify_count, 1)
-
-    def test_adding_and_removing_notifier_object(self):
-        self.notifier_object = SimpleNotifier()
-        notification_driver = [
-            'openstack.common.notifier.no_op_notifier'
-        ]
-        self.config(notification_driver=notification_driver)
-
-        notifier_api.add_driver(self.notifier_object)
-        notifier_api.notify(None,
-                            'publisher_id',
-                            'event_type',
-                            notifier_api.WARN,
-                            dict(a=3))
-        self.assertEqual(self.notify_count, 1)
-        self.assertTrue(self.notifier_object.notified)
-
-        self.notifier_object.notified = False
-
-    def test_adding_and_removing_notifier_module(self):
-        self.config(notification_driver=[])
-
-        notifier_api.add_driver('openstack.common.notifier.no_op_notifier')
-        notifier_api.notify(None,
-                            'publisher_id',
-                            'event_type',
-                            notifier_api.WARN,
-                            dict(a=3))
         self.assertEqual(self.notify_count, 1)
