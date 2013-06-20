@@ -17,18 +17,22 @@
 #    under the License.
 
 """
-Unit Tests for remote procedure calls using queue
+Unit Tests for service class
 """
 
 from __future__ import print_function
 
+import errno
+import eventlet
 import os
 import signal
+import socket
 import time
 import traceback
 
 from oslo.config import cfg
 
+from openstack.common import eventlet_backdoor
 from openstack.common import log as logging
 from openstack.common.notifier import api as notifier_api
 from openstack.common import service
@@ -191,10 +195,63 @@ class ServiceLauncherTest(utils.BaseTestCase):
 
 
 class LauncherTest(utils.BaseTestCase):
+
+    class MySock():
+        def __init__(self, port):
+            self.port = port
+
+        def getsockname(self):
+            return (None, self.port)
+
+    def _listen(self, port):
+        try_port = port
+        while True:
+            try:
+                sock = eventlet.listen(('localhost', try_port))
+                break
+            except socket.error as exc:
+                if exc.errno != errno.EADDRINUSE:
+                    raise
+                try_port += 1
+        return (sock, try_port)
+
     def test_backdoor_port(self):
+        (sock, port) = self._listen(1234)
         # backdoor port should get passed to the service being launched
-        self.config(backdoor_port=1234)
+        self.config(backdoor_port=port)
+        self.mox.StubOutWithMock(eventlet, 'listen')
+        eventlet.listen(('localhost', port)).AndReturn(sock)
+        self.mox.ReplayAll()
         svc = service.Service()
         launcher = service.launch(svc)
-        self.assertEqual(1234, svc.backdoor_port)
+        self.assertEqual(port, svc.backdoor_port)
         launcher.stop()
+        self.addCleanup(self.stubs.UnsetAll)
+
+    def test_backdoor_port_range(self):
+        (sock1, port1) = self._listen(8800)
+        (sock2, port2) = self._listen(port1)
+        # backdoor port should get passed to the service being launched
+        self.config(backdoor_port='%d:%d' % (port1, port2))
+        self.mox.StubOutWithMock(eventlet, 'listen')
+        eventlet.listen(('localhost', port1)).AndReturn(sock1)
+        eventlet.listen(('localhost', port1)).AndRaise(
+            socket.error(errno.EADDRINUSE, ''))
+        eventlet.listen(('localhost', port2)).AndReturn(sock2)
+        self.mox.ReplayAll()
+        svc1 = service.Service()
+        launcher1 = service.launch(svc1)
+        svc2 = service.Service()
+        launcher2 = service.launch(svc2)
+        self.assertEqual(port1, svc1.backdoor_port)
+        self.assertEqual(port2, svc2.backdoor_port)
+        launcher1.stop()
+        launcher2.stop()
+        self.addCleanup(self.stubs.UnsetAll)
+
+    def test_backdoor_port_reverse_range(self):
+        # backdoor port should get passed to the service being launched
+        self.config(backdoor_port='8888:7777')
+        svc = service.Service()
+        self.assertRaises(eventlet_backdoor.EventletBackdoorConfigValueError,
+                          service.launch, svc)
