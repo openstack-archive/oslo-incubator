@@ -13,6 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import socket
+
 from oslo.config import cfg
 
 from openstack.common import context
@@ -308,3 +310,9 @@ class MultiNotifierTestCase(test_utils.BaseTestCase):
                             notifier_api.WARN,
                             dict(a=3))
         self.assertEqual(self.notify_count, 1)
+
+    def test_publisher_id(self):
+        self.assertEqual(notifier_api.publisher_id('foobar'),
+                         'foobar.' + socket.gethostname())
+        self.assertEqual(notifier_api.publisher_id('foobar', 'baz'),
+                         'foobar.baz')

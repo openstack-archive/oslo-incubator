@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import socket
 import uuid
 
 from oslo.config import cfg
@@ -35,7 +36,7 @@ notifier_opts = [
                default='INFO',
                help='Default notification level for outgoing notifications'),
     cfg.StrOpt('default_publisher_id',
-               default='$host',
+               default=socket.gethostname(),
                help='Default publisher_id for outgoing notifications'),
 ]
 
@@ -83,9 +84,7 @@ def notify_decorator(name, fn):
 
 
 def publisher_id(service, host=None):
-    if not host:
-        host = CONF.host
-    return "%s.%s" % (service, host)
+    return "%s.%s" % (service, host or CONF.default_publisher_id)
 
 
 def notify(context, publisher_id, event_type, priority, payload):
