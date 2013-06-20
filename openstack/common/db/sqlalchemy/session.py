@@ -511,6 +511,9 @@ def _wrap_db_error(f):
         # wrap it by our own DBDuplicateEntry exception. Unique constraint
         # violation is wrapped by IntegrityError.
         except sqla_exc.OperationalError as e:
+            if _is_db_connection_error(e.args[0]):
+                raise exception.DBConnectionError(e)
+
             _raise_if_deadlock_error(e, get_engine().name)
             # NOTE(comstud): A lot of code is checking for OperationalError
             # so let's not wrap it for now.
