@@ -23,6 +23,8 @@ import re
 import sys
 import unicodedata
 
+import six
+
 from openstack.common.gettextutils import _
 
 
@@ -71,7 +73,7 @@ def bool_from_string(subject, strict=False):
     ValueError which is useful when parsing values passed in from an API call.
     Strings yielding False are 'f', 'false', 'off', 'n', 'no', or '0'.
     """
-    if not isinstance(subject, basestring):
+    if not isinstance(subject, six.string_types):
         subject = str(subject)
 
     lowered = subject.strip().lower()
@@ -99,12 +101,12 @@ def safe_decode(text, incoming=None, errors='strict'):
         values http://docs.python.org/2/library/codecs.html
     :returns: text or a unicode `incoming` encoded
                 representation of it.
-    :raises TypeError: If text is not an isntance of basestring
+    :raises TypeError: If text is not an isntance of str
     """
-    if not isinstance(text, basestring):
+    if not isinstance(text, six.string_types):
         raise TypeError("%s can't be decoded" % type(text))
 
-    if isinstance(text, unicode):
+    if isinstance(text, six.text_type):
         return text
 
     if not incoming:
@@ -142,16 +144,16 @@ def safe_encode(text, incoming=None,
         values http://docs.python.org/2/library/codecs.html
     :returns: text or a bytestring `encoding` encoded
                 representation of it.
-    :raises TypeError: If text is not an isntance of basestring
+    :raises TypeError: If text is not an isntance of str
     """
-    if not isinstance(text, basestring):
+    if not isinstance(text, six.string_types):
         raise TypeError("%s can't be encoded" % type(text))
 
     if not incoming:
         incoming = (sys.stdin.encoding or
                     sys.getdefaultencoding())
 
-    if isinstance(text, unicode):
+    if isinstance(text, six.text_type):
         return text.encode(encoding, errors)
     elif text and encoding != incoming:
         # Decode text before encoding it with `encoding`
@@ -204,7 +206,7 @@ def to_slug(value, incoming=None, errors="strict"):
     :param errors: Errors handling policy. See here for valid
         values http://docs.python.org/2/library/codecs.html
     :returns: slugified unicode representation of `value`
-    :raises TypeError: If text is not an instance of basestring
+    :raises TypeError: If text is not an instance of str
     """
     value = safe_decode(value, incoming, errors)
     # NOTE(aababilov): no need to use safe_(encode|decode) here:
