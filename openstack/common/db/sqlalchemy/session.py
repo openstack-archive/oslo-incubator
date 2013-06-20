@@ -507,14 +507,15 @@ def _wrap_db_error(f):
             return f(*args, **kwargs)
         except UnicodeEncodeError:
             raise exception.DBInvalidUnicodeParameter()
-        # note(boris-42): We should catch unique constraint violation and
-        # wrap it by our own DBDuplicateEntry exception. Unique constraint
-        # violation is wrapped by IntegrityError.
         except sqla_exc.OperationalError as e:
+            _raise_if_db_connection_lost(e, get_engine().name)
             _raise_if_deadlock_error(e, get_engine().name)
             # NOTE(comstud): A lot of code is checking for OperationalError
             # so let's not wrap it for now.
             raise
+        # note(boris-42): We should catch unique constraint violation and
+        # wrap it by our own DBDuplicateEntry exception. Unique constraint
+        # violation is wrapped by IntegrityError.
         except sqla_exc.IntegrityError as e:
             # note(boris-42): SqlAlchemy doesn't unify errors from different
             # DBs so we must do this. Also in some tables (for example
@@ -601,6 +602,32 @@ def _is_db_connection_error(args):
         if args.find(err_code) != -1:
             return True
     return False
+
+
+def _is_db_connection_lost(error, engine_name):
+    if engine_name == 'mysql':
+        # error codes table
+        # http://dev.mysql.com/doc/refman/5.5/en/error-messages-client.html
+        conn_err_codes = (2002, 2003, 2006, 2014, 2045, 2055)
+        error_code = error.orig.args[0]
+    elif engine_name == 'postgresql':
+        # error codes table
+        # http://www.postgresql.org/docs/current/static/errcodes-appendix.html
+        conn_err_codes = ('57014', '57P01', '57P02', '57P03',
+                          '57P04', '58000', '58030')
+        error_code = error.orig.pgcode
+    else:
+        # not implemented for another backends
+        return False
+
+    if error_code in conn_err_codes:
+        return True
+    return False
+
+
+def _raise_if_db_connection_lost(error, engine_name):
+    if _is_db_connection_lost(error, engine_name):
+        raise exception.DBConnectionError(error)
 
 
 def create_engine(sql_connection, sqlite_fk=False):
