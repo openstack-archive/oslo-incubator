@@ -533,14 +533,15 @@ def _wrap_db_error(f):
             return f(*args, **kwargs)
         except UnicodeEncodeError:
             raise exception.DBInvalidUnicodeParameter()
-        # note(boris-42): We should catch unique constraint violation and
-        # wrap it by our own DBDuplicateEntry exception. Unique constraint
-        # violation is wrapped by IntegrityError.
         except sqla_exc.OperationalError as e:
+            _raise_if_db_connection_lost(e, get_engine())
             _raise_if_deadlock_error(e, get_engine().name)
             # NOTE(comstud): A lot of code is checking for OperationalError
             # so let's not wrap it for now.
             raise
+        # note(boris-42): We should catch unique constraint violation and
+        # wrap it by our own DBDuplicateEntry exception. Unique constraint
+        # violation is wrapped by IntegrityError.
         except sqla_exc.IntegrityError as e:
             # note(boris-42): SqlAlchemy doesn't unify errors from different
             # DBs so we must do this. Also in some tables (for example
@@ -628,6 +629,14 @@ def _is_db_connection_error(args):
         if args.find(err_code) != -1:
             return True
     return False
+
+
+def _raise_if_db_connection_lost(error, engine):
+    with engine.begin() as conn:
+        dbapi_conn = conn.connection.connection
+        if engine.dialect.is_disconnect(error, dbapi_conn,
+                                        dbapi_conn.cursor()):
+            raise exception.DBConnectionError(error)
 
 
 def create_engine(sql_connection, sqlite_fk=False):
