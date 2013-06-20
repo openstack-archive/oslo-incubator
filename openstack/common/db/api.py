@@ -37,11 +37,14 @@ A bug for eventlet has been filed here:
 https://bitbucket.org/eventlet/eventlet/issue/137/
 """
 import functools
+import time
 
 from oslo.config import cfg
 
+from openstack.common.db import exception
 from openstack.common import importutils
 from openstack.common import lockutils
+from openstack.common import log as logging
 
 
 db_opts = [
@@ -55,11 +58,65 @@ db_opts = [
                 deprecated_name='dbapi_use_tpool',
                 deprecated_group='DEFAULT',
                 help='Enable the experimental use of thread pooling for '
-                     'all DB API calls')
+                     'all DB API calls'),
+    cfg.BoolOpt('is_db_reconnect',
+                default=True,
+                help='Enable the experimental use of database reconnect '
+                     'on connection lost'),
+    cfg.IntOpt('db_retry_interval',
+               default=1,
+               help='seconds between db connection retries'),
+    cfg.BoolOpt('db_inc_retry_interval',
+                default=True,
+                help='Whether to increase interval between db connection '
+                     'retries, up to db_max_retry_interval'),
+    cfg.IntOpt('db_max_retry_interval',
+               default=10,
+               help='max seconds between db connection retries, if '
+                    'db_inc_retry_interval is enabled'),
+    cfg.IntOpt('db_max_retries',
+               default=20,
+               help='maximum db connection retries before error is raised. '
+                    '(setting -1 implies an infinite retry count)'),
 ]
 
 CONF = cfg.CONF
 CONF.register_opts(db_opts, 'database')
+
+LOG = logging.getLogger(__name__)
+
+
+def wrap_db_reconect(f):
+
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        # TODO(vsergeyev): get this values from config
+        next_interval = CONF.db_retry_interval
+        remaining = CONF.db_max_retries
+
+        if remaining == -1:
+            remaining = 'infinite'
+        while True:
+            try:
+                return f(*args, **kwargs)
+            except exception.DBConnectionError, e:
+                if remaining == 0:
+                    LOG.exception(_('DB exceeded retry limit.'))
+                    raise exception.DBError(e)
+                if remaining != 'infinite':
+                    remaining -= 1
+                    LOG.exception(_('DB connection error.'))
+                time.sleep(next_interval)
+                if CONF.db_inc_retry_interval:
+                    next_interval = min(
+                        next_interval * 2,
+                        CONF.db_max_retry_interval
+                    )
+                else:
+                    LOG.exception(_('DB exception wrapped.'))
+                    raise exception.DBError(e)
+
+    return wrapper
 
 
 class DBAPI(object):
@@ -96,11 +153,17 @@ class DBAPI(object):
     def __getattr__(self, key):
         backend = self.__backend or self.__get_backend()
         attr = getattr(backend, key)
-        if not self.__use_tpool or not hasattr(attr, '__call__'):
+        if not hasattr(attr, '__call__'):
             return attr
 
-        def tpool_wrapper(*args, **kwargs):
-            return self.__tpool.execute(attr, *args, **kwargs)
+        if self.__use_tpool:
 
-        functools.update_wrapper(tpool_wrapper, attr)
-        return tpool_wrapper
+            @functools.wraps(attr)
+            def tpool_wrapper(*args, **kwargs):
+                return self.__tpool.execute(attr, *args, **kwargs)
+            attr = tpool_wrapper
+
+        if CONF.is_db_reconnect:
+            attr = wrap_db_reconect(attr)
+
+        return attr

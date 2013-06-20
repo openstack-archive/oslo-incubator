@@ -40,6 +40,11 @@ class DBDeadlock(DBError):
         super(DBDeadlock, self).__init__(inner_exception)
 
 
+class DBConnectionError(DBError):
+    def __init__(self, inner_exception=None):
+        super(DBDeadlock, self).__init__(inner_exception)
+
+
 class DBInvalidUnicodeParameter(Exception):
     message = _("Invalid Parameter: "
                 "Unicode is not supported by the current database.")
