@@ -25,6 +25,7 @@ eventlet.monkey_patch()
 import contextlib
 import logging
 
+import fixtures
 import mock
 from oslo.config import cfg
 import six
@@ -65,24 +66,32 @@ def _raise_exc_stub(stubs, times, obj, method, exc_msg,
     return info
 
 
-class KombuStubs:
-    @staticmethod
+class KombuStubs(fixtures.Fixture):
+    def __init__(self, test):
+        super(KombuStubs, self).__init__()
+
+        self.test = test
+
     def setUp(self):
+        super(KombuStubs, self).setUp()
+
         if kombu:
-            self.config(fake_rabbit=True)
-            self.config(rpc_response_timeout=5)
-            self.rpc = impl_kombu
+            self.test.config(fake_rabbit=True)
+            self.test.config(rpc_response_timeout=5)
+            self.test.rpc = impl_kombu
             self.addCleanup(impl_kombu.cleanup)
         else:
-            self.rpc = None
+            self.test.rpc = None
 
 
 class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
     def setUp(self):
-        KombuStubs.setUp(self)
-        super(RpcKombuTestCase, self).setUp()
         if kombu is None:
             self.skipTest("Test requires kombu")
+
+        self.useFixture(KombuStubs(self))
+
+        super(RpcKombuTestCase, self).setUp()
 
     def test_reusing_connection(self):
         """Test that reusing a connection returns same one."""
@@ -535,7 +544,8 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
 class RpcKombuHATestCase(utils.BaseTestCase):
     def setUp(self):
         super(RpcKombuHATestCase, self).setUp()
-        KombuStubs.setUp(self)
+
+        self.useFixture(KombuStubs(self))
         self.addCleanup(FLAGS.reset)
 
     def test_roundrobin_reconnect(self):
