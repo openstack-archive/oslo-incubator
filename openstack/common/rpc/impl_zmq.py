@@ -171,7 +171,7 @@ class ZmqSocket(object):
         self.sock.setsockopt(zmq.UNSUBSCRIBE, msg_filter)
         self.subscriptions.remove(msg_filter)
 
-    def close(self):
+    def close(self, linger=-1):
         if self.sock is None or self.sock.closed:
             return
 
@@ -186,7 +186,7 @@ class ZmqSocket(object):
 
         try:
             # Default is to linger
-            self.sock.close()
+            self.sock.close(linger)
         except Exception:
             # While this is a bad thing to happen,
             # it would be much worse if some of the code calling this
@@ -225,8 +225,8 @@ class ZmqClient(object):
         self.outq.send(map(bytes,
                        (msg_id, topic, 'impl_zmq_v2', data[0]) + zmq_msg))
 
-    def close(self):
-        self.outq.close()
+    def close(self, linger):
+        self.outq.close(linger)
 
 
 class RpcContext(rpc_common.CommonRpcContext):
@@ -622,17 +622,14 @@ def _cast(addr, context, topic, msg, timeout=None, envelope=False,
     timeout_cast = timeout or CONF.rpc_cast_timeout
     payload = [RpcContext.marshal(context), msg]
 
-    with Timeout(timeout_cast, exception=rpc_common.Timeout):
-        try:
-            conn = ZmqClient(addr)
+    try:
+        conn = ZmqClient(addr)
 
-            # assumes cast can't return an exception
-            conn.cast(_msg_id, topic, payload, envelope)
-        except zmq.ZMQError:
-            raise RPCException("Cast failed. ZMQ Socket Exception")
-        finally:
-            if 'conn' in vars():
-                conn.close()
+        # assumes cast can't return an exception
+        conn.cast(_msg_id, topic, payload, envelope)
+        conn.close(timeout_cast)
+    except zmq.ZMQError:
+        raise RPCException("Cast failed. ZMQ Socket Exception")
 
 
 def _call(addr, context, topic, msg, timeout=None,
