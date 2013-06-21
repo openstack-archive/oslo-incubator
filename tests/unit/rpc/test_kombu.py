@@ -81,6 +81,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
     def setUp(self):
         KombuStubs.setUp(self)
         super(RpcKombuTestCase, self).setUp()
+        self.addCleanup(FLAGS.reset)
         if kombu is None:
             self.skipTest("Test requires kombu")
 
@@ -530,6 +531,34 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
                 exchange_name='exchange.name',
                 topic='topic.name',
             )
+
+    def test_reconnect_max_retries(self):
+        self.config(rabbit_hosts=[
+            'host1:1234', 'host2:5678', '[::1]:2345',
+            '[2001:0db8:85a3:0042:0000:8a2e:0370:7334]'],
+            rabbit_max_retries=2,
+            rabbit_retry_interval=0.1,
+            rabbit_retry_backoff=0.1)
+
+        import kombu.connection
+
+        info = {'attempt': 0}
+
+        class MyConnection(kombu.connection.BrokerConnection):
+            def __init__(myself, *args, **params):
+                super(MyConnection, myself).__init__(*args, **params)
+                info['attempt'] = info['attempt'] + 1
+
+            def connect(myself):
+                if info['attempt'] < 3:
+                    # the word timeout is important (see impl_kombu.py:486)
+                    raise Exception('connection timeout')
+                super(kombu.connection.BrokerConnection, myself).connect()
+
+        self.stubs.Set(kombu.connection, 'BrokerConnection', MyConnection)
+
+        self.assertRaises(rpc_common.RPCException, self.rpc.Connection, FLAGS)
+        self.assertEqual(info['attempt'], 2)
 
 
 class RpcKombuHATestCase(utils.BaseTestCase):
