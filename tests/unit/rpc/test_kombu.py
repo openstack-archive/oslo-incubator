@@ -41,6 +41,8 @@ from tests import utils
 
 try:
     import kombu
+    import kombu.connection
+    import kombu.entity
     from openstack.common.rpc import impl_kombu
 except ImportError:
     kombu = None
@@ -353,10 +355,10 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
                                            project='fake_project')
 
         class MyConnection(impl_kombu.Connection):
-            def __init__(myself, *args, **kwargs):
-                super(MyConnection, myself).__init__(*args, **kwargs)
+            def __init__(self, *args, **kwargs):
+                super(MyConnection, self).__init__(*args, **kwargs)
                 self.assertEqual(
-                    myself.params_list,
+                    self.params_list,
                     [{'hostname': FLAGS.rabbit_host,
                       'userid': FLAGS.rabbit_userid,
                       'password': FLAGS.rabbit_password,
@@ -385,10 +387,10 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
                          'virtual_host': 'fake_virtual_host'}
 
         class MyConnection(impl_kombu.Connection):
-            def __init__(myself, *args, **kwargs):
-                super(MyConnection, myself).__init__(*args, **kwargs)
+            def __init__(self, *args, **kwargs):
+                super(MyConnection, self).__init__(*args, **kwargs)
                 self.assertEqual(
-                    myself.params_list,
+                    self.params_list,
                     [{'hostname': server_params['hostname'],
                       'userid': server_params['username'],
                       'password': server_params['password'],
@@ -712,6 +714,32 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
                                 "args": {"value": value}})
         self.assertEqual(value, result)
 
+    def test_reconnect_max_retries(self):
+        self.config(rabbit_hosts=[
+            'host1:1234', 'host2:5678', '[::1]:2345',
+            '[2001:0db8:85a3:0042:0000:8a2e:0370:7334]'],
+            rabbit_max_retries=2,
+            rabbit_retry_interval=0.1,
+            rabbit_retry_backoff=0.1)
+
+        info = {'attempt': 0}
+
+        class MyConnection(kombu.connection.BrokerConnection):
+            def __init__(self, *args, **params):
+                super(MyConnection, self).__init__(*args, **params)
+                info['attempt'] += 1
+
+            def connect(self):
+                if info['attempt'] < 3:
+                    # the word timeout is important (see impl_kombu.py:486)
+                    raise Exception('connection timeout')
+                super(kombu.connection.BrokerConnection, self).connect()
+
+        self.stubs.Set(kombu.connection, 'BrokerConnection', MyConnection)
+
+        self.assertRaises(rpc_common.RPCException, self.rpc.Connection, FLAGS)
+        self.assertEqual(info['attempt'], 2)
+
 
 class RpcKombuHATestCase(utils.BaseTestCase):
     def setUp(self):
@@ -758,21 +786,19 @@ class RpcKombuHATestCase(utils.BaseTestCase):
             ]
         }
 
-        import kombu.connection
-
         class MyConnection(kombu.connection.BrokerConnection):
-            def __init__(myself, *args, **params):
-                super(MyConnection, myself).__init__(*args, **params)
+            def __init__(self, *args, **params):
+                super(MyConnection, self).__init__(*args, **params)
                 self.assertEqual(params,
                                  info['params_list'][info['attempt'] %
                                                      len(info['params_list'])])
-                info['attempt'] = info['attempt'] + 1
+                info['attempt'] += 1
 
-            def connect(myself):
+            def connect(self):
                 if info['attempt'] < 5:
                     # the word timeout is important (see impl_kombu.py:486)
                     raise Exception('connection timeout')
-                super(kombu.connection.BrokerConnection, myself).connect()
+                super(kombu.connection.BrokerConnection, self).connect()
 
         self.stubs.Set(kombu.connection, 'BrokerConnection', MyConnection)
 
@@ -782,8 +808,6 @@ class RpcKombuHATestCase(utils.BaseTestCase):
 
     def test_queue_not_declared_ha_if_ha_off(self):
         self.config(rabbit_ha_queues=False)
-
-        import kombu.entity
 
         def my_declare(myself):
             self.assertEqual(None,
@@ -796,8 +820,6 @@ class RpcKombuHATestCase(utils.BaseTestCase):
 
     def test_queue_declared_ha_if_ha_on(self):
         self.config(rabbit_ha_queues=True)
-
-        import kombu.entity
 
         def my_declare(myself):
             self.assertEqual('all',
