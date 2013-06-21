@@ -18,7 +18,6 @@ import functools
 import itertools
 import socket
 import ssl
-import sys
 import time
 import uuid
 
@@ -537,13 +536,11 @@ class Connection(object):
             log_info.update(params)
 
             if self.max_retries and attempt == self.max_retries:
-                LOG.error(_('Unable to connect to AMQP server on '
-                            '%(hostname)s:%(port)d after %(max_retries)d '
-                            'tries: %(err_str)s') % log_info)
-                # NOTE(comstud): Copied from original code.  There's
-                # really no better recourse because if this was a queue we
-                # need to consume on, we have no way to consume anymore.
-                sys.exit(1)
+                msg = _('Unable to connect to AMQP server on '
+                        '%(hostname)s:%(port)d after %(max_retries)d '
+                        'tries: %(err_str)s') % log_info
+                LOG.error(msg)
+                raise rpc_common.RPCException(msg)
 
             if attempt == 1:
                 sleep_time = self.interval_start or 1
