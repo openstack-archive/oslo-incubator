@@ -85,6 +85,30 @@ pool_timeout=7
         self.assertEquals(test_utils.CONF.database.connection_trace, True)
         self.assertEquals(test_utils.CONF.database.pool_timeout, 7)
 
+    def test_dbapi_database_deprecated_parameters(self):
+        paths = self.create_tempfiles([('test',
+                                        '[DATABASE]\n'
+                                        'sql_connection=fake_connection\n'
+                                        'sql_idle_timeout=100\n'
+                                        'sql_min_pool_size=99\n'
+                                        'sql_max_pool_size=199\n'
+                                        'sql_max_retries=22\n'
+                                        'reconnect_interval=17\n'
+                                        'sqlalchemy_max_overflow=101\n'
+                                        'sqlalchemy_pool_timeout=5\n'
+                                        )])
+
+        test_utils.CONF(['--config-file', paths[0]])
+        self.assertEquals(test_utils.CONF.database.connection,
+                          'fake_connection')
+        self.assertEquals(test_utils.CONF.database.idle_timeout, 100)
+        self.assertEquals(test_utils.CONF.database.min_pool_size, 99)
+        self.assertEquals(test_utils.CONF.database.max_pool_size, 199)
+        self.assertEquals(test_utils.CONF.database.max_retries, 22)
+        self.assertEquals(test_utils.CONF.database.retry_interval, 17)
+        self.assertEquals(test_utils.CONF.database.max_overflow, 101)
+        self.assertEquals(test_utils.CONF.database.pool_timeout, 5)
+
 
 class SessionErrorWrapperTestCase(test_base.DbTestCase):
     def setUp(self):
