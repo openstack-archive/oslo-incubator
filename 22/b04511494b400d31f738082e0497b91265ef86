@@ -1,0 +1,12 @@
+Verified+2: Jenkins
+Approved+1: Mark McLoughlin <markmc@redhat.com>
+Code-Review+2: Mark McLoughlin <markmc@redhat.com>
+Code-Review+1: Joe Gordon <joe.gordon0@gmail.com>
+Code-Review+1: Oleg Bondarev <obondarev@mirantis.com>
+Code-Review+1: Sergey Lukjanov <slukjanov@mirantis.com>
+Code-Review+1: Ben Nemec <openstack@nemebean.com>
+Submitted-by: Jenkins
+Submitted-at: Mon, 24 Jun 2013 20:44:35 +0000
+Reviewed-on: https://review.openstack.org/33456
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
