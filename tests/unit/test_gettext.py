@@ -112,6 +112,34 @@ class MessageTestCase(utils.BaseTestCase):
         for (c1, c2) in zip(result, message):
             self.assertEqual(c1, c2)
 
+    def test_regex_find_named_parameters(self):
+        msgid = ("%(description)s\nCommand: %(cmd)s\n"
+                 "Exit code: %(exit_code)s\nStdout: %(stdout)r\n"
+                 "Stderr: %(stderr)r %%(something)s")
+        params = {'description': 'test1',
+                  'cmd': 'test2',
+                  'exit_code': 'test3',
+                  'stdout': 'test4',
+                  'stderr': 'test5',
+                  'something': 'trimmed'}
+
+        result = self._lazy_gettext(msgid) % params
+
+        self.assertEqual(result, msgid % params)
+
+    def test_regex_dict_is_parameter(self):
+        msgid = ("Test that we can inject a dictionary %s")
+        params = {'description': 'test1',
+                  'cmd': 'test2',
+                  'exit_code': 'test3',
+                  'stdout': 'test4',
+                  'stderr': 'test5',
+                  'something': 'trimmed'}
+
+        result = self._lazy_gettext(msgid) % params
+
+        self.assertEqual(result, msgid % params)
+
     def test_message_equal_with_dec_param(self):
         """Verify we can inject numbers into Messages."""
         msgid = "Some string with params: %d"
@@ -192,6 +220,15 @@ class MessageTestCase(utils.BaseTestCase):
 
         expected = 'm'
         result = result[2]
+
+        self.assertEqual(result, expected)
+
+    def test_get_slice(self):
+        msgid = "Some msgid string"
+        result = self._lazy_gettext(msgid)
+
+        expected = msgid[2:-1]
+        result = result[2:-1]
 
         self.assertEqual(result, expected)
 
@@ -345,6 +382,12 @@ class MessageTestCase(utils.BaseTestCase):
 
         self.assertEqual(message, message_str)
         self.assertTrue(isinstance(message_str, unicode))
+
+    def test_upper(self):
+        msgid = "Some msgid string"
+        result = self._lazy_gettext(msgid)
+
+        self.assertEqual(msgid.upper(), result.upper())
 
 
 class LocaleHandlerTestCase(utils.BaseTestCase):
