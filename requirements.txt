@@ -7,8 +7,8 @@ greenlet>=0.3.2
 lxml
 routes==1.12.3
 iso8601>=0.1.4
-anyjson==0.2.4
-kombu==1.0.4
+anyjson>=0.3.3
+kombu>2.4.7
 argparse
 stevedore
 SQLAlchemy>=0.7.8,<=0.7.9
