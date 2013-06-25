@@ -28,7 +28,7 @@ from eventlet import semaphore
 from oslo.config import cfg
 
 from openstack.common import fileutils
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _  # noqa
 from openstack.common import local
 from openstack.common import log as logging
 
