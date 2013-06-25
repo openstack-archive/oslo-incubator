@@ -13,7 +13,7 @@
 #    under the License.
 
 from oslo.config import cfg
-from six import StringIO
+import six
 import webob
 
 from openstack.common.middleware import sizelimit
@@ -28,14 +28,14 @@ class TestLimitingReader(utils.BaseTestCase):
     def test_limiting_reader(self):
         BYTES = 1024
         bytes_read = 0
-        data = StringIO("*" * BYTES)
+        data = six.StringIO("*" * BYTES)
         for chunk in sizelimit.LimitingReader(data, BYTES):
             bytes_read += len(chunk)
 
         self.assertEquals(bytes_read, BYTES)
 
         bytes_read = 0
-        data = StringIO("*" * BYTES)
+        data = six.StringIO("*" * BYTES)
         reader = sizelimit.LimitingReader(data, BYTES)
         byte = reader.read(1)
         while len(byte) != 0:
@@ -49,7 +49,7 @@ class TestLimitingReader(utils.BaseTestCase):
 
         def _consume_all_iter():
             bytes_read = 0
-            data = StringIO("*" * BYTES)
+            data = six.StringIO("*" * BYTES)
             for chunk in sizelimit.LimitingReader(data, BYTES - 1):
                 bytes_read += len(chunk)
 
@@ -58,7 +58,7 @@ class TestLimitingReader(utils.BaseTestCase):
 
         def _consume_all_read():
             bytes_read = 0
-            data = StringIO("*" * BYTES)
+            data = six.StringIO("*" * BYTES)
             reader = sizelimit.LimitingReader(data, BYTES - 1)
             byte = reader.read(1)
             while len(byte) != 0:
