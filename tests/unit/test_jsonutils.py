@@ -18,6 +18,7 @@
 import datetime
 import xmlrpclib
 
+import netaddr
 from six import StringIO
 
 from openstack.common import jsonutils
@@ -170,3 +171,8 @@ class ToPrimitiveTestCase(utils.BaseTestCase):
 
         ret = jsonutils.to_primitive(l4_obj, max_depth=4)
         self.assertEquals(ret, json_l4)
+
+    def test_ipaddr(self):
+        thing = {'ip_addr': netaddr.IPAddress('1.2.3.4')}
+        ret = jsonutils.to_primitive(thing)
+        self.assertEquals({'ip_addr': '1.2.3.4'}, ret)
