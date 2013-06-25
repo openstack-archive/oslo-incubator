@@ -23,7 +23,7 @@ import urllib2
 
 import mock
 from oslo.config import cfg
-from six import StringIO
+import six
 
 from openstack.common import jsonutils
 from openstack.common import policy
@@ -779,7 +779,7 @@ class HttpCheckTestCase(PolicyBaseTestCase):
         return result
 
     @mock.patch.object(urllib2, 'urlopen',
-                       return_value=StringIO('True'))
+                       return_value=six.StringIO('True'))
     def test_accept(self, mock_urlopen):
         check = policy.HttpCheck('http', '//example.com/%(name)s')
 
@@ -798,7 +798,7 @@ class HttpCheckTestCase(PolicyBaseTestCase):
         ))
 
     @mock.patch.object(urllib2, 'urlopen',
-                       return_value=StringIO('other'))
+                       return_value=six.StringIO('other'))
     def test_reject(self, mock_urlopen):
         check = policy.HttpCheck('http', '//example.com/%(name)s')
 
