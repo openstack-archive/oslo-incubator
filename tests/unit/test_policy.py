@@ -159,6 +159,19 @@ class EnforcerTest(PolicyBaseTestCase):
         self.enforcer.clear()
         self.assertEqual(self.enforcer.rules, {})
 
+    def test_rule_with_check(self):
+        rules_json = """{
+                 "deny_stack_user": "not role:stack_user",
+                 "cloudwatch:PutMetricData": ""
+                }"""
+        rules = policy.Rules.load_json(rules_json)
+        self.enforcer.set_rules(rules)
+        action = "cloudwatch:PutMetricData"
+        creds = {
+            'roles': '',
+        }
+        self.assertEqual(self.enforcer.enforce(action, {}, creds), True)
+
 
 class FakeCheck(policy.BaseCheck):
     def __init__(self, result=None):
@@ -277,14 +290,14 @@ class NotCheckTestCase(utils.BaseTestCase):
         check = policy.NotCheck(rule)
 
         self.assertEqual(check('target', 'cred'), False)
-        rule.assert_called_once_with('target', 'cred')
+        rule.assert_called_once_with('target', 'cred', None)
 
     def test_call_false(self):
         rule = mock.Mock(return_value=False)
         check = policy.NotCheck(rule)
 
         self.assertEqual(check('target', 'cred'), True)
-        rule.assert_called_once_with('target', 'cred')
+        rule.assert_called_once_with('target', 'cred', None)
 
 
 class OrCheckTestCase(utils.BaseTestCase):

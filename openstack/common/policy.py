@@ -303,7 +303,7 @@ class FalseCheck(BaseCheck):
 
         return "!"
 
-    def __call__(self, target, cred):
+    def __call__(self, target, cred, enforcer=None):
         """Check the policy."""
 
         return False
@@ -317,7 +317,7 @@ class TrueCheck(BaseCheck):
 
         return "@"
 
-    def __call__(self, target, cred):
+    def __call__(self, target, cred, enforcer=None):
         """Check the policy."""
 
         return True
@@ -363,13 +363,13 @@ class NotCheck(BaseCheck):
 
         return "not %s" % self.rule
 
-    def __call__(self, target, cred):
+    def __call__(self, target, cred, enforcer=None):
         """Check the policy.
 
         Returns the logical inverse of the wrapped check.
         """
 
-        return not self.rule(target, cred)
+        return not self.rule(target, cred, enforcer)
 
 
 class AndCheck(BaseCheck):
@@ -391,7 +391,7 @@ class AndCheck(BaseCheck):
 
         return "(%s)" % ' and '.join(str(r) for r in self.rules)
 
-    def __call__(self, target, cred):
+    def __call__(self, target, cred, enforcer=None):
         """Check the policy.
 
         Requires that all rules accept in order to return True.
@@ -434,7 +434,7 @@ class OrCheck(BaseCheck):
 
         return "(%s)" % ' or '.join(str(r) for r in self.rules)
 
-    def __call__(self, target, cred):
+    def __call__(self, target, cred, enforcer=None):
         """Check the policy.
 
         Requires that at least one rule accept in order to return True.
