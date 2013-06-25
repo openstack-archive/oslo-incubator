@@ -21,7 +21,7 @@ import errno
 import os
 
 from openstack.common import excutils
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _  # noqa
 from openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)

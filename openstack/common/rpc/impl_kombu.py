@@ -30,7 +30,7 @@ import kombu.entity
 import kombu.messaging
 from oslo.config import cfg
 
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _  # noqa
 from openstack.common import network_utils
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common

@@ -36,7 +36,7 @@ from eventlet import queue
 from eventlet import semaphore
 
 from openstack.common import excutils
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _  # noqa
 from openstack.common import local
 from openstack.common import log as logging
 from openstack.common.rpc import common as rpc_common

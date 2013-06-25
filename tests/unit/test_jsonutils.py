@@ -18,7 +18,7 @@
 import datetime
 import xmlrpclib
 
-from six import StringIO
+import six
 
 from openstack.common import jsonutils
 from tests import utils
@@ -33,7 +33,7 @@ class JSONUtilsTestCase(utils.BaseTestCase):
         self.assertEqual(jsonutils.loads('{"a": "b"}'), {'a': 'b'})
 
     def test_load(self):
-        x = StringIO('{"a": "b"}')
+        x = six.StringIO('{"a": "b"}')
         self.assertEqual(jsonutils.load(x), {'a': 'b'})
 
 
