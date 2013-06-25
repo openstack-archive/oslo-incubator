@@ -15,3 +15,4 @@ SQLAlchemy>=0.7.8,<=0.7.9
 http://tarballs.openstack.org/oslo.config/oslo.config-1.2.0a2.tar.gz#egg=oslo.config-1.2.0a2
 qpid-python
 six
+netaddr
