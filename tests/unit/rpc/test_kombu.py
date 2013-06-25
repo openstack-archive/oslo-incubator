@@ -29,6 +29,7 @@ import logging
 import mock
 from oslo.config import cfg
 import six
+import time
 
 from openstack.common import exception
 from openstack.common.rpc import amqp as rpc_amqp
@@ -649,6 +650,54 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
                 topic='topic.name',
                 ack_on_error=False,
             )
+
+    # used to make unexpected exception tests run faster
+    def my_time_sleep(self, sleep_time):
+        return
+
+    def test_service_consume_thread_unexpected_exceptions(self):
+
+        def my_TopicConsumer_consume(myself, *args, **kwargs):
+            self.consume_calls += 1
+            # see if it can sustain three failures
+            if self.consume_calls < 3:
+                raise Exception('unexpected exception')
+            else:
+                self.orig_TopicConsumer_consume(myself, *args, **kwargs)
+
+        self.consume_calls = 0
+        self.orig_TopicConsumer_consume = impl_kombu.TopicConsumer.consume
+        self.stubs.Set(impl_kombu.TopicConsumer, 'consume',
+                       my_TopicConsumer_consume)
+        self.stubs.Set(time, 'sleep', self.my_time_sleep)
+
+        value = 42
+        result = self.rpc.call(FLAGS, self.context, self.topic,
+                               {"method": "echo",
+                                "args": {"value": value}})
+        self.assertEqual(value, result)
+
+    def test_replyproxy_consume_thread_unexpected_exceptions(self):
+
+        def my_DirectConsumer_consume(myself, *args, **kwargs):
+            self.consume_calls += 1
+            # see if it can sustain three failures
+            if self.consume_calls < 3:
+                raise Exception('unexpected exception')
+            else:
+                self.orig_DirectConsumer_consume(myself, *args, **kwargs)
+
+        self.consume_calls = 1
+        self.orig_DirectConsumer_consume = impl_kombu.DirectConsumer.consume
+        self.stubs.Set(impl_kombu.DirectConsumer, 'consume',
+                       my_DirectConsumer_consume)
+        self.stubs.Set(time, 'sleep', self.my_time_sleep)
+
+        value = 42
+        result = self.rpc.call(FLAGS, self.context, self.topic,
+                               {"method": "echo",
+                                "args": {"value": value}})
+        self.assertEqual(value, result)
 
 
 class RpcKombuHATestCase(utils.BaseTestCase):
