@@ -24,7 +24,7 @@ import logging
 import sys
 import traceback
 
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _  # noqa
 
 
 @contextlib.contextmanager

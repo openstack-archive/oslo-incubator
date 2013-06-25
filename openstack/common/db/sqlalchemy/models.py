@@ -22,11 +22,12 @@
 SQLAlchemy models.
 """
 
+
 from sqlalchemy import Column, Integer
 from sqlalchemy import DateTime
 from sqlalchemy.orm import object_mapper
 
-from openstack.common.db.sqlalchemy.session import get_session
+import openstack.common.db.sqlalchemy.session as sa
 from openstack.common import timeutils
 
 
@@ -37,7 +38,7 @@ class ModelBase(object):
     def save(self, session=None):
         """Save this object."""
         if not session:
-            session = get_session()
+            session = sa.get_session()
         # NOTE(boris-42): This part of code should be look like:
         #                       sesssion.add(self)
         #                       session.flush()
