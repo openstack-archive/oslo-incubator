@@ -24,7 +24,7 @@ import sys
 import time
 import traceback
 
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _  # noqa
 
 
 class save_and_reraise_exception(object):
