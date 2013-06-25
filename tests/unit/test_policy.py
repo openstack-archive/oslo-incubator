@@ -159,6 +159,17 @@ class EnforcerTest(PolicyBaseTestCase):
         self.enforcer.clear()
         self.assertEqual(self.enforcer.rules, {})
 
+    def test_rule_with_check(self):
+        rules_json = """{
+                        "deny_stack_user": "not role:stack_user",
+                        "cloudwatch:PutMetricData": ""
+                        }"""
+        rules = policy.Rules.load_json(rules_json)
+        self.enforcer.set_rules(rules)
+        action = "cloudwatch:PutMetricData"
+        creds = {'roles': ''}
+        self.assertEqual(self.enforcer.enforce(action, {}, creds), True)
+
 
 class FakeCheck(policy.BaseCheck):
     def __init__(self, result=None):
@@ -228,7 +239,7 @@ class FalseCheckTestCase(utils.BaseTestCase):
     def test_call(self):
         check = policy.FalseCheck()
 
-        self.assertEqual(check('target', 'creds'), False)
+        self.assertEqual(check('target', 'creds', None), False)
 
 
 class TrueCheckTestCase(utils.BaseTestCase):
@@ -240,7 +251,7 @@ class TrueCheckTestCase(utils.BaseTestCase):
     def test_call(self):
         check = policy.TrueCheck()
 
-        self.assertEqual(check('target', 'creds'), True)
+        self.assertEqual(check('target', 'creds', None), True)
 
 
 class CheckForTest(policy.Check):
@@ -276,15 +287,15 @@ class NotCheckTestCase(utils.BaseTestCase):
         rule = mock.Mock(return_value=True)
         check = policy.NotCheck(rule)
 
-        self.assertEqual(check('target', 'cred'), False)
-        rule.assert_called_once_with('target', 'cred')
+        self.assertEqual(check('target', 'cred', None), False)
+        rule.assert_called_once_with('target', 'cred', None)
 
     def test_call_false(self):
         rule = mock.Mock(return_value=False)
         check = policy.NotCheck(rule)
 
-        self.assertEqual(check('target', 'cred'), True)
-        rule.assert_called_once_with('target', 'cred')
+        self.assertEqual(check('target', 'cred', None), True)
+        rule.assert_called_once_with('target', 'cred', None)
 
 
 class OrCheckTestCase(utils.BaseTestCase):
@@ -308,7 +319,7 @@ class OrCheckTestCase(utils.BaseTestCase):
         rules = [mock.Mock(return_value=False), mock.Mock(return_value=False)]
         check = policy.OrCheck(rules)
 
-        self.assertEqual(check('target', 'cred'), False)
+        self.assertEqual(check('target', 'cred', None), False)
         rules[0].assert_called_once_with('target', 'cred')
         rules[1].assert_called_once_with('target', 'cred')
 
@@ -316,7 +327,7 @@ class OrCheckTestCase(utils.BaseTestCase):
         rules = [mock.Mock(return_value=True), mock.Mock(return_value=False)]
         check = policy.OrCheck(rules)
 
-        self.assertEqual(check('target', 'cred'), True)
+        self.assertEqual(check('target', 'cred', None), True)
         rules[0].assert_called_once_with('target', 'cred')
         self.assertFalse(rules[1].called)
 
@@ -324,7 +335,7 @@ class OrCheckTestCase(utils.BaseTestCase):
         rules = [mock.Mock(return_value=False), mock.Mock(return_value=True)]
         check = policy.OrCheck(rules)
 
-        self.assertEqual(check('target', 'cred'), True)
+        self.assertEqual(check('target', 'cred', None), True)
         rules[0].assert_called_once_with('target', 'cred')
         rules[1].assert_called_once_with('target', 'cred')
 
