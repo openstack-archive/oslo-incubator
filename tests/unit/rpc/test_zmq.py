@@ -29,7 +29,7 @@ import socket
 import fixtures
 from oslo.config import cfg
 
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _  # noqa
 from tests.unit.rpc import common
 
 try:

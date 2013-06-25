@@ -23,7 +23,7 @@ import webob.dec
 import webob.exc
 
 from openstack.common.deprecated import wsgi
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _  # noqa
 from openstack.common.middleware import base
 
 

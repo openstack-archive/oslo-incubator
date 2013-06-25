@@ -21,12 +21,12 @@ import sys
 import tempfile
 
 from oslo.config import cfg
-from six import StringIO
+import six
 
 from openstack.common import context
 from openstack.common import jsonutils
 from openstack.common import log
-from openstack.common.log_handler import PublishErrorsHandler
+from openstack.common import log_handler
 from openstack.common.notifier import api as notifier
 from tests import utils as test_utils
 
@@ -131,7 +131,8 @@ class PublishErrorsHandlerTestCase(test_utils.BaseTestCase):
     """Tests for log.PublishErrorsHandler"""
     def setUp(self):
         super(PublishErrorsHandlerTestCase, self).setUp()
-        self.publiserrorshandler = PublishErrorsHandler(logging.ERROR)
+        self.publiserrorshandler = log_handler.\
+            PublishErrorsHandler(logging.ERROR)
 
     def test_emit_cfg_log_notifier_in_notifier_drivers(self):
         self.config(notification_driver=[
@@ -367,7 +368,7 @@ class SetDefaultsTestCase(test_utils.BaseTestCase):
 class LogConfigOptsTestCase(test_utils.BaseTestCase):
 
     def test_print_help(self):
-        f = StringIO()
+        f = six.StringIO()
         CONF([])
         CONF.print_help(file=f)
         self.assertTrue('debug' in f.getvalue())

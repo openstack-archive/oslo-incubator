@@ -32,7 +32,7 @@ import logging as std_logging
 from oslo.config import cfg
 
 from openstack.common import eventlet_backdoor
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _  # noqa
 from openstack.common import importutils
 from openstack.common import log as logging
 from openstack.common import threadgroup
