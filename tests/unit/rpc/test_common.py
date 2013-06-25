@@ -108,7 +108,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
                                     '__unicode__': str_override})
                 new_ex_type.__module__ = '%s_Remote' % e.__class__.__module__
                 e.__class__ = new_ex_type
-                raise e
+                raise
 
         try:
             raise_remote_exception()
