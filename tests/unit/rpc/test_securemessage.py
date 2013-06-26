@@ -73,7 +73,8 @@ class RpcCryptoTestCase(test_utils.BaseTestCase):
         # Adds test keys in cache, we do it twice, once for client side use,
         # then for server side use as we run both in the same process
         store = rpc_secmsg.KEYstore(data['source'], data['target'])
-        keys = store.format_ticket(data['skey'], data['ekey'], data['esek'])
+        keys = store.format_ticket(data['target'], data['skey'],
+                                   data['ekey'], data['esek'])
         store.put_keys('ticket', 2000000000, keys)
         keys = store.format_sek(data['skey'], data['ekey'])
         store.put_keys('sek', 2000000000, keys)

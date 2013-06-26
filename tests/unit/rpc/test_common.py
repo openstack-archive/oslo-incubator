@@ -361,7 +361,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         # Adds test keys in cache, we do it twice, once for client side use,
         # then for server side use as we run both in the same process
         store = rpc_secmsg.KEYstore(src, dst)
-        keys = store.format_ticket(skey, ekey, esek)
+        keys = store.format_ticket(dst, skey, ekey, esek)
         store.put_keys('ticket', 2000000000, keys)
         keys = store.format_sek(skey, ekey)
         store.put_keys('sek', 2000000000, keys)
@@ -388,7 +388,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         # Adds test keys in cache, we do it twice, once for client side use,
         # then for server side use as we run both in the same process
         store = rpc_secmsg.KEYstore(src, dst)
-        keys = store.format_ticket(skey, ekey, esek)
+        keys = store.format_ticket(dst, skey, ekey, esek)
         store.put_keys('ticket', 2000000000, keys)
         keys = store.format_sek(skey, ekey)
         store.put_keys('sek', 2000000000, keys)
@@ -413,7 +413,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
                                        + src + ':DwsLDwsLDwsLDwsLDwsLDw==,'
                                        + dst + ':CwsLCwsLCwsLCwsLCwsLCw==')
         store = rpc_secmsg.KEYstore(src, dst)
-        keys = store.format_ticket(skey, ekey, esek)
+        keys = store.format_ticket(dst, skey, ekey, esek)
         store.put_keys('ticket', 2000000000, keys)
         keys = store.format_sek(skey, ekey)
         store.put_keys('sek', 2000000000, keys)
@@ -440,7 +440,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
                                        + src + ':BadKBadKBadKBadKBadKBa==,'
                                        + dst + ':BadKBadKBadKBadKBadKBa==')
         store = rpc_secmsg.KEYstore(src, dst)
-        keys = store.format_ticket(skey, ekey, esek)
+        keys = store.format_ticket(dst, skey, ekey, esek)
         store.put_keys('ticket', 2000000000, keys)
         keys = store.format_sek(skey, ekey)
         store.put_keys('sek', 2000000000, keys)
@@ -465,7 +465,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
                                        + src + ':DwsLDwsLDwsLDwsLDwsLDw==,'
                                        + dst + ':CwsLCwsLCwsLCwsLCwsLCw==')
         store = rpc_secmsg.KEYstore(src, dst)
-        keys = store.format_ticket(skey, ekey, esek)
+        keys = store.format_ticket(dst, skey, ekey, esek)
         store.put_keys('ticket', 2000000000, keys)
         keys = store.format_sek(skey, ekey)
         store.put_keys('sek', 2000000000, keys)
@@ -490,7 +490,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
                                        + src + ':DwsLDwsLDwsLDwsLDwsLDw==,'
                                        + dst + ':CwsLCwsLCwsLCwsLCwsLCw==')
         store = rpc_secmsg.KEYstore(src, dst)
-        keys = store.format_ticket(skey, ekey, esek)
+        keys = store.format_ticket(dst, skey, ekey, esek)
         store.put_keys('ticket', 2000000000, keys)
         keys = store.format_sek(skey, ekey)
         store.put_keys('sek', 2000000000, keys)
