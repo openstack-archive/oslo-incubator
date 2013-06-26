@@ -40,3 +40,20 @@ class NetworkUtilsTest(utils.BaseTestCase):
                          network_utils.parse_host_port(
                              '2001:db8:85a3::8a2e:370:7334',
                              default_port=1234))
+
+    def test_urlsplit(self):
+        result = network_utils.urlsplit('rpc://myhost?someparam#somefragment')
+        self.assertEqual(result.scheme, 'rpc')
+        self.assertEqual(result.netloc, 'myhost')
+        self.assertEqual(result.path, '')
+        self.assertEqual(result.query, 'someparam')
+        self.assertEqual(result.fragment, 'somefragment')
+
+        result = network_utils.urlsplit(
+            'rpc://myhost/mypath?someparam#somefragment',
+            allow_fragments=False)
+        self.assertEqual(result.scheme, 'rpc')
+        self.assertEqual(result.netloc, 'myhost')
+        self.assertEqual(result.path, '/mypath')
+        self.assertEqual(result.query, 'someparam#somefragment')
+        self.assertEqual(result.fragment, '')
