@@ -131,6 +131,20 @@ def match_filter(filter_list, userargs, exec_dirs=[]):
 
     for f in filter_list:
         if f.match(userargs):
+            if isinstance(f, filters.ChainingFilter):
+                # This command calls exec verify that remaining args
+                # matches another filter.
+                def non_chain_filter(fltr):
+                    return (fltr.run_as == f.run_as
+                            and not isinstance(fltr, filters.ChainingFilter))
+
+                leaf_filters = [fltr for fltr in filter_list
+                                if non_chain_filter(fltr)]
+                args = f.exec_args(userargs)
+                if (not args or not match_filter(leaf_filters,
+                                                 args, exec_dirs=exec_dirs)):
+                    continue
+
             # Try other filters if executable is absent
             if not f.get_exec(exec_dirs=exec_dirs):
                 if not first_not_executable_filter:
