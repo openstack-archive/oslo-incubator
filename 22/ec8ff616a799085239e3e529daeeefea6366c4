@@ -1,0 +1,11 @@
+Verified+2: Jenkins
+Code-Review+2: Russell Bryant <rbryant@redhat.com>
+Code-Review+1: Andrea Rosa <andrea.rosa@hp.com>
+Approved+1: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+1: Qing He <qing.he@radisys.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 26 Jun 2013 11:40:23 +0000
+Reviewed-on: https://review.openstack.org/32235
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
