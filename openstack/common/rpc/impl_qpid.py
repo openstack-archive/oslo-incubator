@@ -24,6 +24,7 @@ import eventlet
 import greenlet
 from oslo.config import cfg
 
+from openstack.common import excutils
 from openstack.common.gettextutils import _
 from openstack.common import importutils
 from openstack.common import jsonutils
@@ -576,6 +577,7 @@ class Connection(object):
 
     def consume_in_thread(self):
         """Consumer from all queues/consumers in a greenthread."""
+        @excutils.forever_retry_uncaught_exceptions
         def _consumer_thread():
             try:
                 self.consume()
