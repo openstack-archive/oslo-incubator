@@ -40,7 +40,7 @@ class RpcCryptoTestCase(test_utils.BaseTestCase):
         keys = store.get_ticket('foo', 'bar')
         self.assertIsNone(keys)
 
-        ticket = rpc_secmsg.Ticket('skey', 'ekey', 'esek')
+        ticket = rpc_secmsg.Ticket('bar', 'skey', 'ekey', 'esek')
 
         #add entry in the cache
         store.put_ticket('foo', 'bar', 'skey', 'ekey', 'esek', 2000000000)
