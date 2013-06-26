@@ -73,6 +73,12 @@ class InvalidEncryptedTicket(SecureMessageException):
     message = _('Invalid Ticket')
 
 
+class InvalidKDSReply(SecureMessageException):
+    """The KDS Reply could not be successfully verified."""
+
+    message = _('Invalid KDS Reply')
+
+
 class CommunicationError(SecureMessageException):
     """The Communication with the KDS failed."""
 
@@ -137,6 +143,7 @@ class KEYstore(object):
 
     type_sek = 'sek'
     type_ticket = 'ticket'
+    type_group_key = 'group_key'
 
     def __init__(self, source, target):
         self.name = '%s,%s' % (source, target)
@@ -170,8 +177,14 @@ class KEYstore(object):
     def format_sek(self, skey, ekey):
         return {'type': 'sek', 'skey': skey, 'ekey': ekey}
 
-    def format_ticket(self, skey, ekey, esek):
-        return {'type': 'ticket', 'skey': skey, 'ekey': ekey, 'esek': esek}
+    def format_ticket(self, dest, skey, ekey, esek):
+        # Explicit destination as it may be qualified with a generation
+        # number for group tickets
+        return {'type': 'ticket', 'destination': dest,
+                'skey': skey, 'ekey': ekey, 'esek': esek}
+
+    def format_group_key(self, generation, key):
+        return {'type': 'group_key', 'generation': generation, 'key': key}
 
 
 class KDSClient(object):
@@ -187,7 +200,7 @@ class KDSClient(object):
         else:
             self.timeout = None
 
-    def get_ticket(self, request, url=None, redirects=10):
+    def make_request(self, request, url=None, redirects=10):
         """Send an HTTP request.
 
         Wraps around requests to handle redirects and common errors.
@@ -197,8 +210,10 @@ class KDSClient(object):
             msg = "Too many redirections, giving up!"
             raise CommunicationError(msg)
 
-        if url is None:
-            url = self.endpoint + '/kds/ticket'
+        if url.startswith('/'):
+            if self.endpoint is None or len(self.endpoint) == 0:
+                raise CommunicationError('Endpoint not configured')
+            url = self.endpoint + url
 
         # Copy the kwargs so we can reuse the original in case of redirects
         req_kwargs = dict()
@@ -218,7 +233,7 @@ class KDSClient(object):
         if resp.status_code in (301, 302, 305):
             # Redirected. Reissue the request to the new location.
             url = resp.headers['location']
-            return self.get_ticket(request, url, redirects - 1)
+            return self.make_request(request, url, redirects - 1)
         elif resp.status_code != 200:
             msg = "Request returned failure status: %s (%s)"
             raise CommunicationError(msg % (resp.status_code, resp.text))
@@ -235,6 +250,12 @@ class KDSClient(object):
             raise CommunicationError(msg)
 
         return reply
+
+    def get_ticket(self, request):
+        return self.make_request(request, url='/kds/ticket')
+
+    def get_group_key(self, request):
+        return self.make_request(request, url='/kds/group_key')
 
 
 class SecureMessage(object):
@@ -255,7 +276,7 @@ class SecureMessage(object):
     """
 
     def __init__(self, name, key=None, encrypt=False,
-                 enctype='AES', hashtype='SHA256'):
+                 enctype='AES', hashtype='SHA256', group=None):
 
         if name is None or name == "":
             raise InvalidArgument("Name cannot be None or Empty")
@@ -264,6 +285,7 @@ class SecureMessage(object):
         self.key = key
         self.encrypt = encrypt
         self.nonce = None
+        self.group = group
         self.crypto = cryptoutils.SymmetricCrypto(enctype, hashtype)
         self.hkdf = cryptoutils.HKDF(hashtype)
         self.kds = KDSClient(CONF.kds_endpoint)
@@ -293,6 +315,9 @@ class SecureMessage(object):
             if self.key is None:
                 raise SharedKeyNotFound('Invalid secure_message_key format')
 
+        if self.group is None and '.' in name:
+            self.group = self.name.split('.')[0]
+
     def _decode_esek(self, key, source, target, timestamp, esek):
         """This function decrypts the esek buffer passed in and returns a
         KEYstore to be used to check and decrypt the received message.
@@ -302,6 +327,7 @@ class SecureMessage(object):
         :param traget: The name of the target service
         :param timestamp: The incoming message timestamp
         :param esek: a base64 encoded encrypted block containing a JSON string
+        :param generation: Key generation number, for group keys
         """
         rkey = None
 
@@ -326,6 +352,24 @@ class SecureMessage(object):
                        store.format_sek(sek[len(key):], sek[:len(key)]))
         return store
 
+    def _prep_req_metadata(self, target):
+        md = dict()
+        md['requestor'] = self.name
+        md['target'] = target
+        md['timestamp'] = time.time()
+        md['nonce'] = struct.unpack('Q', os.urandom(8))[0]
+        metadata = base64.b64encode(jsonutils.dumps(md))
+
+        # sign metadata
+        signature = self.crypto.sign(self.key, metadata)
+
+        return metadata, signature
+
+    def _check_signature(self, metadata, payload, signature):
+        sig = self.crypto.sign(self.key, metadata + payload)
+        if sig != signature:
+            raise InvalidKDSReply()
+
     def _get_ticket(self, target):
         """This function will check if we already have a SEK for the specified
         target in the cache, or will go and try to fetch a new SEK from the key
@@ -339,41 +383,56 @@ class SecureMessage(object):
         if tkt is not None:
             return tkt
 
-        #prepare metadata
-        md = dict()
-        md['requestor'] = self.name
-        md['target'] = target
-        md['timestamp'] = time.time()
-        md['nonce'] = struct.unpack('Q', os.urandom(8))[0]
-        metadata = base64.b64encode(jsonutils.dumps(md))
-
-        # sign metadata
-        signature = self.crypto.sign(self.key, metadata)
-
-        # HTTP request
+        metadata, signature = self._prep_req_metadata(target)
         reply = self.kds.get_ticket({'metadata': metadata,
                                      'signature': signature})
+        self._check_signature(reply['metadata'],
+                              reply['ticket'],
+                              reply['signature'])
 
-        # Verify reply
-        signature = self.crypto.sign(self.key,
-                                     (reply['metadata'] + reply['ticket']))
-        if signature != reply['signature']:
-            raise InvalidEncryptedTicket()
         md = jsonutils.loads(base64.b64decode(reply['metadata']))
         if (((md['source'] != self.name) or
-             (md['destination'] != target) or
-             (md['expiration'] < time.time()))):
-            raise InvalidEncryptedTicket()
+             (md['expiration'] < time.time()) or
+             ((md['destination'] != target) and
+              (md['destination'].split(':')[0] != target)))):
+            raise InvalidKDSReply()
 
         #return ticket data
         tkt = self.crypto.decrypt(self.key, reply['ticket'])
         tkt = jsonutils.loads(tkt)
 
         store.put_keys(KEYstore.type_ticket, md['expiration'],
-                       store.format_ticket(base64.b64decode(tkt['skey']),
+                       store.format_ticket(md['destination'],
+                                           base64.b64decode(tkt['skey']),
                                            base64.b64decode(tkt['ekey']),
                                            tkt['esek']))
         return store.get_keys('ticket')
+
+    def _get_group_key(self, target):
+        store = KEYstore(self.name, target)
+        gkey = store.get_keys('group_key')
+        if gkey is not None:
+            return gkey['key']
+
+        metadata, signature = self._prep_req_metadata(target)
+        reply = self.kds.get_group_key({'metadata': metadata,
+                                        'signature': signature})
+        self._check_signature(reply['metadata'],
+                              reply['group_key'],
+                              reply['signature'])
+
+        md = jsonutils.loads(base64.b64decode(reply['metadata']))
+        if (((md['source'] != self.name) or
+             (md['destination'] != target) or
+             (md['expiration'] < time.time()))):
+            raise InvalidKDSReply()
+
+        #return group key
+        group_key = self.crypto.decrypt(self.key, reply['group_key'])
+        store.put_keys(KEYstore.type_group_key, md['expiration'],
+                       store.format_group_key(long(target.split(':')[1]),
+                                              group_key))
+        return group_key
 
     def _get_nonce(self):
         """We keep a single counter per instance, as it is so huge we can't
@@ -408,7 +467,7 @@ class SecureMessage(object):
         ticket = self._get_ticket(target)
 
         metadata = jsonutils.dumps({'source': self.name,
-                                    'destination': target,
+                                    'destination': ticket['destination'],
                                     'timestamp': time.time(),
                                     'nonce': self._get_nonce(),
                                     'esek': ticket['esek'],
@@ -443,12 +502,16 @@ class SecureMessage(object):
             if arg not in md:
                 raise InvalidMetadata('Missing argument "%s"' % arg)
 
-        if md['destination'] != self.name:
-            # TODO(simo) handle group keys by checking target
+        dkey = None
+        if md['destination'] == self.name:
+            dkey = self.key
+        elif md['destination'].split(':')[0] == self.group:
+            dkey = self._get_group_key(md['destination'])
+        else:
             raise UnknownDestinationName()
 
         try:
-            store = self._decode_esek(self.key,
+            store = self._decode_esek(dkey,
                                       md['source'], md['destination'],
                                       md['timestamp'], md['esek'])
         except Exception:
