@@ -16,6 +16,7 @@
 #    under the License.
 
 import datetime
+import netaddr
 import xmlrpclib
 
 from six import StringIO
@@ -68,6 +69,11 @@ class ToPrimitiveTestCase(utils.BaseTestCase):
         x.decode("19710203T04:05:06")
         self.assertEquals(jsonutils.to_primitive(x),
                           '1971-02-03T04:05:06.000000')
+
+    def test_netaddr(self):
+        x = netaddr.IPAddress("127.0.0.1")
+        self.assertEquals(jsonutils.to_primitive(x),
+                          "127.0.0.1")
 
     def test_iter(self):
         class IterClass(object):

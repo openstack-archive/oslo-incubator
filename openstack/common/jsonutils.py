@@ -37,6 +37,7 @@ import datetime
 import functools
 import inspect
 import itertools
+import netaddr
 import json
 import types
 import xmlrpclib
@@ -95,6 +96,12 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
     # value of itertools.count doesn't get caught by nasty_type_tests
     # and results in infinite loop when list(value) is called.
     if type(value) == itertools.count:
+        return six.text_type(value)
+
+    # value of netaddr.IPAddress also doesn't get caught as a class by
+    # inspect.isclass; leading to failure
+    # See bug #1195097
+    if type(value) == netaddr.IPAddress:
         return six.text_type(value)
 
     # FIXME(vish): Workaround for LP bug 852095. Without this workaround,
