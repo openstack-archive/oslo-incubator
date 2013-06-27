@@ -269,6 +269,24 @@ class RootwrapTestCase(utils.BaseTestCase):
 
         self.assertIsNotNone(wrapper.match_filter(filter_list, args))
 
+    def test_match_filter_recurses_exec_command_envfilter_matches(self):
+        filter_list = [filters.IpNetnsExecFilter('/sbin/ip', 'root'),
+                       filters.EnvFilter('/sbin/ip', 'root',
+                                         'NETWORK_ID=foo')]
+        args = ['ip', 'netns', 'exec', 'foo', 'NETWORK_ID=netid',
+                'ip', 'addr', 'show']
+
+        m = wrapper.match_filter(filter_list, args)
+        self.assertIsNotNone(m)
+
+        self.assertEqual(m.get_command(args, exec_dirs=['/sbin', ]),
+                         ['/sbin/ip'] + args[1:])
+
+        self.assertEqual(m.exec_args(args), args[4:])
+
+        env = m.get_environment(args)
+        self.assertEqual(env.get('NETWORK_ID'), 'netid')
+
     def test_match_filter_recurses_exec_command_matches_user(self):
         filter_list = [filters.IpNetnsExecFilter('/sbin/ip', 'root'),
                        filters.IpFilter('/sbin/ip', 'user')]

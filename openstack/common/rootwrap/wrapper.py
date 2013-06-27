@@ -141,9 +141,13 @@ def match_filter(filter_list, userargs, exec_dirs=[]):
                 leaf_filters = [fltr for fltr in filter_list
                                 if non_chain_filter(fltr)]
                 args = f.exec_args(userargs)
-                if (not args or not match_filter(leaf_filters,
-                                                 args, exec_dirs=exec_dirs)):
+                if not args:
                     continue
+                leaf_match = match_filter(leaf_filters, args,
+                                          exec_dirs=exec_dirs)
+                if not leaf_match:
+                    continue
+                f.set_leaf_match(userargs, leaf_match)
 
             # Try other filters if executable is absent
             if not f.get_exec(exec_dirs=exec_dirs):

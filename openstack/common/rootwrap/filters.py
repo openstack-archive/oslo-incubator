@@ -331,6 +331,22 @@ class ChainingFilter(CommandFilter):
     def exec_args(self, userargs):
         return []
 
+    def set_leaf_match(self, userargs, leaf_match):
+        self.leaf_userargs = userargs[:]
+        self.leaf_match = leaf_match
+
+    def get_environment(self, userargs):
+        env = super(ChainingFilter, self).get_environment(userargs)
+        leaf_env = None
+
+        if self.leaf_userargs and self.leaf_userargs == userargs:
+            leaf_env = self.leaf_match.get_environment(
+                self.exec_args(userargs))
+            if env and leaf_env:
+                env.update(leaf_env)
+
+        return env or leaf_env
+
 
 class IpNetnsExecFilter(ChainingFilter):
     """Specific filter for the ip utility to that does match exec."""
