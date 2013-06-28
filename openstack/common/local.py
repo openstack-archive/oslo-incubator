@@ -17,14 +17,26 @@
 
 """Greenthread local storage of variables using weak references"""
 
+import thread
 import weakref
 
-from eventlet import corolocal
+def _check_import():
+    # NOTE(ldbragst): Here we are checking if we are using Eventlet,
+    #                 if not then use threading.local for thread storage.
+    try:
+        from eventlet import patcher
+        if patcher.is_monkey_patched(thread):
+            from eventlet import corolocal as local
+        else:
+            from threading import local
+    except ImportError:
+        from threading import local
 
+_check_import()
 
-class WeakLocal(corolocal.local):
+class WeakLocal(local.local):
     def __getattribute__(self, attr):
-        rval = corolocal.local.__getattribute__(self, attr)
+        rval = local.local.__getattribute__(self, attr)
         if rval:
             # NOTE(mikal): this bit is confusing. What is stored is a weak
             # reference, not the value itself. We therefore need to lookup
@@ -34,7 +46,7 @@ class WeakLocal(corolocal.local):
 
     def __setattr__(self, attr, value):
         value = weakref.ref(value)
-        return corolocal.local.__setattr__(self, attr, value)
+        return local.local.__setattr__(self, attr, value)
 
 
 # NOTE(mikal): the name "store" should be deprecated in the future
@@ -45,4 +57,4 @@ store = WeakLocal()
 # "strong" store will hold a reference to the object so that it never falls out
 # of scope.
 weak_store = WeakLocal()
-strong_store = corolocal.local
+strong_store = local.local
