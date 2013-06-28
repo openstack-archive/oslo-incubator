@@ -16,9 +16,9 @@
 #    under the License.
 
 import eventlet
-
 from openstack.common import local
 from tests import utils
+import threading
 
 
 class Dict(dict):
@@ -31,10 +31,40 @@ class LocalStoreTestCase(utils.BaseTestCase):
     v2 = Dict(a='2')
     v3 = Dict(a='3')
 
+    def test_local_store_builder_eventlet(self):
+        """Make sure LocalStoreBuilder object builds an eventlet local store
+           object.
+        """
+        eventlet_builder = local.LocalStoreBuilder(threading, eventlet)
+        self.assertIsInstance(type(eventlet_builder), object)
+
+    def test_local_store_builder_threading(self):
+        """Make sure LocalStoreBuilder object builds an eventlet local store
+           object.
+        """
+        threading_builder = local.LocalStoreBuilder(threading)
+        self.assertIsInstance(type(threading_builder), object)
+
+    def test_local_store_builder_strong_store_eventlet(self):
+        """Test to make sure our LocalStoreBuilder object's strong_store is in
+           fact the same as eventlet.corolocal.local when using Eventlet.
+        """
+        eventlet_builder = local.LocalStoreBuilder(threading, eventlet)
+        self.assertEqual(eventlet_builder.strong_store,
+                         eventlet.corolocal.local)
+
+    def test_local_store_builder_strong_store_threading(self):
+        """Test to make sure our LocalStoreBuilder object's strong_store is in
+           fact the same as threading.local when using threading from Python
+           standard library.
+        """
+        threading_builder = local.LocalStoreBuilder(threading)
+        self.assertEqual(threading_builder.strong_store, threading.local)
+
     def test_thread_unique_storage(self):
         """Make sure local store holds thread specific values."""
+        eventlet_build = local.LocalStoreBuilder(threading, eventlet)  # noqa
         expected_set = []
-        local.store.a = self.v1
 
         def do_something():
             local.store.a = self.v2
@@ -46,6 +76,34 @@ class LocalStoreTestCase(utils.BaseTestCase):
 
         eventlet.spawn(do_something).wait()
         eventlet.spawn(do_something2).wait()
+        local.store.a = self.v1
+        expected_set.append(getattr(local.store, 'a'))
+
+        self.assertTrue(self.v1 in expected_set)
+        self.assertTrue(self.v2 in expected_set)
+        self.assertTrue(self.v3 in expected_set)
+
+    def test_threading_unique_storage(self):
+        """Test thread storage using threading library from the Python
+           standard library, instead of Eventlet
+        """
+        threading_build = local.LocalStoreBuilder(threading)  # noqa
+        expected_set = []
+
+        def do_something():
+            local.store.a = self.v2
+            expected_set.append(getattr(local.store, 'a'))
+
+        def do_something2():
+            local.store.a = self.v3
+            expected_set.append(getattr(local.store, 'a'))
+
+        t1 = threading.Thread(target=do_something)
+        t1.start()
+        t2 = threading.Thread(target=do_something2)
+        t2.start()
+
+        local.store.a = self.v1
         expected_set.append(getattr(local.store, 'a'))
 
         self.assertTrue(self.v1 in expected_set)
