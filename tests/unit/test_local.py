@@ -51,3 +51,26 @@ class LocalStoreTestCase(utils.BaseTestCase):
         self.assertTrue(self.v1 in expected_set)
         self.assertTrue(self.v2 in expected_set)
         self.assertTrue(self.v3 in expected_set)
+
+    def test_threading_unique_storage(self):
+        """Test thread storage using threading library from the Python
+           standard library, instead of Eventlet"""
+        expected_set = []
+        local.store.a = self.v1
+
+        def do_something():
+            local.store.a = self.v2
+            expected_set.append(getattr(local.store, 'a'))
+
+        def do_something2():
+            local.store.a = self.v3
+            expected_set.append(getattr(local.store, 'a'))
+
+        t1 = threading.Thread(target=do_something)
+        t1.start()
+        t2 = threading.Thread(target=do_something2)
+        t2.start()
+
+        self.assertTrue(self.v1 in expected_set)
+        self.assertTrue(self.v2 in expected_set)
+        self.assertTrue(self.v3 in expected_set)
