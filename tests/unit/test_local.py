@@ -15,7 +15,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import eventlet
+import threading
 
 from openstack.common import local
 from tests import utils
@@ -31,6 +31,15 @@ class LocalStoreTestCase(utils.BaseTestCase):
     v2 = Dict(a='2')
     v3 = Dict(a='3')
 
+    def setUp(self):
+        super(LocalStoreTestCase, self).setUp()
+        # NOTE(mrodden): we need to make sure that local store
+        # gets imported in the current python context we are
+        # testing in (eventlet vs normal python threading) so
+        # we test the correct type of local store for the current
+        # threading model
+        reload(local)
+
     def test_thread_unique_storage(self):
         """Make sure local store holds thread specific values."""
         expected_set = []
@@ -44,8 +53,13 @@ class LocalStoreTestCase(utils.BaseTestCase):
             local.store.a = self.v3
             expected_set.append(getattr(local.store, 'a'))
 
-        eventlet.spawn(do_something).wait()
-        eventlet.spawn(do_something2).wait()
+        t1 = threading.Thread(target=do_something)
+        t2 = threading.Thread(target=do_something2)
+        t1.start()
+        t2.start()
+        t1.join()
+        t2.join()
+
         expected_set.append(getattr(local.store, 'a'))
 
         self.assertTrue(self.v1 in expected_set)
