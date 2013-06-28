@@ -81,6 +81,7 @@ class KombuStubs(fixtures.Fixture):
 
         test = self.test()
         if kombu:
+            test.conf = FLAGS
             test.config(fake_rabbit=True)
             test.config(rpc_response_timeout=5)
             test.rpc = impl_kombu
