@@ -1,0 +1,13 @@
+Verified+2: Jenkins
+Approved+1: Alan Pevec <apevec@gmail.com>
+Code-Review+2: Alan Pevec <apevec@gmail.com>
+Code-Review+2: Doug Hellmann <doug.hellmann@dreamhost.com>
+Code-Review+1: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+1: Boris Pavlovic <boris@pavlovic.me>
+Code-Review+1: Sergey Lukjanov <slukjanov@mirantis.com>
+Code-Review+1: Ben Nemec <openstack@nemebean.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 28 Jun 2013 18:10:18 +0000
+Reviewed-on: https://review.openstack.org/33665
+Project: openstack/oslo-incubator
+Branch: refs/heads/stable/grizzly
