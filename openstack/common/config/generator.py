@@ -188,7 +188,9 @@ def _get_my_ip():
 
 def _sanitize_default(s):
     """Set up a reasonably sensible default for pybasedir, my_ip and host."""
-    if s.startswith(BASEDIR):
+    if s.startswith(sys.prefix):
+        s = os.path.join("/usr/", s[len(sys.prefix):])
+    elif s.startswith(BASEDIR):
         return s.replace(BASEDIR, '/usr/lib/python/site-packages')
     elif BASEDIR in s:
         return s.replace(BASEDIR, '')
