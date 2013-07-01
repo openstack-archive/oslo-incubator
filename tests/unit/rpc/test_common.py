@@ -221,6 +221,9 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
 
         after_exc = rpc_common.deserialize_remote_exception(FLAGS, serialized)
         self.assertTrue(isinstance(after_exc, rpc_common.RemoteError))
+        self.assertTrue(after_exc.message.startswith(
+                "Remote error: FakeIDontExistException"),
+                after_exc.message)
         #assure the traceback was added
         self.assertTrue('raise FakeIDontExistException' in
                         six.text_type(after_exc))
