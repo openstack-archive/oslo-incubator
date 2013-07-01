@@ -178,8 +178,9 @@ class RootwrapTestCase(utils.BaseTestCase):
             # Filter shouldn't be able to find binary in $PATH, so fail
             with fixtures.EnvironmentVariable("PATH", "/foo:/bar"):
                 self.assertFalse(f.match(usercmd))
-            pass
-
+            # ensure that unset $PATH is not causing an exception
+            with fixtures.EnvironmentVariable("PATH"):
+                self.assertFalse(f.match(usercmd))
         finally:
             # Terminate the "cat" process and wait for it to finish
             p.terminate()
@@ -314,6 +315,11 @@ class RootwrapTestCase(utils.BaseTestCase):
         config = wrapper.RootwrapConfig(raw)
         self.assertEqual(config.filters_path, ['/a', '/b'])
         self.assertEqual(config.exec_dirs, os.environ["PATH"].split(':'))
+
+        with fixtures.EnvironmentVariable("PATH"):
+            c = wrapper.RootwrapConfig(raw)
+            self.assertEqual(c.exec_dirs, [])
+
         self.assertFalse(config.use_syslog)
         self.assertEqual(config.syslog_log_facility,
                          logging.handlers.SysLogHandler.LOG_SYSLOG)
