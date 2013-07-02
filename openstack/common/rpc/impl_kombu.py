@@ -36,6 +36,8 @@ from openstack.common import network_utils
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
 
+RPCException = rpc_common.RPCException
+
 kombu_opts = [
     cfg.StrOpt('kombu_ssl_version',
                default='',
@@ -470,6 +472,23 @@ class Connection(object):
         self.connection = None
         self.reconnect()
 
+    def _validate_ssl_version(self, version):
+        if ssl.get_protocol_name(ssl.PROTOCOL_SSLv23).lower() == version:
+            return ssl.PROTOCOL_SSLv23
+        elif ssl.get_protocol_name(ssl.PROTOCOL_SSLv3).lower() == version:
+            return ssl.PROTOCOL_SSLv3
+        elif ssl.get_protocol_name(ssl.PROTOCOL_TLSv1).lower() == version:
+            return ssl.PROTOCOL_TLSv1
+
+        try:
+            if ssl.get_protocol_name(ssl.PROTOCOL_SSLv2).lower() == version:
+                return ssl.PROTOCOL_SSLv2
+        except AttributeError:
+            pass
+
+        raise RPCException(_("Unknown SSL version : %s") %
+                           self.conf.kombu_ssl_version)
+
     def _fetch_ssl_params(self):
         """Handles fetching what ssl params should be used for the connection
         (if any).
@@ -478,7 +497,8 @@ class Connection(object):
 
         # http://docs.python.org/library/ssl.html - ssl.wrap_socket
         if self.conf.kombu_ssl_version:
-            ssl_params['ssl_version'] = self.conf.kombu_ssl_version
+            ssl_params['ssl_version'] = self._validate_ssl_version(
+                self.conf.kombu_ssl_version.lower())
         if self.conf.kombu_ssl_keyfile:
             ssl_params['keyfile'] = self.conf.kombu_ssl_keyfile
         if self.conf.kombu_ssl_certfile:

@@ -20,10 +20,12 @@ Unit Tests for remote procedure calls using kombu + ssl
 """
 
 import eventlet
+import ssl
 eventlet.monkey_patch()
 
 from oslo.config import cfg
 
+from openstack.common.rpc import common as rpc_common
 from tests import utils as test_utils
 
 
@@ -36,7 +38,7 @@ except ImportError:
 
 
 # Flag settings we will ensure get passed to amqplib
-SSL_VERSION = "SSLv2"
+SSL_VERSION = "SSLv3"
 SSL_CERT = "/tmp/cert.blah.blah"
 SSL_CA_CERT = "/tmp/cert.ca.blah.blah"
 SSL_KEYFILE = "/tmp/keyfile.blah.blah"
@@ -64,9 +66,29 @@ class RpcKombuSslTestCase(test_utils.BaseTestCase):
         #This might be kombu version dependent...
         #Since we are now peaking into the internals of kombu...
         self.assertTrue(isinstance(c.connection.ssl, dict))
-        self.assertEqual(SSL_VERSION, c.connection.ssl.get("ssl_version"))
+        self.assertEqual(ssl.PROTOCOL_SSLv3,
+                         c.connection.ssl.get("ssl_version"))
         self.assertEqual(SSL_CERT, c.connection.ssl.get("certfile"))
         self.assertEqual(SSL_CA_CERT, c.connection.ssl.get("ca_certs"))
         self.assertEqual(SSL_KEYFILE, c.connection.ssl.get("keyfile"))
         #That hash then goes into amqplib which then goes
         #Into python ssl creation...
+
+
+class RpcKombuSslBadVersionTestCase(test_utils.BaseTestCase):
+
+    def setUp(self):
+        super(RpcKombuSslBadVersionTestCase, self).setUp()
+        if kombu is None:
+            self.skipTest("Test requires kombu")
+        self.config(kombu_ssl_keyfile=SSL_KEYFILE,
+                    kombu_ssl_ca_certs=SSL_CA_CERT,
+                    kombu_ssl_certfile=SSL_CERT,
+                    kombu_ssl_version="SSLv24",
+                    rabbit_use_ssl=True,
+                    fake_rabbit=True)
+
+    def test_bad_ssl_version(self):
+        rpc = impl_kombu
+        self.assertRaises(rpc_common.RPCException,
+                          rpc.create_connection, FLAGS, True)
