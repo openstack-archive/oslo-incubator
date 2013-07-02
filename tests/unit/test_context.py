@@ -24,3 +24,7 @@ class ContextTest(utils.BaseTestCase):
     def test_context(self):
         ctx = context.RequestContext()
         self.assertTrue(ctx)
+
+    def test_admin_context_show_deleted_flag_default(self):
+        ctx = context.get_admin_context()
+        self.assertFalse(ctx.show_deleted)
