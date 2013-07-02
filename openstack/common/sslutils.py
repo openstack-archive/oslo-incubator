@@ -78,3 +78,22 @@ def wrap(sock):
         ssl_kwargs['cert_reqs'] = ssl.CERT_REQUIRED
 
     return ssl.wrap_socket(sock, **ssl_kwargs)
+
+
+def validate_ssl_version(version):
+    l_version = version.lower()
+    if ssl.get_protocol_name(ssl.PROTOCOL_SSLv23).lower() == l_version:
+        return ssl.PROTOCOL_SSLv23
+    elif ssl.get_protocol_name(ssl.PROTOCOL_SSLv3).lower() == l_version:
+        return ssl.PROTOCOL_SSLv3
+    elif ssl.get_protocol_name(ssl.PROTOCOL_TLSv1).lower() == l_version:
+        return ssl.PROTOCOL_TLSv1
+
+    try:
+        if ssl.get_protocol_name(ssl.PROTOCOL_SSLv2).lower() == l_version:
+            return ssl.PROTOCOL_SSLv2
+    except AttributeError:
+        pass
+
+    raise RuntimeError(_("Unknown SSL version : %s") %
+                       version)
