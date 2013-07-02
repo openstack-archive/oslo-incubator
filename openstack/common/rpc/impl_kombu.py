@@ -34,11 +34,15 @@ from openstack.common.gettextutils import _
 from openstack.common import network_utils
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
+from openstack.common import sslutils
 
 kombu_opts = [
     cfg.StrOpt('kombu_ssl_version',
                default='',
-               help='SSL version to use (valid only if SSL enabled)'),
+               help='SSL version to use (valid only if SSL enabled). '
+                    'valid values are TLSv1, SSLv23 and SSLv3. SSLv2 may '
+                    'be available on some distributions'
+               ),
     cfg.StrOpt('kombu_ssl_keyfile',
                default='',
                help='SSL key file (valid only if SSL enabled)'),
@@ -477,7 +481,8 @@ class Connection(object):
 
         # http://docs.python.org/library/ssl.html - ssl.wrap_socket
         if self.conf.kombu_ssl_version:
-            ssl_params['ssl_version'] = self.conf.kombu_ssl_version
+            ssl_params['ssl_version'] = sslutils.validate_ssl_version(
+                self.conf.kombu_ssl_version)
         if self.conf.kombu_ssl_keyfile:
             ssl_params['keyfile'] = self.conf.kombu_ssl_keyfile
         if self.conf.kombu_ssl_certfile:
