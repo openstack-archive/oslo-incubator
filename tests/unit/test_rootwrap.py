@@ -98,12 +98,6 @@ class RootwrapTestCase(utils.BaseTestCase):
         self.assertEqual(env.get(config_file_arg), 'A')
         self.assertEqual(env.get('NETWORK_ID'), 'foobar')
 
-    def test_DnsmasqFilter(self):
-        self._test_EnvFilter_as_DnsMasq('CONFIG_FILE')
-
-    def test_DeprecatedDnsmasqFilter(self):
-        self._test_EnvFilter_as_DnsMasq('FLAGFILE')
-
     def test_EnvFilter(self):
         envset = ['A=/some/thing', 'B=somethingelse']
         envcmd = ['env'] + envset
