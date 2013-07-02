@@ -132,36 +132,6 @@ class PathFilter(CommandFilter):
                                                    exec_dirs)
 
 
-class DnsmasqFilter(CommandFilter):
-    """Specific filter for the dnsmasq call (which includes env)."""
-
-    CONFIG_FILE_ARG = 'CONFIG_FILE'
-
-    def match(self, userargs):
-        if (userargs[0] == 'env' and
-                userargs[1].startswith(self.CONFIG_FILE_ARG) and
-                userargs[2].startswith('NETWORK_ID=') and
-                userargs[3] == 'dnsmasq'):
-            return True
-        return False
-
-    def get_command(self, userargs, exec_dirs=[]):
-        to_exec = self.get_exec(exec_dirs=exec_dirs) or self.exec_path
-        dnsmasq_pos = userargs.index('dnsmasq')
-        return [to_exec] + userargs[dnsmasq_pos + 1:]
-
-    def get_environment(self, userargs):
-        env = os.environ.copy()
-        env[self.CONFIG_FILE_ARG] = userargs[1].split('=')[-1]
-        env['NETWORK_ID'] = userargs[2].split('=')[-1]
-        return env
-
-
-class DeprecatedDnsmasqFilter(DnsmasqFilter):
-    """Variant of dnsmasq filter to support old-style FLAGFILE."""
-    CONFIG_FILE_ARG = 'FLAGFILE'
-
-
 class KillFilter(CommandFilter):
     """Specific filter for the kill calls.
 
