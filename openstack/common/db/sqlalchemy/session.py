@@ -244,6 +244,7 @@ Efficient use of soft deletes:
 import os.path
 import re
 import time
+import warnings
 
 from eventlet import greenthread
 from oslo.config import cfg
@@ -410,7 +411,7 @@ class SqliteForeignKeysListener(PoolListener):
 
 
 def get_session(autocommit=True, expire_on_commit=False,
-                sqlite_fk=False, slave_session=False):
+                sqlite_fk=True, slave_session=False):
     """Return a SQLAlchemy session."""
     global _MAKER
     global _SLAVE_MAKER
@@ -545,7 +546,7 @@ def _wrap_db_error(f):
     return _wrap
 
 
-def get_engine(sqlite_fk=False, slave_engine=False):
+def get_engine(sqlite_fk=True, slave_engine=False):
     """Return a SQLAlchemy engine."""
     global _ENGINE
     global _SLAVE_ENGINE
@@ -618,7 +619,7 @@ def _is_db_connection_error(args):
     return False
 
 
-def create_engine(sql_connection, sqlite_fk=False):
+def create_engine(sql_connection, sqlite_fk=True):
     """Return a new SQLAlchemy engine."""
     # NOTE(geekinutah): At this point we could be connecting to the normal
     #                   db handle or the slave db handle. Things like
@@ -641,7 +642,12 @@ def create_engine(sql_connection, sqlite_fk=False):
 
     if "sqlite" in connection_dict.drivername:
         if sqlite_fk:
-            engine_args["listeners"] = [SqliteForeignKeysListener()]
+            import sqlite3
+            tup = sqlite3.sqlite_version_info
+            if tup[0] > 3 or (tup[0] == 3 and tup[1] > 6):
+                engine_args["listeners"] = [SqliteForeignKeysListener()]
+            else:
+                warnings.warn("Foreign keys works only with SQLite > 3.6")
         engine_args["poolclass"] = NullPool
 
         if CONF.database.connection == "sqlite://":
