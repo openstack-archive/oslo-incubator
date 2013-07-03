@@ -85,11 +85,14 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
 
     # Add sorting
     for current_sort_key, current_sort_dir in zip(sort_keys, sort_dirs):
-        sort_dir_func = {
-            'asc': sqlalchemy.asc,
-            'desc': sqlalchemy.desc,
-        }[current_sort_dir]
-
+        try:
+            sort_dir_func = {
+                'asc': sqlalchemy.asc,
+                'desc': sqlalchemy.desc,
+            }[current_sort_dir]
+        except KeyError:
+            raise ValueError(_("Unknown sort direction, "
+                               "must be 'desc' or 'asc'"))
         try:
             sort_key_attr = getattr(model, current_sort_key)
         except AttributeError:
@@ -116,9 +119,6 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
                 crit_attrs.append((model_attr < marker_values[i]))
             elif sort_dirs[i] == 'asc':
                 crit_attrs.append((model_attr > marker_values[i]))
-            else:
-                raise ValueError(_("Unknown sort direction, "
-                                   "must be 'desc' or 'asc'"))
 
             criteria = sqlalchemy.sql.and_(*crit_attrs)
             criteria_list.append(criteria)
