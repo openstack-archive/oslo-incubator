@@ -18,7 +18,6 @@ Tests for openstack.common.db.sqlalchemy.utils.py
 """
 
 import sqlalchemy
-import testtools
 
 from openstack.common.db.sqlalchemy import utils
 from tests import utils as testutils
@@ -127,7 +126,6 @@ class TestPaginateQuery(testutils.BaseTestCase):
                              marker=self.marker,
                              sort_dirs=['asc', 'desc'])
 
-    @testtools.skip('The bug is not fixed: ValueError never raises')
     def test_paginate_query_value_error(self):
         sqlalchemy.asc('user').AndReturn('asc_1')
         self.query.order_by('asc_1').AndReturn(self.query)
