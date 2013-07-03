@@ -52,6 +52,14 @@ class SaveAndReraiseTest(utils.BaseTestCase):
 
         self.assertEqual(str(e), msg)
 
+    def test_save_and_reraise_exception_no_reraise(self):
+        """Test that suppressing the reraise works."""
+        try:
+            raise Exception('foo')
+        except Exception:
+            with excutils.save_and_reraise_exception() as ctxt:
+                ctxt.reraise = False
+
 
 class ForeverRetryUncaughtExceptionsTest(utils.BaseTestCase):
 
