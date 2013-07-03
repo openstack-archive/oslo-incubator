@@ -316,3 +316,9 @@ S: Maintained
 F: rpc/impl_zmq.py
 F: rpc/matchmaker*.py
 F: rpc/zmq_receiver.py
+
+== reports ==
+
+M: Solly Ross <sross@redhat.com>
+S: Maintained
+F: report/
