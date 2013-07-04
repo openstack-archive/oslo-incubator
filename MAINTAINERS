@@ -223,6 +223,12 @@ M: Michael Still <mikal@stillhq.com>
 S: Maintained
 F: processutils.py
 
+== quota ==
+
+M: Sergey Skripnick <sskripnick@mirantis.com>
+S: Maintained
+F: quota.py
+
 == redhat-eventlet.patch ==
 
 M: Mark McLoughlin <markmc@redhat.com>
