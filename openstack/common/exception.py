@@ -25,6 +25,8 @@ from openstack.common.gettextutils import _
 
 _FATAL_EXCEPTION_FORMAT_ERRORS = False
 
+LOG = logging.getLogger(__name__)
+
 
 class Error(Exception):
     def __init__(self, message=None):
@@ -139,3 +141,89 @@ class MalformedRequestBody(OpenstackException):
 
 class InvalidContentType(OpenstackException):
     message = "Invalid content type %(content_type)s"
+
+
+class QuotaException(Exception):
+    """Base exception for quota."""
+
+    message = _("Quota exception occurred.")
+    code = 500
+    headers = {}
+    safe = False
+
+    def __init__(self, message=None, **kwargs):
+        self.kwargs = kwargs
+
+        if 'code' not in self.kwargs:
+            try:
+                self.kwargs['code'] = self.code
+            except AttributeError:
+                pass
+
+        if not message:
+            try:
+                message = self.message % kwargs
+
+            except Exception:
+                # kwargs doesn't match a variable in the message
+                # log the issue and the kwargs
+                LOG.exception(_('Exception in string format operation'))
+                for name, value in kwargs.iteritems():
+                    LOG.error("%s: %s" % (name, value))
+                else:
+                    # at least get the core message out if something happened
+                    message = self.message
+
+        super(QuotaException, self).__init__(message)
+
+    def format_message(self):
+        if self.__class__.__name__.endswith('_Remote'):
+            return self.args[0]
+        else:
+            return unicode(self)
+
+
+class QuotaError(QuotaException):
+    message = _("Quota exceeded") + ": code=%(code)s"
+    code = 413
+    headers = {'Retry-After': 0}
+    safe = True
+
+
+class InvalidQuotaValue(QuotaException):
+    message = _("Change would make usage less than 0 for the following "
+                "resources: %(unders)s")
+
+
+class OverQuota(QuotaException):
+    message = _("Quota exceeded for resources: %(overs)s")
+
+
+class QuotaResourceUnknown(QuotaException):
+    message = _("Unknown quota resources %(unknown)s.")
+
+
+class QuotaNotFound(QuotaException):
+    code = 404
+    message = _("Quota could not be found")
+
+
+class QuotaUsageNotFound(QuotaNotFound):
+    message = _("Quota usage for project %(project_id)s could not be found.")
+
+
+class ProjectQuotaNotFound(QuotaNotFound):
+    message = _("Quota for project %(project_id)s could not be found.")
+
+
+class QuotaClassNotFound(QuotaNotFound):
+    message = _("Quota class %(class_name)s could not be found.")
+
+
+class ReservationNotFound(QuotaNotFound):
+    message = _("Quota reservation %(uuid)s could not be found.")
+
+
+class InvalidReservationExpiration(QuotaException):
+    code = 400
+    message = _("Invalid reservation expiration %(expire)s.")
