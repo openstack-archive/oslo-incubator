@@ -85,6 +85,12 @@ M: Zhongyue Luo <zhongyue.nah@intel.com>
 S: Maintained
 F: config/
 
+== crypto ==
+
+M: Simo Sorce <simo@redhat.com>
+S: Maintained
+F: crypto/
+
 == db ==
 
 M:
