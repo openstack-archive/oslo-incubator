@@ -16,14 +16,8 @@
 #    under the License.
 
 """
-Provides a way to generate serializable reports
+Provides basic XML views
 
-This package/module provides mechanisms for defining reports
-which may then be serialized into various data types.  Each
-report ( :class:`openstack.common.report.report.BasicReport` )
-is composed of one or more report sections
-( :class:`openstack.common.report.report.BasicSection` ),
-which contain generators which generate data models
-( :class:`openstack.common.report.models.base.ReportModels` ),
-which are then serialized by views.
+This module provides several basic views which serialize
+models into XML.
 """
