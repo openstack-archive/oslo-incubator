@@ -20,9 +20,29 @@ This module includes various utilities
 used in generating reports.
 """
 
+import gc
+
 
 class StringWithAttrs(str):
     """A String that can have arbitrary attributes
     """
 
     pass
+
+
+def _find_objects(t):
+    """Find Objects in the GC State
+
+    This horribly hackish method locates objects of a
+    given class in the current python instance's garbage
+    collection state.  In case you couldn't tell, this is
+    horribly hackish, but is necessary for locating all
+    green threads, since they don't keep track of themselves
+    like normal threads do in python.
+
+    :param class t: the class of object to locate
+    :rtype: list
+    :returns: a list of objects of the given type
+    """
+
+    return filter(lambda o: isinstance(o, t), gc.get_objects())
