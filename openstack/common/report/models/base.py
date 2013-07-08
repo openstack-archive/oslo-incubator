@@ -97,3 +97,20 @@ class ReportModel(col.MutableMapping):
 
     def __iter__(self):
         return self.data.__iter__()
+
+    def set_current_view_type(self, tp):
+        """Set the current view type
+
+        This method attempts to set the current view
+        type for this model and all submodels by calling
+        itself recursively on all values (and ignoring the
+        ones that are not themselves models)
+
+        :param tp: the type of the view ('text', 'json', 'xml', etc)
+        """
+
+        for key in self:
+            try:
+                self[key].set_current_view_type(tp)
+            except AttributeError:
+                pass
