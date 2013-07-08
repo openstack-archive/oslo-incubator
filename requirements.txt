@@ -17,3 +17,4 @@ qpid-python
 six
 netaddr
 pycrypto>=2.6
+jinja2
