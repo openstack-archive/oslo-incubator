@@ -317,7 +317,9 @@ class Service(object):
     def stop(self):
         self.tg.stop()
         self.tg.wait()
-        self._done.send()
+        # Signal that service cleanup is done:
+        if not self._done.ready():
+            self._done.send()
 
     def wait(self):
         self._done.wait()
@@ -340,9 +342,10 @@ class Services(object):
             service.stop()
             service.wait()
 
-        # each service has performed cleanup, now signal that the run_service
+        # Each service has performed cleanup, now signal that the run_service
         # wrapper threads can now die:
-        self.done.send()
+        if not self.done.ready():
+            self.done.send()
 
         # reap threads:
         self.tg.stop()
