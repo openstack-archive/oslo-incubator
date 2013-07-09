@@ -177,12 +177,9 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
                    topic_nested,
                    msg)
 
-        try:
-            # If it does not succeed in 2 seconds, give up and assume
-            # failure.
-            result = QUEUE.get(True, 2)
-        except Exception:
-            self.assertEqual(value, None)
+        # If it does not succeed in 2 seconds, give up and assume
+        # failure by raising eventlet.queue.Empty
+        result = QUEUE.get(True, 2)
 
         conn.close()
         self.assertEqual(value, result)
