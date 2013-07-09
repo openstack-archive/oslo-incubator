@@ -171,7 +171,7 @@ class ZmqSocket(object):
         self.sock.setsockopt(zmq.UNSUBSCRIBE, msg_filter)
         self.subscriptions.remove(msg_filter)
 
-    def close(self):
+    def close(self, linger=-1):
         if self.sock is None or self.sock.closed:
             return
 
@@ -186,14 +186,13 @@ class ZmqSocket(object):
 
         try:
             # Default is to linger
-            self.sock.close()
+            self.sock.close(linger)
         except Exception:
             # While this is a bad thing to happen,
             # it would be much worse if some of the code calling this
             # were to fail. For now, lets log, and later evaluate
             # if we can safely raise here.
             LOG.error("ZeroMQ socket could not be closed.")
-        self.sock = None
 
     def recv(self, **kwargs):
         if not self.can_recv:
@@ -225,8 +224,8 @@ class ZmqClient(object):
         self.outq.send(map(bytes,
                        (msg_id, topic, 'impl_zmq_v2', data[0]) + zmq_msg))
 
-    def close(self):
-        self.outq.close()
+    def close(self, linger):
+        self.outq.close(linger)
 
 
 class RpcContext(rpc_common.CommonRpcContext):
@@ -622,21 +621,20 @@ def _cast(addr, context, topic, msg, timeout=None, envelope=False,
     timeout_cast = timeout or CONF.rpc_cast_timeout
     payload = [RpcContext.marshal(context), msg]
 
-    with Timeout(timeout_cast, exception=rpc_common.Timeout):
-        try:
-            conn = ZmqClient(addr)
-
-            # assumes cast can't return an exception
-            conn.cast(_msg_id, topic, payload, envelope)
-        except zmq.ZMQError:
-            raise RPCException("Cast failed. ZMQ Socket Exception")
-        finally:
-            if 'conn' in vars():
-                conn.close()
+    try:
+        conn = ZmqClient(addr)
+        conn.cast(_msg_id, topic, payload, envelope)
+    except zmq.ZMQError:
+        raise RPCException("Cast failed. ZMQ Socket Exception")
+    finally:
+        if 'conn' in vars():
+            # The socket will close when all messages have been sent
+            # OR after timeout_cast seconds.
+            conn.close(timeout_cast)
 
 
 def _call(addr, context, topic, msg, timeout=None,
-          envelope=False):
+          envelope=False, _msg_id=None):
     # timeout_response is how long we wait for a response
     timeout = timeout or CONF.rpc_response_timeout
 
@@ -735,13 +733,8 @@ def _multi_send(method, context, topic, msg, timeout=None,
         (_topic, ip_addr) = queue
         _addr = "tcp://%s:%s" % (ip_addr, conf.rpc_zmq_port)
 
-        if method.__name__ == '_cast':
-            eventlet.spawn_n(method, _addr, context,
-                             _topic, msg, timeout, envelope,
-                             _msg_id)
-            return
         return method(_addr, context, _topic, msg, timeout,
-                      envelope)
+                      envelope, _msg_id)
 
 
 def create_connection(conf, new=True):
