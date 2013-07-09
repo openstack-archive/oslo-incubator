@@ -22,6 +22,7 @@ import tempfile
 import eventlet
 from eventlet import greenpool
 from eventlet import greenthread
+from oslo.config import cfg
 
 from openstack.common import lockutils
 from tests import utils
@@ -239,3 +240,12 @@ class LockTestCase(utils.BaseTestCase):
         finally:
             if os.path.exists(lock_dir):
                 shutil.rmtree(lock_dir, ignore_errors=True)
+
+    def test_synchronized_externally_without_lock_path(self):
+        self.config(lock_path=None)
+
+        @lockutils.synchronized('external', 'test-', external=True)
+        def foo():
+            pass
+
+        self.assertRaises(cfg.RequiredOptError, foo)
