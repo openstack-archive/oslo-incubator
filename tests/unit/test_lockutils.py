@@ -23,6 +23,7 @@ import eventlet
 from eventlet import greenpool
 from eventlet import greenthread
 
+from openstack.common import exception
 from openstack.common import lockutils
 from tests import utils
 
@@ -211,3 +212,12 @@ class LockTestCase(utils.BaseTestCase):
         self.config(lock_path=lock_dir)
 
         self.assertTrue(bar(lock_dir, lock_pfix, lock_name))
+
+    def test_synchronized_externally_without_lock_path(self):
+        self.config(lock_path=None)
+
+        @lockutils.synchronized('external', 'test-', external=True)
+        def foo():
+            pass
+
+        self.assertRaises(exception.NotFound, foo)
