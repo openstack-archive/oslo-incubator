@@ -177,24 +177,30 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
                    topic_nested,
                    msg)
 
-        try:
-            # If it does not succeed in 2 seconds, give up and assume
-            # failure.
-            result = QUEUE.get(True, 2)
-        except Exception:
-            self.assertEqual(value, None)
+        # If it does not succeed in 2 seconds, give up and assume
+        # failure by raising eventlet.queue.Empty
+        result = QUEUE.get(True, 2)
 
         conn.close()
         self.assertEqual(value, result)
 
     def test_cast_success(self):
-        self._test_cast(TestReceiver.echo, 42, {"value": 42}, fanout=False)
+        try:
+            self._test_cast(TestReceiver.echo, 42, {"value": 42}, fanout=False)
+        except eventlet.queue.Empty:
+            self.assertEqual(42, None)
 
     def test_fanout_success(self):
-        self._test_cast(TestReceiver.echo, 42, {"value": 42}, fanout=True)
+        try:
+            self._test_cast(TestReceiver.echo, 42, {"value": 42}, fanout=True)
+        except eventlet.queue.Empty:
+            self.assertEqual(42, None)
 
     def test_cast_success_despite_missing_args(self):
-        self._test_cast(TestReceiver.fortytwo, 42, fanout=True)
+        try:
+            self._test_cast(TestReceiver.fortytwo, 42, fanout=True)
+        except eventlet.queue.Empty:
+            self.assertEqual(42, None)
 
     def test_nested_calls(self):
         if not self.rpc:
