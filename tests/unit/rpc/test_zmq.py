@@ -113,6 +113,20 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
             finally:
                 self.topic_nested = tmp_topic
 
+    def test_cast_timeout_not_consumed(self):
+        """Timeout a message, create consumer, assure message not consumed."""
+        old_timeout = FLAGS.rpc_cast_timeout
+        try:
+            self.config(rpc_cast_timeout=0)
+            eventlet.sleep(1)
+
+            # test_cast_success only succeeds if message received in 2 seconds
+            # but rpc_cast_timeout should cause a delivery failure.
+            self.assertRaises(eventlet.queue.Empty, self._test_cast,
+                common.TestReceiver.echo, 42, {"value": 42}, fanout=False)
+        finally:
+            self.config(rpc_cast_timeout=old_timeout)
+
 
 class RpcZmqBaseTopicTestCase(_RpcZmqBaseTestCase):
     """Base topic RPC ZMQ test case.
