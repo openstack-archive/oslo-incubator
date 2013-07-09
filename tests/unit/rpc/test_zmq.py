@@ -113,6 +113,59 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
             finally:
                 self.topic_nested = tmp_topic
 
+    def _test_cast_before_consumer(self):
+        """Attempt casting before a consumer exists.
+
+           Similar to _test_cast, but creates consumer after
+           casting message with optional delay.
+        """
+        if not self.rpc:
+            self.skipTest('rpc driver not available.')
+
+        self.rpc.cast(FLAGS, self.context, self.topic_nested, {
+                      'method': 'curry', 'args': {"value": 42}})
+
+        # Not a true global, but capitalized so
+        # it is clear it is leaking scope into Nested()
+        QUEUE = eventlet.queue.Queue()
+
+        # We use the nested topic so we don't need QUEUE to be a proper
+        # global, and do not keep state outside this test.
+        class Nested(object):
+            @staticmethod
+            def curry(*args, **kwargs):
+                QUEUE.put(common.TestReceiver.echo(*args, **kwargs))
+
+        eventlet.sleep(.5)
+        conn = self._create_consumer(Nested(), self.topic_nested, False)
+        try:
+            return QUEUE.get(True, .5)
+        finally:
+            conn.close()
+
+    def test_cast_then_consume(self):
+        """Assures message can be consumed if cast before consumer created.
+
+           Note that this behavorism does not presently match that of the
+           Kombu driver. The ZeroMQ driver expects to attempt delivery
+           as long as the message timeout has not expired.
+
+           Without this test, we'd have no coverage of curry() within
+           _test_cast_before_consumer's Nested class.
+        """
+        value = self._test_cast_before_consumer()
+        self.assertEqual(value, 42)
+
+    def test_cast_timeout_not_consumed(self):
+        """Timeout a message, create consumer, assure message not consumed.
+
+           This test will attempt, but should fail, to execute
+           the curry method of _test_cast_before_consumer's Nested class.
+        """
+        self.config(rpc_cast_timeout=0)
+        self.assertRaises(eventlet.queue.Empty,
+                          self._test_cast_before_consumer)
+
 
 class RpcZmqBaseTopicTestCase(_RpcZmqBaseTestCase):
     """Base topic RPC ZMQ test case.
