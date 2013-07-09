@@ -34,7 +34,13 @@ class TestOpenstackGenerators(utils.BaseTestCase):
         self.assertTrue(len(model.keys()) >= 1)
         self.assertIsInstance(model[0], os_tmod.ThreadModel)
         self.assertIsNotNone(model[0].stack_trace)
-        self.assertEquals(threading.current_thread().ident, model[0].thread_id)
+
+        was_ok = False
+        for tm in model.values():
+            if tm.thread_id == threading.current_thread().ident:
+                was_ok = True
+                break
+        self.assertTrue(was_ok)
 
         model.set_current_view_type('text')
         self.assertIsNotNone(str(model))
@@ -46,8 +52,13 @@ class TestOpenstackGenerators(utils.BaseTestCase):
 
         # self.assertGreaterEqual(len(model.keys()), 1)
         self.assertTrue(len(model.keys()) >= 1)
-        self.assertEquals(model[0].stack_trace,
-                          os_tmod.StackTraceModel(curr_g.gr_frame))
+
+        was_ok = False
+        for tm in model.values():
+            if tm.stack_trace == os_tmod.StackTraceModel(curr_g.gr_frame):
+                was_ok = True
+                break
+        self.assertTrue(was_ok)
 
         model.set_current_view_type('text')
         self.assertIsNotNone(str(model))
