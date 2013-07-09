@@ -209,7 +209,8 @@ def synchronized(name, lock_file_prefix, external=False, lock_path=None):
 
                         if not local_lock_path:
                             cleanup_dir = True
-                            local_lock_path = tempfile.mkdtemp()
+                            local_lock_path = os.path.join(
+                                tempfile.gettempdir(), 'oslo-lock-path')
 
                         if not os.path.exists(local_lock_path):
                             fileutils.ensure_tree(local_lock_path)
