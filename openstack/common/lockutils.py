@@ -19,8 +19,6 @@
 import errno
 import functools
 import os
-import shutil
-import tempfile
 import time
 import weakref
 
@@ -199,16 +197,11 @@ def synchronized(name, lock_file_prefix=None, external=False, lock_path=None):
                         LOG.debug(_('Attempting to grab file lock "%(lock)s" '
                                     'for method "%(method)s"...'),
                                   {'lock': name, 'method': f.__name__})
-                        cleanup_dir = False
 
                         # We need a copy of lock_path because it is non-local
-                        local_lock_path = lock_path
+                        local_lock_path = lock_path or CONF.lock_path
                         if not local_lock_path:
-                            local_lock_path = CONF.lock_path
-
-                        if not local_lock_path:
-                            cleanup_dir = True
-                            local_lock_path = tempfile.mkdtemp()
+                            raise cfg.RequiredOptError('lock_path')
 
                         if not os.path.exists(local_lock_path):
                             fileutils.ensure_tree(local_lock_path)
@@ -243,12 +236,6 @@ def synchronized(name, lock_file_prefix=None, external=False, lock_path=None):
                                       {'lock': name,
                                        'path': lock_file_path,
                                        'method': f.__name__})
-                            # NOTE(vish): This removes the tempdir if we needed
-                            #             to create one. This is used to
-                            #             cleanup the locks left behind by unit
-                            #             tests.
-                            if cleanup_dir:
-                                shutil.rmtree(local_lock_path)
                     else:
                         retval = f(*args, **kwargs)
 
