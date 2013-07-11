@@ -1,0 +1,11 @@
+Change-Id: If9f1b4f971f209feebb3bc6d32c397f4daa8ff1e
+Verified+2: Jenkins
+Code-Review+1: Kiall Mac Innes <kiall@hp.com>
+Code-Review+1: Chris Behrens <cbehrens@codestud.com>
+Approved+1: Mark McLoughlin <markmc@redhat.com>
+Code-Review+2: Mark McLoughlin <markmc@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Thu, 11 Jul 2013 10:34:59 +0000
+Reviewed-on: https://review.openstack.org/36606
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
