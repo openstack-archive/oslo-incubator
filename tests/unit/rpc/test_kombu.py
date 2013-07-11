@@ -362,8 +362,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
                       'password': FLAGS.rabbit_password,
                       'port': FLAGS.rabbit_port,
                       'virtual_host': FLAGS.rabbit_virtual_host,
-                      'transport': 'memory',
-                      'heartbeat': FLAGS.rabbit_heartbeat}])
+                      'transport': 'memory'}])
 
             def topic_send(_context, topic, msg):
                 pass
@@ -383,8 +382,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
                          'password': 'fake_password',
                          'hostname': 'fake_hostname',
                          'port': 31337,
-                         'virtual_host': 'fake_virtual_host',
-                         'heartbeat': FLAGS.rabbit_heartbeat}
+                         'virtual_host': 'fake_virtual_host'}
 
         class MyConnection(impl_kombu.Connection):
             def __init__(myself, *args, **kwargs):
@@ -396,8 +394,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
                       'password': server_params['password'],
                       'port': server_params['port'],
                       'virtual_host': server_params['virtual_host'],
-                      'transport': 'memory',
-                      'heartbeat': FLAGS.rabbit_heartbeat}])
+                      'transport': 'memory'}])
 
             def topic_send(_context, topic, msg):
                 pass
@@ -739,29 +736,25 @@ class RpcKombuHATestCase(utils.BaseTestCase):
                 'password': FLAGS.rabbit_password,
                 'port': 1234,
                 'virtual_host': FLAGS.rabbit_virtual_host,
-                'transport': 'memory',
-                'heartbeat': FLAGS.rabbit_heartbeat},
+                'transport': 'memory'},
                {'hostname': 'host2',
                 'userid': FLAGS.rabbit_userid,
                 'password': FLAGS.rabbit_password,
                 'port': 5678,
                 'virtual_host': FLAGS.rabbit_virtual_host,
-                'transport': 'memory',
-                'heartbeat': FLAGS.rabbit_heartbeat},
+                'transport': 'memory'},
                {'hostname': '::1',
                 'userid': FLAGS.rabbit_userid,
                 'password': FLAGS.rabbit_password,
                 'port': 2345,
                 'virtual_host': FLAGS.rabbit_virtual_host,
-                'transport': 'memory',
-                'heartbeat': FLAGS.rabbit_heartbeat},
+                'transport': 'memory'},
                {'hostname': '2001:0db8:85a3:0042:0000:8a2e:0370:7334',
                 'userid': FLAGS.rabbit_userid,
                 'password': FLAGS.rabbit_password,
                 'port': 5672,
                 'virtual_host': FLAGS.rabbit_virtual_host,
-                'transport': 'memory',
-                'heartbeat': FLAGS.rabbit_heartbeat},
+                'transport': 'memory'},
             ]
         }
 
