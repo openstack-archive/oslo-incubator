@@ -71,6 +71,7 @@ qpid_opts = [
 
 cfg.CONF.register_opts(qpid_opts)
 
+
 JSON_CONTENT_TYPE = 'application/json; charset=utf8'
 
 
@@ -181,11 +182,16 @@ class DirectConsumer(ConsumerBase):
         'callback' is the callback to call when messages are received
         """
 
-        super(DirectConsumer, self).__init__(session, callback,
-                                             "%s/%s" % (msg_id, msg_id),
-                                             {"type": "direct"},
-                                             msg_id,
-                                             {"exclusive": True})
+        super(DirectConsumer, self).__init__(
+            session, callback,
+            "%s/%s" % (msg_id, msg_id),
+            {"type": "direct"},
+            msg_id,
+            {
+                "auto-delete": conf.amqp_auto_delete,
+                "exclusive": True,
+                "durable": conf.amqp_durable_queues,
+            })
 
 
 class TopicConsumer(ConsumerBase):
@@ -203,9 +209,14 @@ class TopicConsumer(ConsumerBase):
         """
 
         exchange_name = exchange_name or rpc_amqp.get_control_exchange(conf)
-        super(TopicConsumer, self).__init__(session, callback,
-                                            "%s/%s" % (exchange_name, topic),
-                                            {}, name or topic, {})
+        super(TopicConsumer, self).__init__(
+            session, callback,
+            "%s/%s" % (exchange_name, topic),
+            {}, name or topic,
+            {
+                "auto-delete": conf.amqp_auto_delete,
+                "durable": conf.amqp_durable_queues,
+            })
 
 
 class FanoutConsumer(ConsumerBase):
