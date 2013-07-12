@@ -30,6 +30,8 @@ import logging.handlers
 import os
 import UserString
 
+import six
+
 _localedir = os.environ.get('oslo'.upper() + '_LOCALEDIR')
 _t = gettext.translation('oslo', localedir=_localedir, fallback=True)
 
@@ -120,7 +122,7 @@ class Message(UserString.UserString, object):
         if self.params is not None:
             full_msg = full_msg % self.params
 
-        return unicode(full_msg)
+        return six.text_type(full_msg)
 
     def _save_parameters(self, other):
         # we check for None later to see if
