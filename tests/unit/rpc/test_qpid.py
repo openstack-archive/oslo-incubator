@@ -136,7 +136,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
                 'openstack/impl_qpid_test ; {"node": {"x-declare": '
                 '{"auto-delete": true, "durable": true}, "type": "topic"}, '
                 '"create": "always", "link": {"x-declare": {"auto-delete": '
-                'true, "exclusive": false, "durable": false}, "durable": '
+                'false, "exclusive": false, "durable": false}, "durable": '
                 'true, "name": "impl_qpid_test"}}')
         self.mock_session.receiver(expected_address).AndReturn(
             self.mock_receiver)
@@ -169,7 +169,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
             'openstack/impl_qpid_test ; {"node": {"x-declare": '
             '{"auto-delete": true, "durable": true}, "type": "topic"}, '
             '"create": "always", "link": {"x-declare": {"auto-delete": '
-            'true, "exclusive": false, "durable": false}, "durable": '
+            'false, "exclusive": false, "durable": false}, "durable": '
             'true, "name": "impl.qpid.test.workers"}}')
         self.mock_session.receiver(expected_address).AndReturn(
             self.mock_receiver)
@@ -197,7 +197,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
             'exchange-name/impl_qpid_test ; {"node": {"x-declare": '
             '{"auto-delete": true, "durable": true}, "type": "topic"}, '
             '"create": "always", "link": {"x-declare": {"auto-delete": '
-            'true, "exclusive": false, "durable": false}, "durable": '
+            'false, "exclusive": false, "durable": false}, "durable": '
             'true, "name": "impl.qpid.test.consumer.pool"}}')
         self.mock_session.receiver(expected_address).AndReturn(
             self.mock_receiver)
@@ -227,7 +227,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
             'foobar/impl_qpid_test ; {"node": {"x-declare": '
             '{"auto-delete": true, "durable": true}, "type": "topic"}, '
             '"create": "always", "link": {"x-declare": {"auto-delete": '
-            'true, "exclusive": false, "durable": false}, "durable": '
+            'false, "exclusive": false, "durable": false}, "durable": '
             'true, "name": "impl.qpid.test.workers"}}')
         self.mock_session.receiver(expected_address).AndReturn(
             self.mock_receiver)
@@ -349,7 +349,8 @@ class RpcQpidTestCase(utils.BaseTestCase):
             r'^.*/.* ; {"node": {"x-declare": {"auto-delete":'
             ' true, "durable": true, "type": "direct"}, "type": '
             '"topic"}, "create": "always", "link": {"x-declare": '
-            '{"auto-delete": true, "exclusive": true, "durable": '
+            #'{"auto-delete": true, "exclusive": true, "durable": '
+            '{"exclusive": true, "auto-delete": false, "durable": '
             'false}, "durable": true, "name": ".*"}}')
         self.mock_session.receiver(rcv_addr).AndReturn(self.mock_receiver)
         self.mock_receiver.capacity = 1
@@ -425,11 +426,11 @@ class RpcQpidTestCase(utils.BaseTestCase):
         self.mock_connection.open()
         self.mock_connection.session().AndReturn(self.mock_session)
         rcv_addr = mox.Regex(
-            r'^.*/.* ; {"node": {"x-declare": {"auto-delete":'
-            ' true, "durable": true, "type": "direct"}, "type": '
-            '"topic"}, "create": "always", "link": {"x-declare": '
-            '{"auto-delete": true, "exclusive": true, "durable": '
-            'false}, "durable": true, "name": ".*"}}')
+            r'^.*/.* ; {"node": {"x-declare": {"auto-delete": true, '
+            '"durable": true, "type": "direct"}, "type": "topic"}, '
+            '"create": "always", "link": {"x-declare": '
+            '{"exclusive": true, "auto-delete": false, "durable": false}, '
+            '"durable": true, "name": ".*"}}')
         self.mock_session.receiver(rcv_addr).AndReturn(self.mock_receiver)
         self.mock_receiver.capacity = 1
         send_addr = (
@@ -530,7 +531,11 @@ class RpcQpidTestCase(utils.BaseTestCase):
         mock_session.acknowledge(mox.IgnoreArg())
         self.mox.ReplayAll()
 
-        consumer = impl_qpid.DirectConsumer(None,
+        class stub(object):
+            amqp_durable_queues = False
+            amqp_auto_delete = False
+
+        consumer = impl_qpid.DirectConsumer(stub,
                                             mock_session,
                                             'bogus_msg_id',
                                             fake_callback)
@@ -543,6 +548,60 @@ class RpcQpidTestCase(utils.BaseTestCase):
 
     def test_consumer_long_message_no_json(self):
         self._test_consumer_long_message(json=False)
+
+    def test_durable_queues(self):
+        self.mock_connection = self.mox.CreateMock(self.orig_connection)
+        self.mock_session = self.mox.CreateMock(self.orig_session)
+        self.mock_receiver = self.mox.CreateMock(self.orig_receiver)
+
+        self.mock_connection.opened().AndReturn(False)
+        self.mock_connection.open()
+        self.mock_connection.session().AndReturn(self.mock_session)
+        expected_address = (
+            'openstack/impl_qpid_durable ; {"node": {"x-declare": '
+            '{"auto-delete": true, "durable": true}, "type": "topic"}, '
+            '"create": "always", "link": {"x-declare": {"auto-delete": '
+            'false, "exclusive": false, "durable": true}, "durable": '
+            'true, "name": "impl_qpid_durable"}}')
+        self.mock_session.receiver(expected_address).AndReturn(
+            self.mock_receiver)
+        self.mock_receiver.capacity = 1
+        self.mock_connection.close()
+
+        self.mox.ReplayAll()
+
+        self.config(amqp_durable_queues=True)
+        connection = impl_qpid.create_connection(FLAGS)
+        connection.create_consumer("impl_qpid_durable",
+                                   lambda *_x, **_y: None)
+        connection.close()
+
+    def test_auto_delete(self):
+        self.mock_connection = self.mox.CreateMock(self.orig_connection)
+        self.mock_session = self.mox.CreateMock(self.orig_session)
+        self.mock_receiver = self.mox.CreateMock(self.orig_receiver)
+
+        self.mock_connection.opened().AndReturn(False)
+        self.mock_connection.open()
+        self.mock_connection.session().AndReturn(self.mock_session)
+        expected_address = (
+            'openstack/impl_qpid_auto_delete ; {"node": {"x-declare": '
+            '{"auto-delete": true, "durable": true}, "type": "topic"}, '
+            '"create": "always", "link": {"x-declare": {"auto-delete": '
+            'true, "exclusive": false, "durable": false}, "durable": '
+            'true, "name": "impl_qpid_auto_delete"}}')
+        self.mock_session.receiver(expected_address).AndReturn(
+            self.mock_receiver)
+        self.mock_receiver.capacity = 1
+        self.mock_connection.close()
+
+        self.mox.ReplayAll()
+
+        self.config(amqp_auto_delete=True)
+        connection = impl_qpid.create_connection(FLAGS)
+        connection.create_consumer("impl_qpid_auto_delete",
+                                   lambda *_x, **_y: None)
+        connection.close()
 
 
 #
