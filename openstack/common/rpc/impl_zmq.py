@@ -584,7 +584,7 @@ class Connection(rpc_common.Connection):
         else:
             sock_type = zmq.PULL
             subscribe = None
-            topic = '.'.join((topic.split('.', 1)[0], CONF.rpc_zmq_host))
+            topic = '.'.join((topic, CONF.rpc_zmq_host))
 
         if topic in self.topics:
             LOG.info(_("Skipping topic registration. Already registered."))
