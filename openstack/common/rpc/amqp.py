@@ -34,6 +34,7 @@ from eventlet import greenpool
 from eventlet import pools
 from eventlet import queue
 from eventlet import semaphore
+from oslo.config import cfg
 
 from openstack.common import excutils
 from openstack.common.gettextutils import _  # noqa
@@ -41,6 +42,19 @@ from openstack.common import local
 from openstack.common import log as logging
 from openstack.common.rpc import common as rpc_common
 
+
+amqp_opts = [
+    cfg.BoolOpt('amqp_durable_queues',
+                default=False,
+                deprecated_name='rabbit_durable_queues',
+                deprecated_group='DEFAULT',
+                help='Use durable queues in amqp.'),
+    cfg.BoolOpt('amqp_auto_delete',
+                default=False,
+                help='Auto-delete queues in amqp.'),
+]
+
+cfg.CONF.register_opts(amqp_opts)
 
 UNIQUE_ID = '_unique_id'
 LOG = logging.getLogger(__name__)
