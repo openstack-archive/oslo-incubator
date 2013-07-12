@@ -17,6 +17,7 @@ import datetime
 import time
 
 from oslo.config import cfg
+import six
 
 from openstack.common.gettextutils import _  # noqa
 from openstack.common import log as logging
@@ -150,9 +151,7 @@ class _PeriodicTasksMeta(type):
                 cls._periodic_last_run[name] = task._periodic_last_run
 
 
-class PeriodicTasks(object):
-    __metaclass__ = _PeriodicTasksMeta
-
+class PeriodicTasks(six.with_metaclass(_PeriodicTasksMeta, object)):
     def run_periodic_tasks(self, context, raise_on_error=False):
         """Tasks to be run at a periodic interval."""
         idle_for = DEFAULT_INTERVAL
