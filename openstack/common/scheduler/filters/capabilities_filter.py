@@ -13,13 +13,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import six
+
 from openstack.common import log as logging
 from openstack.common.scheduler import filters
 from openstack.common.scheduler.filters import extra_specs_ops
 
-
 LOG = logging.getLogger(__name__)
-
 
 class CapabilitiesFilter(filters.BaseHostFilter):
     """HostFilter to work with resource (instance & volume) type records."""
@@ -32,7 +32,7 @@ class CapabilitiesFilter(filters.BaseHostFilter):
         if not extra_specs:
             return True
 
-        for key, req in extra_specs.iteritems():
+        for key, req in six.iteritems(extra_specs):
             # Either not scope format, or in capabilities scope
             scope = key.split(':')
             if len(scope) > 1 and scope[0] != "capabilities":
