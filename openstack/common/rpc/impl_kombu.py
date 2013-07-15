@@ -143,7 +143,7 @@ class ConsumerBase(object):
         self.queue = kombu.entity.Queue(**self.kwargs)
         self.queue.declare()
 
-    def _callback_handler(self, message, callback):
+    def _callback_handler(self, message, callback, delivery_info=None):
         """Call callback with deserialized message.
 
         Messages that are processed without exception are ack'ed.
@@ -154,23 +154,25 @@ class ConsumerBase(object):
         Rejected messages are immediately requeued.
         """
 
-        ack_msg = False
         try:
-            msg = rpc_common.deserialize_msg(message.payload)
-            callback(msg)
-            ack_msg = True
-        except Exception:
+            payload = message.payload
+            payload['_delivery_info'] = delivery_info
+            payload['_wait_for_consumers'] = not self.ack_on_error
+            msg = rpc_common.deserialize_msg(payload)
+            caught_exception = callback(msg)
+        except Exception, e:
+            caught_exception = e
+
+        if not caught_exception:
+            message.ack()
+        else:
             if self.ack_on_error:
-                ack_msg = True
-                LOG.exception(_("Failed to process message"
-                                " ... skipping it."))
-            else:
-                LOG.exception(_("Failed to process message"
-                                " ... will requeue."))
-        finally:
-            if ack_msg:
+                LOG.error(_("Failed to process message"
+                            " ... skipping it. %s"), caught_exception)
                 message.ack()
             else:
+                LOG.error(_("Failed to process message"
+                            " ... will requeue. %s"), caught_exception)
                 message.reject()
 
     def consume(self, *args, **kwargs):
@@ -195,7 +197,9 @@ class ConsumerBase(object):
 
         def _callback(raw_message):
             message = self.channel.message_to_python(raw_message)
-            self._callback_handler(message, callback)
+            delivery_info = raw_message.delivery_info
+            self._callback_handler(message, callback,
+                                   delivery_info=delivery_info)
 
         self.queue.consume(*args, callback=_callback, **options)
 

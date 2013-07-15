@@ -181,7 +181,8 @@ class ReplyProxy(ConnectionContext):
         self.declare_direct_consumer(self._reply_q, self._process_data)
         self.consume_in_thread()
 
-    def _process_data(self, message_data):
+    def _process_data(self, message_data, **kwargs):
+        """This is the event callback for the proxy."""
         msg_id = message_data.pop('_msg_id', None)
         waiter = self._call_waiters.get(msg_id)
         if not waiter:
@@ -358,9 +359,26 @@ class CallbackWrapper(_ThreadPoolWithWait):
             connection_pool=connection_pool,
         )
         self.callback = callback
+        self.caught = None
+
+    def _wrap(self, message_data):
+        """Wrap the callback invocation to catch exceptions.
+        """
+        try:
+            self.callback(message_data)
+        except Exception, e:
+            self.caught = e
 
     def __call__(self, message_data):
-        self.pool.spawn_n(self.callback, message_data)
+        wait_for_consumers = False
+        if '_wait_for_consumers' in message_data:
+            wait_for_consumers = message_data['_wait_for_consumers']
+            del message_data['_wait_for_consumers']
+        self.pool.spawn_n(self._wrap, message_data)
+        if wait_for_consumers:
+            self.pool.waitall()
+            return self.caught
+        return None
 
 
 class ProxyCallback(_ThreadPoolWithWait):
@@ -374,7 +392,7 @@ class ProxyCallback(_ThreadPoolWithWait):
         self.proxy = proxy
         self.msg_id_cache = _MsgIdCache()
 
-    def __call__(self, message_data):
+    def __call__(self, message_data, **kwargs):
         """Consumer callback to call a method on a proxy object.
 
         Parses the message for validity and fires off a thread to call the
@@ -385,7 +403,6 @@ class ProxyCallback(_ThreadPoolWithWait):
             args: dictionary of arg: value
 
         Example: {'method': 'echo', 'args': {'value': 42}}
-
         """
         # It is important to clear the context here, because at this point
         # the previous context is stored in local.store.context
