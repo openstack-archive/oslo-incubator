@@ -133,7 +133,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
 
         self.received_message = None
 
-        def _callback(message):
+        def _callback(message, **kwargs):
             self.received_message = message
 
         conn.declare_topic_consumer('a_topic', _callback)
@@ -146,7 +146,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
     def test_callback_handler_ack_on_error(self):
         """The default case will ack on error. Same as before.
         """
-        def _callback(msg):
+        def _callback(msg, **kwargs):
             pass
 
         conn = self.rpc.create_connection(FLAGS)
@@ -162,7 +162,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
 
     def test_callback_handler_ack_on_error_exception(self):
 
-        def _callback(msg):
+        def _callback(msg, **kwargs):
             raise MyException()
 
         conn = self.rpc.create_connection(FLAGS)
@@ -179,7 +179,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
 
     def test_callback_handler_no_ack_on_error_exception(self):
 
-        def _callback(msg):
+        def _callback(msg, **kwargs):
             raise MyException()
 
         conn = self.rpc.create_connection(FLAGS)
@@ -196,7 +196,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
 
     def test_callback_handler_no_ack_on_error(self):
 
-        def _callback(msg):
+        def _callback(msg, **kwargs):
             pass
 
         conn = self.rpc.create_connection(FLAGS)
@@ -206,7 +206,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
                                          exchange_name=None,
                                          ack_on_error=False),
                                          "a_topic", _callback)
-        message = FakeMessage("some message")
+        message = FakeMessage({"key": "some message"})
         consumer._callback_handler(message, _callback)
         self.assertTrue(message.acked)
         self.assertFalse(message.rejected)
@@ -220,7 +220,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
 
         self.received_message = None
 
-        def _callback(message):
+        def _callback(message, **kwargs):
             self.received_message = message
             self.fail("should not have received this message")
 
@@ -238,7 +238,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
 
         self.received_message = None
 
-        def _callback(message):
+        def _callback(message, **kwargs):
             self.received_message = message
 
         conn.declare_topic_consumer('a_topic', _callback,
@@ -258,10 +258,10 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         self.received_message_1 = None
         self.received_message_2 = None
 
-        def _callback1(message):
+        def _callback1(message, **kwargs):
             self.received_message_1 = message
 
-        def _callback2(message):
+        def _callback2(message, **kwargs):
             self.received_message_2 = message
 
         conn.declare_topic_consumer('a_topic', _callback1, queue_name='queue1')
@@ -285,10 +285,10 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         self.received_message_1 = None
         self.received_message_2 = None
 
-        def _callback1(message):
+        def _callback1(message, **kwargs):
             self.received_message_1 = message
 
-        def _callback2(message):
+        def _callback2(message, **kwargs):
             self.received_message_2 = message
 
         conn.declare_topic_consumer('a_topic', _callback1, queue_name='queue1',
@@ -314,10 +314,10 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         self.received_message_1 = None
         self.received_message_2 = None
 
-        def _callback1(message):
+        def _callback1(message, **kwargs):
             self.received_message_1 = message
 
-        def _callback2(message):
+        def _callback2(message, **kwargs):
             self.received_message_2 = message
 
         conn.declare_topic_consumer('a_topic', _callback1, queue_name='queue1',
@@ -338,7 +338,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
 
         self.received_message = None
 
-        def _callback(message):
+        def _callback(message, **kwargs):
             self.received_message = message
 
         conn.declare_direct_consumer('a_direct', _callback)
@@ -435,7 +435,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
 
         self.received_message = None
 
-        def _callback(message):
+        def _callback(message, **kwargs):
             self.received_message = message
 
         conn.declare_fanout_consumer('a_fanout', _callback)
@@ -545,7 +545,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
 
         self.received_message = None
 
-        def _callback(message):
+        def _callback(message, **kwargs):
             self.received_message = message
 
         conn.declare_direct_consumer('a_direct', _callback)
