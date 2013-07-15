@@ -590,6 +590,49 @@ class RpcQpidTestCase(utils.BaseTestCase):
     def test_consumer_long_message_no_json(self):
         self._test_consumer_long_message(json=False)
 
+    def test_fanout_reconnect(self):
+        expected_address = mox.Regex(
+            r'^impl_qpid_test_fanout ; '
+            '{"node": {"x-declare": {"auto-delete": true, "durable": '
+            'false, "type": "fanout"}, "type": "topic"}, "create": '
+            '"always", "link": {"x-declare": {"auto-delete": true, '
+            '"exclusive": true, "durable": false}, "durable": true, '
+            '"name": "impl_qpid_test_fanout_.*"}}$')
+        self.mock_connection = self.mox.CreateMock(self.orig_connection)
+        self.mock_session = self.mox.CreateMock(self.orig_session)
+        self.mock_receiver = self.mox.CreateMock(self.orig_receiver)
+
+        # First connection and create_consumer
+        self.mock_connection.opened().AndReturn(False)
+        self.mock_connection.open()
+        self.mock_connection.session().AndReturn(self.mock_session)
+        self.mock_session.receiver(expected_address).AndReturn(
+            self.mock_receiver)
+        self.mock_receiver.capacity = 1
+
+        # Now call reconnect
+        self.mock_connection.opened().AndReturn(False)
+        self.mock_connection.open()
+        self.mock_connection.session().AndReturn(self.mock_session)
+        # FIXME(wilsonmh): connect is currently part of __init__(),
+        #                 causing a reconnect to declare two receivers :(
+        self.mock_session.receiver(expected_address).AndReturn(
+            self.mock_receiver)
+        self.mock_session.receiver(expected_address).AndReturn(
+            self.mock_receiver)
+        self.mock_receiver.capacity = 1
+        self.mock_connection.close()
+
+        self.mox.ReplayAll()
+
+        connection = impl_qpid.create_connection(FLAGS)
+        connection.create_consumer("impl_qpid_test",
+                                   None,
+                                   True)
+        connection.reconnect()
+        connection.close()
+
+
 
 #
 #from nova.tests.rpc import common
