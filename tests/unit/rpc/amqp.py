@@ -34,6 +34,10 @@ FLAGS = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
+class MyException(Exception):
+    pass
+
+
 class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
     """Base test class for all AMQP-based RPC tests."""
     def test_proxycallback_handles_exceptions(self):
@@ -119,9 +123,7 @@ class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
         self.ReplyProxy_was_called = False
 
         class MyReplyProxy(rpc_amqp.ReplyProxy):
-            def _process_data(myself, message_data):
-                #with open('mylog', 'a') as f:
-                #    f.write('my_process_data: ' + str(message_data) + '\n')
+            def _process_data(myself, message_data, **kwargs):
                 self.assertTrue('_msg_id' in message_data)
                 self.ReplyProxy_was_called = True
                 super(MyReplyProxy, myself)._process_data(message_data)
@@ -164,7 +166,7 @@ class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
         cache = rpc_amqp._MsgIdCache()
         self.exc_raised = False
 
-        def _callback(message):
+        def _callback(message, **kwargs):
             try:
                 cache.check_duplicate_message(message)
             except rpc_common.DuplicateMessageError:
@@ -177,3 +179,46 @@ class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
         conn.close()
 
         self.assertTrue(self.exc_raised)
+
+    def test_callback_wrapper_exception_no_wait(self):
+        def my_callback(message, **kwargs):
+            raise MyException("boom")
+
+        x = rpc_amqp.CallbackWrapper(FLAGS, my_callback, self.conn.pool)
+        message = {'_wait_for_consumers': False}
+        try:
+            x(message)
+        except Exception:
+            self.fail("Should not raise")
+
+    def test_callback_wrapper_exception_wait(self):
+        def my_callback(message, **kwargs):
+            raise MyException("boom")
+
+        x = rpc_amqp.CallbackWrapper(FLAGS, my_callback, self.conn.pool)
+        message = {'_wait_for_consumers': True}
+        try:
+            x(message)
+            self.fail("Should raise")
+        except MyException:
+            pass
+
+    def test_callback_wrapper_no_exception_wait(self):
+        def my_callback(message, **kwargs):
+            pass
+
+        x = rpc_amqp.CallbackWrapper(FLAGS, my_callback, self.conn.pool)
+        message = {'_wait_for_consumers': True}
+        try:
+            x(message)
+        except Exception:
+            self.fail("Should raise")
+
+    def test_callback_wrapper_verify_payload(self):
+        def my_callback(message, **kwargs):
+            self.assertFalse('_wait_for_consumers' in message)
+            self.assertEquals('delivery', message['_delivery_info'])
+
+        x = rpc_amqp.CallbackWrapper(FLAGS, my_callback, self.conn.pool)
+        message = {'_wait_for_consumers': True, '_delivery_info': 'delivery'}
+        x(message)
