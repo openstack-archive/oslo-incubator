@@ -58,12 +58,24 @@ then
     exit 1
 fi
 
+OSLOBASEDIR=$(dirname "$0")/../..
+VENV=$OSLOBASEDIR/.update-venv
+
+# -qq gets rid of the deprecation warning, in time we can
+# remove --no-site-packages as it's the default now
+[ -d $VENV ] || virtualenv -qq --no-site-packages $VENV
+
+. $VENV/bin/activate
+
+# need oslo-config for bootstrapping, be quiet for UX reasons
+pip install -r $BASEDIR/requirements.txt
+
 BASEDIRESC=`echo $BASEDIR | sed -e 's/\//\\\\\//g'`
 FILES=$(find $BASEDIR/$PACKAGENAME -type f -name "*.py" ! -path "*/tests/*" \
         -exec grep -l "Opt(" {} + | sed -e "s/^$BASEDIRESC\///g" | sort -u)
 
 export EVENTLET_NO_GREENDNS=yes
 
-MODULEPATH=$(dirname "$0")/../../openstack/common/config/generator.py
+MODULEPATH=$OSLOBASEDIR/openstack/common/config/generator.py
 OUTPUTFILE=$OUTPUTDIR/$PACKAGENAME.conf.sample
-PYTHONPATH=$BASEDIR/:${PYTHONPATH} python $MODULEPATH $FILES > $OUTPUTFILE
+PYTHONPATH=$OSLOBASEDIR/:$BASEDIR/:${PYTHONPATH} python $MODULEPATH $FILES > $OUTPUTFILE
