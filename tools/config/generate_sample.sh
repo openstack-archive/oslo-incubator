@@ -60,6 +60,11 @@ fi
 
 OSLOBASEDIR=$(dirname "$0")/../..
 
+VENV=$OSLOBASEDIR/.update-venv
+[ -d $VENV ] || virtualenv -qq --no-site-packages $VENV
+. $VENV/bin/activate
+pip install -q -r $BASEDIR/requirements.txt
+
 BASEDIRESC=`echo $BASEDIR | sed -e 's/\//\\\\\//g'`
 FILES=$(find $BASEDIR/$PACKAGENAME -type f -name "*.py" ! -path "*/tests/*" \
         -exec grep -l "Opt(" {} + | sed -e "s/^$BASEDIRESC\///g" | sort -u)
