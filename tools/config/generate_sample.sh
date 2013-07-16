@@ -4,8 +4,10 @@ print_hint() {
     echo "Try \`${0##*/} --help' for more information." >&2
 }
 
-PARSED_OPTIONS=$(getopt -n "${0##*/}" -o hb:p:o: \
-                 --long help,base-dir:,package-name:,output-dir: -- "$@")
+USEVENV=false
+
+PARSED_OPTIONS=$(getopt -n "${0##*/}" -o hVb:p:o: \
+        --long help,virtual-env,base-dir:,package-name:,output-dir: -- "$@")
 
 if [ $? != 0 ] ; then print_hint ; exit 1 ; fi
 
@@ -18,10 +20,15 @@ while true; do
             echo ""
             echo "options:"
             echo "-h, --help                show brief help"
-            echo "-b, --base-dir=DIR        Project base directory (required)"
-            echo "-p, --package-name=NAME   Project package name"
-            echo "-o, --output-dir=DIR      File output directory"
+            echo "-V, --virtual-env         create virtual environment"
+            echo "-b, --base-dir=DIR        project base directory (required)"
+            echo "-p, --package-name=NAME   project package name"
+            echo "-o, --output-dir=DIR      file output directory"
             exit 0
+            ;;
+        -V|--virtual-env)
+            shift
+            USEVENV=true
             ;;
         -b|--base-dir)
             shift
@@ -59,6 +66,14 @@ then
 fi
 
 OSLOBASEDIR=$(dirname "$0")/../..
+
+if $USEVENV
+then
+    VENV=$OSLOBASEDIR/.update-venv
+    [ -d $VENV ] || virtualenv -qq --no-site-packages $VENV
+    . $VENV/bin/activate
+    pip install -q -r $BASEDIR/requirements.txt
+fi
 
 BASEDIRESC=`echo $BASEDIR | sed -e 's/\//\\\\\//g'`
 FILES=$(find $BASEDIR/$PACKAGENAME -type f -name "*.py" ! -path "*/tests/*" \
