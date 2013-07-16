@@ -213,8 +213,8 @@ F: periodic_task.py
 
 == policy ==
 
-M:
-S: Orphan
+M: Flavio Percoco <flavio@redhat.com>
+S: Maintained
 F: policy.py
 
 == processutils ==
