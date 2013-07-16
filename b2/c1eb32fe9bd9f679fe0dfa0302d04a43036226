@@ -1,0 +1,12 @@
+Verified+2: Jenkins
+Code-Review+2: Russell Bryant <rbryant@redhat.com>
+Approved+1: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+1: Boris Pavlovic <boris@pavlovic.me>
+Code-Review+1: Sergey Skripnick <sskripnick@mirantis.com>
+Code-Review+1: Yuriy Zveryanskyy <yzveryanskyy@mirantis.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 16 Jul 2013 20:18:07 +0000
+Reviewed-on: https://review.openstack.org/31761
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
