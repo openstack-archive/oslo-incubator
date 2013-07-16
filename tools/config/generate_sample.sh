@@ -58,6 +58,17 @@ then
     exit 1
 fi
 
+VENV=.update-venv
+
+# -qq gets rid of the deprecation warning, in time we can
+# remove --no-site-packages as it's the default now
+[ -d $VENV ] || virtualenv -qq --no-site-packages $VENV
+
+. $VENV/bin/activate
+
+# need oslo-config for bootstrapping, be quiet for UX reasons
+pip install -r $BASEDIR/requirements.txt
+
 BASEDIRESC=`echo $BASEDIR | sed -e 's/\//\\\\\//g'`
 FILES=$(find $BASEDIR/$PACKAGENAME -type f -name "*.py" ! -path "*/tests/*" \
         -exec grep -l "Opt(" {} + | sed -e "s/^$BASEDIRESC\///g" | sort -u)
