@@ -279,3 +279,7 @@ class LauncherTest(utils.BaseTestCase):
         launcher.stop()
         self.assertTrue(svc.cleaned_up)
         self.assertTrue(svc._done.ready())
+
+        # make sure stop can be called more than once.  (i.e. play nice with
+        # unit test fixtures in nova bug #1199315)
+        launcher.stop()
