@@ -58,12 +58,14 @@ then
     exit 1
 fi
 
+OSLOBASEDIR=$(dirname "$0")/../..
+
 BASEDIRESC=`echo $BASEDIR | sed -e 's/\//\\\\\//g'`
 FILES=$(find $BASEDIR/$PACKAGENAME -type f -name "*.py" ! -path "*/tests/*" \
         -exec grep -l "Opt(" {} + | sed -e "s/^$BASEDIRESC\///g" | sort -u)
 
 export EVENTLET_NO_GREENDNS=yes
 
-MODULEPATH=$(dirname "$0")/../../openstack/common/config/generator.py
+MODULEPATH=$OSLOBASEDIR/openstack/common/config/generator.py
 OUTPUTFILE=$OUTPUTDIR/$PACKAGENAME.conf.sample
-PYTHONPATH=$BASEDIR/:${PYTHONPATH} python $MODULEPATH $FILES > $OUTPUTFILE
+PYTHONPATH=$OSLOBASEDIR/:$BASEDIR/:$PYTHONPATH python $MODULEPATH $FILES > $OUTPUTFILE
