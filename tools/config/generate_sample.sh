@@ -64,6 +64,6 @@ FILES=$(find $BASEDIR/$PACKAGENAME -type f -name "*.py" ! -path "*/tests/*" \
 
 export EVENTLET_NO_GREENDNS=yes
 
-MODULEPATH=$(dirname "$0")/../../openstack/common/config/generator.py
+MODULEPATH=openstack.common.config.generator
 OUTPUTFILE=$OUTPUTDIR/$PACKAGENAME.conf.sample
-PYTHONPATH=$BASEDIR/:${PYTHONPATH} python $MODULEPATH $FILES > $OUTPUTFILE
+python -m $MODULEPATH $FILES > $OUTPUTFILE
