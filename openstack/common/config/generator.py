@@ -136,11 +136,9 @@ def _guess_groups(opt, mod_obj):
             if _is_in_group(opt, value._group):
                 return value._group.name
 
-    raise RuntimeError(
-        "Unable to find group for option %s, "
-        "maybe it's defined twice in the same group?"
-        % opt.name
-    )
+    sys.stderr.write('WARNING: Unable to find group for option "%s".\n ' %
+                     opt.name)
+    return 'UNKNOWN'
 
 
 def _list_opts(obj):
