@@ -15,11 +15,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import warnings
+
+from migrate.changeset import UniqueConstraint
 import sqlalchemy
 from sqlalchemy.dialects import mysql
 from sqlalchemy import Boolean, Index, Integer, DateTime, String
-from sqlalchemy import MetaData, Table, Column
+from sqlalchemy import MetaData, Table, Column, ForeignKey
 from sqlalchemy.engine import reflection
+from sqlalchemy.exc import SAWarning
 from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType, NullType
 
@@ -371,3 +375,131 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
         #                 but sqlalchemy will set it to NullType.
         self.assertTrue(isinstance(table.c.foo.type, NullType))
         self.assertTrue(isinstance(table.c.deleted.type, Boolean))
+
+    def test_utils_drop_unique_constraint(self):
+        table_name = "__test_tmp_table__"
+        uc_name = 'uniq_foo'
+        values = [
+            {'id': 1, 'a': 3, 'foo': 10},
+            {'id': 2, 'a': 2, 'foo': 20},
+            {'id': 3, 'a': 1, 'foo': 30},
+        ]
+        for key, engine in self.engines.items():
+            meta = MetaData()
+            meta.bind = engine
+            test_table = Table(
+                table_name, meta,
+                Column('id', Integer, primary_key=True, nullable=False),
+                Column('a', Integer),
+                Column('foo', Integer),
+                UniqueConstraint('a', name='uniq_a'),
+                UniqueConstraint('foo', name=uc_name),
+            )
+            test_table.create()
+
+            engine.execute(test_table.insert(), values)
+            # NOTE(boris-42): This method is generic UC dropper.
+            utils.drop_unique_constraint(engine, table_name, uc_name, 'foo')
+
+            s = test_table.select().order_by(test_table.c.id)
+            rows = engine.execute(s).fetchall()
+
+            for i in xrange(0, len(values)):
+                v = values[i]
+                self.assertEqual((v['id'], v['a'], v['foo']), rows[i])
+
+            # NOTE(boris-42): Update data about Table from DB.
+            meta = MetaData()
+            meta.bind = engine
+            test_table = Table(table_name, meta, autoload=True)
+            constraints = filter(
+                lambda c: c.name == uc_name, test_table.constraints)
+            self.assertEqual(len(constraints), 0)
+            self.assertEqual(len(test_table.constraints), 1)
+
+            test_table.drop()
+
+    def test_util_drop_unique_constraint_with_not_supported_sqlite_type(self):
+        table_name = "__test_tmp_table__"
+        uc_name = 'uniq_foo'
+        values = [
+            {'id': 1, 'a': 3, 'foo': 10},
+            {'id': 2, 'a': 2, 'foo': 20},
+            {'id': 3, 'a': 1, 'foo': 30}
+        ]
+
+        engine = self.engines['sqlite']
+        meta = MetaData(bind=engine)
+
+        test_table = Table(
+            table_name, meta,
+            Column('id', Integer, primary_key=True, nullable=False),
+            Column('a', Integer),
+            Column('foo', CustomType, default=0),
+            UniqueConstraint('a', name='uniq_a'),
+            UniqueConstraint('foo', name=uc_name),
+        )
+        test_table.create()
+
+        engine.execute(test_table.insert(), values)
+        warnings.simplefilter("ignore", SAWarning)
+        # NOTE(boris-42): Missing info about column `foo` that has
+        #                 unsupported type CustomType.
+        self.assertRaises(exception.OpenstackException,
+                          utils.drop_unique_constraint,
+                          engine, table_name, uc_name, 'foo')
+
+        # NOTE(boris-42): Wrong type of foo instance. it should be
+        #                 instance of sqlalchemy.Column.
+        self.assertRaises(exception.OpenstackException,
+                          utils.drop_unique_constraint,
+                          engine, table_name, uc_name, 'foo', foo=Integer())
+
+        foo = Column('foo', CustomType, default=0)
+        utils.drop_unique_constraint(
+            engine, table_name, uc_name, 'foo', foo=foo)
+
+        s = test_table.select().order_by(test_table.c.id)
+        rows = engine.execute(s).fetchall()
+
+        for i in xrange(0, len(values)):
+            v = values[i]
+            self.assertEqual((v['id'], v['a'], v['foo']), rows[i])
+
+        # NOTE(boris-42): Update data about Table from DB.
+        meta = MetaData(bind=engine)
+        test_table = Table(table_name, meta, autoload=True)
+        constraints = filter(
+            lambda c: c.name == uc_name, test_table.constraints)
+        self.assertEqual(len(constraints), 0)
+        self.assertEqual(len(test_table.constraints), 1)
+        test_table.drop()
+
+    def test_drop_unique_constraint_in_sqlite_fk_recreate(self):
+        engine = self.engines['sqlite']
+        meta = MetaData()
+        meta.bind = engine
+        parent_table = Table(
+            'table0', meta,
+            Column('id', Integer, primary_key=True),
+            Column('foo', Integer),
+        )
+        parent_table.create()
+        table_name = 'table1'
+        table = Table(
+            table_name, meta,
+            Column('id', Integer, primary_key=True),
+            Column('baz', Integer),
+            Column('bar', Integer, ForeignKey("table0.id")),
+            UniqueConstraint('baz', name='constr1')
+        )
+        table.create()
+        utils.drop_unique_constraint(engine, table_name, 'constr1', 'baz')
+
+        insp = reflection.Inspector.from_engine(engine)
+        f_keys = insp.get_foreign_keys(table_name)
+        self.assertEqual(len(f_keys), 1)
+        f_key = f_keys[0]
+        self.assertEqual(f_key['referred_table'], 'table0')
+        self.assertEqual(f_key['referred_columns'], ['id'])
+        self.assertEqual(f_key['constrained_columns'], ['bar'])
