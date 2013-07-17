@@ -18,6 +18,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from migrate.changeset import UniqueConstraint
+
 import sqlalchemy
 from sqlalchemy import Boolean
 from sqlalchemy import CheckConstraint
@@ -189,6 +191,43 @@ def _get_not_supported_column(col_name_col_instance, column_name):
                 "of sqlalchemy.Column.")
         raise exception.OpenstackException(message=msg % column_name)
     return column
+
+
+def drop_unique_constraint(migrate_engine, table_name, uc_name, *columns,
+                           **col_name_col_instance):
+    """Drop unique constaraint from table.
+
+    This method drops UC from table and works for mysql, postgresql and sqlite.
+    In mysql and postgresql we are able to use "alter table" constuction.
+    Sqlalchemy doesn't supports some sqlite column types and replace they
+    to NullType in metadata. We proceed these colums and replace NullType to
+    correct column type.
+
+    :param migrate_engine: sqlalchemy engine
+    :param table_name:     name of table that contains uniq constarint.
+    :param uc_name:        name of uniq constraint that will be dropped.
+    :param columns:        columns that are in uniq constarint.
+    :param col_name_col_instance:   contains pair column_name=column_instance.
+                            column_instance is instance of Column. These params
+                            are required only for columns that have unsupported
+                            types by sqlite. For example BigInteger.
+    """
+
+    meta = MetaData()
+    meta.bind = migrate_engine
+    t = Table(table_name, meta, autoload=True)
+
+    if migrate_engine.name == "sqlite":
+        override_cols = [
+            _get_not_supported_column(col_name_col_instance, col.name)
+            for col in t.columns
+            if isinstance(col.type, NullType)
+        ]
+        for col in override_cols:
+            t.columns.replace(col)
+
+    uc = UniqueConstraint(*columns, table=t, name=uc_name)
+    uc.drop()
 
 
 def drop_old_duplicate_entries_from_table(migrate_engine, table_name,
