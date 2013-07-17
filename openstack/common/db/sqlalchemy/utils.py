@@ -101,11 +101,14 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
 
     # Add sorting
     for current_sort_key, current_sort_dir in zip(sort_keys, sort_dirs):
-        sort_dir_func = {
-            'asc': sqlalchemy.asc,
-            'desc': sqlalchemy.desc,
-        }[current_sort_dir]
-
+        try:
+            sort_dir_func = {
+                'asc': sqlalchemy.asc,
+                'desc': sqlalchemy.desc,
+            }[current_sort_dir]
+        except KeyError:
+            raise ValueError(_("Unknown sort direction, "
+                               "must be 'desc' or 'asc'"))
         try:
             sort_key_attr = getattr(model, current_sort_key)
         except AttributeError:
@@ -130,11 +133,8 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
             model_attr = getattr(model, sort_keys[i])
             if sort_dirs[i] == 'desc':
                 crit_attrs.append((model_attr < marker_values[i]))
-            elif sort_dirs[i] == 'asc':
-                crit_attrs.append((model_attr > marker_values[i]))
             else:
-                raise ValueError(_("Unknown sort direction, "
-                                   "must be 'desc' or 'asc'"))
+                crit_attrs.append((model_attr > marker_values[i]))
 
             criteria = sqlalchemy.sql.and_(*crit_attrs)
             criteria_list.append(criteria)
@@ -448,3 +448,4 @@ def _change_deleted_column_type_to_id_type_sqlite(migrate_engine, table_name,
         where(new_table.c.deleted == deleted).\
         values(deleted=default_deleted_value).\
         execute()
+
