@@ -16,6 +16,8 @@
 
 import operator
 
+import six
+
 from openstack.common import jsonutils
 from openstack.common.scheduler import filters
 
@@ -117,7 +119,7 @@ class JsonFilter(filters.BaseHostFilter):
         for arg in query[1:]:
             if isinstance(arg, list):
                 arg = self._process_filter(arg, host_state)
-            elif isinstance(arg, basestring):
+            elif isinstance(arg, six.string_types):
                 arg = self._parse_string(arg, host_state)
             if arg is not None:
                 cooked_args.append(arg)
