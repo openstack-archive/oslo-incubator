@@ -20,3 +20,5 @@ openstack/versioninfo
 *.egg
 openstack/common/db/*.sqlite
 .testrepository/
+.project
+.pydevproject
