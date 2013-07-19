@@ -167,6 +167,10 @@ def _copy_file(path, dest, base):
              '\"' + base + '.openstack.common')
 
     _replace(dest,
+             'openstack\.common.\config',
+             base + '.openstack.common.config')
+
+    _replace(dest,
              'possible_topdir, "oslo",$',
              'possible_topdir, "' + base + '",')
 
@@ -201,6 +205,7 @@ def _copy_module(mod, base, dest_dir):
             copy_pyfile(os.path.join(mod_path, s))
 
     globs_to_copy = [
+        os.path.join('tools', mod, '*.sh'),
         os.path.join('tools', mod + '*'),
         os.path.join('etc', 'oslo', mod + '*.conf'),
         os.path.join('contrib', mod + '*'),
@@ -208,6 +213,8 @@ def _copy_module(mod, base, dest_dir):
 
     for matches in [glob.glob(g) for g in globs_to_copy]:
         for match in matches:
+            if os.path.isdir(match):
+                continue
             dest = os.path.join(dest_dir, match.replace('oslo', base))
             print("Copying %s to %s" % (match, dest))
             _copy_file(match, dest, base)
