@@ -1,8 +1,8 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 # Copyright 2012 Red Hat, Inc.
-# All Rights Reserved.
 # Copyright 2013 IBM Corp.
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -32,8 +32,16 @@ LOG = logging.getLogger(__name__)
 
 class GettextTest(utils.BaseTestCase):
 
-    def test_gettext_does_not_blow_up(self):
-        LOG.info(gettextutils._('test'))
+    def test_gettext_install_lazy(self):
+        import __builtin__
+        gettextutils.install('blaa')
+        # Have to define _ explicitely so that pep8 can see it
+        _ = __builtin__.__dict__['_']
+        self.assertTrue(isinstance(_(' A string'), unicode))
+
+        gettextutils.install('blaa', lazy=True)
+        _ = __builtin__.__dict__['_']
+        self.assertTrue(isinstance(_(' A Message'), gettextutils.Message))
 
     def test_gettext_install_looks_up_localedir(self):
         with mock.patch('os.environ.get') as environ_get:
@@ -53,7 +61,11 @@ class MessageTestCase(utils.BaseTestCase):
 
     def setUp(self):
         super(MessageTestCase, self).setUp()
-        self._lazy_gettext = gettextutils.get_lazy_gettext('oslo')
+
+        def _message_with_domain(msg):
+                    return gettextutils.Message(msg, 'oslo')
+
+        self._lazy_gettext = _message_with_domain
 
     def tearDown(self):
         # need to clean up stubs early since they interfere
@@ -395,7 +407,11 @@ class LocaleHandlerTestCase(utils.BaseTestCase):
 
     def setUp(self):
         super(LocaleHandlerTestCase, self).setUp()
-        self._lazy_gettext = gettextutils.get_lazy_gettext('oslo')
+
+        def _message_with_domain(msg):
+            return gettextutils.Message(msg, 'oslo')
+
+        self._lazy_gettext = _message_with_domain
         self.buffer_handler = logging.handlers.BufferingHandler(40)
         self.locale_handler = gettextutils.LocaleHandler(
             'zh_CN', self.buffer_handler)
