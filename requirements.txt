@@ -18,6 +18,7 @@ qpid-python
 six
 netaddr
 pycrypto>=2.6
+Babel>=0.9.6
 
 -f http://tarballs.openstack.org/oslo.config/oslo.config-1.2.0a3.tar.gz#egg=oslo.config-1.2.0a3
 oslo.config>=1.2.0a3
