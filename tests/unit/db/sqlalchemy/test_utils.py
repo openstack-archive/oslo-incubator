@@ -22,7 +22,6 @@ from sqlalchemy import MetaData, Table, Column
 from sqlalchemy.engine import reflection
 from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType, NullType
-import testtools
 
 from openstack.common.db.sqlalchemy import utils
 from openstack.common import exception
@@ -139,7 +138,6 @@ class TestPaginateQuery(testutils.BaseTestCase):
                              marker=self.marker,
                              sort_dirs=['asc', 'desc'])
 
-    @testtools.skip('The bug is not fixed: ValueError never raises')
     def test_paginate_query_value_error(self):
         sqlalchemy.asc('user').AndReturn('asc_1')
         self.query.order_by('asc_1').AndReturn(self.query)
