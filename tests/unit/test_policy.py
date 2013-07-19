@@ -170,6 +170,44 @@ class EnforcerTest(PolicyBaseTestCase):
         creds = {'roles': ''}
         self.assertEqual(self.enforcer.enforce(action, {}, creds), True)
 
+    def test_enforcer_with_default_rule(self):
+        rules_json = """{
+                        "deny_stack_user": "not role:stack_user",
+                        "cloudwatch:PutMetricData": ""
+                        }"""
+        rules = policy.Rules.load_json(rules_json)
+        default_rule = policy.FalseCheck()
+        enforcer = policy.Enforcer(default_rule=default_rule)
+        enforcer.set_rules(rules)
+        action = "cloudwatch:PutMetricData"
+        creds = {'roles': ''}
+        self.assertEqual(self.enforcer.enforce(action, {}, creds), False)
+
+    def test_enforcer_force_reload_rule(self):
+        self.enforcer.set_rules({'test': 'test'})
+        self.enforcer.load_rules(force_reload=True)
+        self.assertNotIn({'test': 'test'}, self.enforcer.rules)
+        self.assertIn('default', self.enforcer.rules)
+        self.assertIn('admin', self.enforcer.rules)
+
+        self.enforcer.clear()
+        self.enforcer.set_rules({'test': 'test'})
+        self.enforcer.load_rules(force_reload=False)
+        self.assertIn('test', self.enforcer.rules)
+        self.assertNotIn('default', self.enforcer.rules)
+        self.assertNotIn('admin', self.enforcer.rules)
+
+    def test_enforcer_overwrite_rules(self):
+        self.enforcer.set_rules({'test': 'test'})
+        self.enforcer.set_rules({'test': 'test1'}, overwrite=True)
+        self.assertEquals(self.enforcer.rules, {'test': 'test1'})
+
+    def test_enforcer_update_rules(self):
+        self.enforcer.set_rules({'test': 'test'})
+        self.enforcer.set_rules({'test1': 'test1'}, overwrite=False)
+        self.assertEquals(self.enforcer.rules, {'test': 'test',
+                                                'test1': 'test1'})
+
 
 class FakeCheck(policy.BaseCheck):
     def __init__(self, result=None):
@@ -187,24 +225,15 @@ class FakeCheck(policy.BaseCheck):
 class CheckFunctionTestCase(PolicyBaseTestCase):
 
     def test_check_explicit(self):
-        self.enforcer.load_rules()
-        self.enforcer.rules = None
         rule = FakeCheck()
         result = self.enforcer.enforce(rule, "target", "creds")
-
         self.assertEqual(result, ("target", "creds", self.enforcer))
-        self.assertEqual(self.enforcer.rules, None)
 
     def test_check_no_rules(self):
-        self.enforcer.load_rules()
-        self.enforcer.rules = None
         result = self.enforcer.enforce('rule', "target", "creds")
-
         self.assertEqual(result, False)
-        self.assertEqual(self.enforcer.rules, None)
 
     def test_check_missing_rule(self):
-        self.enforcer.rules = {}
         result = self.enforcer.enforce('rule', 'target', 'creds')
 
         self.assertEqual(result, False)
