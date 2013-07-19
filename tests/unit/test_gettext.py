@@ -1,8 +1,8 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 # Copyright 2012 Red Hat, Inc.
-# All Rights Reserved.
 # Copyright 2013 IBM Corp.
+# All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -16,6 +16,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from babel import localedata
 import copy
 import gettext
 import logging.handlers
@@ -35,6 +36,14 @@ class GettextTest(utils.BaseTestCase):
     def test_gettext_does_not_blow_up(self):
         LOG.info(gettextutils._('test'))
 
+    def test_gettextutils_install(self):
+        gettextutils.install('blaa')
+        self.assertTrue(isinstance(_('A String'), unicode))  # noqa
+
+        gettextutils.install('blaa', lazy=True)
+        self.assertTrue(isinstance(_('A Message'),  # noqa
+                                   gettextutils.Message))
+
     def test_gettext_install_looks_up_localedir(self):
         with mock.patch('os.environ.get') as environ_get:
             with mock.patch('gettext.install') as gettext_install:
@@ -47,13 +56,79 @@ class GettextTest(utils.BaseTestCase):
                                                         localedir='/foo/bar',
                                                         unicode=True)
 
+    def test_get_localized_message(self):
+        non_message = 'Non-translatable Message'
+        en_message = 'A message in the default locale'
+        es_translation = 'A message in Spanish'
+        zh_translation = 'A message in Chinese'
+        message = gettextutils.Message(en_message, 'test_domain')
+
+        # In the Message class the translation ultimately occurs when the
+        # message is turned into a string, and that is what we mock here
+        def _mock_translation_and_unicode(self):
+            if self.locale == 'es':
+                return es_translation
+            if self.locale == 'zh':
+                return zh_translation
+            return self.data
+
+        self.stubs.Set(gettextutils.Message,
+                       '__unicode__', _mock_translation_and_unicode)
+
+        self.assertEquals(es_translation,
+                          gettextutils.get_localized_message(message, 'es'))
+        self.assertEquals(zh_translation,
+                          gettextutils.get_localized_message(message, 'zh'))
+        self.assertEquals(en_message,
+                          gettextutils.get_localized_message(message, 'en'))
+        self.assertEquals(en_message,
+                          gettextutils.get_localized_message(message, 'XX'))
+        self.assertEquals(en_message,
+                          gettextutils.get_localized_message(message, None))
+        self.assertEquals(non_message,
+                          gettextutils.get_localized_message(non_message, 'A'))
+
+    def test_get_available_languages(self):
+        # All the available languages for which locale data is available
+        def _mock_locale_identifiers():
+            return ['zh', 'es', 'nl', 'fr']
+        self.stubs.Set(localedata, 'list', _mock_locale_identifiers)
+
+        # Only the languages available for a specific translation domain
+        def _mock_gettext_find(domain, localedir=None, languages=[], all=0):
+            if domain == 'test_domain':
+                return 'translation-file' if any(x in ['zh', 'es']
+                                                 for x in languages) else None
+            return None
+        self.stubs.Set(gettext, 'find', _mock_gettext_find)
+
+        domain_languages = gettextutils.get_available_languages('test_domain')
+        # en_US should always be available no matter the domain
+        # en_US should also always be the first element since order matters
+        # finally only the domain languages should be included after en_US
+        self.assertTrue('en_US', domain_languages)
+        self.assertEquals(3, len(domain_languages))
+        self.assertEquals('en_US', domain_languages[0])
+        self.assertTrue('zh' in domain_languages)
+        self.assertTrue('es' in domain_languages)
+
+        # Clear languages to test an unknown domain
+        gettextutils._AVAILABLE_LANGUAGES = []
+        unknown_domain_languages = gettextutils.get_available_languages('huh')
+        self.assertEquals(1, len(unknown_domain_languages))
+        self.assertTrue('en_US' in unknown_domain_languages)
+
 
 class MessageTestCase(utils.BaseTestCase):
     """Unit tests for locale Message class."""
 
     def setUp(self):
         super(MessageTestCase, self).setUp()
-        self._lazy_gettext = gettextutils.get_lazy_gettext('oslo')
+
+        def _message_with_domain(msg):
+            return gettextutils.Message(msg, 'oslo')
+
+        self._lazy_gettext = _message_with_domain
 
     def tearDown(self):
         # need to clean up stubs early since they interfere
@@ -395,7 +470,11 @@ class LocaleHandlerTestCase(utils.BaseTestCase):
 
     def setUp(self):
         super(LocaleHandlerTestCase, self).setUp()
-        self._lazy_gettext = gettextutils.get_lazy_gettext('oslo')
+
+        def _message_with_domain(msg):
+            return gettextutils.Message(msg, 'oslo')
+
+        self._lazy_gettext = _message_with_domain
         self.buffer_handler = logging.handlers.BufferingHandler(40)
         self.locale_handler = gettextutils.LocaleHandler(
             'zh_CN', self.buffer_handler)
