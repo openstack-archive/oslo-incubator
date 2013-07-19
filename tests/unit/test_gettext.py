@@ -1,4 +1,4 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
+ # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 # Copyright 2012 Red Hat, Inc.
 # All Rights Reserved.
@@ -26,7 +26,6 @@ import mock
 from openstack.common import gettextutils
 from tests import utils
 
-
 LOG = logging.getLogger(__name__)
 
 
@@ -34,6 +33,13 @@ class GettextTest(utils.BaseTestCase):
 
     def test_gettext_does_not_blow_up(self):
         LOG.info(gettextutils._('test'))
+
+    def test_gettext_install_lazy(self):
+        gettextutils.install('blaa')
+        self.assertTrue(isinstance(_(' A string'), unicode))
+
+        gettextutils.install('blaa', lazy=True)
+        self.assertTrue(isinstance(_(' A Message'), gettextutils.Message))
 
     def test_gettext_install_looks_up_localedir(self):
         with mock.patch('os.environ.get') as environ_get:
@@ -53,7 +59,6 @@ class MessageTestCase(utils.BaseTestCase):
 
     def setUp(self):
         super(MessageTestCase, self).setUp()
-        self._lazy_gettext = gettextutils.get_lazy_gettext('oslo')
 
     def tearDown(self):
         # need to clean up stubs early since they interfere
@@ -63,13 +68,13 @@ class MessageTestCase(utils.BaseTestCase):
 
     def test_message_equal_to_string(self):
         msgid = "Some msgid string"
-        result = self._lazy_gettext(msgid)
+        result = _(msgid)
 
         self.assertEqual(result, msgid)
 
     def test_message_not_equal(self):
         msgid = "Some msgid string"
-        result = self._lazy_gettext(msgid)
+        result = _(msgid)
 
         self.assertNotEqual(result, "Other string %s" % msgid)
 
@@ -79,7 +84,7 @@ class MessageTestCase(utils.BaseTestCase):
 
         message = msgid % params
 
-        result = self._lazy_gettext(msgid) % params
+        result = _(msgid) % params
 
         self.assertEqual(result, message)
 
@@ -92,7 +97,7 @@ class MessageTestCase(utils.BaseTestCase):
 
         message = msgid % params
 
-        result = self._lazy_gettext(msgid) % params
+        result = _(msgid) % params
 
         self.assertEqual(result, message)
 
@@ -106,7 +111,7 @@ class MessageTestCase(utils.BaseTestCase):
 
         message = msgid % params
 
-        result = self._lazy_gettext(msgid) % params
+        result = _(msgid) % params
 
         # compare using iterators
         for (c1, c2) in zip(result, message):
@@ -149,7 +154,7 @@ class MessageTestCase(utils.BaseTestCase):
         results = []
         for param in params:
             messages.append(msgid % param)
-            results.append(self._lazy_gettext(msgid) % param)
+            results.append(_(msgid) % param)
 
         for message, result in zip(messages, results):
             self.assertEqual(type(result), gettextutils.Message)
@@ -165,7 +170,7 @@ class MessageTestCase(utils.BaseTestCase):
                   'param2': 'test2',
                   'param3': 'notinstring'}
 
-        result = self._lazy_gettext(msgid) % params
+        result = _(msgid) % params
 
         self.assertEqual(result, msgid % params)
 
@@ -175,7 +180,7 @@ class MessageTestCase(utils.BaseTestCase):
         some_obj.tag = 'stub_object'
         msgid = "Found object: %(some_obj)s"
 
-        result = self._lazy_gettext(msgid) % {'some_obj': some_obj}
+        result = _(msgid) % {'some_obj': some_obj}
 
         old_some_obj = copy.copy(some_obj)
         some_obj.tag = 'switched_tag'
@@ -188,13 +193,13 @@ class MessageTestCase(utils.BaseTestCase):
         params = {'param1': 'test',
                   'param2': 'test2'}
 
-        test_me = lambda: self._lazy_gettext(msgid) % params
+        test_me = lambda: _(msgid) % params
 
         self.assertRaises(KeyError, test_me)
 
     def test_operator_add(self):
         msgid = "Some msgid string"
-        result = self._lazy_gettext(msgid)
+        result = _(msgid)
 
         additional = " with more added"
         expected = msgid + additional
@@ -205,7 +210,7 @@ class MessageTestCase(utils.BaseTestCase):
 
     def test_operator_radd(self):
         msgid = "Some msgid string"
-        result = self._lazy_gettext(msgid)
+        result = _(msgid)
 
         additional = " with more added"
         expected = additional + msgid
@@ -216,7 +221,7 @@ class MessageTestCase(utils.BaseTestCase):
 
     def test_get_index(self):
         msgid = "Some msgid string"
-        result = self._lazy_gettext(msgid)
+        result = _(msgid)
 
         expected = 'm'
         result = result[2]
@@ -235,7 +240,7 @@ class MessageTestCase(utils.BaseTestCase):
     def test_getitem_string(self):
         """Verify using string indexes on Message does not work."""
         msgid = "Some msgid string"
-        result = self._lazy_gettext(msgid)
+        result = _(msgid)
 
         test_me = lambda: result['blah']
 
@@ -243,14 +248,14 @@ class MessageTestCase(utils.BaseTestCase):
 
     def test_contains(self):
         msgid = "Some msgid string"
-        result = self._lazy_gettext(msgid)
+        result = _(msgid)
 
         self.assertIn('msgid', result)
         self.assertNotIn('blah', result)
 
     def test_locale_set_does_translation(self):
         msgid = "Some msgid string"
-        result = self._lazy_gettext(msgid)
+        result = _(msgid)
         result.domain = 'test_domain'
         result.locale = 'test_locale'
         os.environ['TEST_DOMAIN_LOCALEDIR'] = '/tmp/blah'
@@ -280,7 +285,7 @@ class MessageTestCase(utils.BaseTestCase):
 
     def _get_full_test_message(self):
         msgid = "Some msgid string: %(test1)s %(test2)s %(test3)s"
-        message = self._lazy_gettext(msgid)
+        message = _(msgid)
         attrs = self._get_testmsg_inner_params()
         for (k, v) in attrs.items():
             setattr(message, k, v)
@@ -317,7 +322,7 @@ class MessageTestCase(utils.BaseTestCase):
 
     def test_add_returns_copy(self):
         msgid = "Some msgid string: %(test1)s %(test2)s"
-        message = self._lazy_gettext(msgid)
+        message = _(msgid)
         m1 = '10 ' + message + ' 10'
         m2 = '20 ' + message + ' 20'
 
@@ -329,7 +334,7 @@ class MessageTestCase(utils.BaseTestCase):
 
     def test_mod_returns_copy(self):
         msgid = "Some msgid string: %(test1)s %(test2)s"
-        message = self._lazy_gettext(msgid)
+        message = _(msgid)
         m1 = message % {'test1': 'foo', 'test2': 'bar'}
         m2 = message % {'test1': 'foo2', 'test2': 'bar2'}
 
@@ -395,7 +400,6 @@ class LocaleHandlerTestCase(utils.BaseTestCase):
 
     def setUp(self):
         super(LocaleHandlerTestCase, self).setUp()
-        self._lazy_gettext = gettextutils.get_lazy_gettext('oslo')
         self.buffer_handler = logging.handlers.BufferingHandler(40)
         self.locale_handler = gettextutils.LocaleHandler(
             'zh_CN', self.buffer_handler)
@@ -406,7 +410,7 @@ class LocaleHandlerTestCase(utils.BaseTestCase):
 
     def test_emit_message(self):
         msgid = 'Some logrecord message.'
-        message = self._lazy_gettext(msgid)
+        message = _(msgid)
         self.emit_called = False
 
         def emit(record):
