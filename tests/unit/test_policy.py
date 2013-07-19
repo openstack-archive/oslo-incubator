@@ -170,6 +170,25 @@ class EnforcerTest(PolicyBaseTestCase):
         creds = {'roles': ''}
         self.assertEqual(self.enforcer.enforce(action, {}, creds), True)
 
+    def test_enforcer_with_default_rule(self):
+        rules_json = """{
+                        "deny_stack_user": "not role:stack_user",
+                        "cloudwatch:PutMetricData": ""
+                        }"""
+        rules = policy.Rules.load_json(rules_json)
+        default_rule = policy.FalseCheck()
+        enforcer = policy.Enforcer(default_rule=default_rule)
+        enforcer.set_rules(rules)
+        action = "cloudwatch:PutMetricData"
+        creds = {'roles': ''}
+        self.assertEqual(self.enforcer.enforce(action, {}, creds), False)
+
+    def test_enforcer_overwrite_rules(self):
+        self.enforcer.set_rules({'test': 'test'})
+        self.enforcer.load_rules(force_reload=True)
+        self.enforcer.set_rules({'test': 'test1'}, overwrite=True)
+        self.assertEquals(self.enforcer.rules, {'test': 'test1'})
+
 
 class FakeCheck(policy.BaseCheck):
     def __init__(self, result=None):
