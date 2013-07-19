@@ -48,7 +48,8 @@ def _get_connect_string(backend, user, passwd, database):
         raise Exception("Unrecognized backend: '%s'" % backend)
 
     return ("%(backend)s://%(user)s:%(passwd)s@localhost/%(database)s"
-            % locals())
+            % {'backend': backend, 'user': user, 'passwd': passwd,
+               'database': database})
 
 
 def _is_backend_avail(backend, user, passwd, database):
@@ -122,7 +123,7 @@ class BaseMigrationTestCase(test_utils.BaseTestCase):
                 defaults = cp.defaults()
                 for key, value in defaults.items():
                     self.test_databases[key] = value
-            except ConfigParser.ParsingError, e:
+            except ConfigParser.ParsingError as e:
                 self.fail("Failed to read test_migrations.conf config "
                           "file. Got error: %s" % e)
         else:
@@ -160,12 +161,12 @@ class BaseMigrationTestCase(test_utils.BaseTestCase):
         sqlcmd = ("psql -w -U %(user)s -h %(host)s -c"
                   " '%(sql)s' -d template1")
 
-        sql = ("drop database if exists %(database)s;") % locals()
-        droptable = sqlcmd % locals()
+        sql = ("drop database if exists %s;") % database
+        droptable = sqlcmd % {'user': user, 'host': host, 'sql': sql}
         self.execute_cmd(droptable)
 
-        sql = ("create database %(database)s;") % locals()
-        createtable = sqlcmd % locals()
+        sql = ("create database %s;") % database
+        createtable = sqlcmd % {'user': user, 'host': host, 'sql': sql}
         self.execute_cmd(createtable)
 
         os.unsetenv('PGPASSWORD')
@@ -190,10 +191,11 @@ class BaseMigrationTestCase(test_utils.BaseTestCase):
                 # than using SQLAlchemy to do this via MetaData...trust me.
                 (user, password, database, host) = \
                     get_db_connection_info(conn_pieces)
-                sql = ("drop database if exists %(database)s; "
-                       "create database %(database)s;") % locals()
+                sql = ("drop database if exists %(db)s; "
+                       "create database %(db)s;") % {'db': database}
                 cmd = ("mysql -u \"%(user)s\" -p\"%(password)s\" -h %(host)s "
-                       "-e \"%(sql)s\"") % locals()
+                       "-e \"%(sql)s\"") % {'user': user, 'password': password,
+                                            'host': host, 'sql': sql}
                 self.execute_cmd(cmd)
             elif conn_string.startswith('postgresql'):
                 self._reset_pg(conn_pieces)
