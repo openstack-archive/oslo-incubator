@@ -59,7 +59,6 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
             failure = rpc_common.serialize_remote_exception(sys.exc_info())
 
         failure = jsonutils.loads(failure)
-        #assure the traceback was added
         self.assertEqual(expected['class'], failure['class'])
         self.assertEqual(expected['module'], failure['module'])
         self.assertEqual(expected['message'], failure['message'])
@@ -80,7 +79,6 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
             failure = rpc_common.serialize_remote_exception(sys.exc_info())
 
         failure = jsonutils.loads(failure)
-        #assure the traceback was added
         self.assertEqual(expected['class'], failure['class'])
         self.assertEqual(expected['module'], failure['module'])
         self.assertEqual(expected['message'], failure['message'])
@@ -93,7 +91,6 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
             'class': 'OpenstackException',
             'module': 'openstack.common.exception',
             'message': exception.OpenstackException.msg_fmt,
-            'tb': ['raise OpenstackException'],
         }
 
         def raise_remote_exception():
