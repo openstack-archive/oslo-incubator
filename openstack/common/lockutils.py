@@ -20,8 +20,6 @@ import contextlib
 import errno
 import functools
 import os
-import shutil
-import tempfile
 import time
 import weakref
 
@@ -41,8 +39,7 @@ util_opts = [
     cfg.BoolOpt('disable_process_locking', default=False,
                 help='Whether to disable inter-process locks'),
     cfg.StrOpt('lock_path',
-               help=('Directory to use for lock files. Default to a '
-                     'temp directory'))
+               help=('Directory to use for lock files.'))
 ]
 
 
@@ -177,19 +174,15 @@ def lock(name, lock_file_prefix=None, external=False, lock_path=None):
             if external and not CONF.disable_process_locking:
                 LOG.debug(_('Attempting to grab file lock "%(lock)s"'),
                           {'lock': name})
-                cleanup_dir = False
 
                 # We need a copy of lock_path because it is non-local
-                local_lock_path = lock_path
+                local_lock_path = lock_path or CONF.lock_path
                 if not local_lock_path:
-                    local_lock_path = CONF.lock_path
-
-                if not local_lock_path:
-                    cleanup_dir = True
-                    local_lock_path = tempfile.mkdtemp()
+                    raise cfg.RequiredOptError('lock_path')
 
                 if not os.path.exists(local_lock_path):
                     fileutils.ensure_tree(local_lock_path)
+                    LOG.info(_('Created lock path: %s'), local_lock_path)
 
                 def add_prefix(name, prefix):
                     if not prefix:
@@ -213,12 +206,6 @@ def lock(name, lock_file_prefix=None, external=False, lock_path=None):
                 finally:
                     LOG.debug(_('Released file lock "%(lock)s" at %(path)s'),
                               {'lock': name, 'path': lock_file_path})
-                    # NOTE(vish): This removes the tempdir if we needed
-                    #             to create one. This is used to
-                    #             cleanup the locks left behind by unit
-                    #             tests.
-                    if cleanup_dir:
-                        shutil.rmtree(local_lock_path)
             else:
                 yield sem
 
