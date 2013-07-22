@@ -238,7 +238,7 @@ class FanoutConsumer(ConsumerBase):
             {"exclusive": True})
 
     def reconnect(self, session):
-        topic = self.get_node_name()
+        topic = self.get_node_name().rpartition('_fanout')[0]
         params = {
             'session': session,
             'topic': topic,
