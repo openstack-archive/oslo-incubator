@@ -50,13 +50,13 @@ class ApiErrorTest(utils.BaseTestCase):
 
     def test_without_code(self):
         err = exception.ApiError('fake error')
-        self.assertEqual(err.__str__(), 'Unknown: fake error')
+        self.assertEqual(str(err), 'Unknown: fake error')
         self.assertEqual(err.code, 'Unknown')
         self.assertEqual(err.api_message, 'fake error')
 
     def test_with_code(self):
         err = exception.ApiError('fake error', 'blah code')
-        self.assertEqual(err.__str__(), 'blah code: fake error')
+        self.assertEqual(str(err), 'blah code: fake error')
         self.assertEqual(err.code, 'blah code')
         self.assertEqual(err.api_message, 'fake error')
 
