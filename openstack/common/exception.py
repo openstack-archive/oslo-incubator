@@ -33,7 +33,7 @@ class Error(Exception):
 
 class ApiError(Error):
     def __init__(self, message='Unknown', code='Unknown'):
-        self.message = message
+        self.api_message = message
         self.code = code
         super(ApiError, self).__init__('%s: %s' % (code, message))
 
@@ -44,19 +44,19 @@ class NotFound(Error):
 
 class UnknownScheme(Error):
 
-    msg = "Unknown scheme '%s' found in URI"
+    msg_fmt = "Unknown scheme '%s' found in URI"
 
     def __init__(self, scheme):
-        msg = self.__class__.msg % scheme
+        msg = self.__class__.msg_fmt % scheme
         super(UnknownScheme, self).__init__(msg)
 
 
 class BadStoreUri(Error):
 
-    msg = "The Store URI %s was malformed. Reason: %s"
+    msg_fmt = "The Store URI %s was malformed. Reason: %s"
 
     def __init__(self, uri, reason):
-        msg = self.__class__.msg % (uri, reason)
+        msg = self.__class__.msg_fmt % (uri, reason)
         super(BadStoreUri, self).__init__(msg)
 
 
@@ -113,29 +113,29 @@ class OpenstackException(Exception):
     """Base Exception class.
 
     To correctly use this class, inherit from it and define
-    a 'message' property. That message will get printf'd
+    a 'msg_fmt' property. That message will get printf'd
     with the keyword arguments provided to the constructor.
     """
-    message = "An unknown exception occurred"
+    msg_fmt = "An unknown exception occurred"
 
     def __init__(self, **kwargs):
         try:
-            self._error_string = self.message % kwargs
+            self._error_string = self.msg_fmt % kwargs
 
         except Exception:
             if _FATAL_EXCEPTION_FORMAT_ERRORS:
                 raise
             else:
                 # at least get the core message out if something happened
-                self._error_string = self.message
+                self._error_string = self.msg_fmt
 
     def __str__(self):
         return self._error_string
 
 
 class MalformedRequestBody(OpenstackException):
-    message = "Malformed message body: %(reason)s"
+    msg_fmt = "Malformed message body: %(reason)s"
 
 
 class InvalidContentType(OpenstackException):
-    message = "Invalid content type %(content_type)s"
+    msg_fmt = "Invalid content type %(content_type)s"

@@ -66,12 +66,12 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
 
     def test_serialize_remote_custom_exception(self):
         def raise_custom_exception():
-            raise exception.OpenstackException()
+            raise exception.MalformedRequestBody(reason='test')
 
         expected = {
-            'class': 'OpenstackException',
+            'class': 'MalformedRequestBody',
             'module': 'openstack.common.exception',
-            'message': exception.OpenstackException.message,
+            'message': str(exception.MalformedRequestBody(reason='test')),
         }
 
         try:
@@ -92,7 +92,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         expected = {
             'class': 'OpenstackException',
             'module': 'openstack.common.exception',
-            'message': exception.OpenstackException.message,
+            'message': exception.OpenstackException.msg_fmt,
             'tb': ['raise OpenstackException'],
         }
 
@@ -139,7 +139,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         failure = {
             'class': 'OpenstackException',
             'module': 'openstack.common.exception',
-            'message': exception.OpenstackException.message,
+            'message': exception.OpenstackException.msg_fmt,
             'tb': ['raise OpenstackException'],
         }
         serialized = jsonutils.dumps(failure)
@@ -221,7 +221,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
 
         after_exc = rpc_common.deserialize_remote_exception(FLAGS, serialized)
         self.assertTrue(isinstance(after_exc, rpc_common.RemoteError))
-        self.assertTrue(after_exc.message.startswith(
+        self.assertTrue(six.text_type(after_exc).startswith(
             "Remote error: FakeIDontExistException"))
         #assure the traceback was added
         self.assertTrue('raise FakeIDontExistException' in

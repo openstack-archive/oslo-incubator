@@ -52,13 +52,13 @@ class ApiErrorTest(utils.BaseTestCase):
         err = exception.ApiError('fake error')
         self.assertEqual(err.__str__(), 'Unknown: fake error')
         self.assertEqual(err.code, 'Unknown')
-        self.assertEqual(err.message, 'fake error')
+        self.assertEqual(err.api_message, 'fake error')
 
     def test_with_code(self):
         err = exception.ApiError('fake error', 'blah code')
         self.assertEqual(err.__str__(), 'blah code: fake error')
         self.assertEqual(err.code, 'blah code')
-        self.assertEqual(err.message, 'fake error')
+        self.assertEqual(err.api_message, 'fake error')
 
 
 class BadStoreUriTest(utils.BaseTestCase):
@@ -67,8 +67,8 @@ class BadStoreUriTest(utils.BaseTestCase):
         uri = 'http:///etc/passwd'
         reason = 'Permission DENIED!'
         err = exception.BadStoreUri(uri, reason)
-        self.assertTrue(uri in str(err.message))
-        self.assertTrue(reason in str(err.message))
+        self.assertTrue(uri in str(err))
+        self.assertTrue(reason in str(err))
 
 
 class UnknownSchemeTest(utils.BaseTestCase):
@@ -76,12 +76,12 @@ class UnknownSchemeTest(utils.BaseTestCase):
     def test(self):
         scheme = 'http'
         err = exception.UnknownScheme(scheme)
-        self.assertTrue(scheme in str(err.message))
+        self.assertTrue(scheme in str(err))
 
 
 class OpenstackExceptionTest(utils.BaseTestCase):
     class TestException(exception.OpenstackException):
-        message = '%(test)s'
+        msg_fmt = '%(test)s'
 
     def test_format_error_string(self):
         test_message = 'Know Your Meme'
@@ -91,7 +91,7 @@ class OpenstackExceptionTest(utils.BaseTestCase):
     def test_error_formating_error_string(self):
         self.stubs.Set(exception, '_FATAL_EXCEPTION_FORMAT_ERRORS', False)
         err = self.TestException(lol='U mad brah')
-        self.assertEqual(err._error_string, self.TestException.message)
+        self.assertEqual(err._error_string, self.TestException.msg_fmt)
 
     def test_str(self):
         message = 'Y u no fail'
