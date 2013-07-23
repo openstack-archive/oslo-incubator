@@ -13,7 +13,6 @@ argparse
 stevedore
 sqlalchemy-migrate>=0.7
 SQLAlchemy>=0.7.8,<=0.7.9
-qpid-python
 six
 netaddr
 pycrypto>=2.6
