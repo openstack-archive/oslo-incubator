@@ -206,7 +206,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
             def echo(context, queue, value):
                 """Calls echo in the passed queue."""
                 LOG.debug(_("Nested received %(queue)s, %(value)s")
-                          % locals())
+                          % {'queue': queue, 'value': value})
                 # TODO(comstud):
                 # so, it will replay the context and use the same REQID?
                 # that's bizarre.
