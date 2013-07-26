@@ -235,10 +235,7 @@ class ServiceRestartTest(ServiceTestBase):
                     for line in f.readlines()]
         for p, stat in pid_stat:
             if int(p) == self.pid:
-                if stat in ['Z', 'T', 'Z+']:
-                    return False
-                else:
-                    return True
+                return stat not in ['Z', 'T', 'Z+']
         return False
 
     def _spawn_service(self):
