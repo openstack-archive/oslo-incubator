@@ -59,7 +59,5 @@ class CapabilitiesFilter(filters.BaseHostFilter):
         # this filter, so the resource type is either instance or
         # volume.
         resource_type = filter_properties.get('resource_type')
-        if not self._satisfies_extra_specs(host_state.capabilities,
-                                           resource_type):
-            return False
-        return True
+        return self._satisfies_extra_specs(host_state.capabilities,
+                                           resource_type)
