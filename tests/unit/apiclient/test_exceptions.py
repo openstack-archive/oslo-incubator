@@ -61,7 +61,7 @@ class ExceptionsArgsTest(utils.BaseTestCase):
         json_data = {"error": {"message": "fake unknown message",
                                "details": "fake unknown details"}}
         self.assert_exception(
-            exceptions.HttpClientError, method, url, status_code, json_data)
+            exceptions.HTTPClientError, method, url, status_code, json_data)
         status_code = 600
         self.assert_exception(
             exceptions.HttpError, method, url, status_code, json_data)
