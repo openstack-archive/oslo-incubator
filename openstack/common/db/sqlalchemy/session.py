@@ -478,7 +478,7 @@ def _raise_if_duplicate_entry_error(integrity_error, engine_name):
     if engine_name not in ["mysql", "sqlite", "postgresql"]:
         return
 
-    m = _DUP_KEY_RE_DB[engine_name].match(integrity_error.message)
+    m = _DUP_KEY_RE_DB[engine_name].match(unicode(integrity_error))
     if not m:
         return
     columns = m.group(1)
@@ -510,7 +510,7 @@ def _raise_if_deadlock_error(operational_error, engine_name):
     re = _DEADLOCK_RE_DB.get(engine_name)
     if re is None:
         return
-    m = re.match(operational_error.message)
+    m = re.match(unicode(operational_error))
     if not m:
         return
     raise exception.DBDeadlock(operational_error)
