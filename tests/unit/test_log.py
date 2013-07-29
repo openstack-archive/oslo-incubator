@@ -14,7 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import cStringIO
 import logging
 import os
 import sys
@@ -172,7 +171,7 @@ class JSONFormatterTestCase(test_utils.BaseTestCase):
     def setUp(self):
         super(JSONFormatterTestCase, self).setUp()
         self.log = log.getLogger('test-json')
-        self.stream = cStringIO.StringIO()
+        self.stream = six.StringIO()
         handler = logging.StreamHandler(self.stream)
         handler.setFormatter(log.JSONFormatter())
         self.log.logger.addHandler(handler)
@@ -230,7 +229,7 @@ class ContextFormatterTestCase(test_utils.BaseTestCase):
                     logging_default_format_string="NOCTXT: %(message)s",
                     logging_debug_format_suffix="--DBG")
         self.log = log.getLogger()
-        self.stream = cStringIO.StringIO()
+        self.stream = six.StringIO()
         self.handler = logging.StreamHandler(self.stream)
         self.handler.setFormatter(log.ContextFormatter())
         self.log.logger.addHandler(self.handler)
@@ -261,7 +260,7 @@ class ExceptionLoggingTestCase(test_utils.BaseTestCase):
         product_name = 'somename'
         exc_log = log.getLogger(product_name)
 
-        stream = cStringIO.StringIO()
+        stream = six.StringIO()
         handler = logging.StreamHandler(stream)
         handler.setFormatter(log.ContextFormatter())
         exc_log.logger.addHandler(handler)
@@ -296,7 +295,7 @@ class FancyRecordTestCase(test_utils.BaseTestCase):
                                                   "[%(request_id)s]: "
                                                   "%(message)s",
                     logging_default_format_string="%(missing)s: %(message)s")
-        self.stream = cStringIO.StringIO()
+        self.stream = six.StringIO()
 
         self.colorhandler = log.ColorHandler(self.stream)
         self.colorhandler.setFormatter(log.ContextFormatter())
@@ -311,7 +310,7 @@ class FancyRecordTestCase(test_utils.BaseTestCase):
         # and goes to stderr. Suggests on a better way to do this are
         # welcomed.
         error = sys.stderr
-        sys.stderr = cStringIO.StringIO()
+        sys.stderr = six.StringIO()
 
         self.colorlog.info("foo")
         self.assertNotEqual(sys.stderr.getvalue().find("KeyError: 'missing'"),
