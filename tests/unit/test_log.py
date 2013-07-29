@@ -14,7 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import cStringIO
 import logging
 import os
 import sys
@@ -172,7 +171,7 @@ class JSONFormatterTestCase(test_utils.BaseTestCase):
     def setUp(self):
         super(JSONFormatterTestCase, self).setUp()
         self.log = log.getLogger('test-json')
-        self.stream = cStringIO.StringIO()
+        self.stream = six.StringIO()
         handler = logging.StreamHandler(self.stream)
         handler.setFormatter(log.JSONFormatter())
         self.log.logger.addHandler(handler)
