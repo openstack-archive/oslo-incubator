@@ -30,6 +30,29 @@ class FakeContext(object):
         return self
 
 
+class ExceptionTestCase(utils.BaseTestCase):
+
+    def _get_raised_exception(self, exception, *args, **kwargs):
+        try:
+            raise exception(*args, **kwargs)
+        except Exception as e:
+            return e
+
+    def test_quota_exception_format(self):
+
+        class TestException(quota.QuotaException):
+            msg_fmt = "Test format %(string)s"
+
+        e = self._get_raised_exception(TestException)
+        self.assertEqual(e.message, e.msg_fmt)
+
+        e = self._get_raised_exception(TestException, number=42)
+        self.assertEqual(e.message, e.msg_fmt)
+
+        e = self._get_raised_exception(TestException, string="test")
+        self.assertEqual(e.message, e.msg_fmt % {"string": "test"})
+
+
 class DbQuotaDriverTestCase(utils.BaseTestCase):
 
     def setUp(self):
