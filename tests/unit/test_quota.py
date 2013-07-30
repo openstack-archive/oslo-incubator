@@ -30,6 +30,20 @@ class FakeContext(object):
         return self
 
 
+class ExceptionTestCase(utils.BaseTestCase):
+
+    def test_quota_exception_invalid_format(self):
+
+        class TestException(quota.QuotaException):
+            msg_fmt = "Test format %(nonexistent)s"
+
+        try:
+            raise TestException()
+        except TestException as e:
+            pass
+        self.assertEqual(e.message, e.msg_fmt)
+
+
 class DbQuotaDriverTestCase(utils.BaseTestCase):
 
     def setUp(self):
