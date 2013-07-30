@@ -25,7 +25,6 @@ import six
 import webob
 
 from openstack.common.deprecated import wsgi
-from openstack.common import exception
 
 from tests import utils
 
@@ -44,7 +43,7 @@ class RequestTest(utils.BaseTestCase):
         request = wsgi.Request.blank('/tests/123', method='POST')
         request.headers["Content-Type"] = "text/html"
         request.body = "asdf<br />"
-        self.assertRaises(exception.InvalidContentType,
+        self.assertRaises(wsgi.InvalidContentType,
                           request.get_content_type)
 
     def test_content_type_with_charset(self):
@@ -311,7 +310,7 @@ class ResponseSerializerTest(utils.BaseTestCase):
                          self.body_serializers[ctype])
 
     def test_get_serializer_unknown_content_type(self):
-        self.assertRaises(exception.InvalidContentType,
+        self.assertRaises(wsgi.InvalidContentType,
                           self.serializer.get_body_serializer,
                           'application/unknown')
 
@@ -335,7 +334,7 @@ class ResponseSerializerTest(utils.BaseTestCase):
         self.assertEqual(response.status_int, 404)
 
     def test_serialize_response_dict_to_unknown_content_type(self):
-        self.assertRaises(exception.InvalidContentType,
+        self.assertRaises(wsgi.InvalidContentType,
                           self.serializer.serialize,
                           {}, 'application/unknown')
 
@@ -371,7 +370,7 @@ class RequestDeserializerTest(utils.BaseTestCase):
                          self.body_deserializers['application/xml'])
 
     def test_get_deserializer_unknown_content_type(self):
-        self.assertRaises(exception.InvalidContentType,
+        self.assertRaises(wsgi.InvalidContentType,
                           self.deserializer.get_body_deserializer,
                           'application/unknown')
 
