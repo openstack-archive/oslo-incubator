@@ -33,7 +33,7 @@ setuptools.setup(
     ],
     keywords='openstack',
     author='OpenStack',
-    author_email='openstack@lists.launchpad.net',
+    author_email='openstack@lists.openstack.org',
     url='http://www.openstack.org/',
     license='Apache Software License',
     zip_safe=True,
