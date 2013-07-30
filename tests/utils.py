@@ -24,7 +24,6 @@ import fixtures
 from oslo.config import cfg
 import testtools
 
-from openstack.common import exception
 from openstack.common.fixture import moxstubout
 
 
@@ -39,7 +38,6 @@ class BaseTestCase(testtools.TestCase):
         self.addCleanup(self.conf.reset)
         self.useFixture(fixtures.FakeLogger('openstack.common'))
         self.useFixture(fixtures.Timeout(30, True))
-        self.stubs.Set(exception, '_FATAL_EXCEPTION_FORMAT_ERRORS', True)
         self.useFixture(fixtures.NestedTempfile())
         self.tempdirs = []
 
