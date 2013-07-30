@@ -115,12 +115,6 @@ M:
 S: Orphan
 F: eventlet_backdoor.py
 
-== exception ==
-
-M:
-S: Obsolete
-F: exception.py
-
 == excutils ==
 
 M:

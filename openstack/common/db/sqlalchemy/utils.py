@@ -40,7 +40,6 @@ from sqlalchemy.types import NullType
 
 from openstack.common.gettextutils import _  # noqa
 
-from openstack.common import exception
 from openstack.common import log as logging
 from openstack.common import timeutils
 
@@ -186,6 +185,10 @@ def visit_insert_from_select(element, compiler, **kw):
         compiler.process(element.select))
 
 
+class ColumnError(Exception):
+    """Error raised when no column or an invalid column is found."""
+
+
 def _get_not_supported_column(col_name_col_instance, column_name):
     try:
         column = col_name_col_instance[column_name]
@@ -193,13 +196,13 @@ def _get_not_supported_column(col_name_col_instance, column_name):
         msg = _("Please specify column %s in col_name_col_instance "
                 "param. It is required because column has unsupported "
                 "type by sqlite).")
-        raise exception.OpenstackException(message=msg % column_name)
+        raise ColumnError(message=msg % column_name)
 
     if not isinstance(column, Column):
         msg = _("col_name_col_instance param has wrong type of "
                 "column instance for column %s It should be instance "
                 "of sqlalchemy.Column.")
-        raise exception.OpenstackException(message=msg % column_name)
+        raise ColumnError(message=msg % column_name)
     return column
 
 
@@ -297,7 +300,7 @@ def _get_default_deleted_value(table):
         return 0
     if isinstance(table.c.id.type, String):
         return ""
-    raise exception.OpenstackException(
+    raise ColumnError(
         message=_("Unsupported id columns type"))
 
 

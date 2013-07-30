@@ -26,7 +26,6 @@ import time
 import eventlet
 from oslo.config import cfg
 
-from openstack.common import exception
 from openstack.common.gettextutils import _  # noqa
 from openstack.common.rpc import common as rpc_common
 from openstack.common.rpc import dispatcher as rpc_dispatcher
@@ -35,6 +34,13 @@ from tests import utils as test_utils
 
 FLAGS = cfg.CONF
 LOG = logging.getLogger(__name__)
+
+
+class ApiError(Exception):
+    def __init__(self, message='Unknown', code='Unknown'):
+        self.api_message = message
+        self.code = code
+        super(ApiError, self).__init__('%s: %s' % (code, message))
 
 
 class BaseRpcTestCase(test_utils.BaseTestCase):
@@ -424,7 +430,7 @@ class TestReceiver(object):
     @staticmethod
     def fail_converted(context, value):
         """Raises an exception with the value sent in."""
-        raise exception.ApiError(message=value, code='500')
+        raise ApiError(message=value, code='500')
 
     @staticmethod
     def block(context, value):

@@ -28,7 +28,6 @@ from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType, NullType
 
 from openstack.common.db.sqlalchemy import utils
-from openstack.common import exception
 from tests.unit.db.sqlalchemy import test_migrations
 from tests import utils as testutils
 
@@ -335,7 +334,7 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
                       Column('deleted', Boolean))
         table.create()
 
-        self.assertRaises(exception.OpenstackException,
+        self.assertRaises(Exception,
                           utils.change_deleted_column_type_to_id_type,
                           engine, table_name)
 
@@ -376,7 +375,7 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
                       Column('deleted', Integer))
         table.create()
 
-        self.assertRaises(exception.OpenstackException,
+        self.assertRaises(Exception,
                           utils.change_deleted_column_type_to_boolean,
                           engine, table_name)
 
@@ -459,13 +458,13 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
         warnings.simplefilter("ignore", SAWarning)
         # NOTE(boris-42): Missing info about column `foo` that has
         #                 unsupported type CustomType.
-        self.assertRaises(exception.OpenstackException,
+        self.assertRaises(Exception,
                           utils.drop_unique_constraint,
                           engine, table_name, uc_name, 'foo')
 
         # NOTE(boris-42): Wrong type of foo instance. it should be
         #                 instance of sqlalchemy.Column.
-        self.assertRaises(exception.OpenstackException,
+        self.assertRaises(Exception,
                           utils.drop_unique_constraint,
                           engine, table_name, uc_name, 'foo', foo=Integer())
 
