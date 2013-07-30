@@ -19,6 +19,7 @@
 """Common quotas"""
 
 import datetime
+import sys
 
 from oslo.config import cfg
 
@@ -52,9 +53,14 @@ CONF.register_opts(common_quota_opts)
 
 
 class QuotaException(Exception):
-    """Base exception for quota."""
+    """Base Quota Exception
 
-    message = _("Quota exception occurred.")
+    To correctly use this class, inherit from it and define
+    a 'msg_fmt' property. That msg_fmt will get printf'd
+    with the keyword arguments provided to the constructor.
+
+    """
+    msg_fmt = _("Quota exception occurred.")
     code = 500
     headers = {}
     safe = False
@@ -70,17 +76,21 @@ class QuotaException(Exception):
 
         if not message:
             try:
-                message = self.message % kwargs
+                message = self.msg_fmt % kwargs
 
             except Exception:
+                exc_info = sys.exc_info()
                 # kwargs doesn't match a variable in the message
                 # log the issue and the kwargs
                 LOG.exception(_('Exception in string format operation'))
                 for name, value in kwargs.iteritems():
                     LOG.error("%s: %s" % (name, value))
+
+                if CONF.fatal_exception_format_errors:
+                    raise exc_info[0], exc_info[1], exc_info[2]
                 else:
                     # at least get the core message out if something happened
-                    message = self.message
+                    message = self.msg_fmt
 
         super(QuotaException, self).__init__(message)
 
@@ -107,6 +117,10 @@ class OverQuota(QuotaException):
     message = _("Quota exceeded for resources: %(overs)s")
 
 
+class QuotaExists(QuotaException):
+    message = _("Quota exists")
+
+
 class QuotaResourceUnknown(QuotaException):
     message = _("Unknown quota resources %(unknown)s.")
 
@@ -122,6 +136,11 @@ class QuotaUsageNotFound(QuotaNotFound):
 
 class ProjectQuotaNotFound(QuotaNotFound):
     message = _("Quota for project %(project_id)s could not be found.")
+
+
+class ProjectUserQuotaNotFound(QuotaNotFound):
+    message = _("Quota for user %(user_id)s in project %(project_id)s "
+                "could not be found.")
 
 
 class QuotaClassNotFound(QuotaNotFound):
