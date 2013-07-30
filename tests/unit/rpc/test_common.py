@@ -23,7 +23,6 @@ import sys
 from oslo.config import cfg
 import six
 
-from openstack.common import exception
 from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import rpc
@@ -33,10 +32,6 @@ from tests import utils as test_utils
 
 FLAGS = cfg.CONF
 LOG = logging.getLogger(__name__)
-
-
-def raise_exception():
-    raise Exception("test")
 
 
 class FakeUserDefinedException(Exception):
@@ -54,7 +49,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         }
 
         try:
-            raise_exception()
+            raise Exception("test")
         except Exception:
             failure = rpc_common.serialize_remote_exception(sys.exc_info())
 
@@ -64,17 +59,14 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         self.assertEqual(expected['message'], failure['message'])
 
     def test_serialize_remote_custom_exception(self):
-        def raise_custom_exception():
-            raise exception.MalformedRequestBody(reason='test')
-
         expected = {
-            'class': 'MalformedRequestBody',
-            'module': 'openstack.common.exception',
-            'message': str(exception.MalformedRequestBody(reason='test')),
+            'class': 'FakeUserDefinedException',
+            'module': self.__class__.__module__,
+            'message': 'test',
         }
 
         try:
-            raise_custom_exception()
+            raise FakeUserDefinedException('test')
         except Exception:
             failure = rpc_common.serialize_remote_exception(sys.exc_info())
 
@@ -88,14 +80,14 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         # module, when being re-serialized, so that through any amount of cell
         # hops up, it can pop out with the right type
         expected = {
-            'class': 'OpenstackException',
-            'module': 'openstack.common.exception',
-            'message': exception.OpenstackException.msg_fmt,
+            'class': 'FakeUserDefinedException',
+            'module': self.__class__.__module__,
+            'message': 'foobar',
         }
 
         def raise_remote_exception():
             try:
-                raise exception.OpenstackException()
+                raise FakeUserDefinedException('foobar')
             except Exception as e:
                 ex_type = type(e)
                 message = str(e)
@@ -132,26 +124,6 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         self.assertTrue('raise NotImplementedError' in
                         six.text_type(after_exc))
 
-    def test_deserialize_remote_custom_exception(self):
-        failure = {
-            'class': 'OpenstackException',
-            'module': 'openstack.common.exception',
-            'message': exception.OpenstackException.msg_fmt,
-            'tb': ['raise OpenstackException'],
-        }
-        serialized = jsonutils.dumps(failure)
-
-        after_exc = rpc_common.deserialize_remote_exception(FLAGS, serialized)
-        self.assertTrue(isinstance(after_exc, exception.OpenstackException))
-        self.assertTrue('An unknown' in six.text_type(after_exc))
-        #assure the traceback was added
-        self.assertTrue('raise OpenstackException' in six.text_type(after_exc))
-        self.assertEqual('OpenstackException_Remote',
-                         after_exc.__class__.__name__)
-        self.assertEqual('openstack.common.exception_Remote',
-                         after_exc.__class__.__module__)
-        self.assertTrue(isinstance(after_exc, exception.OpenstackException))
-
     def test_deserialize_remote_exception_bad_module(self):
         failure = {
             'class': 'popen2',
@@ -169,6 +141,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         self.config(allowed_rpc_exception_modules=[self.__class__.__module__])
         failure = {
             'class': 'FakeUserDefinedException',
+            'message': 'foobar',
             'module': self.__class__.__module__,
             'tb': ['raise FakeUserDefinedException'],
         }
@@ -176,6 +149,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
 
         after_exc = rpc_common.deserialize_remote_exception(FLAGS, serialized)
         self.assertTrue(isinstance(after_exc, FakeUserDefinedException))
+        self.assertTrue('foobar' in six.text_type(after_exc))
         #assure the traceback was added
         self.assertTrue('raise FakeUserDefinedException' in
                         six.text_type(after_exc))
