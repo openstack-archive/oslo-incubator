@@ -52,9 +52,14 @@ CONF.register_opts(common_quota_opts)
 
 
 class QuotaException(Exception):
-    """Base exception for quota."""
+    """Base exception for quota.
 
-    message = _("Quota exception occurred.")
+    To correctly use this class, inherit from it and define
+    a 'msg_fmt' property. That msg_fmt will get printf'd
+    with the keyword arguments provided to the constructor.
+
+    """
+    msg_fmt = _("Quota exception occurred.")
     code = 500
     headers = {}
     safe = False
@@ -63,52 +68,47 @@ class QuotaException(Exception):
         self.kwargs = kwargs
 
         if 'code' not in self.kwargs:
-            try:
-                self.kwargs['code'] = self.code
-            except AttributeError:
-                pass
+            self.kwargs['code'] = self.code
 
         if not message:
             try:
-                message = self.message % kwargs
-
+                message = self.msg_fmt % kwargs
             except Exception:
                 # kwargs doesn't match a variable in the message
                 # log the issue and the kwargs
                 LOG.exception(_('Exception in string format operation'))
                 for name, value in kwargs.iteritems():
                     LOG.error("%s: %s" % (name, value))
-                else:
-                    # at least get the core message out if something happened
-                    message = self.message
-
+                # at least get the core message out if something happened
+                message = self.msg_fmt
         super(QuotaException, self).__init__(message)
 
     def format_message(self):
-        if self.__class__.__name__.endswith('_Remote'):
-            return self.args[0]
-        else:
-            return unicode(self)
+        return unicode(self)
 
 
 class QuotaError(QuotaException):
-    message = _("Quota exceeded") + ": code=%(code)s"
+    msg_fmt = _("Quota exceeded") + ": code=%(code)s"
     code = 413
     headers = {'Retry-After': 0}
     safe = True
 
 
 class InvalidQuotaValue(QuotaException):
-    message = _("Change would make usage less than 0 for the following "
+    msg_fmt = _("Change would make usage less than 0 for the following "
                 "resources: %(unders)s")
 
 
 class OverQuota(QuotaException):
-    message = _("Quota exceeded for resources: %(overs)s")
+    msg_fmt = _("Quota exceeded for resources: %(overs)s")
+
+
+class QuotaExists(QuotaException):
+    message = _("Quota exists")
 
 
 class QuotaResourceUnknown(QuotaException):
-    message = _("Unknown quota resources %(unknown)s.")
+    msg_fmt = _("Unknown quota resources %(unknown)s.")
 
 
 class QuotaNotFound(QuotaException):
@@ -117,24 +117,29 @@ class QuotaNotFound(QuotaException):
 
 
 class QuotaUsageNotFound(QuotaNotFound):
-    message = _("Quota usage for project %(project_id)s could not be found.")
+    msg_fmt = _("Quota usage for project %(project_id)s could not be found.")
 
 
 class ProjectQuotaNotFound(QuotaNotFound):
-    message = _("Quota for project %(project_id)s could not be found.")
+    msg_fmt = _("Quota for project %(project_id)s could not be found.")
+
+
+class ProjectUserQuotaNotFound(QuotaNotFound):
+    msg_fmt = _("Quota for user %(user_id)s in project %(project_id)s "
+                "could not be found.")
 
 
 class QuotaClassNotFound(QuotaNotFound):
-    message = _("Quota class %(class_name)s could not be found.")
+    msg_fmt = _("Quota class %(class_name)s could not be found.")
 
 
 class ReservationNotFound(QuotaNotFound):
-    message = _("Quota reservation %(uuid)s could not be found.")
+    msg_fmt = _("Quota reservation %(uuid)s could not be found.")
 
 
 class InvalidReservationExpiration(QuotaException):
     code = 400
-    message = _("Invalid reservation expiration %(expire)s.")
+    msg_fmt = _("Invalid reservation expiration %(expire)s.")
 
 
 class DbQuotaDriver(object):
