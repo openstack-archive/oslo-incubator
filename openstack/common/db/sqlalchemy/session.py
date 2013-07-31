@@ -279,12 +279,20 @@ database_opts = [
                deprecated_opts=[cfg.DeprecatedOpt('sql_connection',
                                                   group='DEFAULT'),
                                 cfg.DeprecatedOpt('sql_connection',
-                                                  group='DATABASE')],
+                                                  group='DATABASE')]),
+    cfg.StrOpt('username',
+               help='Database username'),
+    cfg.StrOpt('password',
+               help='Databse password',
                secret=True),
     cfg.StrOpt('slave_connection',
                default='',
                help='The SQLAlchemy connection string used to connect to the '
-                    'slave database',
+                    'slave database'),
+    cfg.StrOpt('slave_username',
+               help='Slave database username'),
+    cfg.StrOpt('slave_password',
+               help='Slave database password',
                secret=True),
     cfg.IntOpt('idle_timeout',
                default=3600,
@@ -359,6 +367,8 @@ _ENGINE = None
 _MAKER = None
 _SLAVE_ENGINE = None
 _SLAVE_MAKER = None
+
+_CONNURL_REGEX = re.compile(r"[a-zA-Z\+]+://(\w+):(\w+)@.+")
 
 
 def set_defaults(sql_connection, sqlite_db, max_pool_size=None,
@@ -545,16 +555,45 @@ def _wrap_db_error(f):
     return _wrap
 
 
+def _parse_url(url):
+    match = _CONNURL_REGEX.search(url)
+    if match:
+        new_url = url[:match.start(1)] + url[match.end(2) + 1:]
+        return new_url, match.group(1), match.group(2)
+    return url, None, None
+
+
+def _assemble_url(url, usr, pwd):
+    if usr and pwd:
+        protocol, host_schema = url.split('://')
+        return '%s://%s:%s@%s' % (protocol, usr, pwd, host_schema)
+    return url
+
+
 def get_engine(sqlite_fk=False, slave_engine=False):
     """Return a SQLAlchemy engine."""
     global _ENGINE
     global _SLAVE_ENGINE
     engine = _ENGINE
-    db_uri = CONF.database.connection
+    db_conn, db_usr, db_pwd = _parse_url(CONF.database.connection)
+    if db_conn != CONF.database.connection:
+        CONF.set_override('connection', db_conn, 'database')
+        CONF.set_override('username', db_usr, 'database')
+        CONF.set_override('password', db_pwd, 'database')
+    db_uri = _assemble_url(CONF.database.connection,
+                           CONF.database.username,
+                           CONF.database.password)
 
     if slave_engine:
         engine = _SLAVE_ENGINE
-        db_uri = CONF.database.slave_connection
+        db_conn, db_usr, db_pwd = _parse_url(CONF.database.slave_connection)
+        if db_conn != CONF.database.slave_connection:
+            CONF.set_override('slave_connection', db_conn, 'database')
+            CONF.set_override('slave_username', db_usr, 'database')
+            CONF.set_override('slave_password', db_pwd, 'database')
+        db_uri = _assemble_url(CONF.database.slave_connection,
+                               CONF.database.slave_username,
+                               CONF.database.slave_password)
 
     if engine is None:
         engine = create_engine(db_uri,
