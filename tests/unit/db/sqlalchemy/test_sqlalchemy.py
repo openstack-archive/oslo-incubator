@@ -18,6 +18,8 @@
 
 """Unit tests for SQLAlchemy specific code."""
 
+import mock
+import six
 from sqlalchemy import Column, MetaData, Table, UniqueConstraint
 from sqlalchemy import DateTime, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -213,3 +215,118 @@ class SlaveBackendTestCase(test_utils.BaseTestCase):
     def test_slave_backend_nomatch(self):
         session.CONF.database.slave_connection = "mysql:///localhost"
         self.assertRaises(AssertionError, session._assert_matching_drivers)
+
+
+class TestGetEngine(test_utils.BaseTestCase):
+    def setUp(self):
+        super(TestGetEngine, self).setUp()
+        self.db_url = 'myprotocol://dbhost.url/myschema'
+        self.db_usr = 'myid'
+        self.db_pwd = 'secret'
+        self.db_url_with_cred = 'myprotocol://myid:secret@dbhost.url/myschema'
+        if (isinstance(session._ENGINE, six.string_types) or
+                isinstance(session._SLAVE_ENGINE, six.string_types)):
+            session._ENGINE = None
+            session._SLAVE_ENGINE = None
+        else:
+            session.cleanup()
+
+    @mock.patch.object(session, 'create_engine', lambda x, sqlite_fk: x)
+    def test_legacy_connection(self):
+        cfg_file = [(
+            'test',
+            '[database]\n'
+            'connection=%s\n' % self.db_url_with_cred
+        )]
+        paths = self.create_tempfiles(cfg_file)
+        self.conf(['--config-file', paths[0]])
+        actual = session.get_engine()
+        self.assertEquals(self.conf.database.connection, self.db_url)
+        self.assertEquals(self.conf.database.username, self.db_usr)
+        self.assertEquals(self.conf.database.password, self.db_pwd)
+        self.assertEquals(actual, self.db_url_with_cred)
+
+    @mock.patch.object(session, 'create_engine', lambda x, sqlite_fk: x)
+    def test_legacy_slave_connection(self):
+        cfg_file = [(
+            'test',
+            '[database]\n'
+            'slave_connection=%s\n' % self.db_url_with_cred
+        )]
+        paths = self.create_tempfiles(cfg_file)
+        self.conf(['--config-file', paths[0]])
+        actual = session.get_engine(slave_engine=True)
+        self.assertEquals(self.conf.database.slave_connection, self.db_url)
+        self.assertEquals(self.conf.database.slave_username, self.db_usr)
+        self.assertEquals(self.conf.database.slave_password, self.db_pwd)
+        self.assertEquals(actual, self.db_url_with_cred)
+
+    @mock.patch.object(session, 'create_engine', lambda x, sqlite_fk: x)
+    def test_legacy_connection_with_dialect(self):
+        db_url_with_cred = 'protocol+dialect://myid:secret@dbhost.url/myschema'
+        cfg_file = [(
+            'test',
+            '[database]\n'
+            'connection=%s\n' % db_url_with_cred
+        )]
+        paths = self.create_tempfiles(cfg_file)
+        self.conf(['--config-file', paths[0]])
+        expected = 'protocol+dialect://dbhost.url/myschema'
+        actual = session.get_engine()
+        self.assertEquals(self.conf.database.connection, expected)
+        self.assertEquals(self.conf.database.username, self.db_usr)
+        self.assertEquals(self.conf.database.password, self.db_pwd)
+        self.assertEquals(actual, db_url_with_cred)
+
+    @mock.patch.object(session, 'create_engine', lambda x, sqlite_fk: x)
+    def test_connection(self):
+        cfg_file = [(
+            'test',
+            '[database]\n'
+            'connection=%s\n'
+            'username=%s\n'
+            'password=%s\n' % (self.db_url, self.db_usr, self.db_pwd)
+        )]
+        paths = self.create_tempfiles(cfg_file)
+        self.conf(['--config-file', paths[0]])
+        actual = session.get_engine()
+        self.assertEquals(self.conf.database.connection, self.db_url)
+        self.assertEquals(self.conf.database.username, self.db_usr)
+        self.assertEquals(self.conf.database.password, self.db_pwd)
+        self.assertEquals(actual, self.db_url_with_cred)
+
+    @mock.patch.object(session, 'create_engine', lambda x, sqlite_fk: x)
+    def test_slave_connection(self):
+        cfg_file = [(
+            'test',
+            '[database]\n'
+            'slave_connection=%s\n'
+            'slave_username=%s\n'
+            'slave_password=%s\n' % (self.db_url, self.db_usr, self.db_pwd)
+        )]
+        paths = self.create_tempfiles(cfg_file)
+        self.conf(['--config-file', paths[0]])
+        actual = session.get_engine(slave_engine=True)
+        self.assertEquals(self.conf.database.slave_connection, self.db_url)
+        self.assertEquals(self.conf.database.slave_username, self.db_usr)
+        self.assertEquals(self.conf.database.slave_password, self.db_pwd)
+        self.assertEquals(actual, self.db_url_with_cred)
+
+    @mock.patch.object(session, 'create_engine', lambda x, sqlite_fk: x)
+    def test_connection_with_dialect(self):
+        db_url_with_cred = 'protocol+dialect://myid:secret@dbhost.url/myschema'
+        cfg_file = [(
+            'test',
+            '[database]\n'
+            'connection=protocol+dialect://dbhost.url/myschema\n'
+            'username=%s\n'
+            'password=%s\n' % (self.db_usr, self.db_pwd)
+        )]
+        paths = self.create_tempfiles(cfg_file)
+        self.conf(['--config-file', paths[0]])
+        expected = 'protocol+dialect://dbhost.url/myschema'
+        actual = session.get_engine()
+        self.assertEquals(self.conf.database.connection, expected)
+        self.assertEquals(self.conf.database.username, self.db_usr)
+        self.assertEquals(self.conf.database.password, self.db_pwd)
+        self.assertEquals(actual, db_url_with_cred)
