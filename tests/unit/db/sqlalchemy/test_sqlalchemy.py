@@ -18,6 +18,7 @@
 
 """Unit tests for SQLAlchemy specific code."""
 
+import mox
 from sqlalchemy import Column, MetaData, Table, UniqueConstraint
 from sqlalchemy import DateTime, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -213,3 +214,73 @@ class SlaveBackendTestCase(test_utils.BaseTestCase):
     def test_slave_backend_nomatch(self):
         session.CONF.database.slave_connection = "mysql:///localhost"
         self.assertRaises(AssertionError, session._assert_matching_drivers)
+
+
+class TestConnectionPassword(test_utils.BaseTestCase):
+    def setUp(self):
+        super(TestConnectionPassword, self).setUp()
+        self.mox.StubOutWithMock(session, 'create_engine')
+
+    def test_legacy_connection(self):
+        paths = self.create_tempfiles([('test',
+             '[database]\n'
+             'connection=protocol://myid:secret@dbhost.url/myschema\n',
+        )])
+        self.conf(['--config-file', paths[0]])
+        session.create_engine(mox.IgnoreArg(),
+                              sqlite_fk=mox.IgnoreArg()).AndReturn(None)
+        self.mox.ReplayAll()
+        expected = 'protocol://dbhost.url/myschema'
+        _session = session.get_engine()
+        self.assertEquals(self.conf.database.connection, expected)
+        self.assertEquals(self.conf.database.username, 'myid')
+        self.assertEquals(self.conf.database.password, 'secret')
+
+    def test_legacy_connection_with_dialect(self):
+        paths = self.create_tempfiles([('test',
+             '[database]\n'
+             'connection=protocol+dialect://myid:secret@dbhost.url/myschema\n',
+        )])
+        self.conf(['--config-file', paths[0]])
+        session.create_engine(mox.IgnoreArg(),
+                              sqlite_fk=mox.IgnoreArg()).AndReturn(None)
+        self.mox.ReplayAll()
+        expected = 'protocol+dialect://dbhost.url/myschema'
+        _session = session.get_engine()
+        self.assertEquals(self.conf.database.connection, expected)
+        self.assertEquals(self.conf.database.username, 'myid')
+        self.assertEquals(self.conf.database.password, 'secret')
+
+    def test_connection(self):
+        paths = self.create_tempfiles([('test',
+             '[database]\n'
+             'connection=protocol://dbhost.url/myschema\n'
+             'username=myid\n'
+             'password=secret\n'
+        )])
+        self.conf(['--config-file', paths[0]])
+        session.create_engine(mox.IgnoreArg(),
+                              sqlite_fk=mox.IgnoreArg()).AndReturn(None)
+        self.mox.ReplayAll()
+        expected = 'protocol://dbhost.url/myschema'
+        _session = session.get_engine()
+        self.assertEquals(self.conf.database.connection, expected)
+        self.assertEquals(self.conf.database.username, 'myid')
+        self.assertEquals(self.conf.database.password, 'secret')
+
+    def test_connection_with_dialect(self):
+        paths = self.create_tempfiles([('test',
+             '[database]\n'
+             'connection=protocol+dialect://dbhost.url/myschema\n'
+             'username=myid\n'
+             'password=secret\n'
+        )])
+        self.conf(['--config-file', paths[0]])
+        session.create_engine(mox.IgnoreArg(),
+                              sqlite_fk=mox.IgnoreArg()).AndReturn(None)
+        self.mox.ReplayAll()
+        expected = 'protocol+dialect://dbhost.url/myschema'
+        _session = session.get_engine()
+        self.assertEquals(self.conf.database.connection, expected)
+        self.assertEquals(self.conf.database.username, 'myid')
+        self.assertEquals(self.conf.database.password, 'secret')
