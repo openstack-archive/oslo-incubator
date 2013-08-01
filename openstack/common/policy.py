@@ -404,7 +404,7 @@ class AndCheck(BaseCheck):
         """
 
         for rule in self.rules:
-            if not rule(target, cred):
+            if not rule(target, cred, enforcer):
                 return False
 
         return True
@@ -447,7 +447,7 @@ class OrCheck(BaseCheck):
         """
 
         for rule in self.rules:
-            if rule(target, cred):
+            if rule(target, cred, enforcer):
                 return True
 
         return False

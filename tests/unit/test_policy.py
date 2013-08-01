@@ -327,6 +327,48 @@ class NotCheckTestCase(utils.BaseTestCase):
         rule.assert_called_once_with('target', 'cred', None)
 
 
+class AndCheckTestCase(utils.BaseTestCase):
+    def test_init(self):
+        check = policy.AndCheck(['rule1', 'rule2'])
+
+        self.assertEqual(check.rules, ['rule1', 'rule2'])
+
+    def test_add_check(self):
+        check = policy.AndCheck(['rule1', 'rule2'])
+        check.add_check('rule3')
+
+        self.assertEqual(check.rules, ['rule1', 'rule2', 'rule3'])
+
+    def test_str(self):
+        check = policy.AndCheck(['rule1', 'rule2'])
+
+        self.assertEqual(str(check), '(rule1 and rule2)')
+
+    def test_call_all_false(self):
+        rules = [mock.Mock(return_value=False), mock.Mock(return_value=False)]
+        check = policy.AndCheck(rules)
+
+        self.assertEqual(check('target', 'cred', None), False)
+        rules[0].assert_called_once_with('target', 'cred', None)
+        self.assertFalse(rules[1].called)
+
+    def test_call_first_true(self):
+        rules = [mock.Mock(return_value=True), mock.Mock(return_value=False)]
+        check = policy.AndCheck(rules)
+
+        self.assertFalse(check('target', 'cred', None))
+        rules[0].assert_called_once_with('target', 'cred', None)
+        rules[1].assert_called_once_with('target', 'cred', None)
+
+    def test_call_second_true(self):
+        rules = [mock.Mock(return_value=False), mock.Mock(return_value=True)]
+        check = policy.AndCheck(rules)
+
+        self.assertFalse(check('target', 'cred', None))
+        rules[0].assert_called_once_with('target', 'cred', None)
+        self.assertFalse(rules[1].called)
+
+
 class OrCheckTestCase(utils.BaseTestCase):
     def test_init(self):
         check = policy.OrCheck(['rule1', 'rule2'])
@@ -349,15 +391,15 @@ class OrCheckTestCase(utils.BaseTestCase):
         check = policy.OrCheck(rules)
 
         self.assertEqual(check('target', 'cred', None), False)
-        rules[0].assert_called_once_with('target', 'cred')
-        rules[1].assert_called_once_with('target', 'cred')
+        rules[0].assert_called_once_with('target', 'cred', None)
+        rules[1].assert_called_once_with('target', 'cred', None)
 
     def test_call_first_true(self):
         rules = [mock.Mock(return_value=True), mock.Mock(return_value=False)]
         check = policy.OrCheck(rules)
 
         self.assertEqual(check('target', 'cred', None), True)
-        rules[0].assert_called_once_with('target', 'cred')
+        rules[0].assert_called_once_with('target', 'cred', None)
         self.assertFalse(rules[1].called)
 
     def test_call_second_true(self):
@@ -365,8 +407,8 @@ class OrCheckTestCase(utils.BaseTestCase):
         check = policy.OrCheck(rules)
 
         self.assertEqual(check('target', 'cred', None), True)
-        rules[0].assert_called_once_with('target', 'cred')
-        rules[1].assert_called_once_with('target', 'cred')
+        rules[0].assert_called_once_with('target', 'cred', None)
+        rules[1].assert_called_once_with('target', 'cred', None)
 
 
 class ParseCheckTestCase(utils.BaseTestCase):
