@@ -206,6 +206,20 @@ class MessageTestCase(utils.BaseTestCase):
 
         self.assertEqual(result, msgid % params)
 
+    def test_regex_find_named_parameters_no_space(self):
+        msgid = ("Request: %(method)s http://%(server)s:"
+                 "%(port)s%(url)s with headers %(headers)s")
+        params = {'method': 'POST',
+                  'server': 'test1',
+                  'port': 1234,
+                  'url': 'test2',
+                  'headers': {'h1': 'val1'}}
+
+        result = self._lazy_gettext(msgid) % params
+
+        self.assertEqual(result, msgid % params)
+
+
     def test_regex_dict_is_parameter(self):
         msgid = ("Test that we can inject a dictionary %s")
         params = {'description': 'test1',
