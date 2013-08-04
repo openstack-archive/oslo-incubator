@@ -1,0 +1,12 @@
+Verified+2: Jenkins
+Code-Review+1: Sandy Walsh <sandy.walsh@rackspace.com>
+Approved+1: Michael Still <mikal@stillhq.com>
+Code-Review+2: Michael Still <mikal@stillhq.com>
+Code-Review+1: Jeremy Stanley <fungi@yuggoth.org>
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+1: tiago-martins <tiago.ferraz@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Sun, 04 Aug 2013 11:51:23 +0000
+Reviewed-on: https://review.openstack.org/39515
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
