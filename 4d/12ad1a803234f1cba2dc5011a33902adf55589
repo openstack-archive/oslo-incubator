@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Code-Review+2: Zhongyue Luo <zhongyue.luo@gmail.com>
+Approved+1: Flavio Percoco <fpercoco@redhat.com>
+Code-Review+2: Flavio Percoco <fpercoco@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Mon, 05 Aug 2013 10:06:34 +0000
+Reviewed-on: https://review.openstack.org/36888
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
