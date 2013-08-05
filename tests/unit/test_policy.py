@@ -208,6 +208,12 @@ class EnforcerTest(PolicyBaseTestCase):
         self.assertEquals(self.enforcer.rules, {'test': 'test',
                                                 'test1': 'test1'})
 
+    def test_get_policy_path_raises_exc(self):
+        # closes bug: #1208397
+        enforcer = policy.Enforcer(policy_file='raise_error.json')
+        self.assertRaises(cfg.ConfigFilesNotFoundError,
+                          enforcer._get_policy_path)
+
 
 class FakeCheck(policy.BaseCheck):
     def __init__(self, result=None):
