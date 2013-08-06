@@ -27,8 +27,8 @@ from sqlalchemy.exc import SAWarning
 from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType, NullType
 
+from openstack.common.db.sqlalchemy import test_migrations
 from openstack.common.db.sqlalchemy import utils
-from tests.unit.db.sqlalchemy import test_migrations
 from tests import utils as testutils
 
 
