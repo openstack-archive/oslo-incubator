@@ -146,9 +146,7 @@ class ConsumerBase(object):
         Messages that are processed without exception are ack'ed.
 
         If the message processing generates an exception, it will be
-        ack'ed if ack_on_error=True. Otherwise it will be .reject()'ed.
-        Rejection is better than waiting for the message to timeout.
-        Rejected messages are immediately requeued.
+        ack'ed if ack_on_error=True. Otherwise it will be .requeue()'ed.
         """
 
         try:
@@ -158,6 +156,8 @@ class ConsumerBase(object):
             msg = rpc_common.deserialize_msg(payload)
             callback(msg)
             message.ack()
+        except rpc_common.RejectMessageException:
+            message.reject()
         except Exception:
             if self.ack_on_error:
                 LOG.exception(_("Failed to process message"
