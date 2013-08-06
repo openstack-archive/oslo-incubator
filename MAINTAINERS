@@ -187,6 +187,12 @@ M:
 S: Orphan
 F: loopingcall.py
 
+== lvmutils ==
+
+M: Michael Still <mikal@stillhq.com>
+S: Maintained
+F: lvmutils.py
+
 == memorycache ==
 
 M:
