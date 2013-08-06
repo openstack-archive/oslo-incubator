@@ -22,6 +22,7 @@ Unit Tests for AMQP-based remote procedure calls
 import logging
 
 from eventlet import greenthread
+import mox
 from oslo.config import cfg
 
 from openstack.common import jsonutils
@@ -177,3 +178,13 @@ class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
         conn.close()
 
         self.assertTrue(self.exc_raised)
+
+    def test_context_dict_type_check(self):
+        """Test that context is handled properly depending on the type."""
+        fake_context = dict([('fake', 'context')])
+        mock_msg = self.mox.CreateMock(dict)
+        mock_msg.update(mox.IsA(dict))
+
+        self.mox.ReplayAll()
+        rpc_amqp.pack_context(mock_msg, fake_context)
+        self.mox.VerifyAll()
