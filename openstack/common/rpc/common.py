@@ -73,6 +73,11 @@ _MESSAGE_KEY = 'oslo.message'
 _REMOTE_POSTFIX = '_Remote'
 
 
+class RejectMessageException(Exception):
+    """Raise from callback to reject current message.
+    """
+
+
 class RPCException(Exception):
     msg_fmt = _("An unknown RPC related exception occurred.")
 
@@ -232,6 +237,9 @@ class Connection(object):
 
         A message will be delivered to multiple pools, if more than
         one is created.
+
+        Messages can be rejected if the callback raises an
+        openstack.common.rpc.common.RejectMessageException.
 
         :param callback: Callable to be invoked for each message.
         :type callback: callable accepting one argument (the message),
