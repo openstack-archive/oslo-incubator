@@ -358,7 +358,7 @@ class SecureMessage(object):
         self._kds = _KDSClient(self._conf.kds_endpoint)
 
         if self._key is None:
-            self._key = self._init_key(self._conf, topic, self._name)
+            self._key = self._init_key(topic, self._name)
         if self._key is None:
             err = "Secret Key (or key file) is missing or malformed"
             raise SharedKeyNotFound(self._name, err)
@@ -366,13 +366,13 @@ class SecureMessage(object):
         global _KEY_STORE
         self._key_store = key_store or _KEY_STORE
 
-    def _init_key(self, cfg, topic, name):
+    def _init_key(self, topic, name):
         keys = None
-        if cfg.secret_keys_file:
-            with open(cfg.secret_keys_file, 'r') as f:
+        if self._conf.secret_keys_file:
+            with open(self._conf.secret_keys_file, 'r') as f:
                 keys = f.readlines()
-        elif cfg.secret_key:
-            keys = cfg.secret_key
+        elif self._conf.secret_key:
+            keys = self._conf.secret_key
 
         if keys is None:
             return None
