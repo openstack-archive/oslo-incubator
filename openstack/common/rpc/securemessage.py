@@ -267,7 +267,7 @@ class _KDSClient(object):
 
     def get_ticket(self, source, target, crypto, key):
 
-        #prepare metadata
+        # prepare metadata
         md = {'requestor': source,
               'target': target,
               'timestamp': time.time(),
@@ -281,17 +281,17 @@ class _KDSClient(object):
         reply = self._get_ticket({'metadata': metadata,
                                   'signature': signature})
 
-        # Verify reply
+        # verify reply
         signature = crypto.sign(key, (reply['metadata'] + reply['ticket']))
         if signature != reply['signature']:
             raise InvalidEncryptedTicket(md['source'], md['destination'])
         md = jsonutils.loads(base64.b64decode(reply['metadata']))
-        if (((md['source'] != source) or
-             (md['destination'] != target) or
-             (md['expiration'] < time.time()))):
+        if ((md['source'] != source or
+             md['destination'] != target or
+             md['expiration'] < time.time())):
             raise InvalidEncryptedTicket(md['source'], md['destination'])
 
-        #return ticket data
+        # return ticket data
         tkt = jsonutils.loads(crypto.decrypt(key, reply['ticket']))
 
         return tkt, md['expiration']
