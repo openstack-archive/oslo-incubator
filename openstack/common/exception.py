@@ -128,7 +128,7 @@ class OpenstackException(Exception):
                 self._error_string = self.msg_fmt
 
     def __str__(self):
-        return self._error_string
+        return str(self._error_string)
 
 
 class MalformedRequestBody(OpenstackException):
