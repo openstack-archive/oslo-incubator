@@ -33,6 +33,42 @@ LOG = logging.getLogger(__name__)
 
 class GettextTest(utils.BaseTestCase):
 
+    def setUp(self):
+        super(GettextTest, self).setUp()
+        # remember so we can reset to it later
+        self._USE_LAZY = gettextutils.USE_LAZY
+
+    def tearDown(self):
+        # reset to value before test
+        gettextutils.USE_LAZY = self._USE_LAZY
+        super(GettextTest, self).tearDown()
+
+    def test_enable_lazy(self):
+        gettextutils.USE_LAZY = False
+
+        gettextutils.enable_lazy()
+        # assert now enabled
+        self.assertTrue(gettextutils.USE_LAZY)
+
+    def test_underscore_non_lazy(self):
+        # set lazy off
+        gettextutils.USE_LAZY = False
+
+        self.mox.StubOutWithMock(gettextutils._t, 'ugettext')
+        gettextutils._t.ugettext('blah').AndReturn('translated blah')
+        self.mox.ReplayAll()
+
+        result = gettextutils._('blah')
+        self.assertEqual('translated blah', result)
+
+    def test_underscore_lazy(self):
+        # set lazy off
+        gettextutils.USE_LAZY = False
+
+        gettextutils.enable_lazy()
+        result = gettextutils._('blah')
+        self.assertIsInstance(result, gettextutils.Message)
+
     def test_gettext_does_not_blow_up(self):
         LOG.info(gettextutils._('test'))
 
