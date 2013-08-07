@@ -361,7 +361,6 @@ class SecureMessage(object):
             err = "Secret Key (or key file) is missing or malformed"
             raise SharedKeyNotFound(self._name, err)
 
-        global _KEY_STORE
         self._key_store = key_store or _KEY_STORE
 
     def _init_key(self, cfg, topic, name):
