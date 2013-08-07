@@ -39,9 +39,11 @@ secure_message_opts = [
                 help='Whether Secure Messaging (Encryption) is enabled,'
                      ' defaults to not enabled'),
     cfg.StrOpt('secret_keys_file',
-               help='Path to the file containing the keys'),
+               help='Path to the file containing the keys, takes precedence'
+                    ' over secret_key'),
     cfg.MultiStrOpt('secret_key',
-                    help='A list of keys: (ex: name:<base64 encoded key>)'),
+                    help='A list of keys: (ex: name:<base64 encoded key>),'
+                         ' ignored if secret_keys_file is set'),
     cfg.StrOpt('kds_endpoint',
                help='KDS endpoint (ex: http://kds.example.com:35357/v3)'),
 ]
