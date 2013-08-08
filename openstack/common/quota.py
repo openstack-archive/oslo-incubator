@@ -305,6 +305,11 @@ class DbQuotaDriver(object):
         """
         user_quotas = self.db.quota_get_all_by_project_and_user(
             context, project_id, user_id)
+        # Use the project quota for default user quota.
+        proj_quotas = self.db.quota_get_all_by_project(context, project_id)
+        for key, value in proj_quotas.iteritems():
+            if key not in user_quotas.keys():
+                user_quotas[key] = value
         user_usages = None
         if usages:
             user_usages = self.db.quota_usage_get_all_by_project_and_user(
