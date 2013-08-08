@@ -115,17 +115,18 @@ def logical_volume_info(path, root_helper):
 
     :param path: logical volume path
     """
-    out, err = processutils.execute('lvs', '-o', 'vg_all,lv_all',
-                                    '--separator', '|', path,
-                                    root_helper=root_helper,
-                                    run_as_root=True)
+    out, _err = processutils.execute('lvs', '-o', 'vg_all,lv_all',
+                                     '--separator', '|', path,
+                                     root_helper=root_helper,
+                                     run_as_root=True)
 
-    info = [line.split('|') for line in out.splitlines()]
 
-    if len(info) != 2:
+    try:
+        keys, vals = [line.split('|') for line in out.splitlines()]
+    except ValueError:
         raise RuntimeError(_("Path %s must be LVM logical volume") % path)
 
-    return dict(zip(*info))
+    return dict(zip(keys, vals))
 
 
 def logical_volume_size(path, root_helper):
