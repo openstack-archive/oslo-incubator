@@ -197,9 +197,10 @@ F: network_utils.py
 
 == notifier ==
 
-M:
-S: Orphan
+M: Julien Danjou <julien@danjou.info>
+S: Maintained
 F: notifier/
+F: middleware/notifier.py
 
 == pastedeploy ==
 
