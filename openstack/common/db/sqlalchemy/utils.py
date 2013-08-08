@@ -18,6 +18,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import re
+
 from migrate.changeset import UniqueConstraint
 import sqlalchemy
 from sqlalchemy import Boolean
@@ -44,6 +46,15 @@ from openstack.common import timeutils
 
 
 LOG = logging.getLogger(__name__)
+
+_DBURL_REGEX = re.compile(r"[^:]+://([^:]+):([^@]+)@.+")
+
+
+def sanitize_db_url(url):
+    match = _DBURL_REGEX.match(url)
+    if match:
+        return '%s****:****%s' % (url[:match.start(1)], url[match.end(2):])
+    return url
 
 
 class InvalidSortKey(Exception):

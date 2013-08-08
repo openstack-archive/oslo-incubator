@@ -33,6 +33,20 @@ from tests.unit.db.sqlalchemy import test_migrations
 from tests import utils as testutils
 
 
+class TestSanitizeDbUrl(testutils.BaseTestCase):
+
+    def test_url_with_cred(self):
+        db_url = 'myproto://johndoe:secret@localhost/myschema'
+        expected = 'myproto://****:****@localhost/myschema'
+        actual = utils.sanitize_db_url(db_url)
+        self.assertEqual(expected, actual)
+
+    def test_url_with_no_cred(self):
+        db_url = 'sqlite:///mysqlitefile'
+        actual = utils.sanitize_db_url(db_url)
+        self.assertEqual(db_url, actual)
+
+
 class CustomType(UserDefinedType):
     """Dummy column type for testing unsupported types."""
     def get_col_spec(self):
