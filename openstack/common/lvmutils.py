@@ -39,18 +39,19 @@ def get_volume_group_info(vg, root_helper):
              :used: How much space is used (in bytes)
     """
 
-    out, err = processutils.execute('vgs', '--noheadings', '--nosuffix',
-                                    '--separator', '|', '--units', 'b', '-o',
-                                    'vg_size,vg_free', vg, run_as_root=True,
-                                    root_helper=root_helper)
+    out, _err = processutils.execute('vgs', '--noheadings', '--nosuffix',
+                                     '--separator', '|', '--units', 'b', '-o',
+                                     'vg_size,vg_free', vg, run_as_root=True,
+                                     root_helper=root_helper)
 
-    info = out.split('|')
-    if len(info) != 2:
+    try:
+        total, free = map(int, out.split('|'))
+    except ValueError:
         raise RuntimeError(_("vg %s must be LVM volume group") % vg)
 
-    return {'total': int(info[0]),
-            'free': int(info[1]),
-            'used': int(info[0]) - int(info[1])}
+    return {'total': total,
+            'free': free,
+            'used': total-free}
 
 
 def create_logical_volume(vg, lv, size, root_helper, sparse=False):
