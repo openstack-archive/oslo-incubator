@@ -20,13 +20,13 @@ Unit Tests for thread groups
 """
 
 from openstack.common import log as logging
+from openstack.common import test
 from openstack.common import threadgroup
-from tests import utils
 
 LOG = logging.getLogger(__name__)
 
 
-class ThreadGroupTestCase(utils.BaseTestCase):
+class ThreadGroupTestCase(test.BaseTestCase):
     """Test cases for thread group."""
     def setUp(self):
         super(ThreadGroupTestCase, self).setUp()

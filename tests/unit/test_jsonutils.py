@@ -22,10 +22,10 @@ import netaddr
 import six
 
 from openstack.common import jsonutils
-from tests import utils
+from openstack.common import test
 
 
-class JSONUtilsTestCase(utils.BaseTestCase):
+class JSONUtilsTestCase(test.BaseTestCase):
 
     def test_dumps(self):
         self.assertEqual(jsonutils.dumps({'a': 'b'}), '{"a": "b"}')
@@ -38,7 +38,7 @@ class JSONUtilsTestCase(utils.BaseTestCase):
         self.assertEqual(jsonutils.load(x), {'a': 'b'})
 
 
-class ToPrimitiveTestCase(utils.BaseTestCase):
+class ToPrimitiveTestCase(test.BaseTestCase):
     def test_list(self):
         self.assertEquals(jsonutils.to_primitive([1, 2, 3]), [1, 2, 3])
 

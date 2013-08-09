@@ -20,11 +20,11 @@ from eventlet import greenthread
 import mox
 
 from openstack.common import loopingcall
+from openstack.common import test
 from openstack.common import timeutils
-from tests import utils
 
 
-class LoopingCallTestCase(utils.BaseTestCase):
+class LoopingCallTestCase(test.BaseTestCase):
 
     def setUp(self):
         super(LoopingCallTestCase, self).setUp()

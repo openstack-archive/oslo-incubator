@@ -16,10 +16,10 @@
 #    under the License.
 
 from openstack.common import authutils
-from tests import utils
+from openstack.common import test
 
 
-class AuthUtilsTest(utils.BaseTestCase):
+class AuthUtilsTest(test.BaseTestCase):
 
     def test_auth_str_equal(self):
         self.assertTrue(authutils.auth_str_equal('abc123', 'abc123'))

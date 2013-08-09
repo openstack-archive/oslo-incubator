@@ -18,7 +18,7 @@
 import threading
 
 from openstack.common import local
-from tests import utils
+from openstack.common import test
 
 
 class Dict(dict):
@@ -26,7 +26,7 @@ class Dict(dict):
     pass
 
 
-class LocalStoreTestCase(utils.BaseTestCase):
+class LocalStoreTestCase(test.BaseTestCase):
     v1 = Dict(a='1')
     v2 = Dict(a='2')
     v3 = Dict(a='3')
