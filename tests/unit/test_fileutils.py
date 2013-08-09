@@ -100,6 +100,13 @@ class DeleteIfExists(utils.BaseTestCase):
         fileutils.delete_if_exists(tmpfile)
         self.assertFalse(os.path.exists(tmpfile))
 
+    def test_dir_present(self):
+        tmpdir = tempfile.mktemp()
+        os.mkdir(tmpfile)
+
+        fileutils.delete_if_exists(tmpdir, remove=os.rmdir)
+        self.assertFalse(os.path.exists(tmpdir))
+
     @mock.patch('os.unlink')
     def test_file_error(self, osunlink):
         tmpfile = tempfile.mktemp()
@@ -132,6 +139,29 @@ class RemovePathOnError(utils.BaseTestCase):
             pass
         self.assertTrue(os.path.exists(tmpfile))
         os.unlink(tmpfile)
+
+    def test_remove(self):
+        tmpfile = tempfile.mktemp()
+        open(tmpfile, 'w')
+
+        try:
+            with fileutils.remove_path_on_error(tmpfile, remove=lambda x: x):
+                raise Exception
+        except Exception:
+            self.assertTrue(os.path.exists(tmpfile))
+        os.unlink(tmpfile)
+
+    def test_remove_dir(self):
+        tmpdir = tempfile.mktemp()
+        os.mkdir(tmpdir)
+
+        try:
+            with fileutils.remove_path_on_error(
+                    tmpdir,
+                    lambda path: fileutils.delete_if_exists(path, os.rmdir)):
+                raise Exception
+        except Exception:
+            self.assertFalse(os.path.exists(tmpdir))
 
 
 class UtilsTestCase(utils.BaseTestCase):
