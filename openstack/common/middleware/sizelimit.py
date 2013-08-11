@@ -71,9 +71,6 @@ class LimitingReader(object):
 class RequestBodySizeLimiter(base.Middleware):
     """Limit the size of incoming requests."""
 
-    def __init__(self, *args, **kwargs):
-        super(RequestBodySizeLimiter, self).__init__(*args, **kwargs)
-
     @webob.dec.wsgify(RequestClass=wsgi.Request)
     def __call__(self, req):
         if req.content_length > CONF.max_request_body_size:
