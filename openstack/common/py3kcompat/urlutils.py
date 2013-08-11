@@ -17,7 +17,7 @@
 #
 
 """
-Python2/Python3 compatibility layer for openstack
+Python2/Python3 compatibility layer for OpenStack
 """
 
 import six
