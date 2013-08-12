@@ -153,6 +153,12 @@ M: Mark McLoughlin <markmc@redhat.com>
 S: Maintained
 F: gettextutils.py
 
+== imageutils ==
+
+M: Zhongyue Luo <zhongyue.nah@intel.com>
+S: Maintained
+F: imageutils.py
+
 == importutils ==
 
 M:
