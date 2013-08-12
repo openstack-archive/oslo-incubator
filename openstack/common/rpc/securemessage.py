@@ -52,6 +52,11 @@ secure_message_group = cfg.OptGroup('secure_messages',
 
 LOG = logging.getLogger(__name__)
 
+CONF = cfg.CONF
+CONF.register_group(cfg.OptGroup('secure_messages',
+                                 title='Secure Messaging options'))
+CONF.register_opts(secure_message_opts, group='secure_messages')
+
 
 class SecureMessageException(Exception):
     """Generic Exception for Secure Messages."""
