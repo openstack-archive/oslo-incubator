@@ -9,6 +9,9 @@ PARSED_OPTIONS=$(getopt -n "${0##*/}" -o hb:p:o: \
 
 if [ $? != 0 ] ; then print_hint ; exit 1 ; fi
 
+OS_VARS=$(set | sed -n '/^OS_/s/=[^=]*$//gp' | xargs)
+[ "$OS_VARS" ] && eval "unset \$OS_VARS"
+
 eval set -- "$PARSED_OPTIONS"
 
 while true; do
