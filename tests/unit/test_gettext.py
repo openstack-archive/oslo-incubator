@@ -100,24 +100,32 @@ class GettextTest(utils.BaseTestCase):
 
         # Only the languages available for a specific translation domain
         def _mock_gettext_find(domain, localedir=None, languages=[], all=0):
-            if domain == 'test_domain':
+            if domain == 'domain_1':
                 return 'translation-file' if any(x in ['zh', 'es']
+                                                 for x in languages) else None
+            elif domain == 'domain_2':
+                return 'translation-file' if any(x in ['fr']
                                                  for x in languages) else None
             return None
         self.stubs.Set(gettext, 'find', _mock_gettext_find)
 
-        domain_languages = gettextutils.get_available_languages('test_domain')
         # en_US should always be available no matter the domain
+        domain_1_languages = gettextutils.get_available_languages('domain_1')
+        self.assertTrue('en_US', domain_1_languages)
+        domain_2_languages = gettextutils.get_available_languages('domain_2')
+        self.assertTrue('en_US', domain_2_languages)
         # en_US should also always be the first element since order matters
+        self.assertEquals('en_US', domain_2_languages[0])
+        self.assertEquals('en_US', domain_2_languages[0])
         # finally only the domain languages should be included after en_US
-        self.assertTrue('en_US', domain_languages)
-        self.assertEquals(3, len(domain_languages))
-        self.assertEquals('en_US', domain_languages[0])
-        self.assertTrue('zh' in domain_languages)
-        self.assertTrue('es' in domain_languages)
-
-        # Clear languages to test an unknown domain
-        gettextutils._AVAILABLE_LANGUAGES = []
+        self.assertEquals(3, len(domain_1_languages))
+        self.assertTrue('zh' in domain_1_languages)
+        self.assertTrue('es' in domain_1_languages)
+        self.assertEquals(2, len(domain_2_languages))
+        self.assertTrue('fr' in domain_2_languages)
+        # Clear languages and test an unknown domain
+        self.assertEquals(2, len(gettextutils._AVAILABLE_LANGUAGES))
+        gettextutils._AVAILABLE_LANGUAGES = {}
         unknown_domain_languages = gettextutils.get_available_languages('huh')
         self.assertEquals(1, len(unknown_domain_languages))
         self.assertTrue('en_US' in unknown_domain_languages)
