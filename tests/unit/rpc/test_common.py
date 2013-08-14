@@ -20,17 +20,16 @@ Unit Tests for 'common' functons used through rpc code.
 import logging
 import sys
 
-from oslo.config import cfg
 import six
 
+from openstack.common.fixture import config
 from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import rpc
 from openstack.common.rpc import common as rpc_common
-from tests import utils as test_utils
+from openstack.common import test
 
 
-FLAGS = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
@@ -40,7 +39,14 @@ class FakeUserDefinedException(Exception):
         self.kwargs = kwargs
 
 
-class RpcCommonTestCase(test_utils.BaseTestCase):
+class RpcCommonTestCase(test.BaseTestCase):
+
+    def setUp(self):
+        super(RpcCommonTestCase, self).setUp()
+        configfixture = self.useFixture(config.Config())
+        self.config = configfixture.config
+        self.FLAGS = configfixture.conf
+
     def test_serialize_remote_exception(self):
         expected = {
             'class': 'Exception',
@@ -118,7 +124,8 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         }
         serialized = jsonutils.dumps(failure)
 
-        after_exc = rpc_common.deserialize_remote_exception(FLAGS, serialized)
+        after_exc = rpc_common.deserialize_remote_exception(self.FLAGS,
+                                                            serialized)
         self.assertTrue(isinstance(after_exc, NotImplementedError))
         #assure the traceback was added
         self.assertTrue('raise NotImplementedError' in
@@ -133,7 +140,8 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         }
         serialized = jsonutils.dumps(failure)
 
-        after_exc = rpc_common.deserialize_remote_exception(FLAGS, serialized)
+        after_exc = rpc_common.deserialize_remote_exception(self.FLAGS,
+                                                            serialized)
         self.assertTrue(isinstance(after_exc, rpc_common.RemoteError))
 
     def test_deserialize_remote_exception_user_defined_exception(self):
@@ -147,7 +155,8 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         }
         serialized = jsonutils.dumps(failure)
 
-        after_exc = rpc_common.deserialize_remote_exception(FLAGS, serialized)
+        after_exc = rpc_common.deserialize_remote_exception(self.FLAGS,
+                                                            serialized)
         self.assertTrue(isinstance(after_exc, FakeUserDefinedException))
         self.assertTrue('foobar' in six.text_type(after_exc))
         #assure the traceback was added
@@ -170,7 +179,8 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         }
         serialized = jsonutils.dumps(failure)
 
-        after_exc = rpc_common.deserialize_remote_exception(FLAGS, serialized)
+        after_exc = rpc_common.deserialize_remote_exception(self.FLAGS,
+                                                            serialized)
         self.assertTrue(isinstance(after_exc, FakeUserDefinedException))
         self.assertEqual(after_exc.args, ('fakearg',))
         self.assertEqual(after_exc.kwargs, {'fakekwarg': 'fake'})
@@ -190,7 +200,8 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
         }
         serialized = jsonutils.dumps(failure)
 
-        after_exc = rpc_common.deserialize_remote_exception(FLAGS, serialized)
+        after_exc = rpc_common.deserialize_remote_exception(self.FLAGS,
+                                                            serialized)
         self.assertTrue(isinstance(after_exc, rpc_common.RemoteError))
         self.assertTrue(six.text_type(after_exc).startswith(
             "Remote error: FakeIDontExistException"))

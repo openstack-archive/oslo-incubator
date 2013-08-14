@@ -24,15 +24,14 @@ import logging
 import time
 
 import eventlet
-from oslo.config import cfg
 
+from openstack.common.fixture import config
 from openstack.common.gettextutils import _  # noqa
 from openstack.common.rpc import common as rpc_common
 from openstack.common.rpc import dispatcher as rpc_dispatcher
-from tests import utils as test_utils
+from openstack.common import test
 
 
-FLAGS = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
@@ -43,7 +42,7 @@ class ApiError(Exception):
         super(ApiError, self).__init__('%s: %s' % (code, message))
 
 
-class BaseRpcTestCase(test_utils.BaseTestCase):
+class BaseRpcTestCase(test.BaseTestCase):
 
     def setUp(self, supports_timeouts=True, topic='test',
               topic_nested='nested'):
@@ -53,7 +52,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
         self.supports_timeouts = supports_timeouts
         self.context = rpc_common.CommonRpcContext(user='fake_user',
                                                    pw='fake_pw')
-
+        self.FLAGS = self.useFixture(config.Config()).conf
         if self.rpc:
             receiver = TestReceiver()
             self.conn = self._create_consumer(receiver, self.topic)
@@ -61,7 +60,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
 
     def _create_consumer(self, proxy, topic, fanout=False):
         dispatcher = rpc_dispatcher.RpcDispatcher([proxy])
-        conn = self.rpc.create_connection(FLAGS, True)
+        conn = self.rpc.create_connection(self.FLAGS, True)
         conn.create_consumer(topic, dispatcher, fanout)
         conn.consume_in_thread()
         return conn
@@ -71,7 +70,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
             self.skipTest('rpc driver not available.')
 
         value = 42
-        result = self.rpc.call(FLAGS, self.context, self.topic,
+        result = self.rpc.call(self.FLAGS, self.context, self.topic,
                                {"method": "echo", "args": {"value": value}})
         self.assertEqual(value, result)
 
@@ -79,7 +78,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
         if not self.rpc:
             self.skipTest('rpc driver not available.')
 
-        result = self.rpc.call(FLAGS, self.context, self.topic,
+        result = self.rpc.call(self.FLAGS, self.context, self.topic,
                                {"method": "fortytwo"})
         self.assertEqual(42, result)
 
@@ -88,7 +87,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
             self.skipTest('rpc driver not available.')
 
         value = 42
-        result = self.rpc.call(FLAGS, self.context, self.topic,
+        result = self.rpc.call(self.FLAGS, self.context, self.topic,
                                {"method": "echo_three_times_yield",
                                 "args": {"value": value}})
         self.assertEqual(value + 2, result)
@@ -98,7 +97,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
             self.skipTest('rpc driver not available.')
 
         value = 42
-        result = self.rpc.multicall(FLAGS, self.context,
+        result = self.rpc.multicall(self.FLAGS, self.context,
                                     self.topic,
                                     {"method": "echo",
                                      "args": {"value": value}})
@@ -112,7 +111,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
             self.skipTest('rpc driver not available.')
 
         value = 42
-        result = self.rpc.multicall(FLAGS, self.context,
+        result = self.rpc.multicall(self.FLAGS, self.context,
                                     self.topic,
                                     {"method": "multicall_three_nones",
                                      "args": {"value": value}})
@@ -126,7 +125,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
             self.skipTest('rpc driver not available.')
 
         value = 42
-        result = self.rpc.multicall(FLAGS, self.context,
+        result = self.rpc.multicall(self.FLAGS, self.context,
                                     self.topic,
                                     {"method": "echo_three_times_yield",
                                      "args": {"value": value}})
@@ -139,7 +138,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
 
         """Makes sure a context is passed through rpc call."""
         value = 42
-        result = self.rpc.call(FLAGS, self.context,
+        result = self.rpc.call(self.FLAGS, self.context,
                                self.topic, {"method": "context",
                                             "args": {"value": value}})
         self.assertEqual(self.context.to_dict(), result)
@@ -179,7 +178,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
             msg['args'] = {}
             msg['args'].update(args)
 
-        rpc_method(FLAGS, self.context,
+        rpc_method(self.FLAGS, self.context,
                    topic_nested,
                    msg)
 
@@ -216,7 +215,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
                 # TODO(comstud):
                 # so, it will replay the context and use the same REQID?
                 # that's bizarre.
-                ret = self.rpc.call(FLAGS, context,
+                ret = self.rpc.call(self.FLAGS, context,
                                     queue,
                                     {"method": "echo",
                                      "args": {"value": value}})
@@ -227,7 +226,7 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
         conn = self._create_consumer(nested, self.topic_nested)
 
         value = 42
-        result = self.rpc.call(FLAGS, self.context,
+        result = self.rpc.call(self.FLAGS, self.context,
                                self.topic_nested,
                                {"method": "echo",
                                 "args": {"queue": "test", "value": value}})
@@ -245,12 +244,12 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
         value = 42
         self.assertRaises(rpc_common.Timeout,
                           self.rpc.call,
-                          FLAGS, self.context,
+                          self.FLAGS, self.context,
                           self.topic,
                           {"method": "block",
                            "args": {"value": value}}, timeout=1)
         try:
-            self.rpc.call(FLAGS, self.context,
+            self.rpc.call(self.FLAGS, self.context,
                           self.topic,
                           {"method": "block",
                            "args": {"value": value}},
@@ -266,12 +265,12 @@ class BaseRpcTestCase(test_utils.BaseTestCase):
         global synced_echo_call
         synced_echo_call = SyncedEchoCall()
 
-        callid1 = synced_echo_call.spawn(self.rpc.call, FLAGS, self.context,
-                                         self.topic, value=1)
-        callid2 = synced_echo_call.spawn(self.rpc.call, FLAGS, self.context,
-                                         self.topic, value=2)
-        callid3 = synced_echo_call.spawn(self.rpc.call, FLAGS, self.context,
-                                         self.topic, value=3)
+        callid1 = synced_echo_call.spawn(self.rpc.call, self.FLAGS,
+                                         self.context, self.topic, value=1)
+        callid2 = synced_echo_call.spawn(self.rpc.call, self.FLAGS,
+                                         self.context, self.topic, value=2)
+        callid3 = synced_echo_call.spawn(self.rpc.call, self.FLAGS,
+                                         self.context, self.topic, value=3)
 
         r3 = synced_echo_call.post(callid3)
         self.assertEqual(synced_echo_call.wait_states(),

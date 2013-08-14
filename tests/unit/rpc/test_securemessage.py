@@ -19,19 +19,21 @@ Unit Tests for rpc 'securemessage' functions.
 
 import logging
 
-from oslo.config import cfg
-
+from openstack.common.fixture import config
 from openstack.common import jsonutils
 from openstack.common.rpc import common as rpc_common
 from openstack.common.rpc import securemessage as rpc_secmsg
-from tests import utils as test_utils
+from openstack.common import test
 
 
-CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
-class RpcCryptoTestCase(test_utils.BaseTestCase):
+class RpcCryptoTestCase(test.BaseTestCase):
+
+    def setUp(self):
+        super(RpcCryptoTestCase, self).setUp()
+        self.CONF = self.useFixture(config.Config()).conf
 
     def test_KeyStore(self):
         store = rpc_secmsg.KeyStore()
@@ -67,11 +69,11 @@ class RpcCryptoTestCase(test_utils.BaseTestCase):
         store = rpc_secmsg.KeyStore()
 
         send = rpc_secmsg.SecureMessage(data['source'][0], data['source'][1],
-                                        CONF, data['send_key'],
+                                        self.CONF, data['send_key'],
                                         store, encrypt, enctype=data['cipher'],
                                         hashtype=data['hash'])
         recv = rpc_secmsg.SecureMessage(data['target'][0], data['target'][1],
-                                        CONF, data['recv_key'],
+                                        self.CONF, data['recv_key'],
                                         store, encrypt, enctype=data['cipher'],
                                         hashtype=data['hash'])
 
