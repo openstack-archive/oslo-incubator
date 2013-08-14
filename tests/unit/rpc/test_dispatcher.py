@@ -18,16 +18,15 @@
 Unit Tests for rpc.dispatcher
 """
 
-import mox
-
 from openstack.common import context
+from openstack.common.fixture import moxstubout
 from openstack.common.rpc import common as rpc_common
 from openstack.common.rpc import dispatcher
 from openstack.common.rpc import serializer as rpc_serializer
-from tests import utils
+from openstack.common import test
 
 
-class RpcDispatcherTestCase(utils.BaseTestCase):
+class RpcDispatcherTestCase(test.BaseTestCase):
     class API1(object):
         RPC_API_VERSION = '1.0'
 
@@ -77,7 +76,7 @@ class RpcDispatcherTestCase(utils.BaseTestCase):
     def setUp(self):
         super(RpcDispatcherTestCase, self).setUp()
         self.ctxt = context.RequestContext('fake_user', 'fake_project')
-        self.mox = mox.Mox()
+        self.mox = self.useFixture(moxstubout.MoxStubout()).mox
 
     def cleanUp(self):
         super(RpcDispatcherTestCase, self).setUp()
