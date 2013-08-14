@@ -25,14 +25,14 @@ import six
 import webob
 
 from openstack.common.deprecated import wsgi
-
-from tests import utils
+from openstack.common.fixture import config
+from openstack.common import test
 
 TEST_VAR_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                             '..', '..', 'var'))
 
 
-class RequestTest(utils.BaseTestCase):
+class RequestTest(test.BaseTestCase):
 
     def test_content_type_missing(self):
         request = wsgi.Request.blank('/tests/123', method='POST')
@@ -113,7 +113,7 @@ class RequestTest(utils.BaseTestCase):
         self.assertEqual(result, "application/new_type")
 
 
-class ActionDispatcherTest(utils.BaseTestCase):
+class ActionDispatcherTest(test.BaseTestCase):
 
     def test_dispatch(self):
         serializer = wsgi.ActionDispatcher()
@@ -136,7 +136,7 @@ class ActionDispatcherTest(utils.BaseTestCase):
                          'Two trousers')
 
 
-class ResponseHeadersSerializerTest(utils.BaseTestCase):
+class ResponseHeadersSerializerTest(test.BaseTestCase):
 
     def test_default(self):
         serializer = wsgi.ResponseHeadersSerializer()
@@ -156,14 +156,14 @@ class ResponseHeadersSerializerTest(utils.BaseTestCase):
         self.assertEqual(response.headers['X-Custom-Header'], '123')
 
 
-class DictSerializerTest(utils.BaseTestCase):
+class DictSerializerTest(test.BaseTestCase):
 
     def test_dispatch_default(self):
         serializer = wsgi.DictSerializer()
         self.assertEqual(serializer.serialize({}, 'NonExistantAction'), '')
 
 
-class XMLDictSerializerTest(utils.BaseTestCase):
+class XMLDictSerializerTest(test.BaseTestCase):
 
     def test_xml(self):
         input_dict = dict(servers=dict(a=(2, 3)))
@@ -177,7 +177,7 @@ class XMLDictSerializerTest(utils.BaseTestCase):
         self.assertEqual(result, expected_xml)
 
 
-class JSONDictSerializerTest(utils.BaseTestCase):
+class JSONDictSerializerTest(test.BaseTestCase):
 
     def test_json(self):
         input_dict = dict(servers=dict(a=(2, 3)))
@@ -199,14 +199,14 @@ class JSONDictSerializerTest(utils.BaseTestCase):
         self.assertEqual(result, expected_str)
 
 
-class TextDeserializerTest(utils.BaseTestCase):
+class TextDeserializerTest(test.BaseTestCase):
 
     def test_dispatch_default(self):
         deserializer = wsgi.TextDeserializer()
         self.assertEqual(deserializer.deserialize({}, 'update'), {})
 
 
-class JSONDeserializerTest(utils.BaseTestCase):
+class JSONDeserializerTest(test.BaseTestCase):
 
     def test_json(self):
         data = """{"a": {
@@ -230,7 +230,7 @@ class JSONDeserializerTest(utils.BaseTestCase):
         self.assertEqual(deserializer.deserialize(data), as_dict)
 
 
-class XMLDeserializerTest(utils.BaseTestCase):
+class XMLDeserializerTest(test.BaseTestCase):
 
     def test_xml(self):
         xml = """
@@ -262,7 +262,7 @@ class XMLDeserializerTest(utils.BaseTestCase):
         self.assertEqual(deserializer.deserialize(xml), as_dict)
 
 
-class RequestHeadersDeserializerTest(utils.BaseTestCase):
+class RequestHeadersDeserializerTest(test.BaseTestCase):
 
     def test_default(self):
         deserializer = wsgi.RequestHeadersDeserializer()
@@ -279,7 +279,7 @@ class RequestHeadersDeserializerTest(utils.BaseTestCase):
         self.assertEqual(deserializer.deserialize(req, 'update'), {'a': 'b'})
 
 
-class ResponseSerializerTest(utils.BaseTestCase):
+class ResponseSerializerTest(test.BaseTestCase):
 
     def setUp(self):
         super(ResponseSerializerTest, self).setUp()
@@ -339,7 +339,7 @@ class ResponseSerializerTest(utils.BaseTestCase):
                           {}, 'application/unknown')
 
 
-class RequestDeserializerTest(utils.BaseTestCase):
+class RequestDeserializerTest(test.BaseTestCase):
 
     def setUp(self):
         super(RequestDeserializerTest, self).setUp()
@@ -408,7 +408,7 @@ class RequestDeserializerTest(utils.BaseTestCase):
         self.assertEqual(expected, deserialized)
 
 
-class ResourceTest(utils.BaseTestCase):
+class ResourceTest(test.BaseTestCase):
 
     def test_dispatch(self):
         class Controller(object):
@@ -448,7 +448,7 @@ class ResourceTest(utils.BaseTestCase):
         self.assertEqual(response.status, '415 Unsupported Media Type')
 
 
-class ServerTest(utils.BaseTestCase):
+class ServerTest(test.BaseTestCase):
 
     def test_run_server(self):
         listen_patcher = mock.patch('eventlet.listen')
@@ -485,7 +485,7 @@ class ServerTest(utils.BaseTestCase):
             server_patcher.stop()
 
 
-class WSGIServerTest(utils.BaseTestCase):
+class WSGIServerTest(test.BaseTestCase):
 
     def test_pool(self):
         server = wsgi.Service('fake', 9000)
@@ -573,7 +573,11 @@ class WSGIServerTest(utils.BaseTestCase):
                 )
 
 
-class WSGIServerWithSSLTest(utils.BaseTestCase):
+class WSGIServerWithSSLTest(test.BaseTestCase):
+
+    def setUp(self):
+        super(WSGIServerWithSSLTest, self).setUp()
+        self.config = self.useFixture(config.Config()).config
 
     def test_app_using_router_ssl(self):
         self.config(cert_file=os.path.join(TEST_VAR_DIR, 'certificate.crt'),

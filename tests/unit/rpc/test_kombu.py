@@ -29,15 +29,16 @@ import weakref
 
 import fixtures
 import mock
-from oslo.config import cfg
 import six
 import time
 
+from openstack.common.fixture import config
+from openstack.common.fixture import moxstubout
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
+from openstack.common import test as test_base
 from tests.unit.rpc import amqp
 from tests.unit.rpc import common
-from tests import utils
 
 try:
     import kombu
@@ -49,7 +50,6 @@ except ImportError:
     impl_kombu = None
 
 
-FLAGS = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
@@ -83,7 +83,7 @@ class KombuStubs(fixtures.Fixture):
 
         test = self.test()
         if kombu:
-            test.conf = FLAGS
+            test.conf = self.useFixture(config.Config()).conf
             test.config(fake_rabbit=True)
             test.config(rpc_response_timeout=5)
             test.rpc = impl_kombu
@@ -110,17 +110,20 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
     def setUp(self):
         if kombu is None:
             self.skipTest("Test requires kombu")
-
+        configfixture = self.useFixture(config.Config())
+        self.config = configfixture.config
+        self.FLAGS = configfixture.conf
+        self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
         self.useFixture(KombuStubs(self))
 
         super(RpcKombuTestCase, self).setUp()
 
     def test_reusing_connection(self):
         """Test that reusing a connection returns same one."""
-        conn_context = self.rpc.create_connection(FLAGS, new=False)
+        conn_context = self.rpc.create_connection(self.FLAGS, new=False)
         conn1 = conn_context.connection
         conn_context.close()
-        conn_context = self.rpc.create_connection(FLAGS, new=False)
+        conn_context = self.rpc.create_connection(self.FLAGS, new=False)
         conn2 = conn_context.connection
         conn_context.close()
         self.assertEqual(conn1, conn2)
@@ -128,7 +131,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
     def test_topic_send_receive(self):
         """Test sending to a topic exchange/queue."""
 
-        conn = self.rpc.create_connection(FLAGS)
+        conn = self.rpc.create_connection(self.FLAGS)
         message = 'topic test message'
 
         self.received_message = None
@@ -149,7 +152,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         def _callback(msg):
             pass
 
-        conn = self.rpc.create_connection(FLAGS)
+        conn = self.rpc.create_connection(self.FLAGS)
         consumer = conn.declare_consumer(functools.partial(
                                          impl_kombu.TopicConsumer,
                                          name=None,
@@ -165,7 +168,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         def _callback(msg):
             raise MyException()
 
-        conn = self.rpc.create_connection(FLAGS)
+        conn = self.rpc.create_connection(self.FLAGS)
         consumer = conn.declare_consumer(functools.partial(
                                          impl_kombu.TopicConsumer,
                                          name=None,
@@ -182,7 +185,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         def _callback(msg):
             raise MyException()
 
-        conn = self.rpc.create_connection(FLAGS)
+        conn = self.rpc.create_connection(self.FLAGS)
         consumer = conn.declare_consumer(functools.partial(
                                          impl_kombu.TopicConsumer,
                                          name=None,
@@ -199,7 +202,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         def _callback(msg):
             pass
 
-        conn = self.rpc.create_connection(FLAGS)
+        conn = self.rpc.create_connection(self.FLAGS)
         consumer = conn.declare_consumer(functools.partial(
                                          impl_kombu.TopicConsumer,
                                          name=None,
@@ -215,7 +218,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         """Test message ttl being set by request timeout. The message
         should die on the vine and never arrive.
         """
-        conn = self.rpc.create_connection(FLAGS)
+        conn = self.rpc.create_connection(self.FLAGS)
         message = 'topic test message'
 
         self.received_message = None
@@ -233,7 +236,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
     def test_topic_send_receive_exchange_name(self):
         """Test sending to a topic exchange/queue with an exchange name."""
 
-        conn = self.rpc.create_connection(FLAGS)
+        conn = self.rpc.create_connection(self.FLAGS)
         message = 'topic test message'
 
         self.received_message = None
@@ -252,7 +255,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
     def test_topic_multiple_queues(self):
         """Test sending to a topic exchange with multiple queues."""
 
-        conn = self.rpc.create_connection(FLAGS)
+        conn = self.rpc.create_connection(self.FLAGS)
         message = 'topic test message'
 
         self.received_message_1 = None
@@ -279,7 +282,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
 
         """
 
-        conn = self.rpc.create_connection(FLAGS)
+        conn = self.rpc.create_connection(self.FLAGS)
         message = 'topic test message'
 
         self.received_message_1 = None
@@ -308,7 +311,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
 
         """
 
-        conn = self.rpc.create_connection(FLAGS)
+        conn = self.rpc.create_connection(self.FLAGS)
         message = 'topic test message'
 
         self.received_message_1 = None
@@ -333,7 +336,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
 
     def test_direct_send_receive(self):
         """Test sending to a direct exchange/queue."""
-        conn = self.rpc.create_connection(FLAGS)
+        conn = self.rpc.create_connection(self.FLAGS)
         message = 'direct test message'
 
         self.received_message = None
@@ -359,20 +362,20 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
                 super(MyConnection, myself).__init__(*args, **kwargs)
                 self.assertEqual(
                     myself.params_list,
-                    [{'hostname': FLAGS.rabbit_host,
-                      'userid': FLAGS.rabbit_userid,
-                      'password': FLAGS.rabbit_password,
-                      'port': FLAGS.rabbit_port,
-                      'virtual_host': FLAGS.rabbit_virtual_host,
+                    [{'hostname': self.FLAGS.rabbit_host,
+                      'userid': self.FLAGS.rabbit_userid,
+                      'password': self.FLAGS.rabbit_password,
+                      'port': self.FLAGS.rabbit_port,
+                      'virtual_host': self.FLAGS.rabbit_virtual_host,
                       'transport': 'memory'}])
 
             def topic_send(_context, topic, msg):
                 pass
 
-        MyConnection.pool = rpc_amqp.Pool(FLAGS, MyConnection)
+        MyConnection.pool = rpc_amqp.Pool(self.FLAGS, MyConnection)
         self.stubs.Set(impl_kombu, 'Connection', MyConnection)
 
-        impl_kombu.cast(FLAGS, ctxt, 'fake_topic', {'msg': 'fake'})
+        impl_kombu.cast(self.FLAGS, ctxt, 'fake_topic', {'msg': 'fake'})
 
     def test_cast_to_server_uses_server_params(self):
         """Test kombu rpc.cast."""
@@ -401,10 +404,10 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
             def topic_send(_context, topic, msg):
                 pass
 
-        MyConnection.pool = rpc_amqp.Pool(FLAGS, MyConnection)
+        MyConnection.pool = rpc_amqp.Pool(self.FLAGS, MyConnection)
         self.stubs.Set(impl_kombu, 'Connection', MyConnection)
 
-        impl_kombu.cast_to_server(FLAGS, ctxt, server_params,
+        impl_kombu.cast_to_server(self.FLAGS, ctxt, server_params,
                                   'fake_topic', {'msg': 'fake'})
 
     def test_fanout_success(self):
@@ -457,7 +460,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         info = _raise_exc_stub(self.stubs, 2, self.rpc.DirectConsumer,
                                '__init__', 'foo timeout foo')
 
-        conn = self.rpc.Connection(FLAGS)
+        conn = self.rpc.Connection(self.FLAGS)
         result = conn.declare_consumer(self.rpc.DirectConsumer,
                                        'test_topic', None)
 
@@ -471,7 +474,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         info = _raise_exc_stub(self.stubs, 1, self.rpc.DirectConsumer,
                                '__init__', 'meow')
 
-        conn = self.rpc.Connection(FLAGS)
+        conn = self.rpc.Connection(self.FLAGS)
         conn.connection_errors = (MyException, )
 
         result = conn.declare_consumer(self.rpc.DirectConsumer,
@@ -485,7 +488,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         info = _raise_exc_stub(self.stubs, 2, self.rpc.DirectConsumer,
                                '__init__', 'Socket closed', exc_class=IOError)
 
-        conn = self.rpc.Connection(FLAGS)
+        conn = self.rpc.Connection(self.FLAGS)
         result = conn.declare_consumer(self.rpc.DirectConsumer,
                                        'test_topic', None)
 
@@ -499,7 +502,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         info = _raise_exc_stub(self.stubs, 2, self.rpc.DirectPublisher,
                                '__init__', 'foo timeout foo')
 
-        conn = self.rpc.Connection(FLAGS)
+        conn = self.rpc.Connection(self.FLAGS)
         conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', 'msg')
 
         self.assertEqual(info['called'], 3)
@@ -508,7 +511,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         info = _raise_exc_stub(self.stubs, 2, self.rpc.DirectPublisher,
                                'send', 'foo timeout foo')
 
-        conn = self.rpc.Connection(FLAGS)
+        conn = self.rpc.Connection(self.FLAGS)
         conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', 'msg')
 
         self.assertEqual(info['called'], 3)
@@ -521,7 +524,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         info = _raise_exc_stub(self.stubs, 1, self.rpc.DirectPublisher,
                                '__init__', 'meow')
 
-        conn = self.rpc.Connection(FLAGS)
+        conn = self.rpc.Connection(self.FLAGS)
         conn.connection_errors = (MyException, )
 
         conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', 'msg')
@@ -532,7 +535,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         info = _raise_exc_stub(self.stubs, 1, self.rpc.DirectPublisher,
                                'send', 'meow')
 
-        conn = self.rpc.Connection(FLAGS)
+        conn = self.rpc.Connection(self.FLAGS)
         conn.connection_errors = (MyException, )
 
         conn.publisher_send(self.rpc.DirectPublisher, 'test_topic', 'msg')
@@ -540,7 +543,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         self.assertEqual(info['called'], 2)
 
     def test_iterconsume_errors_will_reconnect(self):
-        conn = self.rpc.Connection(FLAGS)
+        conn = self.rpc.Connection(self.FLAGS)
         message = 'reconnect test message'
 
         self.received_message = None
@@ -570,13 +573,13 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         value = "This is the exception message"
         self.assertRaises(NotImplementedError,
                           self.rpc.call,
-                          FLAGS,
+                          self.FLAGS,
                           self.context,
                           'test',
                           {"method": "fail",
                            "args": {"value": value}})
         try:
-            self.rpc.call(FLAGS, self.context,
+            self.rpc.call(self.FLAGS, self.context,
                           'test',
                           {"method": "fail",
                            "args": {"value": value}})
@@ -599,13 +602,13 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         self.config(allowed_rpc_exception_modules=[common.__name__])
         self.assertRaises(common.ApiError,
                           self.rpc.call,
-                          FLAGS,
+                          self.FLAGS,
                           self.context,
                           'test',
                           {"method": "fail_converted",
                            "args": {"value": value}})
         try:
-            self.rpc.call(FLAGS, self.context,
+            self.rpc.call(self.FLAGS, self.context,
                           'test',
                           {"method": "fail_converted",
                            "args": {"value": value}})
@@ -618,7 +621,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
     def test_create_worker(self):
         meth = 'declare_topic_consumer'
         with mock.patch.object(self.rpc.Connection, meth) as p:
-            conn = self.rpc.create_connection(FLAGS)
+            conn = self.rpc.create_connection(self.FLAGS)
             conn.create_worker(
                 'topic.name',
                 lambda *a, **k: (a, k),
@@ -633,7 +636,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
     def test_join_consumer_pool_default(self):
         meth = 'declare_topic_consumer'
         with mock.patch.object(self.rpc.Connection, meth) as p:
-            conn = self.rpc.create_connection(FLAGS)
+            conn = self.rpc.create_connection(self.FLAGS)
             conn.join_consumer_pool(
                 callback=lambda *a, **k: (a, k),
                 pool_name='pool.name',
@@ -651,7 +654,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
     def test_join_consumer_pool_no_ack(self):
         meth = 'declare_topic_consumer'
         with mock.patch.object(self.rpc.Connection, meth) as p:
-            conn = self.rpc.create_connection(FLAGS)
+            conn = self.rpc.create_connection(self.FLAGS)
             conn.join_consumer_pool(
                 callback=lambda *a, **k: (a, k),
                 pool_name='pool.name',
@@ -688,7 +691,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         self.stubs.Set(time, 'sleep', self.my_time_sleep)
 
         value = 42
-        result = self.rpc.call(FLAGS, self.context, self.topic,
+        result = self.rpc.call(self.FLAGS, self.context, self.topic,
                                {"method": "echo",
                                 "args": {"value": value}})
         self.assertEqual(value, result)
@@ -710,7 +713,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         self.stubs.Set(time, 'sleep', self.my_time_sleep)
 
         value = 42
-        result = self.rpc.call(FLAGS, self.context, self.topic,
+        result = self.rpc.call(self.FLAGS, self.context, self.topic,
                                {"method": "echo",
                                 "args": {"value": value}})
         self.assertEqual(value, result)
@@ -738,16 +741,19 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
 
         self.stubs.Set(kombu.connection, 'BrokerConnection', MyConnection)
 
-        self.assertRaises(rpc_common.RPCException, self.rpc.Connection, FLAGS)
+        self.assertRaises(rpc_common.RPCException, self.rpc.Connection,
+                          self.FLAGS)
         self.assertEqual(info['attempt'], 2)
 
 
-class RpcKombuHATestCase(utils.BaseTestCase):
+class RpcKombuHATestCase(test_base.BaseTestCase):
     def setUp(self):
         super(RpcKombuHATestCase, self).setUp()
-
+        configfixture = self.useFixture(config.Config())
+        self.config = configfixture.config
+        self.FLAGS = configfixture.conf
+        self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
         self.useFixture(KombuStubs(self))
-        self.addCleanup(FLAGS.reset)
 
     def test_roundrobin_reconnect(self):
         """Test that rabbits are tried in roundrobin at connection failures."""
@@ -761,28 +767,28 @@ class RpcKombuHATestCase(utils.BaseTestCase):
             'attempt': 0,
             'params_list': [
                {'hostname': 'host1',
-                'userid': FLAGS.rabbit_userid,
-                'password': FLAGS.rabbit_password,
+                'userid': self.FLAGS.rabbit_userid,
+                'password': self.FLAGS.rabbit_password,
                 'port': 1234,
-                'virtual_host': FLAGS.rabbit_virtual_host,
+                'virtual_host': self.FLAGS.rabbit_virtual_host,
                 'transport': 'memory'},
                {'hostname': 'host2',
-                'userid': FLAGS.rabbit_userid,
-                'password': FLAGS.rabbit_password,
+                'userid': self.FLAGS.rabbit_userid,
+                'password': self.FLAGS.rabbit_password,
                 'port': 5678,
-                'virtual_host': FLAGS.rabbit_virtual_host,
+                'virtual_host': self.FLAGS.rabbit_virtual_host,
                 'transport': 'memory'},
                {'hostname': '::1',
-                'userid': FLAGS.rabbit_userid,
-                'password': FLAGS.rabbit_password,
+                'userid': self.FLAGS.rabbit_userid,
+                'password': self.FLAGS.rabbit_password,
                 'port': 2345,
-                'virtual_host': FLAGS.rabbit_virtual_host,
+                'virtual_host': self.FLAGS.rabbit_virtual_host,
                 'transport': 'memory'},
                {'hostname': '2001:0db8:85a3:0042:0000:8a2e:0370:7334',
-                'userid': FLAGS.rabbit_userid,
-                'password': FLAGS.rabbit_password,
+                'userid': self.FLAGS.rabbit_userid,
+                'password': self.FLAGS.rabbit_password,
                 'port': 5672,
-                'virtual_host': FLAGS.rabbit_virtual_host,
+                'virtual_host': self.FLAGS.rabbit_virtual_host,
                 'transport': 'memory'},
             ]
         }
@@ -803,7 +809,7 @@ class RpcKombuHATestCase(utils.BaseTestCase):
 
         self.stubs.Set(kombu.connection, 'BrokerConnection', MyConnection)
 
-        self.rpc.Connection(FLAGS)
+        self.rpc.Connection(self.FLAGS)
 
         self.assertEqual(info['attempt'], 5)
 
@@ -816,7 +822,8 @@ class RpcKombuHATestCase(utils.BaseTestCase):
 
         self.stubs.Set(kombu.entity.Queue, 'declare', my_declare)
 
-        with contextlib.closing(self.rpc.create_connection(FLAGS)) as conn:
+        with contextlib.closing(
+                self.rpc.create_connection(self.FLAGS)) as conn:
             conn.declare_topic_consumer('a_topic', lambda *args: None)
 
     def test_queue_declared_ha_if_ha_on(self):
@@ -828,5 +835,6 @@ class RpcKombuHATestCase(utils.BaseTestCase):
 
         self.stubs.Set(kombu.entity.Queue, 'declare', my_declare)
 
-        with contextlib.closing(self.rpc.create_connection(FLAGS)) as conn:
+        with contextlib.closing(
+                self.rpc.create_connection(self.FLAGS)) as conn:
             conn.declare_topic_consumer('a_topic', lambda *args: None)
