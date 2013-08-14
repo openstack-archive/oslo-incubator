@@ -25,15 +25,17 @@ eventlet.monkey_patch()
 
 import fixtures
 import mox
-from oslo.config import cfg
 import time
 import uuid
 
 from openstack.common import context
+from openstack.common.fixture import config
+from openstack.common.fixture import moxstubout
 from openstack.common import jsonutils
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
-from tests import utils
+from openstack.common import test
+
 
 try:
     import qpid
@@ -43,10 +45,8 @@ except ImportError:
     qpid = None
     impl_qpid = None
 
-FLAGS = cfg.CONF
 
-
-class RpcQpidTestCase(utils.BaseTestCase):
+class RpcQpidTestCase(test.BaseTestCase):
     """Exercise the public API of impl_qpid utilizing mox.
 
     This set of tests utilizes mox to replace the Qpid objects and ensures
@@ -95,6 +95,15 @@ class RpcQpidTestCase(utils.BaseTestCase):
         self.useFixture(
             fixtures.MonkeyPatch('uuid.uuid4', self.mock_uuid4))
 
+        configfixture = self.useFixture(config.Config())
+        self.config = configfixture.config
+        self.FLAGS = configfixture.conf 
+
+        moxfixture = self.useFixture(moxstubout.MoxStubout())
+        self.stubs = moxfixture.stubs
+        self.mox = moxfixture.mox
+
+
     def mock_uuid4(self):
         return self.uuid4
 
@@ -115,7 +124,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
 
         self.mox.ReplayAll()
 
-        connection = impl_qpid.create_connection(FLAGS)
+        connection = impl_qpid.create_connection(self.FLAGS)
         connection.close()
 
     def _test_create_consumer(self, fanout):
@@ -149,7 +158,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
 
         self.mox.ReplayAll()
 
-        connection = impl_qpid.create_connection(FLAGS)
+        connection = impl_qpid.create_connection(self.FLAGS)
         connection.create_consumer("impl_qpid_test",
                                    lambda *_x, **_y: None,
                                    fanout)
@@ -182,7 +191,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
 
         self.mox.ReplayAll()
 
-        connection = impl_qpid.create_connection(FLAGS)
+        connection = impl_qpid.create_connection(self.FLAGS)
         connection.create_worker("impl_qpid_test",
                                  lambda *_x, **_y: None,
                                  'impl.qpid.test.workers',
@@ -210,7 +219,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
 
         self.mox.ReplayAll()
 
-        connection = impl_qpid.create_connection(FLAGS)
+        connection = impl_qpid.create_connection(self.FLAGS)
         connection.join_consumer_pool(
             callback=lambda *_x, **_y: None,
             pool_name='impl.qpid.test.consumer.pool',
@@ -243,7 +252,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
 
         self.mox.ReplayAll()
 
-        connection = impl_qpid.create_connection(FLAGS)
+        connection = impl_qpid.create_connection(self.FLAGS)
         connection.declare_topic_consumer("impl_qpid_test",
                                           lambda *_x, **_y: None,
                                           queue_name='impl.qpid.test.workers',
@@ -291,7 +300,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
         try:
             ctx = context.RequestContext("user", "project")
 
-            args = [FLAGS, ctx, "impl_qpid_test",
+            args = [self.FLAGS, ctx, "impl_qpid_test",
                     {"method": "test_method", "args": {}}]
 
             if server_params:
@@ -329,7 +338,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
                                  [server_params['hostname'] + ':' +
                                  str(server_params['port'])])
 
-        MyConnection.pool = rpc_amqp.Pool(FLAGS, MyConnection)
+        MyConnection.pool = rpc_amqp.Pool(self.FLAGS, MyConnection)
         self.stubs.Set(impl_qpid, 'Connection', MyConnection)
 
     def test_cast_to_server(self):
@@ -434,7 +443,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
             else:
                 method = impl_qpid.call
 
-            res = method(FLAGS, ctx, "impl_qpid_test",
+            res = method(self.FLAGS, ctx, "impl_qpid_test",
                          {"method": "test_method", "args": {}})
 
             if multi:
@@ -478,7 +487,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
             method = impl_qpid.call
             if expect_failure:
                 try:
-                    res = method(FLAGS, ctx, "impl_qpid_test",
+                    res = method(self.FLAGS, ctx, "impl_qpid_test",
                                  {"method": "test_method", "args": {}},
                                  timeout)
                     self.fail('Expected a timeout exception')
@@ -486,7 +495,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
                     # Good, this is expected!
                     pass
             else:
-                res = method(FLAGS, ctx, "impl_qpid_test",
+                res = method(self.FLAGS, ctx, "impl_qpid_test",
                              {"method": "test_method", "args": {}}, timeout)
                 self.assertEquals(res, "foo")
         finally:
@@ -617,7 +626,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
         self.mox.ReplayAll()
 
         self.config(amqp_durable_queues=True)
-        connection = impl_qpid.create_connection(FLAGS)
+        connection = impl_qpid.create_connection(self.FLAGS)
         connection.create_consumer("impl_qpid_durable",
                                    lambda *_x, **_y: None)
         connection.close()
@@ -644,7 +653,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
         self.mox.ReplayAll()
 
         self.config(amqp_auto_delete=True)
-        connection = impl_qpid.create_connection(FLAGS)
+        connection = impl_qpid.create_connection(self.FLAGS)
         connection.create_consumer("impl_qpid_auto_delete",
                                    lambda *_x, **_y: None)
         connection.close()
@@ -684,7 +693,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
 
         self.mox.ReplayAll()
 
-        connection = impl_qpid.create_connection(FLAGS)
+        connection = impl_qpid.create_connection(self.FLAGS)
         connection.create_consumer("impl_qpid_test",
                                    None,
                                    True)

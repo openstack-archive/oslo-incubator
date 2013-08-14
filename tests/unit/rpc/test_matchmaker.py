@@ -19,13 +19,13 @@ import logging
 from openstack.common.rpc import matchmaker
 from openstack.common.rpc import matchmaker_ring
 from tests.unit.rpc import matchmaker_common as common
-from tests import utils
+from openstack.common import test
 
 
 LOG = logging.getLogger(__name__)
 
 
-class MatchMakerFileTestCase(utils.BaseTestCase, common._MatchMakerTestCase):
+class MatchMakerFileTestCase(test.BaseTestCase, common._MatchMakerTestCase):
     def setUp(self):
         super(MatchMakerFileTestCase, self).setUp()
         self.topic = "test"
@@ -36,7 +36,7 @@ class MatchMakerFileTestCase(utils.BaseTestCase, common._MatchMakerTestCase):
         self.driver = matchmaker_ring.MatchMakerRing(ring)
 
 
-class MatchMakerLocalhostTestCase(utils.BaseTestCase,
+class MatchMakerLocalhostTestCase(test.BaseTestCase,
                                   common._MatchMakerTestCase):
     def setUp(self):
         super(MatchMakerLocalhostTestCase, self).setUp()
@@ -45,7 +45,7 @@ class MatchMakerLocalhostTestCase(utils.BaseTestCase,
         self.hosts = ['localhost']
 
 
-class MatchMakerDirectExchangeTestCase(utils.BaseTestCase, common.
+class MatchMakerDirectExchangeTestCase(test.BaseTestCase, common.
                                        _MatchMakerDirectedTopicTestCase):
     """Test lookups against a directed topic."""
     def setUp(self):
@@ -55,7 +55,7 @@ class MatchMakerDirectExchangeTestCase(utils.BaseTestCase, common.
         self.hosts = ['localhost']
 
 
-class MatchMakerStubTestCase(utils.BaseTestCase,
+class MatchMakerStubTestCase(test.BaseTestCase,
                              common._MatchMakerDirectedTopicTestCase):
     """Test lookups against the stub/no-op matchmaker."""
     def setUp(self):
