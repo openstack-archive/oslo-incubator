@@ -20,8 +20,8 @@ from openstack.common import context
 from openstack.common import jsonutils
 from openstack.common.scheduler import filters
 from openstack.common.scheduler.filters import extra_specs_ops
+from openstack.common import test
 from tests.unit.scheduler import fake_hosts as fakes
-from tests import utils
 
 
 class TestFilter(filters.BaseHostFilter):
@@ -33,7 +33,7 @@ class TestBogusFilter(object):
     pass
 
 
-class ExtraSpecsOpsTestCase(utils.BaseTestCase):
+class ExtraSpecsOpsTestCase(test.BaseTestCase):
     def _do_extra_specs_ops_test(self, value, req, matches):
         assertion = self.assertTrue if matches else self.assertFalse
         assertion(extra_specs_ops.match(value, req))
@@ -249,7 +249,7 @@ class ExtraSpecsOpsTestCase(utils.BaseTestCase):
             matches=False)
 
 
-class HostFiltersTestCase(utils.BaseTestCase):
+class HostFiltersTestCase(test.BaseTestCase):
     """Test case for host filters."""
 
     def setUp(self):

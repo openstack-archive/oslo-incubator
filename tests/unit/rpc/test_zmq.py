@@ -27,8 +27,8 @@ import os
 import socket
 
 import fixtures
-from oslo.config import cfg
 
+from openstack.common.fixture import config
 from openstack.common.gettextutils import _  # noqa
 from tests.unit.rpc import common
 
@@ -38,7 +38,6 @@ except ImportError:
     impl_zmq = None
 
 LOG = logging.getLogger(__name__)
-FLAGS = cfg.CONF
 
 
 def get_unused_port():
@@ -60,14 +59,18 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
         self.reactor = None
         self.rpc = impl_zmq
 
-        self.conf = FLAGS
+        configfixture = self.useFixture(config.Config())
+        self.config = configfixture.config
+        self.FLAGS = configfixture.conf
+
+        self.conf = self.FLAGS
         self.config(rpc_zmq_bind_address='127.0.0.1')
         self.config(rpc_zmq_host='127.0.0.1')
         self.config(rpc_response_timeout=5)
         self.rpc._get_matchmaker(host='127.0.0.1')
 
         # We'll change this if we detect no daemon running.
-        ipc_dir = FLAGS.rpc_zmq_ipc_dir
+        ipc_dir = self.FLAGS.rpc_zmq_ipc_dir
 
         # Only launch the router if it isn't running.
         if not os.path.exists(os.path.join(ipc_dir, "zmq_topic_zmq_replies")):
@@ -82,7 +85,7 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
             self.config(rpc_zmq_ipc_dir=internal_ipc_dir)
 
             LOG.info(_("Running internal zmq receiver."))
-            reactor = impl_zmq.ZmqProxy(FLAGS)
+            reactor = impl_zmq.ZmqProxy(self.FLAGS)
             self.addCleanup(self._close_reactor)
             reactor.consume_in_thread()
         else:

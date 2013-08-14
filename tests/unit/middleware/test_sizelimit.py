@@ -12,18 +12,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo.config import cfg
 import six
 import webob
 
+from openstack.common.fixture import config
 from openstack.common.middleware import sizelimit
-from tests import utils
-
-CONF = cfg.CONF
-MAX_REQUEST_BODY_SIZE = CONF.max_request_body_size
+from openstack.common import test
 
 
-class TestLimitingReader(utils.BaseTestCase):
+class TestLimitingReader(test.BaseTestCase):
 
     def test_limiting_reader(self):
         BYTES = 1024
@@ -69,10 +66,12 @@ class TestLimitingReader(utils.BaseTestCase):
                           _consume_all_read)
 
 
-class TestRequestBodySizeLimiter(utils.BaseTestCase):
+class TestRequestBodySizeLimiter(test.BaseTestCase):
 
     def setUp(self):
         super(TestRequestBodySizeLimiter, self).setUp()
+        configfixture = self.useFixture(config.Config())
+        self.MAX_REQUEST_BODY_SIZE = configfixture.conf.max_request_body_size
 
         @webob.dec.wsgify()
         def fake_app(req):
@@ -82,19 +81,19 @@ class TestRequestBodySizeLimiter(utils.BaseTestCase):
         self.request = webob.Request.blank('/', method='POST')
 
     def test_content_length_acceptable(self):
-        self.request.headers['Content-Length'] = MAX_REQUEST_BODY_SIZE
-        self.request.body = "0" * MAX_REQUEST_BODY_SIZE
+        self.request.headers['Content-Length'] = self.MAX_REQUEST_BODY_SIZE
+        self.request.body = "0" * self.MAX_REQUEST_BODY_SIZE
         response = self.request.get_response(self.middleware)
         self.assertEqual(response.status_int, 200)
 
     def test_content_length_too_large(self):
-        self.request.headers['Content-Length'] = MAX_REQUEST_BODY_SIZE + 1
-        self.request.body = "0" * (MAX_REQUEST_BODY_SIZE + 1)
+        self.request.headers['Content-Length'] = self.MAX_REQUEST_BODY_SIZE + 1
+        self.request.body = "0" * (self.MAX_REQUEST_BODY_SIZE + 1)
         response = self.request.get_response(self.middleware)
         self.assertEqual(response.status_int, 413)
 
     def test_request_too_large_no_content_length(self):
-        self.request.body = "0" * (MAX_REQUEST_BODY_SIZE + 1)
+        self.request.body = "0" * (self.MAX_REQUEST_BODY_SIZE + 1)
         self.request.headers['Content-Length'] = None
         response = self.request.get_response(self.middleware)
         self.assertEqual(response.status_int, 413)

@@ -16,8 +16,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from openstack.common.fixture import config
 from openstack.common.rpc import service
-from tests import utils
+from openstack.common import test
 
 
 class FakeService(service.Service):
@@ -42,10 +43,14 @@ class FakeHookService(FakeService):
         return self.hooked
 
 
-class RpcServiceManagerTestCase(utils.BaseTestCase):
+class RpcServiceManagerTestCase(test.BaseTestCase):
     """Test cases for Services."""
     def setUp(self):
         super(RpcServiceManagerTestCase, self).setUp()
+
+        configfixture = self.useFixture(config.Config())
+        self.config = configfixture.config
+
         self.config(fake_rabbit=True)
         self.config(rpc_backend='openstack.common.rpc.impl_fake')
         self.config(verbose=True)
