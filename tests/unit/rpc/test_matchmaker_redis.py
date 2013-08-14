@@ -18,22 +18,23 @@ import logging
 
 import eventlet
 
+from openstack.common.fixture import config
 from openstack.common import importutils
 from openstack.common.rpc import matchmaker_redis as matchmaker
+from openstack.common import test
 from tests.unit.rpc import matchmaker_common as common
-from tests import utils
 
 redis = importutils.try_import('redis')
 
 LOG = logging.getLogger(__name__)
 
 
-class MatchMakerRedisLookupTestCase(utils.BaseTestCase,
+class MatchMakerRedisLookupTestCase(test.BaseTestCase,
                                     common._MatchMakerTestCase):
     """Test lookups against the Redis matchmaker"""
     def setUp(self):
         super(MatchMakerRedisLookupTestCase, self).setUp()
-
+        self.config = self.useFixture(config.Config()).config
         if not redis:
             self.skipTest("Redis required for test.")
 
@@ -67,12 +68,12 @@ class MatchMakerRedisLookupTestCase(utils.BaseTestCase,
         self.driver.stop_heartbeat()
 
 
-class MatchMakerRedisHeartbeatTestCase(utils.BaseTestCase,
+class MatchMakerRedisHeartbeatTestCase(test.BaseTestCase,
                                        common._MatchMakerDynRegTestCase):
     """Test the ability to register and perform heartbeats."""
     def setUp(self):
         super(MatchMakerRedisHeartbeatTestCase, self).setUp()
-
+        self.config = self.useFixture(config.Config()).config
         if not redis:
             self.skipTest("Redis required for test.")
 
@@ -124,7 +125,7 @@ class MatchMakerRedisHeartbeatTestCase(utils.BaseTestCase,
         self.assertEqual(self.driver.queues(self.topic), [])
 
 
-class MatchMakerRedisTestCase(utils.BaseTestCase):
+class MatchMakerRedisTestCase(test.BaseTestCase):
     """Generic tests that do not require a Redis server."""
     def test_redis_import_exception(self):
         """Try initializing an object without redis."""
