@@ -26,6 +26,12 @@ class CompatTestCase(utils.BaseTestCase):
         result = urlutils.urlencode({'Fake': fake})
         self.assertEquals(result, 'Fake=fake')
 
+    def test_urljoin(self):
+        root_url = "http://yahoo.com/"
+        url2 = "faq.html"
+        result = urlutils.urljoin(root_url, url2)
+        self.assertEquals(result, "http://yahoo.com/faq.html")
+
     def test_urlquote(self):
         url = "/~fake"
         result = urlutils.quote(url)
