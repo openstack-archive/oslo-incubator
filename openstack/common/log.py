@@ -552,27 +552,59 @@ class ColorHandler(logging.StreamHandler):
         return logging.StreamHandler.format(self, record)
 
 
-class TranslationHandler(logging.Handler):
-    """Handler that can have a locale associated to translate Messages.
+class TranslationHandler(logging.handlers.MemoryHandler):
+    """Handler that translates records before logging them.
 
-    TranslationHandler takes a locale and a target logging.Handler object
+    The TranslationHandler takes a locale and a target logging.Handler object
     to forward LogRecord objects to after translating the internal Message.
+    This handler depends on Message objects being logged, instead of regular
+    strings.
+
+    The handler can be configured programmatically, or declaratively in the
+    logging.conf, for example:
+
+        [handlers]
+        keys = secondarylog, translation
+
+        [handler_secondarylog]
+        class = handlers.WatchedFileHandler
+        args = ('/var/log/oslo-localized.log',)
+        formatter = context
+
+        [handler_translation]
+        class = openstack.common.log.TranslationHandler
+        target = secondarylog
+        args = ('zh_CN',)
+
+    If the specified locale is not available in the system, the handler will
+    log in the default locale.
     """
 
-    def __init__(self, locale, target):
+    def __init__(self, locale=None, target=None):
         """Initialize a TranslationHandler
 
         :param locale: locale to use for translating messages
         :param target: logging.Handler object to forward
                        LogRecord objects to after translation
         """
-        logging.Handler.__init__(self)
+        # NOTE(luisg): In order to allow this handler to be a wrapper for
+        # other handlers, such as a FileHandler, and still be able to
+        # configure it using logging.conf, this handler has to extend
+        # MemoryHandler because only the MemoryHandlers' logging.conf
+        # parsing is implemented such that it accepts a target handler.
+        logging.handlers.MemoryHandler.__init__(self,
+                                                capacity=0, target=target)
         self.locale = locale
-        self.target = target
+
+    def setLocale(self, locale):
+        """Sets the locale for this handler."""
+        self.locale = locale
+
+    def setFormatter(self, fmt):
+        self.target.setFormatter(fmt)
 
     def emit(self, record):
         if isinstance(record.msg, gettextutils.Message):
-            # set the locale and resolve to a string
             record.msg.locale = self.locale
 
         self.target.emit(record)

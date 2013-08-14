@@ -161,12 +161,17 @@ class TranslationHandlerTestCase(test_utils.BaseTestCase):
 
         self._lazy_gettext = _message_with_domain
         self.buffer_handler = logging.handlers.BufferingHandler(40)
-        self.locale_handler = log.TranslationHandler('zh_CN',
-                                                     self.buffer_handler)
+        self.locale_handler = log.TranslationHandler('zh_CN')
+        self.locale_handler.setTarget(self.buffer_handler)
         self.logger = logging.getLogger('localehander_logger')
         self.logger.propogate = False
         self.logger.setLevel(logging.DEBUG)
         self.logger.addHandler(self.locale_handler)
+
+    def test_set_formatter(self):
+        formatter = 'some formatter'
+        self.locale_handler.setFormatter(formatter)
+        self.assertEquals(formatter, self.locale_handler.target.formatter)
 
     def test_emit_message(self):
         msgid = 'Some logrecord message.'
