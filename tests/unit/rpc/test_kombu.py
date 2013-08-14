@@ -94,7 +94,7 @@ class KombuStubs(fixtures.Fixture):
 
 class FakeMessage(object):
     acked = False
-    rejected = False
+    requeued = False
 
     def __init__(self, payload):
         self.payload = payload
@@ -102,8 +102,8 @@ class FakeMessage(object):
     def ack(self):
         self.acked = True
 
-    def reject(self):
-        self.rejected = True
+    def requeue(self):
+        self.requeued = True
 
 
 class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
@@ -158,7 +158,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         message = FakeMessage("some message")
         consumer._callback_handler(message, _callback)
         self.assertTrue(message.acked)
-        self.assertFalse(message.rejected)
+        self.assertFalse(message.requeued)
 
     def test_callback_handler_ack_on_error_exception(self):
 
@@ -175,7 +175,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         message = FakeMessage("some message")
         consumer._callback_handler(message, _callback)
         self.assertTrue(message.acked)
-        self.assertFalse(message.rejected)
+        self.assertFalse(message.requeued)
 
     def test_callback_handler_no_ack_on_error_exception(self):
 
@@ -192,7 +192,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         message = FakeMessage("some message")
         consumer._callback_handler(message, _callback)
         self.assertFalse(message.acked)
-        self.assertTrue(message.rejected)
+        self.assertTrue(message.requeued)
 
     def test_callback_handler_no_ack_on_error(self):
 
@@ -209,7 +209,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         message = FakeMessage("some message")
         consumer._callback_handler(message, _callback)
         self.assertTrue(message.acked)
-        self.assertFalse(message.rejected)
+        self.assertFalse(message.requeued)
 
     def test_message_ttl_on_timeout(self):
         """Test message ttl being set by request timeout. The message
