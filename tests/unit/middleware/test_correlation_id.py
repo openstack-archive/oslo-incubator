@@ -17,12 +17,19 @@
 
 import mock
 
+from openstack.common.fixture import moxstubout
 from openstack.common.middleware import correlation_id
 from openstack.common import uuidutils
-from tests import utils
+from openstack.common import test
 
 
-class CorrelationIdMiddlewareTest(utils.BaseTestCase):
+class CorrelationIdMiddlewareTest(test.BaseTestCase):
+
+    def setUp(self):
+       super(CorrelationIdMiddlewareTest, self).setUp()
+
+       moxfixture = self.useFixture(moxstubout.MoxStubout())
+       self.stubs = moxfixture.stubs
 
     def test_process_request(self):
         app = mock.Mock()
