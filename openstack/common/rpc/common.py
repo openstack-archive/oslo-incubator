@@ -223,7 +223,8 @@ class Connection(object):
         """
         raise NotImplementedError()
 
-    def join_consumer_pool(self, callback, pool_name, topic, exchange_name):
+    def join_consumer_pool(self, callback, pool_name, topic, exchange_name,
+                           ack_on_error=True):
         """Register as a member of a group of consumers.
 
         Uses given topic from the specified exchange.
@@ -242,6 +243,10 @@ class Connection(object):
                               the client should attach. Defaults to
                               the configured exchange.
         :type exchange_name: str
+        :param ack_on_error: ack() messages even if an exception
+                             occurs in the consumer. Defaults to
+                             True.
+        :type ack_on_error: bool
         """
         raise NotImplementedError()
 
