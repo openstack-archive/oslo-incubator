@@ -31,7 +31,6 @@ It also allows setting of formatting information through conf.
 
 import inspect
 import itertools
-import logging
 import logging.config
 import logging.handlers
 import os
@@ -41,6 +40,7 @@ import traceback
 from oslo.config import cfg
 from six import moves
 
+from openstack.common import gettextutils
 from openstack.common.gettextutils import _  # noqa
 from openstack.common import importutils
 from openstack.common import jsonutils
@@ -550,6 +550,32 @@ class ColorHandler(logging.StreamHandler):
     def format(self, record):
         record.color = self.LEVEL_COLORS[record.levelno]
         return logging.StreamHandler.format(self, record)
+
+
+class TranslationHandler(logging.Handler):
+    """Handler that can have a locale associated to translate Messages.
+
+    TranslationHandler takes a locale and a target logging.Handler object
+    to forward LogRecord objects to after translating the internal Message.
+    """
+
+    def __init__(self, locale, target):
+        """Initialize a TranslationHandler
+
+        :param locale: locale to use for translating messages
+        :param target: logging.Handler object to forward
+                       LogRecord objects to after translation
+        """
+        logging.Handler.__init__(self)
+        self.locale = locale
+        self.target = target
+
+    def emit(self, record):
+        if isinstance(record.msg, gettextutils.Message):
+            # set the locale and resolve to a string
+            record.msg.locale = self.locale
+
+        self.target.emit(record)
 
 
 class DeprecatedConfig(Exception):

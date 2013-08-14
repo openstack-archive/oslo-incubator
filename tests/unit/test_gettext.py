@@ -19,7 +19,7 @@
 from babel import localedata
 import copy
 import gettext
-import logging.handlers
+import logging
 import os
 
 import mock
@@ -481,56 +481,6 @@ class MessageTestCase(utils.BaseTestCase):
         result = self._lazy_gettext(msgid)
 
         self.assertEqual(msgid.upper(), result.upper())
-
-
-class LocaleHandlerTestCase(utils.BaseTestCase):
-
-    def setUp(self):
-        super(LocaleHandlerTestCase, self).setUp()
-
-        def _message_with_domain(msg):
-            return gettextutils.Message(msg, 'oslo')
-
-        self._lazy_gettext = _message_with_domain
-        self.buffer_handler = logging.handlers.BufferingHandler(40)
-        self.locale_handler = gettextutils.LocaleHandler(
-            'zh_CN', self.buffer_handler)
-        self.logger = logging.getLogger('localehander_logger')
-        self.logger.propogate = False
-        self.logger.setLevel(logging.DEBUG)
-        self.logger.addHandler(self.locale_handler)
-
-    def test_emit_message(self):
-        msgid = 'Some logrecord message.'
-        message = self._lazy_gettext(msgid)
-        self.emit_called = False
-
-        def emit(record):
-            self.assertEqual(record.msg.locale, 'zh_CN')
-            self.assertEqual(record.msg, msgid)
-            self.assertTrue(isinstance(record.msg,
-                                       gettextutils.Message))
-            self.emit_called = True
-        self.stubs.Set(self.buffer_handler, 'emit', emit)
-
-        self.logger.info(message)
-
-        self.assertTrue(self.emit_called)
-
-    def test_emit_nonmessage(self):
-        msgid = 'Some logrecord message.'
-        self.emit_called = False
-
-        def emit(record):
-            self.assertEqual(record.msg, msgid)
-            self.assertFalse(isinstance(record.msg,
-                                        gettextutils.Message))
-            self.emit_called = True
-        self.stubs.Set(self.buffer_handler, 'emit', emit)
-
-        self.logger.info(msgid)
-
-        self.assertTrue(self.emit_called)
 
 
 class SomeObject(object):

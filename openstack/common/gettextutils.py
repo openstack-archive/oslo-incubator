@@ -26,7 +26,6 @@ Usual usage in an openstack.common module:
 
 import copy
 import gettext
-import logging.handlers
 import os
 import re
 import UserString
@@ -276,30 +275,3 @@ def get_localized_message(message, user_locale):
         return unicode(message)
     else:
         return message
-
-
-class LocaleHandler(logging.Handler):
-    """Handler that can have a locale associated to translate Messages.
-
-    A quick example of how to utilize the Message class above.
-    LocaleHandler takes a locale and a target logging.Handler object
-    to forward LogRecord objects to after translating the internal Message.
-    """
-
-    def __init__(self, locale, target):
-        """Initialize a LocaleHandler
-
-        :param locale: locale to use for translating messages
-        :param target: logging.Handler object to forward
-                       LogRecord objects to after translation
-        """
-        logging.Handler.__init__(self)
-        self.locale = locale
-        self.target = target
-
-    def emit(self, record):
-        if isinstance(record.msg, Message):
-            # set the locale and resolve to a string
-            record.msg.locale = self.locale
-
-        self.target.emit(record)
