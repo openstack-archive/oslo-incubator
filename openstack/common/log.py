@@ -152,6 +152,15 @@ log_opts = [
                default='[instance: %(uuid)s] ',
                help='If an instance UUID is passed with the log message, '
                     'format it like this'),
+    cfg.StrOpt('log_additional_locale',
+               default=None,
+               choices=gettextutils.get_all_available_languages(),
+               help='(Optional) In addition to the system\'s default language '
+               'log, creates an additional log in the given language if such '
+               'language is present in the operating system. This option is'
+               'only enabled if the \'log-file\' option is used, and the '
+               'additional log will be created in the same directory of the '
+               'main log, inside a directory named after the locale.'),
 ]
 
 CONF = cfg.CONF
@@ -405,6 +414,33 @@ def _setup_logging_from_conf():
     if logpath:
         filelog = logging.handlers.WatchedFileHandler(logpath)
         log_root.addHandler(filelog)
+        if CONF.log_additional_locale:
+            # We only enable the log_additional_locale property if the user
+            # configured logging via CONF.log_file, so we can reuse that
+            # same log file location. If CONF.log_file was not used, that
+            # means the user configured logging via logging.conf and the
+            # secondary log should be configured there too.
+            extra_locale = CONF.log_additional_locale
+            log_file = os.path.basename(logpath)
+            log_dir = os.path.dirname(logpath)
+            localized_log_dir = os.path.join(log_dir, extra_locale)
+            if not os.path.exists(localized_log_dir):
+                try:
+                    os.mkdir(localized_log_dir)
+                except (IOError, OSError) as e:
+                    # This is unlikely since the system currently already halts
+                    # if the user's starting a service and the location of the
+                    # logfile is not accessible, but adding for robustness.
+                    msg = (_('Could not create directory \'%(property)s\' for '
+                             'secondary locale log due to: %(msg)\n'
+                             'To continue address the issue or '
+                             'remove the property.') %
+                           {'property': localized_log_dir, 'msg': e})
+                    raise LogConfigError('log_additional_locale', msg)
+            localized_log_file = os.path.join(localized_log_dir, log_file)
+            extra_log = logging.handlers.WatchedFileHandler(localized_log_file)
+            extra_log = TranslationHandler(extra_locale, extra_log)
+            log_root.addHandler(extra_log)
 
     if CONF.use_stderr:
         streamlog = ColorHandler()

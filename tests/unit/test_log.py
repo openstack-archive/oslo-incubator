@@ -16,6 +16,7 @@
 
 import cStringIO
 import logging
+import mock
 import os
 import sys
 import tempfile
@@ -126,6 +127,31 @@ class LogHandlerTestCase(test_utils.BaseTestCase):
                     log_file='/some/path/foo-bar.log')
         self.assertEquals(log._get_log_file_path(binary='foo-bar'),
                           '/some/path/foo-bar.log')
+
+    @mock.patch('os.path.exists')
+    @mock.patch('logging.handlers.WatchedFileHandler')
+    def test_secondary_locale_log(self, MockWatchedFileHandler, mock_osexists):
+        mock_osexists.return_value = True
+        log_root = log.getLogger(None).logger
+        translation_handler = None
+        # Config without log_additional_locale should result
+        # in no TranslationHandler, and the opposite should be true
+        self.config(log_file='/some/path/foo-bar.log')
+        log._setup_logging_from_conf()
+        for h in log_root.handlers:
+            if isinstance(h, log.TranslationHandler):
+                translation_handler = h
+                break
+        self.assertIsNone(translation_handler)
+
+        self.config(log_file='/some/path/foo-bar.log',
+                    log_additional_locale='es')
+        log._setup_logging_from_conf()
+        for h in log_root.handlers:
+            if isinstance(h, log.TranslationHandler):
+                translation_handler = h
+                break
+        self.assertIsNotNone(translation_handler)
 
 
 class PublishErrorsHandlerTestCase(test_utils.BaseTestCase):

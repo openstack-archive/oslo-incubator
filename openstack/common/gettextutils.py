@@ -254,17 +254,28 @@ def get_available_languages(domain):
     # NOTE(mrodden): en_US should always be available (and first in case
     # order matters) since our in-line message strings are en_US
     _AVAILABLE_LANGUAGES.append('en_US')
-    # NOTE(luisg): Babel <1.0 used a function called list(), which was
-    # renamed to locale_identifiers() in >=1.0, the requirements master list
-    # requires >=0.9.6, uncapped, so defensively work with both. We can remove
-    # this check when the master list updates to >=1.0, and all projects udpate
-    list_identifiers = (getattr(localedata, 'list', None) or
-                        getattr(localedata, 'locale_identifiers'))
-    locale_identifiers = list_identifiers()
-    for i in locale_identifiers:
+    for i in get_all_available_languages():
         if find(i) is not None:
             _AVAILABLE_LANGUAGES.append(i)
     return _AVAILABLE_LANGUAGES
+
+
+def get_all_available_languages():
+    """Lists all the locale identifiers available to the system.
+
+    This method is really a wrapper over the functionality provided by Babel.
+    Babel <1.0 used a function called list(), which was renamed to
+    locale_identifiers() in >=1.0, the requirements master list
+    requires >=0.9.6, uncapped, this method defensively works with both.
+
+    NOTE(luisg): We can remove this method and use
+    localedata.locale_identifiers()directly when the global requirements list
+    (https://github.com/openstack/requirements/blob/master/global-requirements.txt) # noqa
+    updates to >=1.0, and all projects udpate.
+    """
+    list_identifiers = (getattr(localedata, 'list', None) or
+                        getattr(localedata, 'locale_identifiers'))
+    return list_identifiers()
 
 
 def get_localized_message(message, user_locale):
