@@ -38,10 +38,26 @@ _localedir = os.environ.get('oslo'.upper() + '_LOCALEDIR')
 _t = gettext.translation('oslo', localedir=_localedir, fallback=True)
 
 _AVAILABLE_LANGUAGES = []
+USE_LAZY = False
+
+
+def enable_lazy():
+    """Convenience function for configuring _() to use lazy gettext
+
+    Call this at the start of execution to enable the gettextutils._
+    function to use lazy gettext functionality. This is useful if
+    your project is importing _ directly instead of using the
+    gettextutils.install() way of importing the _ function.
+    """
+    global USE_LAZY
+    USE_LAZY = True
 
 
 def _(msg):
-    return _t.ugettext(msg)
+    if USE_LAZY:
+        return Message(msg, 'oslo')
+    else:
+        return _t.ugettext(msg)
 
 
 def install(domain, lazy=False):
