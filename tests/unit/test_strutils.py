@@ -20,10 +20,10 @@ import mock
 import six
 
 from openstack.common import strutils
-from tests import utils
+from openstack.common import test
 
 
-class StrUtilsTest(utils.BaseTestCase):
+class StrUtilsTest(test.BaseTestCase):
 
     def test_bool_bool_from_string(self):
         self.assertTrue(strutils.bool_from_string(True))

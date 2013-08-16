@@ -25,10 +25,10 @@ import mock
 import mox
 
 from openstack.common import fileutils
-from tests import utils
+from openstack.common import test
 
 
-class EnsureTree(utils.BaseTestCase):
+class EnsureTree(test.BaseTestCase):
     def test_ensure_tree(self):
         tmpdir = tempfile.mkdtemp()
         try:
@@ -41,7 +41,7 @@ class EnsureTree(utils.BaseTestCase):
                 shutil.rmtree(tmpdir)
 
 
-class TestCachedFile(utils.BaseTestCase):
+class TestCachedFile(test.BaseTestCase):
 
     def setUp(self):
         super(TestCachedFile, self).setUp()
@@ -86,7 +86,7 @@ class TestCachedFile(utils.BaseTestCase):
         self.assertTrue(fresh)
 
 
-class DeleteIfExists(utils.BaseTestCase):
+class DeleteIfExists(test.BaseTestCase):
     def test_file_present(self):
         tmpfile = tempfile.mktemp()
 
@@ -113,7 +113,7 @@ class DeleteIfExists(utils.BaseTestCase):
         self.assertRaises(OSError, fileutils.delete_if_exists, tmpfile)
 
 
-class RemovePathOnError(utils.BaseTestCase):
+class RemovePathOnError(test.BaseTestCase):
     def test_error(self):
         tmpfile = tempfile.mktemp()
         open(tmpfile, 'w')
@@ -134,7 +134,7 @@ class RemovePathOnError(utils.BaseTestCase):
         os.unlink(tmpfile)
 
 
-class UtilsTestCase(utils.BaseTestCase):
+class UtilsTestCase(test.BaseTestCase):
     def test_file_open(self):
         dst_fd, dst_path = tempfile.mkstemp()
         try:

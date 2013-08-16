@@ -15,10 +15,10 @@
 #    under the License.
 
 from openstack.common import cliutils
-from tests import utils
+from openstack.common import test
 
 
-class ValidateArgsTest(utils.BaseTestCase):
+class ValidateArgsTest(test.BaseTestCase):
 
     def test_lambda_no_args(self):
         cliutils.validate_args(lambda: None)

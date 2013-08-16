@@ -17,10 +17,10 @@
 import ssl
 
 from openstack.common import sslutils
-from tests import utils
+from openstack.common import test
 
 
-class SSLUtilsTest(utils.BaseTestCase):
+class SSLUtilsTest(test.BaseTestCase):
     def test_valid_versions(self):
         self.assertEquals(sslutils.validate_ssl_version("SSLv3"),
                           ssl.PROTOCOL_SSLv3)

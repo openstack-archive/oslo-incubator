@@ -16,10 +16,10 @@
 #    under the License.
 
 from openstack.common import context
-from tests import utils
+from openstack.common import test
 
 
-class ContextTest(utils.BaseTestCase):
+class ContextTest(test.BaseTestCase):
 
     def test_context(self):
         ctx = context.RequestContext()

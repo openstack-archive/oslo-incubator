@@ -19,10 +19,10 @@ import datetime
 import sys
 
 from openstack.common import importutils
-from tests import utils
+from openstack.common import test
 
 
-class ImportUtilsTest(utils.BaseTestCase):
+class ImportUtilsTest(test.BaseTestCase):
 
     # NOTE(jkoelker) There has GOT to be a way to test this. But mocking
     #                __import__ is the devil. Right now we just make

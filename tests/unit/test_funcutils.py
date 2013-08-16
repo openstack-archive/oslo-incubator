@@ -20,11 +20,10 @@
 import functools
 
 from openstack.common import funcutils
+from openstack.common import test
 
-from tests import utils
 
-
-class FuncutilsTestCase(utils.BaseTestCase):
+class FuncutilsTestCase(test.BaseTestCase):
     def _test_func(self, instance, red=None, blue=None):
         pass
 

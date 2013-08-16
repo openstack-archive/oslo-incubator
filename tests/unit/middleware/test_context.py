@@ -20,10 +20,10 @@ import mock
 import openstack.common.context
 
 from openstack.common.middleware import context
-from tests import utils
+from openstack.common import test
 
 
-class ContextMiddlewareTest(utils.BaseTestCase):
+class ContextMiddlewareTest(test.BaseTestCase):
 
     def test_process_request(self):
         req = mock.Mock()
@@ -59,7 +59,7 @@ class ContextMiddlewareTest(utils.BaseTestCase):
             import_class.assert_called_with(mock.sentinel.arg)
 
 
-class FilterFactoryTest(utils.BaseTestCase):
+class FilterFactoryTest(test.BaseTestCase):
 
     def test_filter_factory(self):
         global_conf = dict(sentinel=mock.sentinel.global_conf)

@@ -18,11 +18,11 @@
 import datetime
 
 from openstack.common import memorycache
+from openstack.common import test
 from openstack.common import timeutils
-from tests import utils
 
 
-class MemorycacheTest(utils.BaseTestCase):
+class MemorycacheTest(test.BaseTestCase):
     def setUp(self):
         self.client = memorycache.get_client()
         super(MemorycacheTest, self).setUp()

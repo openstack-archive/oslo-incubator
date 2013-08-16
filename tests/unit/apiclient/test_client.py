@@ -22,8 +22,7 @@ import requests
 from openstack.common.apiclient import auth
 from openstack.common.apiclient import client
 from openstack.common.apiclient import exceptions
-
-from tests import utils
+from openstack.common import test
 
 
 class TestClient(client.BaseClient):
@@ -42,7 +41,7 @@ class FakeAuthPlugin(auth.BaseAuthPlugin):
         return ("token-%s" % self.attempt, "/endpoint-%s" % self.attempt)
 
 
-class ClientTest(utils.BaseTestCase):
+class ClientTest(test.BaseTestCase):
 
     def test_client_with_timeout(self):
         http_client = client.HTTPClient(None, timeout=2)
@@ -115,7 +114,7 @@ class FakeClient21(object):
     pass
 
 
-class GetClientClassTestCase(utils.BaseTestCase):
+class GetClientClassTestCase(test.BaseTestCase):
     version_map = {
         "1": "%s.FakeClient1" % __name__,
         "2.1": "%s.FakeClient21" % __name__,

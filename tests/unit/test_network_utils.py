@@ -16,10 +16,10 @@
 #    under the License.
 
 from openstack.common import network_utils
-from tests import utils
+from openstack.common import test
 
 
-class NetworkUtilsTest(utils.BaseTestCase):
+class NetworkUtilsTest(test.BaseTestCase):
 
     def test_parse_host_port(self):
         self.assertEqual(('server01', 80),

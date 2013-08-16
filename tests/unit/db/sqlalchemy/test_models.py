@@ -16,10 +16,10 @@
 #    under the License.
 
 from openstack.common.db.sqlalchemy import models
-from tests import utils as test_utils
+from openstack.common import test
 
 
-class ModelBaseTest(test_utils.BaseTestCase):
+class ModelBaseTest(test.BaseTestCase):
 
     def test_modelbase_has_dict_methods(self):
         dict_methods = ('__getitem__',
@@ -73,7 +73,7 @@ class ModelBaseTest(test_utils.BaseTestCase):
         self.assertEqual(min_items, found_items)
 
 
-class TimestampMixinTest(test_utils.BaseTestCase):
+class TimestampMixinTest(test.BaseTestCase):
 
     def test_timestampmixin_attr(self):
 

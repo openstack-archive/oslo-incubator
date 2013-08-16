@@ -19,8 +19,7 @@ from openstack.common.apiclient import base
 from openstack.common.apiclient import client
 from openstack.common.apiclient import exceptions
 from openstack.common.apiclient import fake_client
-
-from tests import utils
+from openstack.common import test
 
 
 class HumanResource(base.Resource):
@@ -121,7 +120,7 @@ class TestClient(client.BaseClient):
         self.crud_resources = CrudResourceManager(self)
 
 
-class ResourceTest(utils.BaseTestCase):
+class ResourceTest(test.BaseTestCase):
 
     def test_resource_repr(self):
         r = base.Resource(None, dict(foo="bar", baz="spam"))
@@ -139,7 +138,7 @@ class ResourceTest(utils.BaseTestCase):
         self.assertEqual(r.human_id, "1")
 
 
-class BaseManagerTest(utils.BaseTestCase):
+class BaseManagerTest(test.BaseTestCase):
 
     def setUp(self):
         super(BaseManagerTest, self).setUp()
@@ -187,7 +186,7 @@ class BaseManagerTest(utils.BaseTestCase):
         self.assertEqual(human_resource.name, name)
 
 
-class CrudManagerTest(utils.BaseTestCase):
+class CrudManagerTest(test.BaseTestCase):
 
     domain_id = "my-domain"
     crud_resource_id = "1"

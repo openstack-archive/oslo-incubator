@@ -16,11 +16,11 @@
 
 from xml.dom import minidom
 
+from openstack.common import test
 from openstack.common import xmlutils
-from tests import utils
 
 
-class XMLUtilsTestCase(utils.BaseTestCase):
+class XMLUtilsTestCase(test.BaseTestCase):
     def test_safe_parse_xml(self):
 
         normal_body = ("""
@@ -55,7 +55,7 @@ class XMLUtilsTestCase(utils.BaseTestCase):
                           killer_body())
 
 
-class SafeParserTestCase(utils.BaseTestCase):
+class SafeParserTestCase(test.BaseTestCase):
     def test_external_dtd(self):
         xml_string = ("""<?xml version="1.0" encoding="utf-8"?>
                 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"

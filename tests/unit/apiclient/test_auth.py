@@ -31,8 +31,7 @@ except ImportError:
 from openstack.common.apiclient import auth
 from openstack.common.apiclient import client
 from openstack.common.apiclient import fake_client
-
-from tests import utils
+from openstack.common import test
 
 
 TEST_REQUEST_BASE = {
@@ -91,7 +90,7 @@ class BaseFakePlugin(auth.BaseAuthPlugin):
         pass
 
 
-class GlobalFunctionsTest(utils.BaseTestCase):
+class GlobalFunctionsTest(test.BaseTestCase):
 
     def test_load_auth_system_opts(self):
         self.useFixture(fixtures.MonkeyPatch(
@@ -114,7 +113,7 @@ class MockEntrypoint(object):
         self.plugin = plugin
 
 
-class AuthPluginTest(utils.BaseTestCase):
+class AuthPluginTest(test.BaseTestCase):
     @mock.patch.object(requests.Session, "request")
     @mock.patch.object(extension.ExtensionManager, "map")
     def test_auth_system_success(self, mock_mgr_map, mock_request):
