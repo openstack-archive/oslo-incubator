@@ -73,10 +73,10 @@ class LockTestCase(utils.BaseTestCase):
             """Bar"""
             pass
 
-        self.assertEquals(foo.__doc__, 'Bar', "Wrapped function's docstring "
-                                              "got lost")
-        self.assertEquals(foo.__name__, 'foo', "Wrapped function's name "
-                                               "got mangled")
+        self.assertEqual(foo.__doc__, 'Bar', "Wrapped function's docstring "
+                                             "got lost")
+        self.assertEqual(foo.__name__, 'foo', "Wrapped function's name "
+                                              "got mangled")
 
     def test_lock_internally(self):
         """We can lock across multiple green threads."""
@@ -97,13 +97,13 @@ class LockTestCase(utils.BaseTestCase):
         for thread in threads:
             thread.wait()
 
-        self.assertEquals(len(seen_threads), 100)
+        self.assertEqual(len(seen_threads), 100)
         # Looking at the seen threads, split it into chunks of 10, and verify
         # that the last 9 match the first in each chunk.
         for i in range(10):
             for j in range(9):
-                self.assertEquals(seen_threads[i * 10],
-                                  seen_threads[i * 10 + 1 + j])
+                self.assertEqual(seen_threads[i * 10],
+                                 seen_threads[i * 10 + 1 + j])
 
         self.assertEqual(saved_sem_num, len(lockutils._semaphores),
                          "Semaphore leak detected")

@@ -184,13 +184,13 @@ class TimeUtilsTest(test.BaseTestCase):
 class TestIso8601Time(test.BaseTestCase):
 
     def _instaneous(self, timestamp, yr, mon, day, hr, min, sec, micro):
-        self.assertEquals(timestamp.year, yr)
-        self.assertEquals(timestamp.month, mon)
-        self.assertEquals(timestamp.day, day)
-        self.assertEquals(timestamp.hour, hr)
-        self.assertEquals(timestamp.minute, min)
-        self.assertEquals(timestamp.second, sec)
-        self.assertEquals(timestamp.microsecond, micro)
+        self.assertEqual(timestamp.year, yr)
+        self.assertEqual(timestamp.month, mon)
+        self.assertEqual(timestamp.day, day)
+        self.assertEqual(timestamp.hour, hr)
+        self.assertEqual(timestamp.minute, min)
+        self.assertEqual(timestamp.second, sec)
+        self.assertEqual(timestamp.microsecond, micro)
 
     def _do_test(self, str, yr, mon, day, hr, min, sec, micro, shift):
         DAY_SECONDS = 24 * 60 * 60
@@ -246,26 +246,26 @@ class TestIso8601Time(test.BaseTestCase):
     def test_zulu_roundtrip(self):
         str = '2012-02-14T20:53:07Z'
         zulu = timeutils.parse_isotime(str)
-        self.assertEquals(zulu.tzinfo, iso8601.iso8601.UTC)
-        self.assertEquals(timeutils.isotime(zulu), str)
+        self.assertEqual(zulu.tzinfo, iso8601.iso8601.UTC)
+        self.assertEqual(timeutils.isotime(zulu), str)
 
     def test_east_roundtrip(self):
         str = '2012-02-14T20:53:07-07:00'
         east = timeutils.parse_isotime(str)
-        self.assertEquals(east.tzinfo.tzname(None), '-07:00')
-        self.assertEquals(timeutils.isotime(east), str)
+        self.assertEqual(east.tzinfo.tzname(None), '-07:00')
+        self.assertEqual(timeutils.isotime(east), str)
 
     def test_west_roundtrip(self):
         str = '2012-02-14T20:53:07+11:30'
         west = timeutils.parse_isotime(str)
-        self.assertEquals(west.tzinfo.tzname(None), '+11:30')
-        self.assertEquals(timeutils.isotime(west), str)
+        self.assertEqual(west.tzinfo.tzname(None), '+11:30')
+        self.assertEqual(timeutils.isotime(west), str)
 
     def test_now_roundtrip(self):
         str = timeutils.isotime()
         now = timeutils.parse_isotime(str)
-        self.assertEquals(now.tzinfo, iso8601.iso8601.UTC)
-        self.assertEquals(timeutils.isotime(now), str)
+        self.assertEqual(now.tzinfo, iso8601.iso8601.UTC)
+        self.assertEqual(timeutils.isotime(now), str)
 
     def test_zulu_normalize(self):
         str = '2012-02-14T20:53:07Z'

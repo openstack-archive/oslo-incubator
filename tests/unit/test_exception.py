@@ -35,7 +35,7 @@ class WrapExceptionTest(utils.BaseTestCase):
 
     def test_wrap_exception_good_return(self):
         wrapped = exception.wrap_exception
-        self.assertEquals(good_function(), wrapped(good_function)())
+        self.assertEqual(good_function(), wrapped(good_function)())
 
     def test_wrap_exception_throws_error(self):
         wrapped = exception.wrap_exception

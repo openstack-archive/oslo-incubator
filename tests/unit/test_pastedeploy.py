@@ -67,7 +67,7 @@ openstack.app_factory = tests.unit.test_pastedeploy:App
 """)
 
         app = pastedeploy.paste_deploy_app(paste_conf, 'myfoo', data)
-        self.assertEquals(app.data, data)
+        self.assertEqual(app.data, data)
 
     def test_app_factory_with_local_conf(self):
         data = 'test_app_factory_with_local_conf'
@@ -80,8 +80,8 @@ foo = bar
 """)
 
         app = pastedeploy.paste_deploy_app(paste_conf, 'myfoo', data)
-        self.assertEquals(app.data, data)
-        self.assertEquals(app.foo, 'bar')
+        self.assertEqual(app.data, data)
+        self.assertEqual(app.foo, 'bar')
 
     def test_filter_factory(self):
         data = 'test_filter_factory'
@@ -100,5 +100,5 @@ openstack.app_factory = tests.unit.test_pastedeploy:App
 """)
 
         app = pastedeploy.paste_deploy_app(paste_conf, 'myfoo', data)
-        self.assertEquals(app.data, data)
-        self.assertEquals(app.app.data, data)
+        self.assertEqual(app.data, data)
+        self.assertEqual(app.app.data, data)

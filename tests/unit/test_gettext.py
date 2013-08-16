@@ -111,18 +111,18 @@ class GettextTest(utils.BaseTestCase):
         self.stubs.Set(gettextutils.Message,
                        '__unicode__', _mock_translation_and_unicode)
 
-        self.assertEquals(es_translation,
-                          gettextutils.get_localized_message(message, 'es'))
-        self.assertEquals(zh_translation,
-                          gettextutils.get_localized_message(message, 'zh'))
-        self.assertEquals(en_message,
-                          gettextutils.get_localized_message(message, 'en'))
-        self.assertEquals(en_message,
-                          gettextutils.get_localized_message(message, 'XX'))
-        self.assertEquals(en_message,
-                          gettextutils.get_localized_message(message, None))
-        self.assertEquals(non_message,
-                          gettextutils.get_localized_message(non_message, 'A'))
+        self.assertEqual(es_translation,
+                         gettextutils.get_localized_message(message, 'es'))
+        self.assertEqual(zh_translation,
+                         gettextutils.get_localized_message(message, 'zh'))
+        self.assertEqual(en_message,
+                         gettextutils.get_localized_message(message, 'en'))
+        self.assertEqual(en_message,
+                         gettextutils.get_localized_message(message, 'XX'))
+        self.assertEqual(en_message,
+                         gettextutils.get_localized_message(message, None))
+        self.assertEqual(non_message,
+                         gettextutils.get_localized_message(non_message, 'A'))
 
     def test_get_available_languages(self):
         # All the available languages for which locale data is available
@@ -147,15 +147,15 @@ class GettextTest(utils.BaseTestCase):
         # en_US should also always be the first element since order matters
         # finally only the domain languages should be included after en_US
         self.assertTrue('en_US', domain_languages)
-        self.assertEquals(3, len(domain_languages))
-        self.assertEquals('en_US', domain_languages[0])
+        self.assertEqual(3, len(domain_languages))
+        self.assertEqual('en_US', domain_languages[0])
         self.assertTrue('zh' in domain_languages)
         self.assertTrue('es' in domain_languages)
 
         # Clear languages to test an unknown domain
         gettextutils._AVAILABLE_LANGUAGES = []
         unknown_domain_languages = gettextutils.get_available_languages('huh')
-        self.assertEquals(1, len(unknown_domain_languages))
+        self.assertEqual(1, len(unknown_domain_languages))
         self.assertTrue('en_US' in unknown_domain_languages)
 
 
