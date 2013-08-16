@@ -200,13 +200,13 @@ class EnforcerTest(PolicyBaseTestCase):
     def test_enforcer_overwrite_rules(self):
         self.enforcer.set_rules({'test': 'test'})
         self.enforcer.set_rules({'test': 'test1'}, overwrite=True)
-        self.assertEquals(self.enforcer.rules, {'test': 'test1'})
+        self.assertEqual(self.enforcer.rules, {'test': 'test1'})
 
     def test_enforcer_update_rules(self):
         self.enforcer.set_rules({'test': 'test'})
         self.enforcer.set_rules({'test1': 'test1'}, overwrite=False)
-        self.assertEquals(self.enforcer.rules, {'test': 'test',
-                                                'test1': 'test1'})
+        self.assertEqual(self.enforcer.rules, {'test': 'test',
+                                               'test1': 'test1'})
 
     def test_get_policy_path_raises_exc(self):
         enforcer = policy.Enforcer(policy_file='raise_error.json')
