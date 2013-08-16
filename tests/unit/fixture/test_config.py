@@ -32,14 +32,14 @@ class ConfigTestCase(BaseTestCase):
             'testing_option', default='initial_value'))
 
     def test_overriden_value(self):
-        self.assertEquals(conf.get('testing_option'), 'initial_value')
+        self.assertEqual(conf.get('testing_option'), 'initial_value')
         self.config(testing_option='changed_value')
-        self.assertEquals(conf.get('testing_option'),
-                          self.config_fixture.conf.get('testing_option'))
+        self.assertEqual(conf.get('testing_option'),
+                         self.config_fixture.conf.get('testing_option'))
 
     def test_cleanup(self):
         self.config(testing_option='changed_value')
-        self.assertEquals(self.config_fixture.conf.get('testing_option'),
-                          'changed_value')
+        self.assertEqual(self.config_fixture.conf.get('testing_option'),
+                         'changed_value')
         self.config_fixture.conf.reset()
-        self.assertEquals(conf.get('testing_option'), 'initial_value')
+        self.assertEqual(conf.get('testing_option'), 'initial_value')

@@ -28,6 +28,10 @@ from tests import utils
 from testtools import matchers
 
 
+class AException(Exception):
+    pass
+
+
 class AService(periodic_task.PeriodicTasks):
 
     def __init__(self):
@@ -40,7 +44,7 @@ class AService(periodic_task.PeriodicTasks):
     @periodic_task.periodic_task
     def crashit(self, context):
         self.called['urg'] = True
-        raise Exception('urg')
+        raise AException('urg')
 
     @periodic_task.periodic_task(spacing=10)
     def doit_with_kwargs_odd(self, context):
@@ -66,7 +70,7 @@ class PeriodicTasksTestCase(utils.BaseTestCase):
 
     def test_raises(self):
         serv = AService()
-        self.assertRaises(Exception,
+        self.assertRaises(AException,
                           serv.run_periodic_tasks,
                           None, raise_on_error=True)
 
