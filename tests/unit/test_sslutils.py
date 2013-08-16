@@ -22,34 +22,33 @@ from openstack.common import test
 
 class SSLUtilsTest(test.BaseTestCase):
     def test_valid_versions(self):
-        self.assertEquals(sslutils.validate_ssl_version("SSLv3"),
-                          ssl.PROTOCOL_SSLv3)
-        self.assertEquals(sslutils.validate_ssl_version("SSLv23"),
-                          ssl.PROTOCOL_SSLv23)
-        self.assertEquals(sslutils.validate_ssl_version("TLSv1"),
-                          ssl.PROTOCOL_TLSv1)
+        self.assertEqual(sslutils.validate_ssl_version("SSLv3"),
+                         ssl.PROTOCOL_SSLv3)
+        self.assertEqual(sslutils.validate_ssl_version("SSLv23"),
+                         ssl.PROTOCOL_SSLv23)
+        self.assertEqual(sslutils.validate_ssl_version("TLSv1"),
+                         ssl.PROTOCOL_TLSv1)
         try:
             protocol = ssl.PROTOCOL_SSLv2
         except AttributeError:
             pass
         else:
-            self.assertEquals(sslutils.validate_ssl_version("SSLv2"),
-                              protocol)
+            self.assertEqual(sslutils.validate_ssl_version("SSLv2"), protocol)
 
     def test_lowercase_valid_versions(self):
-        self.assertEquals(sslutils.validate_ssl_version("sslv3"),
-                          ssl.PROTOCOL_SSLv3)
-        self.assertEquals(sslutils.validate_ssl_version("sslv23"),
-                          ssl.PROTOCOL_SSLv23)
-        self.assertEquals(sslutils.validate_ssl_version("tlsv1"),
-                          ssl.PROTOCOL_TLSv1)
+        self.assertEqual(sslutils.validate_ssl_version("sslv3"),
+                         ssl.PROTOCOL_SSLv3)
+        self.assertEqual(sslutils.validate_ssl_version("sslv23"),
+                         ssl.PROTOCOL_SSLv23)
+        self.assertEqual(sslutils.validate_ssl_version("tlsv1"),
+                         ssl.PROTOCOL_TLSv1)
         try:
             protocol = ssl.PROTOCOL_SSLv2
         except AttributeError:
             pass
         else:
-            self.assertEquals(sslutils.validate_ssl_version("sslv2"),
-                              protocol)
+            self.assertEqual(sslutils.validate_ssl_version("sslv2"),
+                             protocol)
 
     def test_invalid_version(self):
         self.assertRaises(RuntimeError,

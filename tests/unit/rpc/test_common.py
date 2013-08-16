@@ -301,8 +301,8 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
 
     def test_safe_log_sanitizes_globals(self):
         def logger_method(msg, data):
-            self.assertEquals('<SANITIZED>', data['_context_auth_token'])
-            self.assertEquals('<SANITIZED>', data['auth_token'])
+            self.assertEqual('<SANITIZED>', data['_context_auth_token'])
+            self.assertEqual('<SANITIZED>', data['auth_token'])
 
         data = {'_context_auth_token': 'banana',
                 'auth_token': 'cheese'}
@@ -310,7 +310,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
 
     def test_safe_log_sanitizes_set_admin_password(self):
         def logger_method(msg, data):
-            self.assertEquals('<SANITIZED>', data['args']['new_pass'])
+            self.assertEqual('<SANITIZED>', data['args']['new_pass'])
 
         data = {'_context_auth_token': 'banana',
                 'auth_token': 'cheese',
@@ -320,7 +320,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
 
     def test_safe_log_sanitizes_run_instance(self):
         def logger_method(msg, data):
-            self.assertEquals('<SANITIZED>', data['args']['admin_password'])
+            self.assertEqual('<SANITIZED>', data['args']['admin_password'])
 
         data = {'_context_auth_token': 'banana',
                 'auth_token': 'cheese',
@@ -330,8 +330,8 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
 
     def test_safe_log_sanitizes_any_password_in_context(self):
         def logger_method(msg, data):
-            self.assertEquals('<SANITIZED>', data['_context_password'])
-            self.assertEquals('<SANITIZED>', data['password'])
+            self.assertEqual('<SANITIZED>', data['_context_password'])
+            self.assertEqual('<SANITIZED>', data['password'])
 
         data = {'_context_auth_token': 'banana',
                 'auth_token': 'cheese',
@@ -343,7 +343,7 @@ class RpcCommonTestCase(test_utils.BaseTestCase):
     def test_safe_log_sanitizes_cells_route_message(self):
         def logger_method(msg, data):
             vals = data['args']['message']['args']['method_info']
-            self.assertEquals('<SANITIZED>', vals['method_kwargs']['password'])
+            self.assertEqual('<SANITIZED>', vals['method_kwargs']['password'])
 
         meth_info = {'method_args': ['aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'],
                      'method': 'set_admin_password',

@@ -40,35 +40,35 @@ class JSONUtilsTestCase(test.BaseTestCase):
 
 class ToPrimitiveTestCase(test.BaseTestCase):
     def test_list(self):
-        self.assertEquals(jsonutils.to_primitive([1, 2, 3]), [1, 2, 3])
+        self.assertEqual(jsonutils.to_primitive([1, 2, 3]), [1, 2, 3])
 
     def test_empty_list(self):
-        self.assertEquals(jsonutils.to_primitive([]), [])
+        self.assertEqual(jsonutils.to_primitive([]), [])
 
     def test_tuple(self):
-        self.assertEquals(jsonutils.to_primitive((1, 2, 3)), [1, 2, 3])
+        self.assertEqual(jsonutils.to_primitive((1, 2, 3)), [1, 2, 3])
 
     def test_dict(self):
-        self.assertEquals(jsonutils.to_primitive(dict(a=1, b=2, c=3)),
-                          dict(a=1, b=2, c=3))
+        self.assertEqual(jsonutils.to_primitive(dict(a=1, b=2, c=3)),
+                         dict(a=1, b=2, c=3))
 
     def test_empty_dict(self):
-        self.assertEquals(jsonutils.to_primitive({}), {})
+        self.assertEqual(jsonutils.to_primitive({}), {})
 
     def test_datetime(self):
         x = datetime.datetime(1920, 2, 3, 4, 5, 6, 7)
-        self.assertEquals(jsonutils.to_primitive(x),
-                          '1920-02-03T04:05:06.000007')
+        self.assertEqual(jsonutils.to_primitive(x),
+                         '1920-02-03T04:05:06.000007')
 
     def test_datetime_preserve(self):
         x = datetime.datetime(1920, 2, 3, 4, 5, 6, 7)
-        self.assertEquals(jsonutils.to_primitive(x, convert_datetime=False), x)
+        self.assertEqual(jsonutils.to_primitive(x, convert_datetime=False), x)
 
     def test_DateTime(self):
         x = xmlrpclib.DateTime()
         x.decode("19710203T04:05:06")
-        self.assertEquals(jsonutils.to_primitive(x),
-                          '1971-02-03T04:05:06.000000')
+        self.assertEqual(jsonutils.to_primitive(x),
+                         '1971-02-03T04:05:06.000000')
 
     def test_iter(self):
         class IterClass(object):
@@ -86,7 +86,7 @@ class ToPrimitiveTestCase(test.BaseTestCase):
                 return self.data[self.index - 1]
 
         x = IterClass()
-        self.assertEquals(jsonutils.to_primitive(x), [1, 2, 3, 4, 5])
+        self.assertEqual(jsonutils.to_primitive(x), [1, 2, 3, 4, 5])
 
     def test_iteritems(self):
         class IterItemsClass(object):
@@ -99,7 +99,7 @@ class ToPrimitiveTestCase(test.BaseTestCase):
 
         x = IterItemsClass()
         p = jsonutils.to_primitive(x)
-        self.assertEquals(p, {'a': 1, 'b': 2, 'c': 3})
+        self.assertEqual(p, {'a': 1, 'b': 2, 'c': 3})
 
     def test_iteritems_with_cycle(self):
         class IterItemsClass(object):
@@ -127,24 +127,24 @@ class ToPrimitiveTestCase(test.BaseTestCase):
                 self.b = 1
 
         x = MysteryClass()
-        self.assertEquals(jsonutils.to_primitive(x, convert_instances=True),
-                          dict(b=1))
+        self.assertEqual(jsonutils.to_primitive(x, convert_instances=True),
+                         dict(b=1))
 
-        self.assertEquals(jsonutils.to_primitive(x), x)
+        self.assertEqual(jsonutils.to_primitive(x), x)
 
     def test_typeerror(self):
         x = bytearray  # Class, not instance
-        self.assertEquals(jsonutils.to_primitive(x), u"<type 'bytearray'>")
+        self.assertEqual(jsonutils.to_primitive(x), u"<type 'bytearray'>")
 
     def test_nasties(self):
         def foo():
             pass
         x = [datetime, foo, dir]
         ret = jsonutils.to_primitive(x)
-        self.assertEquals(len(ret), 3)
+        self.assertEqual(len(ret), 3)
         self.assertTrue(ret[0].startswith(u"<module 'datetime' from "))
         self.assertTrue(ret[1].startswith('<function foo at 0x'))
-        self.assertEquals(ret[2], '<built-in function dir>')
+        self.assertEqual(ret[2], '<built-in function dir>')
 
     def test_depth(self):
         class LevelsGenerator(object):
@@ -164,15 +164,15 @@ class ToPrimitiveTestCase(test.BaseTestCase):
         json_l4 = {0: {0: {0: {0: '?'}}}}
 
         ret = jsonutils.to_primitive(l4_obj, max_depth=2)
-        self.assertEquals(ret, json_l2)
+        self.assertEqual(ret, json_l2)
 
         ret = jsonutils.to_primitive(l4_obj, max_depth=3)
-        self.assertEquals(ret, json_l3)
+        self.assertEqual(ret, json_l3)
 
         ret = jsonutils.to_primitive(l4_obj, max_depth=4)
-        self.assertEquals(ret, json_l4)
+        self.assertEqual(ret, json_l4)
 
     def test_ipaddr(self):
         thing = {'ip_addr': netaddr.IPAddress('1.2.3.4')}
         ret = jsonutils.to_primitive(thing)
-        self.assertEquals({'ip_addr': '1.2.3.4'}, ret)
+        self.assertEqual({'ip_addr': '1.2.3.4'}, ret)

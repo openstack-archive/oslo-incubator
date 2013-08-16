@@ -142,6 +142,6 @@ class UtilsTestCase(test.BaseTestCase):
             with open(dst_path, 'w') as f:
                 f.write('hello')
             with fileutils.file_open(dst_path, 'r') as fp:
-                self.assertEquals(fp.read(), 'hello')
+                self.assertEqual(fp.read(), 'hello')
         finally:
             os.unlink(dst_path)

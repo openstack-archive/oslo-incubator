@@ -106,9 +106,7 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
         for char in badchars:
             self.topic_nested = char.join(('hello', 'world'))
             try:
-                # TODO(ewindisch): Determine which exception is raised.
-                #                  pending bug #1121348
-                self.assertRaises(Exception, self._test_cast,
+                self.assertRaises(AssertionError, self._test_cast,
                                   common.TestReceiver.echo, 42, {"value": 42},
                                   fanout=False)
             finally:

@@ -24,30 +24,30 @@ class CompatTestCase(utils.BaseTestCase):
     def test_urlencode(self):
         fake = 'fake'
         result = urlutils.urlencode({'Fake': fake})
-        self.assertEquals(result, 'Fake=fake')
+        self.assertEqual(result, 'Fake=fake')
 
     def test_urljoin(self):
         root_url = "http://yahoo.com/"
         url2 = "faq.html"
         result = urlutils.urljoin(root_url, url2)
-        self.assertEquals(result, "http://yahoo.com/faq.html")
+        self.assertEqual(result, "http://yahoo.com/faq.html")
 
     def test_urlquote(self):
         url = "/~fake"
         result = urlutils.quote(url)
-        self.assertEquals(result, '/%7Efake')
+        self.assertEqual(result, '/%7Efake')
 
     def test_urlparse(self):
         url = 'http://www.yahoo.com'
         result = urlutils.urlparse(url)
-        self.assertEquals(result.scheme, 'http')
+        self.assertEqual(result.scheme, 'http')
 
     def test_urlsplit(self):
         url = 'http://www.yahoo.com'
         result = urlutils.urlsplit(url)
-        self.assertEquals(result.scheme, 'http')
+        self.assertEqual(result.scheme, 'http')
 
     def test_urlunsplit(self):
         url = "http://www.yahoo.com"
         result = urlutils.urlunsplit(urlutils.urlsplit(url))
-        self.assertEquals(result, 'http://www.yahoo.com')
+        self.assertEqual(result, 'http://www.yahoo.com')
