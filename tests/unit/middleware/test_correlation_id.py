@@ -36,7 +36,7 @@ class CorrelationIdMiddlewareTest(utils.BaseTestCase):
         middleware = correlation_id.CorrelationIdMiddleware(app)
         middleware(req)
 
-        self.assertEquals(req.headers.get("X_CORRELATION_ID"), "fake_uuid")
+        self.assertEqual(req.headers.get("X_CORRELATION_ID"), "fake_uuid")
 
     def test_process_request_should_not_regenerate_correlation_id(self):
         app = mock.Mock()
@@ -46,5 +46,4 @@ class CorrelationIdMiddlewareTest(utils.BaseTestCase):
         middleware = correlation_id.CorrelationIdMiddleware(app)
         middleware(req)
 
-        self.assertEquals(req.headers.get("X_CORRELATION_ID"),
-                          "correlation_id")
+        self.assertEqual(req.headers.get("X_CORRELATION_ID"), "correlation_id")

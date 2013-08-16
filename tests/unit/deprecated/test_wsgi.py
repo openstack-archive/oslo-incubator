@@ -522,7 +522,7 @@ class WSGIServerTest(utils.BaseTestCase):
         server.start()
 
         response = urllib2.urlopen('http://127.0.0.1:%d/' % server.port)
-        self.assertEquals(greetings, response.read())
+        self.assertEqual(greetings, response.read())
 
         server.stop()
 
@@ -540,7 +540,7 @@ class WSGIServerTest(utils.BaseTestCase):
         server.start()
 
         response = urllib2.urlopen('http://127.0.0.1:%d/v1.0/' % server.port)
-        self.assertEquals(greetings, response.read())
+        self.assertEqual(greetings, response.read())
 
         server.stop()
 
@@ -594,7 +594,7 @@ class WSGIServerWithSSLTest(utils.BaseTestCase):
         server.start()
 
         response = urllib2.urlopen('https://127.0.0.1:%d/v1.0/' % server.port)
-        self.assertEquals(greetings, response.read())
+        self.assertEqual(greetings, response.read())
 
         server.stop()
 
@@ -617,6 +617,6 @@ class WSGIServerWithSSLTest(utils.BaseTestCase):
         server.start()
 
         response = urllib2.urlopen('https://[::1]:%d/v1.0/' % server.port)
-        self.assertEquals(greetings, response.read())
+        self.assertEqual(greetings, response.read())
 
         server.stop()

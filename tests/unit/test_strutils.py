@@ -188,11 +188,11 @@ class StrUtilsTest(test.BaseTestCase):
         }
         for (in_value, expected_value) in working_examples.items():
             b_value = strutils.to_bytes(in_value)
-            self.assertEquals(expected_value, b_value)
+            self.assertEqual(expected_value, b_value)
             if in_value:
                 in_value = "-" + in_value
                 b_value = strutils.to_bytes(in_value)
-                self.assertEquals(expected_value * -1, b_value)
+                self.assertEqual(expected_value * -1, b_value)
         breaking_examples = [
             'junk1KB', '1023BBBB',
         ]

@@ -28,7 +28,7 @@ def uniques(*constraints):
 
         Convert a sequence of UniqueConstraint instances into a set of
         tuples of form (constraint_name, (constraint_columns)) so that
-        assertEquals() will be able to compare sets of unique constraints
+        assertEqual() will be able to compare sets of unique constraints
 
     """
 
@@ -70,7 +70,7 @@ class TestSqliteUniqueConstraints(test_base.DbTestCase):
             sa.UniqueConstraint(table.c.a, table.c.b, name='unique_a_b'),
             sa.UniqueConstraint(table.c.b, table.c.c, name='unique_b_c'),
         )
-        self.assertEquals(should_be, existing)
+        self.assertEqual(should_be, existing)
 
     def test_add_unique_constraint(self):
         table = self.reflected_table
@@ -82,7 +82,7 @@ class TestSqliteUniqueConstraints(test_base.DbTestCase):
             sa.UniqueConstraint(table.c.b, table.c.c, name='unique_b_c'),
             sa.UniqueConstraint(table.c.a, table.c.c, name='unique_a_c'),
         )
-        self.assertEquals(should_be, existing)
+        self.assertEqual(should_be, existing)
 
     def test_drop_unique_constraint(self):
         table = self.reflected_table
@@ -92,4 +92,4 @@ class TestSqliteUniqueConstraints(test_base.DbTestCase):
         should_be = uniques(
             sa.UniqueConstraint(table.c.b, table.c.c, name='unique_b_c'),
         )
-        self.assertEquals(should_be, existing)
+        self.assertEqual(should_be, existing)
