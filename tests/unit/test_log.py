@@ -108,13 +108,13 @@ class LazyLoggerTestCase(CommonLoggerTestsMixIn, test_utils.BaseTestCase):
 class LogHandlerTestCase(test_utils.BaseTestCase):
     def test_log_path_logdir(self):
         self.config(log_dir='/some/path', log_file=None)
-        self.assertEquals(log._get_log_file_path(binary='foo-bar'),
-                          '/some/path/foo-bar.log')
+        self.assertEqual(log._get_log_file_path(binary='foo-bar'),
+                         '/some/path/foo-bar.log')
 
     def test_log_path_logfile(self):
         self.config(log_file='/some/path/foo-bar.log')
-        self.assertEquals(log._get_log_file_path(binary='foo-bar'),
-                          '/some/path/foo-bar.log')
+        self.assertEqual(log._get_log_file_path(binary='foo-bar'),
+                         '/some/path/foo-bar.log')
 
     def test_log_path_none(self):
         self.config(log_dir=None, log_file=None)
@@ -123,8 +123,8 @@ class LogHandlerTestCase(test_utils.BaseTestCase):
     def test_log_path_logfile_overrides_logdir(self):
         self.config(log_dir='/some/other/path',
                     log_file='/some/path/foo-bar.log')
-        self.assertEquals(log._get_log_file_path(binary='foo-bar'),
-                          '/some/path/foo-bar.log')
+        self.assertEqual(log._get_log_file_path(binary='foo-bar'),
+                         '/some/path/foo-bar.log')
 
 
 class PublishErrorsHandlerTestCase(test_utils.BaseTestCase):
@@ -354,7 +354,7 @@ class SetDefaultsTestCase(test_utils.BaseTestCase):
     def test_default_to_none(self):
         log.set_defaults(logging_context_format_string=None)
         self.conf([])
-        self.assertEquals(self.conf.logging_context_format_string, None)
+        self.assertEqual(self.conf.logging_context_format_string, None)
 
     def test_change_default(self):
         my_default = '%(asctime)s %(levelname)s %(name)s [%(request_id)s '\
@@ -362,7 +362,7 @@ class SetDefaultsTestCase(test_utils.BaseTestCase):
                      '%(message)s'
         log.set_defaults(logging_context_format_string=my_default)
         self.conf([])
-        self.assertEquals(self.conf.logging_context_format_string, my_default)
+        self.assertEqual(self.conf.logging_context_format_string, my_default)
 
 
 class LogConfigOptsTestCase(test_utils.BaseTestCase):
@@ -379,8 +379,8 @@ class LogConfigOptsTestCase(test_utils.BaseTestCase):
     def test_debug_verbose(self):
         CONF(['--debug', '--verbose'])
 
-        self.assertEquals(CONF.debug, True)
-        self.assertEquals(CONF.verbose, True)
+        self.assertEqual(CONF.debug, True)
+        self.assertEqual(CONF.verbose, True)
 
     def test_logging_opts(self):
         CONF([])
@@ -390,29 +390,29 @@ class LogConfigOptsTestCase(test_utils.BaseTestCase):
         self.assertTrue(CONF.log_dir is None)
         self.assertTrue(CONF.log_format is None)
 
-        self.assertEquals(CONF.log_date_format, log._DEFAULT_LOG_DATE_FORMAT)
+        self.assertEqual(CONF.log_date_format, log._DEFAULT_LOG_DATE_FORMAT)
 
-        self.assertEquals(CONF.use_syslog, False)
+        self.assertEqual(CONF.use_syslog, False)
 
     def test_log_file(self):
         log_file = '/some/path/foo-bar.log'
         CONF(['--log-file', log_file])
-        self.assertEquals(CONF.log_file, log_file)
+        self.assertEqual(CONF.log_file, log_file)
 
     def test_logfile_deprecated(self):
         logfile = '/some/other/path/foo-bar.log'
         CONF(['--logfile', logfile])
-        self.assertEquals(CONF.log_file, logfile)
+        self.assertEqual(CONF.log_file, logfile)
 
     def test_log_dir(self):
         log_dir = '/some/path/'
         CONF(['--log-dir', log_dir])
-        self.assertEquals(CONF.log_dir, log_dir)
+        self.assertEqual(CONF.log_dir, log_dir)
 
     def test_logdir_deprecated(self):
         logdir = '/some/other/path/'
         CONF(['--logdir', logdir])
-        self.assertEquals(CONF.log_dir, logdir)
+        self.assertEqual(CONF.log_dir, logdir)
 
     def test_log_format_overrides_formatter(self):
         CONF(['--log-format', '[Any format]'])

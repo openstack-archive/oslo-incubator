@@ -438,9 +438,9 @@ class RpcQpidTestCase(utils.BaseTestCase):
                          {"method": "test_method", "args": {}})
 
             if multi:
-                self.assertEquals(list(res), ["foo", "bar", "baz"])
+                self.assertEqual(list(res), ["foo", "bar", "baz"])
             else:
-                self.assertEquals(res, "foo")
+                self.assertEqual(res, "foo")
         finally:
             impl_qpid.cleanup()
             self.uuid4 = uuid.uuid4()
@@ -488,7 +488,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
             else:
                 res = method(FLAGS, ctx, "impl_qpid_test",
                              {"method": "test_method", "args": {}}, timeout)
-                self.assertEquals(res, "foo")
+                self.assertEqual(res, "foo")
         finally:
             impl_qpid.cleanup()
             self.uuid4 = uuid.uuid4()
