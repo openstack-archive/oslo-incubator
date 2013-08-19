@@ -668,3 +668,11 @@ class HostFiltersTestCase(test.BaseTestCase):
         host = fakes.FakeHostState('host1',
                                    {'service': service})
         self.assertFalse(filt_cls.host_passes(host, request))
+
+    def test_availability_zone_filter_empty(self):
+        filt_cls = self.class_map['AvailabilityZoneFilter']()
+        service = {'availability_zone': 'nova'}
+        request = {}
+        host = fakes.FakeHostState('host1',
+                                   {'service': service})
+        self.assertTrue(filt_cls.host_passes(host, request))
