@@ -105,8 +105,10 @@ F: crypto/
 
 == db ==
 
-M:
-S: Orphan
+M: Boris Pavlovic <boris@pavlovic.me>
+M: Roman Podolyaka <rpodolyaka@mirantis.com>
+M: Victor Sergeyev <vsergeyev@mirantis.com>
+S: Maintained
 F: db/
 
 == eventlet_backdoor ==
