@@ -22,9 +22,10 @@ Unit Tests for periodic_task decorator and PeriodicTasks class.
 
 import datetime
 
+from openstack.common.fixture import config
 from openstack.common import periodic_task
+from openstack.common import test
 from openstack.common import timeutils
-from tests import utils
 from testtools import matchers
 
 
@@ -51,7 +52,7 @@ class AService(periodic_task.PeriodicTasks):
         self.called['ticks'] = True
 
 
-class PeriodicTasksTestCase(utils.BaseTestCase):
+class PeriodicTasksTestCase(test.BaseTestCase):
     """Test cases for PeriodicTasks."""
 
     def test_is_called(self):
@@ -75,7 +76,7 @@ class PeriodicTasksTestCase(utils.BaseTestCase):
                           None, raise_on_error=True)
 
 
-class ManagerMetaTestCase(utils.BaseTestCase):
+class ManagerMetaTestCase(test.BaseTestCase):
     """Tests for the meta class which manages the creation of periodic tasks.
     """
 
@@ -103,8 +104,11 @@ class ManagerMetaTestCase(utils.BaseTestCase):
             m._periodic_spacing, matchers.Not(matchers.Contains('baz')))
 
 
-class ManagerTestCase(utils.BaseTestCase):
+class ManagerTestCase(test.BaseTestCase):
     """Tests the periodic tasks portion of the manager class."""
+    def setUp(self):
+        super(ManagerTestCase, self).setUp()
+        self.config = self.useFixture(config.Config()).config
 
     def test_periodic_tasks_with_idle(self):
         class Manager(periodic_task.PeriodicTasks):

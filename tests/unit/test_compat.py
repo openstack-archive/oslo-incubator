@@ -17,10 +17,10 @@
 #
 
 from openstack.common.py3kcompat import urlutils
-from tests import utils
+from openstack.common import test
 
 
-class CompatTestCase(utils.BaseTestCase):
+class CompatTestCase(test.BaseTestCase):
     def test_urlencode(self):
         fake = 'fake'
         result = urlutils.urlencode({'Fake': fake})

@@ -14,15 +14,21 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+
+from openstack.common.fixture import config
+from openstack.common.fixture import moxstubout
 from openstack.common import log as logging
-from tests import utils as test_utils
+from openstack.common import test
 
 LOG = logging.getLogger(__name__)
 
 
-class DeprecatedConfigTestCase(test_utils.BaseTestCase):
+class DeprecatedConfigTestCase(test.BaseTestCase):
     def setUp(self):
         super(DeprecatedConfigTestCase, self).setUp()
+        self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
+        self.config = self.useFixture(config.Config()).config
+
         self.warnbuffer = ""
         self.critbuffer = ""
 

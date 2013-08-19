@@ -24,17 +24,20 @@ import os
 
 import mock
 
+from openstack.common.fixture import moxstubout
 from openstack.common import gettextutils
-from tests import utils
-
+from openstack.common import test
 
 LOG = logging.getLogger(__name__)
 
 
-class GettextTest(utils.BaseTestCase):
+class GettextTest(test.BaseTestCase):
 
     def setUp(self):
         super(GettextTest, self).setUp()
+        moxfixture = self.useFixture(moxstubout.MoxStubout())
+        self.stubs = moxfixture.stubs
+        self.mox = moxfixture.mox
         # remember so we can reset to it later
         self._USE_LAZY = gettextutils.USE_LAZY
 
@@ -164,11 +167,12 @@ class GettextTest(utils.BaseTestCase):
         self.assertIn('en_US', unknown_domain_languages)
 
 
-class MessageTestCase(utils.BaseTestCase):
+class MessageTestCase(test.BaseTestCase):
     """Unit tests for locale Message class."""
 
     def setUp(self):
         super(MessageTestCase, self).setUp()
+        self.mox = self.useFixture(moxstubout.MoxStubout()).mox
 
         def _message_with_domain(msg):
             return gettextutils.Message(msg, 'oslo')
@@ -524,10 +528,11 @@ class MessageTestCase(utils.BaseTestCase):
         self.assertEqual(msgid.upper(), result.upper())
 
 
-class LocaleHandlerTestCase(utils.BaseTestCase):
+class LocaleHandlerTestCase(test.BaseTestCase):
 
     def setUp(self):
         super(LocaleHandlerTestCase, self).setUp()
+        self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
 
         def _message_with_domain(msg):
             return gettextutils.Message(msg, 'oslo')

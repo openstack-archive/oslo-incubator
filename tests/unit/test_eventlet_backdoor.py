@@ -25,10 +25,17 @@ import mox
 import socket
 
 from openstack.common import eventlet_backdoor
-from tests import utils
+from openstack.common.fixture import config
+from openstack.common.fixture import moxstubout
+from openstack.common import test
 
 
-class BackdoorPortTest(utils.BaseTestCase):
+class BackdoorPortTest(test.BaseTestCase):
+
+    def setUp(self):
+        super(BackdoorPortTest, self).setUp()
+        self.mox = self.useFixture(moxstubout.MoxStubout()).mox
+        self.config = self.useFixture(config.Config()).config
 
     def common_backdoor_port_setup(self):
         self.sock = self.mox.CreateMockAnything()
