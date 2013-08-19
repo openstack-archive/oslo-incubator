@@ -32,15 +32,16 @@ import time
 import traceback
 
 from eventlet import event
-from oslo.config import cfg
 
 from openstack.common import eventlet_backdoor
+from openstack.common.fixture import config
+from openstack.common.fixture import moxstubout
 from openstack.common import log as logging
 from openstack.common.notifier import api as notifier_api
 from openstack.common import service
-from tests import utils
+from openstack.common import test
 
-CONF = cfg.CONF
+
 LOG = logging.getLogger(__name__)
 
 
@@ -49,7 +50,7 @@ class ExtendedService(service.Service):
         return 'service'
 
 
-class ServiceManagerTestCase(utils.BaseTestCase):
+class ServiceManagerTestCase(test.BaseTestCase):
     """Test cases for Services."""
     def test_override_manager_method(self):
         serv = ExtendedService()
@@ -67,7 +68,7 @@ class ServiceWithTimer(service.Service):
         self.timer_fired = self.timer_fired + 1
 
 
-class ServiceTestBase(utils.BaseTestCase):
+class ServiceTestBase(test.BaseTestCase):
     """A base class for ServiceLauncherTest and ServiceRestartTest."""
 
     def _wait(self, cond, timeout):
@@ -79,12 +80,13 @@ class ServiceTestBase(utils.BaseTestCase):
 
     def setUp(self):
         super(ServiceTestBase, self).setUp()
+        self.CONF = self.useFixture(config.Config()).conf
         # FIXME(markmc): Ugly hack to workaround bug #1073732
-        CONF.unregister_opts(notifier_api.notifier_opts)
+        self.CONF.unregister_opts(notifier_api.notifier_opts)
         # NOTE(markmc): ConfigOpts.log_opt_values() uses CONF.config-file
-        CONF(args=[], default_config_files=[])
-        self.addCleanup(CONF.reset)
-        self.addCleanup(CONF.register_opts, notifier_api.notifier_opts)
+        self.CONF(args=[], default_config_files=[])
+        self.addCleanup(self.CONF.reset)
+        self.addCleanup(self.CONF.register_opts, notifier_api.notifier_opts)
         self.addCleanup(self._reap_pid)
 
     def _reap_pid(self):
@@ -295,7 +297,12 @@ class _Service(service.Service):
         super(_Service, self).stop()
 
 
-class LauncherTest(utils.BaseTestCase):
+class LauncherTest(test.BaseTestCase):
+
+    def setUp(self):
+        super(LauncherTest, self).setUp()
+        self.mox = self.useFixture(moxstubout.MoxStubout()).mox
+        self.config = self.useFixture(config.Config()).config
 
     def test_backdoor_port(self):
         self.config(backdoor_port='1234')

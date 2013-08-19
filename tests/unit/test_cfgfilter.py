@@ -17,10 +17,10 @@
 from oslo.config import cfg
 
 from openstack.common import cfgfilter
-from tests import utils
+from openstack.common import test
 
 
-class ConfigFilterTestCase(utils.BaseTestCase):
+class ConfigFilterTestCase(test.BaseTestCase):
 
     def setUp(self):
         super(ConfigFilterTestCase, self).setUp()

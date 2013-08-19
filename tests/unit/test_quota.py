@@ -14,11 +14,11 @@
 
 import datetime
 import mock
-from openstack.common import quota
-from oslo.config import cfg
-from tests import utils
 
-CONF = cfg.CONF
+from openstack.common.fixture import config
+from openstack.common.fixture import moxstubout
+from openstack.common import quota
+from openstack.common import test
 
 
 class FakeContext(object):
@@ -30,7 +30,7 @@ class FakeContext(object):
         return self
 
 
-class ExceptionTestCase(utils.BaseTestCase):
+class ExceptionTestCase(test.BaseTestCase):
 
     def _get_raised_exception(self, exception, *args, **kwargs):
         try:
@@ -53,9 +53,11 @@ class ExceptionTestCase(utils.BaseTestCase):
         self.assertEqual(e.message, e.msg_fmt % {"string": "test"})
 
 
-class DbQuotaDriverTestCase(utils.BaseTestCase):
+class DbQuotaDriverTestCase(test.BaseTestCase):
 
     def setUp(self):
+        self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
+        self.CONF = self.useFixture(config.Config()).conf
         self.sample_resources = {'r1': quota.BaseResource('r1'),
                                  'r2': quota.BaseResource('r2')}
 
@@ -197,13 +199,13 @@ class DbQuotaDriverTestCase(utils.BaseTestCase):
         self.stubs.Set(quota, "timeutils", FakeTimeutils)
 
         expected = [self.ctxt, self.sample_resources, {}, {}, {}, None,
-                    CONF.until_refresh, CONF.max_age]
+                    self.CONF.until_refresh, self.CONF.max_age]
 
         # expire as None
         self.assertEqual('quota_reserve', self.driver.reserve(
             self.ctxt, self.sample_resources, {}, None, 'p1'))
         expected[5] = now + datetime.timedelta(
-            seconds=CONF.reservation_expire)
+            seconds=self.CONF.reservation_expire)
         self.driver.db.quota_reserve.assert_called_once_with(*expected,
                                                              project_id='p1',
                                                              user_id='u1')
@@ -290,7 +292,7 @@ class DbQuotaDriverTestCase(utils.BaseTestCase):
         self.driver.db.reservation_expire.assert_called_once_with(self.ctxt)
 
 
-class BaseResourceTestCase(utils.BaseTestCase):
+class BaseResourceTestCase(test.BaseTestCase):
 
     def setUp(self):
         self.ctxt = FakeContext()
@@ -329,7 +331,7 @@ class BaseResourceTestCase(utils.BaseTestCase):
         self.assertEqual(1, resource.quota(self.driver, self.ctxt))
 
 
-class CountableResourceTestCase(utils.BaseTestCase):
+class CountableResourceTestCase(test.BaseTestCase):
 
     def test_init(self):
         resource = quota.CountableResource('r1', 42)
@@ -337,7 +339,7 @@ class CountableResourceTestCase(utils.BaseTestCase):
         self.assertEqual(42, resource.count)
 
 
-class QuotaEngineTestCase(utils.BaseTestCase):
+class QuotaEngineTestCase(test.BaseTestCase):
 
     def setUp(self):
         self.ctxt = FakeContext()

@@ -19,10 +19,11 @@ import mox
 import time
 
 from openstack.common import excutils
-from tests import utils
+from openstack.common.fixture import moxstubout
+from openstack.common import test
 
 
-class SaveAndReraiseTest(utils.BaseTestCase):
+class SaveAndReraiseTest(test.BaseTestCase):
 
     def test_save_and_reraise_exception(self):
         e = None
@@ -61,7 +62,13 @@ class SaveAndReraiseTest(utils.BaseTestCase):
                 ctxt.reraise = False
 
 
-class ForeverRetryUncaughtExceptionsTest(utils.BaseTestCase):
+class ForeverRetryUncaughtExceptionsTest(test.BaseTestCase):
+
+    def setUp(self):
+        super(ForeverRetryUncaughtExceptionsTest, self).setUp()
+        moxfixture = self.useFixture(moxstubout.MoxStubout())
+        self.mox = moxfixture.mox
+        self.stubs = moxfixture.stubs
 
     @excutils.forever_retry_uncaught_exceptions
     def exception_generator(self):
