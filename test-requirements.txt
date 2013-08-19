@@ -15,3 +15,6 @@ setuptools-git>=0.4
 sphinx
 testrepository>=0.0.13
 testtools>=0.9.22
+alembic>=0.4.1
+MySQL-python
+psycopg2
