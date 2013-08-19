@@ -112,6 +112,27 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
             finally:
                 self.topic_nested = tmp_topic
 
+    def test_service_consume_thread_unexpected_exceptions(self):
+        def my_TopicConsumer_consume(myself, *args, **kwargs):
+            self.consume_calls += 1
+            # see if it can sustain three failures
+            if self.consume_calls < 3:
+                raise Exception('unexpected exception')
+            else:
+                self.orig_ZmqReactor_consume(myself, *args, **kwargs)
+
+        self.consume_calls = 0
+        self.orig_ZmqReactor_consume = impl_zmq.ZmqReactor.consume
+        self.stubs.Set(impl_zmq.ZmqReactor, 'consume',
+                       my_TopicConsumer_consume)
+
+        value = 42
+        result = self.rpc.call(FLAGS, self.context, self.topic,
+                               {"method": "echo",
+                                "args": {"value": value}})
+        self.assertEqual(value, result)
+        self.stubs.UnsetAll()
+
 
 class RpcZmqBaseTopicTestCase(_RpcZmqBaseTestCase):
     """Base topic RPC ZMQ test case.
