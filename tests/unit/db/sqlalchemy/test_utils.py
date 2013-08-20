@@ -364,6 +364,31 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
             expected_type = Boolean if key != "mysql" else mysql.TINYINT
             self.assertTrue(isinstance(table.c.deleted.type, expected_type))
 
+    def test_change_deleted_column_type_to_boolean_with_fc(self):
+        table_name_1 = 'abc'
+        table_name_2 = 'bcd'
+        for key, engine in self.engines.items():
+            meta = MetaData()
+            meta.bind = engine
+
+            table_1 = Table(table_name_1, meta,
+                            Column('id', Integer, primary_key=True),
+                            Column('deleted', Integer))
+            table_1.create()
+
+            table_2 = Table(table_name_2, meta,
+                            Column('id', Integer, primary_key=True),
+                            Column('foreign_id', Integer,
+                                   ForeignKey('%s.id' % table_name_1)),
+                            Column('deleted', Integer))
+            table_2.create()
+
+            utils.change_deleted_column_type_to_boolean(engine, table_name_2)
+
+            table = utils.get_table(engine, table_name_2)
+            expected_type = Boolean if key != "mysql" else mysql.TINYINT
+            self.assertTrue(isinstance(table.c.deleted.type, expected_type))
+
     def test_change_deleted_column_type_to_boolean_type_custom(self):
         table_name = 'abc'
         engine = self.engines['sqlite']
