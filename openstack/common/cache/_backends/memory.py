@@ -25,35 +25,56 @@ class MemoryBackend(backends.BaseCache):
         self._cache = {}
         self._keys_expires = {}
 
+    def _set_unlocked(self, key, value, ttl=0):
+        expires_at = 0
+        if ttl != 0:
+            expires_at = timeutils.utcnow_ts() + ttl
+
+        self._cache[key] = (expires_at, value)
+
+        if expires_at:
+            self._keys_expires.setdefault(expires_at, set()).add(key)
+
+        return True
+
     def set(self, key, value, ttl=0):
         key = self._prepare_key(key)
         with lockutils.lock(key):
-            expires_at = 0
-            if ttl != 0:
-                expires_at = timeutils.utcnow_ts() + ttl
+            self._set_unlocked(key, value, ttl)
 
-            self._cache[key] = (expires_at, value)
+    def _get_unlocked(self, key, default=None):
+        now = timeutils.utcnow_ts()
+        try:
+            timeout, value = self._cache[key]
 
-            if expires_at:
-                self._keys_expires.setdefault(expires_at, set()).add(key)
+            if timeout and now >= timeout:
 
-            return True
+                # NOTE(flaper87): Record expired,
+                # remove it from the cache but catch
+                # KeyError and ValueError in case
+                # _purge_expired removed this key already.
+                try:
+                    del self._cache[key]
+                except KeyError:
+                    pass
+
+                try:
+                    # NOTE(flaper87): Keys with ttl == 0
+                    # don't exist in the _keys_expires dict
+                    self._keys_expires[timeout].remove(key)
+                except (KeyError, ValueError):
+                    pass
+
+                return (0, default)
+
+            return (timeout, value)
+        except KeyError:
+            return (0, default)
 
     def get(self, key, default=None):
         key = self._prepare_key(key)
         with lockutils.lock(key):
-            now = timeutils.utcnow_ts()
-
-            try:
-                timeout, value = self._cache[key]
-
-                if timeout and now >= timeout:
-                    del self._cache[key]
-                    return default
-
-                return value
-            except KeyError:
-                return default
+            return self._get_unlocked(key)[1]
 
     def exists(self, key):
         key = self._prepare_key(key)
@@ -65,6 +86,25 @@ class MemoryBackend(backends.BaseCache):
                 return not timeout or now <= timeout
             except KeyError:
                 return False
+
+    def _incr_append(self, key, other):
+        key = self._prepare_key(key)
+        with lockutils.lock(key):
+            timeout, value = self._get_unlocked(key)
+
+            if value is None:
+                return None
+
+            ttl = timeutils.utcnow_ts() - timeout
+            new_value = value + other
+            self._set_unlocked(key, new_value, ttl)
+            return new_value
+
+    def incr(self, key, delta=1):
+        return self._incr_append(key, delta)
+
+    def append(self, key, tail):
+        return self._incr_append(key, tail)
 
     def _purge_expired(self):
         """Removes expired keys from the cache."""
@@ -83,15 +123,26 @@ class MemoryBackend(backends.BaseCache):
             # is equal to `timeout`. (The key might
             # have been updated)
             for subkey in self._keys_expires.pop(timeout):
-                if self._cache[subkey][0] == timeout:
-                    del self._cache[subkey]
+                try:
+                    if self._cache[subkey][0] == timeout:
+                        del self._cache[subkey]
+                except KeyError:
+                    continue
 
     def unset(self, key):
         self._purge_expired()
 
         # NOTE(flaper87): Delete the key. Using pop
         # since it could have been deleted already
-        self._cache.pop(self._prepare_key(key), None)
+        value = self._cache.pop(self._prepare_key(key), None)
+
+        if value:
+            try:
+                # NOTE(flaper87): Keys with ttl == 0
+                # don't exist in the _keys_expires dict
+                self._keys_expires[value[0]].remove(value[1])
+            except (KeyError, ValueError):
+                pass
 
     def flush(self):
         self._cache = {}

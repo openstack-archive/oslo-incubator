@@ -78,6 +78,32 @@ class BaseCache(object):
         """
 
     @abc.abstractmethod
+    def incr(self, key, delta=1):
+        """Increments the value for a key
+
+        NOTE: This method is only synchronized if get and set are.
+
+        :params key: The key for the value to be incremented
+        :params delta: Number of units by which to increment
+                       the value. Pass a negative number to
+                       decrement the value.
+
+        :returns: The new value
+        """
+
+    @abc.abstractmethod
+    def append(self, key, tail):
+        """Appends `value` to `key`'s value.
+
+        :params key: The key of the value to which
+                     `tail` should be appended.
+        :params tail: The value to append to the
+                      original.
+
+        :returns: The new value
+        """
+
+    @abc.abstractmethod
     def exists(self, key):
         """Verifies that a key exists.
 
@@ -156,40 +182,3 @@ class BaseCache(object):
         """
         for key in keys:
             self.unset(key)
-
-    def incr(self, key, delta=1):
-        """Increments the value for a key
-
-        NOTE: This method is not synchronized because
-        get and set are.
-
-        :params key: The key for the value to be incremented
-        :params delta: Number of units by which to increment
-                       the value. Pass a negative number to
-                       decrement the value.
-
-        :returns: The new value
-        """
-        value = self.get(key)
-        if value is None:
-            return None
-        new_value = value + delta
-        self.set(key, new_value)
-        return new_value
-
-    def append(self, key, tail):
-        """Appends `value` to `key`'s value.
-
-        :params key: The key of the value to which
-                     `tail` should be appended.
-        :params tail: The value to append to the
-                      original.
-
-        :returns: The new value
-        """
-        value = self.get(key)
-        if value is None:
-            return None
-        new_value = value + tail
-        self.set(key, new_value)
-        return new_value
