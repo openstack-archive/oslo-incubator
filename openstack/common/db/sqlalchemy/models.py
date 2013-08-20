@@ -85,11 +85,15 @@ class ModelBase(object):
 
         Includes attributes from joins.
         """
-        local = dict(self)
-        joined = dict([(k, v) for k, v in six.iteritems(self.__dict__)
-                      if not k[0] == '_'])
-        local.update(joined)
-        return local.iteritems()
+        keys = set()
+        for k, v in six.iteritems(self.__dict__):
+            if not k[0] == "_":
+                yield (k, v)
+                keys.add(k)
+
+        for k, v in self:
+            if k not in keys:
+                yield (k, v)
 
 
 class TimestampMixin(object):
