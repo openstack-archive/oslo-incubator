@@ -18,7 +18,7 @@ while true; do
             echo ""
             echo "options:"
             echo "-h, --help                show brief help"
-            echo "-b, --base-dir=DIR        Project base directory (required)"
+            echo "-b, --base-dir=DIR        Project base directory"
             echo "-p, --package-name=NAME   Project package name"
             echo "-o, --output-dir=DIR      File output directory"
             exit 0
@@ -44,7 +44,10 @@ while true; do
     esac
 done
 
-if [ -z $BASEDIR ] || ! [ -d $BASEDIR ]
+# Give BASEDIR a reasonable default
+BASEDIR=${BASEDIR:-`pwd`}
+
+if ! [ -d $BASEDIR ]
 then
     echo "${0##*/}: missing project base directory" >&2 ; print_hint ; exit 1
 fi
@@ -52,6 +55,11 @@ fi
 PACKAGENAME=${PACKAGENAME:-${BASEDIR##*/}}
 
 OUTPUTDIR=${OUTPUTDIR:-$BASEDIR/etc}
+# Some projects put their sample config in etc/, some in etc/$PACKAGENAME/
+if [ -d $OUTPUTDIR/$PACKAGENAME ]
+then
+    OUTPUTDIR=$OUTPUTDIR/$PACKAGENAME
+fi
 if ! [ -d $OUTPUTDIR ]
 then
     echo "${0##*/}: cannot access \`$OUTPUTDIR': No such file or directory" >&2
