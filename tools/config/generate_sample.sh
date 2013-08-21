@@ -4,6 +4,9 @@ print_hint() {
     echo "Try \`${0##*/} --help' for more information." >&2
 }
 
+# Give BASEDIR a reasonable default
+BASEDIR=`pwd`
+
 PARSED_OPTIONS=$(getopt -n "${0##*/}" -o hb:p:o: \
                  --long help,base-dir:,package-name:,output-dir: -- "$@")
 
@@ -18,7 +21,7 @@ while true; do
             echo ""
             echo "options:"
             echo "-h, --help                show brief help"
-            echo "-b, --base-dir=DIR        Project base directory (required)"
+            echo "-b, --base-dir=DIR        Project base directory"
             echo "-p, --package-name=NAME   Project package name"
             echo "-o, --output-dir=DIR      File output directory"
             exit 0
@@ -69,4 +72,9 @@ OS_VARS=$(set | sed -n '/^OS_/s/=[^=]*$//gp' | xargs)
 
 MODULEPATH=openstack.common.config.generator
 OUTPUTFILE=$OUTPUTDIR/$PACKAGENAME.conf.sample
+# Some projects put their sample config in etc/, some in etc/$PACKAGENAME/
+if ! [ -f $OUTPUTFILE ] && [ -d $OUTPUTDIR/$PACKAGENAME ]
+then
+    OUTPUTFILE=$OUTPUTDIR/$PACKAGENAME/$PACKAGENAME.conf.sample
+fi
 python -m $MODULEPATH $FILES > $OUTPUTFILE
