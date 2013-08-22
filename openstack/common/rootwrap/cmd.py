@@ -42,6 +42,8 @@ import signal
 import subprocess
 import sys
 
+from openstack.common.gettextutils import _  # noqa
+
 
 RC_UNAUTHORIZED = 99
 RC_NOCOMMAND = 98
@@ -66,7 +68,8 @@ def main():
     # Split arguments, require at least a command
     execname = sys.argv.pop(0)
     if len(sys.argv) < 2:
-        _exit_error(execname, "No command specified", RC_NOCOMMAND, log=False)
+        _exit_error(
+            execname, _("No command specified"), RC_NOCOMMAND, log=False)
 
     configfile = sys.argv.pop(0)
     userargs = sys.argv[:]
@@ -85,10 +88,12 @@ def main():
         rawconfig.read(configfile)
         config = wrapper.RootwrapConfig(rawconfig)
     except ValueError as exc:
-        msg = "Incorrect value in %s: %s" % (configfile, exc.message)
+        msg = (_("Incorrect value in %(filename)s: %(msg)s")
+               % dict(filename=configfile, msg=exc.message))
         _exit_error(execname, msg, RC_BADCONFIG, log=False)
     except ConfigParser.Error:
-        _exit_error(execname, "Incorrect configuration file: %s" % configfile,
+        _exit_error(execname,
+                    _("Incorrect configuration file: %s") % configfile,
                     RC_BADCONFIG, log=False)
 
     if config.use_syslog:
@@ -105,9 +110,13 @@ def main():
             command = filtermatch.get_command(userargs,
                                               exec_dirs=config.exec_dirs)
             if config.use_syslog:
-                logging.info("(%s > %s) Executing %s (filter match = %s)" % (
-                    os.getlogin(), pwd.getpwuid(os.getuid())[0],
-                    command, filtermatch.name))
+                logging.info(
+                    _("(%(uname)s > %(uid)s) "
+                      "Executing %(cmd)s (filter match = %(fname)s)")
+                    % dict(uname=os.getlogin(),
+                           uid=pwd.getpwuid(os.getuid())[0],
+                           cmd=command,
+                           fname=filtermatch.name))
 
             obj = subprocess.Popen(command,
                                    stdin=sys.stdin,
@@ -119,11 +128,11 @@ def main():
             sys.exit(obj.returncode)
 
     except wrapper.FilterMatchNotExecutable as exc:
-        msg = ("Executable not found: %s (filter match = %s)"
-               % (exc.match.exec_path, exc.match.name))
+        msg = (_("Executable not found: %(path)s (filter match = %(name)s)")
+               % dict(path=exc.match.exec_path, name=exc.match.name))
         _exit_error(execname, msg, RC_NOEXECFOUND, log=config.use_syslog)
 
     except wrapper.NoFilterMatched:
-        msg = ("Unauthorized command: %s (no filter matched)"
+        msg = (_("Unauthorized command: %s (no filter matched)")
                % ' '.join(userargs))
         _exit_error(execname, msg, RC_UNAUTHORIZED, log=config.use_syslog)

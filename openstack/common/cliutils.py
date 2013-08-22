@@ -16,6 +16,8 @@
 
 import inspect
 
+from openstack.common.gettextutils import _  # noqa
+
 
 class MissingArgs(Exception):
 
@@ -24,9 +26,9 @@ class MissingArgs(Exception):
 
     def __str__(self):
         if len(self.missing) == 1:
-            return "An argument is missing"
+            return _("An argument is missing")
         else:
-            return ("%(num)d arguments are missing" %
+            return (_("%(num)d arguments are missing") %
                     dict(num=len(self.missing)))
 
 

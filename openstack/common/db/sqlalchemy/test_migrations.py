@@ -25,6 +25,7 @@ import urlparse
 import sqlalchemy
 import sqlalchemy.exc
 
+from openstack.common.gettextutils import _  # noqa
 from openstack.common import lockutils
 from openstack.common import log as logging
 from openstack.common import test
@@ -43,7 +44,7 @@ def _get_connect_string(backend, user, passwd, database):
     elif backend == "mysql":
         backend = "mysql+mysqldb"
     else:
-        raise Exception("Unrecognized backend: '%s'" % backend)
+        raise Exception(_("Unrecognized backend: '%s'") % backend)
 
     return ("%(backend)s://%(user)s:%(passwd)s@localhost/%(database)s"
             % {'backend': backend, 'user': user, 'passwd': passwd,
@@ -113,7 +114,7 @@ class BaseMigrationTestCase(test.BaseTestCase):
 
         # Load test databases from the config file. Only do this
         # once. No need to re-run this on each test...
-        LOG.debug('config_path is %s' % self.CONFIG_FILE_PATH)
+        LOG.debug(_('config_path is %s'), self.CONFIG_FILE_PATH)
         if os.path.exists(self.CONFIG_FILE_PATH):
             cp = ConfigParser.RawConfigParser()
             try:
@@ -122,11 +123,10 @@ class BaseMigrationTestCase(test.BaseTestCase):
                 for key, value in defaults.items():
                     self.test_databases[key] = value
             except ConfigParser.ParsingError as e:
-                self.fail("Failed to read test_migrations.conf config "
-                          "file. Got error: %s" % e)
+                self.fail(_("Failed to read test_migrations.conf config "
+                            "file. Got error: %s") % e)
         else:
-            self.fail("Failed to find test_migrations.conf config "
-                      "file.")
+            self.fail(_("Failed to find test_migrations.conf config file."))
 
         self.engines = {}
         for key, value in self.test_databases.items():
@@ -146,7 +146,8 @@ class BaseMigrationTestCase(test.BaseTestCase):
         status, output = commands.getstatusoutput(cmd)
         LOG.debug(output)
         self.assertEqual(0, status,
-                         "Failed to run: %s\n%s" % (cmd, output))
+                         (_("Failed to run: %(cmd)s\n%(output)s")
+                          % dict(cmd=cmd, output=output)))
 
     @lockutils.synchronized('pgadmin', 'tests-', external=True)
     def _reset_pg(self, conn_pieces):
@@ -213,7 +214,7 @@ class WalkVersionsMixin(object):
                          self.migration_api.db_version(engine,
                                                        self.REPOSITORY))
 
-        LOG.debug('latest version is %s' % self.REPOSITORY.latest)
+        LOG.debug(_('latest version is %s'), self.REPOSITORY.latest)
         versions = range(self.INIT_VERSION + 1, self.REPOSITORY.latest + 1)
 
         for version in versions:
@@ -284,6 +285,7 @@ class WalkVersionsMixin(object):
                 if check:
                     check(engine, data)
         except Exception:
-            LOG.error("Failed to migrate to version %s on engine %s" %
-                      (version, engine))
+            LOG.error(_("Failed to migrate to version %(version)s "
+                        "on engine %(engine)s"),
+                      dict(version=version, engine=engine))
             raise

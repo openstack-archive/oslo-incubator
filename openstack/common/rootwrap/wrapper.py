@@ -23,6 +23,7 @@ import string
 
 from six import moves
 
+from openstack.common.gettextutils import _  # noqa
 from openstack.common.rootwrap import filters
 
 
@@ -61,7 +62,7 @@ class RootwrapConfig(object):
             if self.syslog_log_facility is None and v in facility_names:
                 self.syslog_log_facility = facility_names.get(v)
             if self.syslog_log_facility is None:
-                raise ValueError('Unexpected syslog_log_facility: %s' % v)
+                raise ValueError(_('Unexpected syslog_log_facility: %s') % v)
         else:
             default_facility = logging.handlers.SysLogHandler.LOG_SYSLOG
             self.syslog_log_facility = default_facility
@@ -71,7 +72,7 @@ class RootwrapConfig(object):
             v = config.get("DEFAULT", "syslog_log_level")
             self.syslog_log_level = logging.getLevelName(v.upper())
             if (self.syslog_log_level == "Level %s" % v.upper()):
-                raise ValueError('Unexepected syslog_log_level: %s' % v)
+                raise ValueError(_('Unexepected syslog_log_level: %s') % v)
         else:
             self.syslog_log_level = logging.ERROR
 
@@ -95,8 +96,8 @@ def setup_syslog(execname, facility, level):
 def build_filter(class_name, *args):
     """Returns a filter object of class class_name."""
     if not hasattr(filters, class_name):
-        logging.warning("Skipping unknown filter class (%s) specified "
-                        "in filter definitions" % class_name)
+        logging.warning(_("Skipping unknown filter class (%s) specified "
+                          "in filter definitions") % class_name)
         return None
     filterclass = getattr(filters, class_name)
     return filterclass(*args)

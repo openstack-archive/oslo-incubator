@@ -334,7 +334,7 @@ def deserialize_remote_exception(conf, data):
         mod = importutils.import_module(module)
         klass = getattr(mod, name)
         if not issubclass(klass, Exception):
-            raise TypeError("Can only deserialize Exceptions")
+            raise TypeError(_("Can only deserialize Exceptions"))
 
         failure = klass(*failure.get('args', []), **failure.get('kwargs', {}))
     except (AttributeError, TypeError, ImportError):

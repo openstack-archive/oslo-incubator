@@ -20,6 +20,7 @@ return keys for direct exchanges, per (approximate) AMQP parlance.
 
 from oslo.config import cfg
 
+from openstack.common.gettextutils import _  # noqa
 from openstack.common import importutils
 from openstack.common import log as logging
 from openstack.common.rpc import matchmaker as mm_common
@@ -93,7 +94,7 @@ class MatchMakerRedis(mm_common.HeartbeatMatchMakerBase):
         super(MatchMakerRedis, self).__init__()
 
         if not redis:
-            raise ImportError("Failed to import module redis.")
+            raise ImportError(_("Failed to import module redis."))
 
         self.redis = redis.StrictRedis(
             host=CONF.matchmaker_redis.host,

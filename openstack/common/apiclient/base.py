@@ -29,6 +29,7 @@ import abc
 import urllib
 
 from openstack.common.apiclient import exceptions
+from openstack.common.gettextutils import _  # noqa
 from openstack.common import strutils
 
 
@@ -219,7 +220,9 @@ class ManagerWithFind(BaseManager):
         matches = self.findall(**kwargs)
         num_matches = len(matches)
         if num_matches == 0:
-            msg = "No %s matching %s." % (self.resource_class.__name__, kwargs)
+            msg = (_("No %(item)s matches %(kwargs)s.") %
+                   {'item': self.resource_class.__name__,
+                    'kwargs': kwargs})
             raise exceptions.NotFound(msg)
         elif num_matches > 1:
             raise exceptions.NoUniqueMatch()
@@ -373,7 +376,9 @@ class CrudManager(BaseManager):
         num = len(rl)
 
         if num == 0:
-            msg = "No %s matching %s." % (self.resource_class.__name__, kwargs)
+            msg = (_("No %(item)s matches %(kwargs)s.") %
+                   {'item': self.resource_class.__name__,
+                    'kwargs': kwargs})
             raise exceptions.NotFound(404, msg)
         elif num > 1:
             raise exceptions.NoUniqueMatch

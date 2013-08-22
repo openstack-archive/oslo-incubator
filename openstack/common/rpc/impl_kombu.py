@@ -182,7 +182,7 @@ class ConsumerBase(object):
         options['nowait'] = kwargs.get('nowait', False)
         callback = kwargs.get('callback', self.callback)
         if not callback:
-            raise ValueError("No callback defined")
+            raise ValueError(_("No callback defined"))
 
         def _callback(raw_message):
             message = self.channel.message_to_python(raw_message)

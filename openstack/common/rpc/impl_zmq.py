@@ -154,7 +154,7 @@ class ZmqSocket(object):
     def subscribe(self, msg_filter):
         """Subscribe."""
         if not self.can_sub:
-            raise RPCException("Cannot subscribe on this socket.")
+            raise RPCException(_("Cannot subscribe on this socket."))
         LOG.debug(_("Subscribing to %s"), msg_filter)
 
         try:
@@ -192,7 +192,7 @@ class ZmqSocket(object):
             # it would be much worse if some of the code calling this
             # were to fail. For now, lets log, and later evaluate
             # if we can safely raise here.
-            LOG.error("ZeroMQ socket could not be closed.")
+            LOG.error(_("ZeroMQ socket could not be closed."))
         self.sock = None
 
     def recv(self, **kwargs):
@@ -371,7 +371,7 @@ class ZmqBaseReactor(ConsumerBase):
         LOG.info(_("Registering reactor"))
 
         if zmq_type_in not in (zmq.PULL, zmq.SUB):
-            raise RPCException("Bad input socktype")
+            raise RPCException(_("Bad input socktype"))
 
         # Items push in.
         inq = ZmqSocket(in_addr, zmq_type_in, bind=in_bind,
@@ -630,7 +630,7 @@ def _cast(addr, context, topic, msg, timeout=None, envelope=False,
             # assumes cast can't return an exception
             conn.cast(_msg_id, topic, payload, envelope)
         except zmq.ZMQError:
-            raise RPCException("Cast failed. ZMQ Socket Exception")
+            raise RPCException(_("Cast failed. ZMQ Socket Exception"))
         finally:
             if 'conn' in vars():
                 conn.close()
@@ -694,7 +694,7 @@ def _call(addr, context, topic, msg, timeout=None,
             responses = raw_msg['args']['response']
         # ZMQError trumps the Timeout error.
         except zmq.ZMQError:
-            raise RPCException("ZMQ Socket Error")
+            raise RPCException(_("ZMQ Socket Error"))
         except (IndexError, KeyError):
             raise RPCException(_("RPC Message Invalid."))
         finally:
@@ -797,7 +797,7 @@ def cleanup():
 
 def _get_ctxt():
     if not zmq:
-        raise ImportError("Failed to import eventlet.green.zmq")
+        raise ImportError(_("Failed to import eventlet.green.zmq"))
 
     global ZMQ_CTX
     if not ZMQ_CTX:

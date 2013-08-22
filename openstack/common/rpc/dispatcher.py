@@ -83,6 +83,7 @@ On the client side, the same changes should be made as in example 1.  The
 minimum version that supports the new parameter should be specified.
 """
 
+from openstack.common.gettextutils import _  # noqa
 from openstack.common.rpc import common as rpc_common
 from openstack.common.rpc import serializer as rpc_serializer
 
@@ -173,6 +174,6 @@ class RpcDispatcher(object):
                 return self.serializer.serialize_entity(ctxt, result)
 
         if had_compatible:
-            raise AttributeError("No such RPC function '%s'" % method)
+            raise AttributeError(_("No such RPC function '%s'") % method)
         else:
             raise rpc_common.UnsupportedRpcVersion(version=version)

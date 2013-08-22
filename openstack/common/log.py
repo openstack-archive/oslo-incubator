@@ -429,8 +429,8 @@ def _setup_logging_from_conf():
         if CONF.log_format:
             handler.setFormatter(logging.Formatter(fmt=CONF.log_format,
                                                    datefmt=datefmt))
-            log_root.info('Deprecated: log_format is now deprecated and will '
-                          'be removed in the next release')
+            log_root.info(_('Deprecated: log_format is now deprecated '
+                            'and will be removed in the next release'))
         else:
             handler.setFormatter(ContextFormatter(datefmt=datefmt))
 

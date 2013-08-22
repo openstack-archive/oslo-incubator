@@ -15,7 +15,10 @@
 
 import warnings
 
-msg = ("Modules in this package are deprecated "
-       "and will be removed in future releases")
+from openstack.common.gettextutils import _  # noqa
+
+
+msg = _("Modules in this package are deprecated "
+        "and will be removed in future releases")
 
 warnings.warn(msg, DeprecationWarning)

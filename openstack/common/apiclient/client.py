@@ -38,6 +38,7 @@ except ImportError:
 import requests
 
 from openstack.common.apiclient import exceptions
+from openstack.common.gettextutils import _  # noqa
 from openstack.common import importutils
 
 
@@ -113,20 +114,19 @@ class HTTPClient(object):
             header = "-H '%s: %s'" % (element, kwargs['headers'][element])
             string_parts.append(header)
 
-        _logger.debug("REQ: %s" % " ".join(string_parts))
+        _logger.debug(_("REQ: %s") % " ".join(string_parts))
         if 'data' in kwargs:
-            _logger.debug("REQ BODY: %s\n" % (kwargs['data']))
+            _logger.debug(_("REQ BODY: %s\n") % (kwargs['data']))
 
     def _http_log_resp(self, resp):
         if not self.debug:
             return
         _logger.debug(
-            "RESP: [%s] %s\n",
-            resp.status_code,
-            resp.headers)
+            _("RESP: [%(code)s] %(header)s\n"),
+            dict(code=resp.status_code, header=resp.headers))
         if resp._content_consumed:
             _logger.debug(
-                "RESP BODY: %s\n",
+                _("RESP BODY: %s\n"),
                 resp.text)
 
     def serialize(self, kwargs):
@@ -179,7 +179,7 @@ class HTTPClient(object):
 
         if resp.status_code >= 400:
             _logger.debug(
-                "Request returned failure status: %s",
+                _("Request returned failure status: %s"),
                 resp.status_code)
             raise exceptions.from_response(resp, method, url)
 
@@ -230,7 +230,7 @@ class HTTPClient(object):
                     **filter_args)
                 if not (token and endpoint):
                     raise exceptions.AuthorizationFailure(
-                        "Cannot find endpoint or token for request")
+                        _("Cannot find endpoint or token for request"))
 
         old_token_endpoint = (token, endpoint)
         kwargs.setdefault("headers", {})["X-Auth-Token"] = token
@@ -353,8 +353,10 @@ class BaseClient(object):
         try:
             client_path = version_map[str(version)]
         except (KeyError, ValueError):
-            msg = "Invalid %s client version '%s'. must be one of: %s" % (
-                  (api_name, version, ', '.join(version_map.keys())))
+            msg = (_("Invalid %(name)s client version '%(version)s'. "
+                     "must be one of: %(valid_version)s") %
+                   dict(name=api_name, version=version,
+                        valid_version=', '.join(version_map.keys())))
             raise exceptions.UnsupportedVersion(msg)
 
         return importutils.import_class(client_path)

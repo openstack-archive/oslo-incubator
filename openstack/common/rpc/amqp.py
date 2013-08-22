@@ -418,7 +418,7 @@ class ProxyCallback(_ThreadPoolWithWait):
         version = message_data.get('version')
         namespace = message_data.get('namespace')
         if not method:
-            LOG.warn(_('no method for message: %s') % message_data)
+            LOG.warn(_('No method for message: %s') % message_data)
             ctxt.reply(_('No method for message: %s') % message_data,
                        connection_pool=self.connection_pool)
             return

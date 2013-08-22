@@ -64,7 +64,7 @@ def patched_with_engine(f, *a, **kw):
         return f(*a, **kw)
     finally:
         if isinstance(engine, migrate_util.Engine) and engine is not url:
-            migrate_util.log.debug('Disposing SQLAlchemy engine %s', engine)
+            migrate_util.log.debug(_('Disposing SQLAlchemy engine %s'), engine)
             engine.dispose()
 
 
@@ -272,7 +272,7 @@ def _find_migrate_repo(abs_path):
     """
     global _REPOSITORY
     if not os.path.exists(abs_path):
-        raise exception.DbMigrationError("Path %s not found" % abs_path)
+        raise exception.DbMigrationError(_("Path %s not found") % abs_path)
     if _REPOSITORY is None:
         _REPOSITORY = Repository(abs_path)
     return _REPOSITORY

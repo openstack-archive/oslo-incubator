@@ -25,6 +25,7 @@ import requests
 from oslo.config import cfg
 
 from openstack.common.crypto import utils as cryptoutils
+from openstack.common.gettextutils import _  # noqa
 from openstack.common import jsonutils
 from openstack.common import log as logging
 
@@ -56,7 +57,7 @@ LOG = logging.getLogger(__name__)
 class SecureMessageException(Exception):
     """Generic Exception for Secure Messages."""
 
-    msg = "An unknown Secure Message related exception occurred."
+    msg = _("An unknown Secure Message related exception occurred.")
 
     def __init__(self, msg=None):
         if msg is None:
@@ -69,16 +70,17 @@ class SharedKeyNotFound(SecureMessageException):
     is available.
     """
 
-    msg = "Shared Key for [%s] Not Found. (%s)"
+    msg = _("Shared Key for [%(name)s] Not Found. (%(errmsg)s)")
 
     def __init__(self, name, errmsg):
-        super(SharedKeyNotFound, self).__init__(self.msg % (name, errmsg))
+        super(SharedKeyNotFound, self).__init__(
+            self.msg % dict(name=name, errmsg=errmsg))
 
 
 class InvalidMetadata(SecureMessageException):
     """The metadata is invalid."""
 
-    msg = "Invalid metadata: %s"
+    msg = _("Invalid metadata: %s")
 
     def __init__(self, err):
         super(InvalidMetadata, self).__init__(self.msg % err)
@@ -87,16 +89,18 @@ class InvalidMetadata(SecureMessageException):
 class InvalidSignature(SecureMessageException):
     """Signature validation failed."""
 
-    msg = "Failed to validate signature (source=%s, destination=%s)"
+    msg = _("Failed to validate signature "
+            "(source=%(src)s, destination=%(dst)s)")
 
     def __init__(self, src, dst):
-        super(InvalidSignature, self).__init__(self.msg % (src, dst))
+        super(InvalidSignature, self).__init__(
+            self.msg % dict(src=src, dst=dst))
 
 
 class UnknownDestinationName(SecureMessageException):
     """The Destination name is unknown to us."""
 
-    msg = "Invalid destination name (%s)"
+    msg = _("Invalid destination name (%s)")
 
     def __init__(self, name):
         super(UnknownDestinationName, self).__init__(self.msg % name)
@@ -105,34 +109,37 @@ class UnknownDestinationName(SecureMessageException):
 class InvalidEncryptedTicket(SecureMessageException):
     """The Encrypted Ticket could not be successfully handled."""
 
-    msg = "Invalid Ticket (source=%s, destination=%s)"
+    msg = _("Invalid Ticket (source=%(src)s, destination=%(dst)s)")
 
     def __init__(self, src, dst):
-        super(InvalidEncryptedTicket, self).__init__(self.msg % (src, dst))
+        super(InvalidEncryptedTicket, self).__init__(
+            self.msg % dict(src=src, dst=dst))
 
 
 class InvalidExpiredTicket(SecureMessageException):
     """The ticket received is already expired."""
 
-    msg = "Expired ticket (source=%s, destination=%s)"
+    msg = _("Expired ticket (source=%(src)s, destination=%(dst)s)")
 
     def __init__(self, src, dst):
-        super(InvalidExpiredTicket, self).__init__(self.msg % (src, dst))
+        super(InvalidExpiredTicket, self).__init__(
+            self.msg % dict(src=src, dst=dst))
 
 
 class CommunicationError(SecureMessageException):
     """The Communication with the KDS failed."""
 
-    msg = "Communication Error (target=%s): %s"
+    msg = _("Communication Error (target=%(target)s): %(errmsg)s")
 
     def __init__(self, target, errmsg):
-        super(CommunicationError, self).__init__(self.msg % (target, errmsg))
+        super(CommunicationError, self).__init__(
+            self.msg % dict(target=target, errmsg=errmsg))
 
 
 class InvalidArgument(SecureMessageException):
     """Bad initialization argument."""
 
-    msg = "Invalid argument: %s"
+    msg = _("Invalid argument: %s")
 
     def __init__(self, errmsg):
         super(InvalidArgument, self).__init__(self.msg % errmsg)
@@ -221,7 +228,7 @@ class _KDSClient(object):
         try:
             resp = requests.get(url, **req_kwargs)
         except requests.ConnectionError as e:
-            err = "Unable to establish connection. %s" % e
+            err = _("Unable to establish connection. %s") % e
             raise CommunicationError(url, err)
 
         return resp
@@ -232,10 +239,10 @@ class _KDSClient(object):
                 body = jsonutils.loads(resp.text)
                 reply = body['reply']
             except (KeyError, TypeError, ValueError):
-                msg = "Failed to decode reply: %s" % resp.text
+                msg = _("Failed to decode reply: %s") % resp.text
                 raise CommunicationError(url, msg)
         else:
-            msg = "No reply data was returned."
+            msg = _("No reply data was returned.")
             raise CommunicationError(url, msg)
 
         return reply
@@ -247,7 +254,7 @@ class _KDSClient(object):
         """
         if url is None:
             if not self._endpoint:
-                raise CommunicationError(url, 'Endpoint not configured')
+                raise CommunicationError(url, _('Endpoint not configured'))
             url = self._endpoint + '/kds/ticket'
 
         while redirects:
@@ -258,13 +265,13 @@ class _KDSClient(object):
                 redirects -= 1
                 continue
             elif resp.status_code != 200:
-                msg = "Request returned failure status: %s (%s)"
-                err = msg % (resp.status_code, resp.text)
+                msg = _("Request returned failure status: %(code)s (%(text)s)")
+                err = msg % dict(code=resp.status_code, text=resp.text)
                 raise CommunicationError(url, err)
 
             return self._get_reply(url, resp)
 
-        raise CommunicationError(url, "Too many redirections, giving up!")
+        raise CommunicationError(url, _("Too many redirections, giving up!"))
 
     def get_ticket(self, source, target, crypto, key):
 
@@ -362,7 +369,7 @@ class SecureMessage(object):
         if self._key is None:
             self._key = self._init_key(topic, self._name)
         if self._key is None:
-            err = "Secret Key (or key file) is missing or malformed"
+            err = _("Secret Key (or key file) is missing or malformed")
             raise SharedKeyNotFound(self._name, err)
 
         self._key_store = key_store or _KEY_STORE
@@ -492,7 +499,7 @@ class SecureMessage(object):
                       'nonce', 'esek', 'encryption')
         for arg in check_args:
             if arg not in md:
-                raise InvalidMetadata('Missing metadata "%s"' % arg)
+                raise InvalidMetadata(_('Missing metadata "%s"') % arg)
 
         if md['destination'] != self._name:
             # TODO(simo) handle group keys by checking target
@@ -505,8 +512,9 @@ class SecureMessage(object):
         except InvalidExpiredTicket:
             raise
         except Exception:
-            raise InvalidMetadata('Failed to decode ESEK for %s/%s' % (
-                                  md['source'], md['destination']))
+            raise InvalidMetadata(
+                _('Failed to decode ESEK for %(src)s/%(dst)s')
+                % dict(src=md['source'], dst=md['destination']))
 
         sig = self._crypto.sign(skey, version + metadata + message)
 

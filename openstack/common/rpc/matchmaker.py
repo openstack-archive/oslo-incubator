@@ -177,21 +177,21 @@ class HeartbeatMatchMakerBase(MatchMakerBase):
         publically to acknowledge a system is alive (i.e. rpc message
         successfully sent to host)
         """
-        raise NotImplementedError("Must implement ack_alive")
+        raise NotImplementedError(_("Must implement ack_alive"))
 
     def backend_register(self, key, host):
         """Implements registration logic.
 
         Called by register(self,key,host)
         """
-        raise NotImplementedError("Must implement backend_register")
+        raise NotImplementedError(_("Must implement backend_register"))
 
     def backend_unregister(self, key, key_host):
         """Implements de-registration logic.
 
         Called by unregister(self,key,host)
         """
-        raise NotImplementedError("Must implement backend_unregister")
+        raise NotImplementedError(_("Must implement backend_unregister"))
 
     def register(self, key, host):
         """Register a host on a backend.

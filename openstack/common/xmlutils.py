@@ -19,6 +19,8 @@ from xml.parsers import expat
 from xml import sax
 from xml.sax import expatreader
 
+from openstack.common.gettextutils import _  # noqa
+
 
 class ProtectedExpatParser(expatreader.ExpatParser):
     """An expat parser which disables DTD's and entities by default."""
@@ -31,21 +33,21 @@ class ProtectedExpatParser(expatreader.ExpatParser):
         self.forbid_entities = forbid_entities
 
     def start_doctype_decl(self, name, sysid, pubid, has_internal_subset):
-        raise ValueError("Inline DTD forbidden")
+        raise ValueError(_("Inline DTD forbidden"))
 
     def entity_decl(self, entityName, is_parameter_entity, value, base,
                     systemId, publicId, notationName):
-        raise ValueError("<!ENTITY> entity declaration forbidden")
+        raise ValueError(_("<!ENTITY> entity declaration forbidden"))
 
     def unparsed_entity_decl(self, name, base, sysid, pubid, notation_name):
         # expat 1.2
-        raise ValueError("<!ENTITY> unparsed entity forbidden")
+        raise ValueError(_("<!ENTITY> unparsed entity forbidden"))
 
     def external_entity_ref(self, context, base, systemId, publicId):
-        raise ValueError("<!ENTITY> external entity forbidden")
+        raise ValueError(_("<!ENTITY> external entity forbidden"))
 
     def notation_decl(self, name, base, sysid, pubid):
-        raise ValueError("<!ENTITY> notation forbidden")
+        raise ValueError(_("<!ENTITY> notation forbidden"))
 
     def reset(self):
         expatreader.ExpatParser.reset(self)

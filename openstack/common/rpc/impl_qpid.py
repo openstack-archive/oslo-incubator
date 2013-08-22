@@ -361,7 +361,7 @@ class Connection(object):
 
     def __init__(self, conf, server_params=None):
         if not qpid_messaging:
-            raise ImportError("Failed to import qpid.messaging")
+            raise ImportError(_("Failed to import qpid.messaging"))
 
         self.session = None
         self.consumers = {}

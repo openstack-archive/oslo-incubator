@@ -27,6 +27,7 @@ import os
 from stevedore import extension
 
 from openstack.common.apiclient import exceptions
+from openstack.common.gettextutils import _  # noqa
 
 
 logger = logging.getLogger(__name__)
@@ -136,7 +137,7 @@ class BaseAuthPlugin(object):
         dashed_opt = opt.replace("_", "-")
         env_var = "OS_%s" % opt.upper()
         arg_default = os.environ.get(env_var, "")
-        arg_help = "Defaults to env[%s]." % env_var
+        arg_help = _("Defaults to env[%s].") % env_var
         parser.add_argument(
             "--os-%s" % dashed_opt,
             metavar="<%s>" % dashed_opt,

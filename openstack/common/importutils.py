@@ -22,6 +22,8 @@ Import related utilities and helper functions.
 import sys
 import traceback
 
+from openstack.common.gettextutils import _  # noqa
+
 
 def import_class(import_str):
     """Returns a class from a string including module and class."""
@@ -30,9 +32,9 @@ def import_class(import_str):
         __import__(mod_str)
         return getattr(sys.modules[mod_str], class_str)
     except (ValueError, AttributeError):
-        raise ImportError('Class %s cannot be found (%s)' %
-                          (class_str,
-                           traceback.format_exception(*sys.exc_info())))
+        info = traceback.format_exception(*sys.exc_info())
+        raise ImportError(_('Class %(name)s cannot be found (%(info)s)') %
+                          dict(name=class_str, info=info))
 
 
 def import_object(import_str, *args, **kwargs):

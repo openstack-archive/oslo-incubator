@@ -54,15 +54,15 @@ LOG = logging.getLogger(__name__)
 
 class EventletBackdoorConfigValueError(Exception):
     def __init__(self, port_range, help_msg, ex):
-        msg = ('Invalid backdoor_port configuration %(range)s: %(ex)s. '
-               '%(help)s' %
+        msg = (_('Invalid backdoor_port configuration %(range)s: %(ex)s. '
+               '%(help)s') %
                {'range': port_range, 'ex': ex, 'help': help_msg})
         super(EventletBackdoorConfigValueError, self).__init__(msg)
         self.port_range = port_range
 
 
 def _dont_use_this():
-    print("Don't use this, just disconnect instead")
+    print(_("Don't use this, just disconnect instead"))
 
 
 def _find_objects(t):

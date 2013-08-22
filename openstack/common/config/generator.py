@@ -29,10 +29,9 @@ import textwrap
 
 from oslo.config import cfg
 
-from openstack.common import gettextutils
+from openstack.common.gettextutils import _  # noqa
 from openstack.common import importutils
 
-gettextutils.install('oslo')
 
 STROPT = "StrOpt"
 BOOLOPT = "BoolOpt"
@@ -131,8 +130,8 @@ def _guess_groups(opt, mod_obj):
                 return value._group.name
 
     raise RuntimeError(
-        "Unable to find group for option %s, "
-        "maybe it's defined twice in the same group?"
+        _("Unable to find group for option %s, "
+          "maybe it's defined twice in the same group?")
         % opt.name
     )
 
@@ -162,7 +161,7 @@ def print_group_opts(group, opts_by_module):
     print('')
     for mod, opts in opts_by_module:
         print('#')
-        print('# Options defined in %s' % mod)
+        print(_('# Options defined in %s') % mod)
         print('#')
         print('')
         for opt in opts:
@@ -204,7 +203,8 @@ def _sanitize_default(name, value):
 def _print_opt(opt):
     opt_name, opt_default, opt_help = opt.dest, opt.default, opt.help
     if not opt_help:
-        sys.stderr.write('WARNING: "%s" is missing help string.\n' % opt_name)
+        sys.stderr.write(_('WARNING: "%s" is missing help string.\n')
+                         % opt_name)
         opt_help = ""
     opt_type = None
     try:
@@ -242,13 +242,13 @@ def _print_opt(opt):
                 print('#%s=%s' % (opt_name, default))
         print('')
     except Exception:
-        sys.stderr.write('Error in option "%s"\n' % opt_name)
+        sys.stderr.write(_('Error in option "%s"\n') % opt_name)
         sys.exit(1)
 
 
 def main():
     if len(sys.argv) < 2:
-        print("usage: %s [srcfile]...\n" % sys.argv[0])
+        print(_("usage: %s [srcfile]...\n") % sys.argv[0])
         sys.exit(0)
     generate(sys.argv[1:])
 

@@ -61,13 +61,13 @@ LOG = logging.getLogger(__name__)
 class MalformedRequestBody(Exception):
     def __init__(self, reason):
         super(MalformedRequestBody, self).__init__(
-            "Malformed message body: %s", reason)
+            _("Malformed message body: %s"), reason)
 
 
 class InvalidContentType(Exception):
     def __init__(self, content_type):
         super(InvalidContentType, self).__init__(
-            "Invalid content type %s", content_type)
+            _("Invalid content type %s"), content_type)
 
 
 def run_server(application, port, **kwargs):
