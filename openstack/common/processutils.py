@@ -53,11 +53,18 @@ class ProcessExecutionError(Exception):
         self.description = description
 
         if description is None:
-            description = "Unexpected error while running command."
+            description = _("Unexpected error while running command.")
         if exit_code is None:
             exit_code = '-'
-        message = ("%s\nCommand: %s\nExit code: %s\nStdout: %r\nStderr: %r"
-                   % (description, cmd, exit_code, stdout, stderr))
+        message = _('%(description)s\n'
+                    'Command: %(cmd)s\n'
+                    'Exit code: %(exit_code)s\n'
+                    'Stdout: %(stdout)r\n'
+                    'Stderr: %(stderr)r') % {'description': description,
+                                             'cmd': cmd,
+                                             'exit_code': exit_code,
+                                             'stdout': stdout,
+                                             'stderr': stderr}
         super(ProcessExecutionError, self).__init__(message)
 
 
@@ -133,8 +140,8 @@ def execute(*cmd, **kwargs):
     if run_as_root and hasattr(os, 'geteuid') and os.geteuid() != 0:
         if not root_helper:
             raise NoRootWrapSpecified(
-                message=('Command requested root, but did not specify a root '
-                         'helper.'))
+                message=_('Command requested root, but did not '
+                          'specify a root helper.'))
         cmd = shlex.split(root_helper) + list(cmd)
 
     cmd = map(str, cmd)
