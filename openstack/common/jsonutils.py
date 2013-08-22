@@ -39,11 +39,11 @@ import inspect
 import itertools
 import json
 import types
-import xmlrpclib
 
 import netaddr
 import six
 
+from openstack.common import importutils
 from openstack.common import timeutils
 
 
@@ -125,7 +125,9 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
         # It's not clear why xmlrpclib created their own DateTime type, but
         # for our purposes, make it a datetime type which is explicitly
         # handled
-        if isinstance(value, xmlrpclib.DateTime):
+        # NOTE(jd): xmlrpclib is not shipped with Python 3
+        xmlrpclib = importutils.try_import("xmlrpclib")
+        if xmlrpclib and isinstance(value, xmlrpclib.DateTime):
             value = datetime.datetime(*tuple(value.timetuple())[:6])
 
         if convert_datetime and isinstance(value, datetime.datetime):
