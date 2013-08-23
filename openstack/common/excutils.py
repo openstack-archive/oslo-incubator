@@ -20,6 +20,7 @@ Exception related utilities.
 """
 
 import logging
+import six
 import sys
 import time
 import traceback
@@ -65,7 +66,7 @@ class save_and_reraise_exception(object):
                                                      self.tb))
             return False
         if self.reraise:
-            raise self.type_, self.value, self.tb
+            six.reraise(self.type_, self.value, self.tb)
 
 
 def forever_retry_uncaught_exceptions(infunc):
