@@ -60,6 +60,8 @@ def _(msg):
     if USE_LAZY:
         return Message(msg, 'oslo')
     else:
+        if six.PY3:
+            return _t.gettext(msg)
         return _t.ugettext(msg)
 
 
@@ -105,13 +107,17 @@ def install(domain, lazy=False):
             """
             return Message(msg, domain)
 
-        import __builtin__
-        __builtin__.__dict__['_'] = _lazy_gettext
+        from six import moves
+        moves.builtins.__dict__['_'] = _lazy_gettext
     else:
         localedir = '%s_LOCALEDIR' % domain.upper()
-        gettext.install(domain,
-                        localedir=os.environ.get(localedir),
-                        unicode=True)
+        if six.PY3:
+            gettext.install(domain,
+                            localedir=os.environ.get(localedir))
+        else:
+            gettext.install(domain,
+                            localedir=os.environ.get(localedir),
+                            unicode=True)
 
 
 class Message(_userString.UserString, object):
@@ -142,8 +148,13 @@ class Message(_userString.UserString, object):
                                        localedir=localedir,
                                        fallback=True)
 
+        if six.PY3:
+            ugettext = lang.gettext
+        else:
+            ugettext = lang.ugettext
+
         full_msg = (self._left_extra_msg +
-                    lang.ugettext(self._msg) +
+                    ugettext(self._msg) +
                     self._right_extra_msg)
 
         if self.params is not None:
@@ -195,7 +206,7 @@ class Message(_userString.UserString, object):
                     params[key] = copy.deepcopy(dict_param[key])
                 except TypeError:
                     # cast uncopyable thing to unicode string
-                    params[key] = unicode(dict_param[key])
+                    params[key] = six.text_type(dict_param[key])
 
         return params
 
@@ -214,7 +225,7 @@ class Message(_userString.UserString, object):
             try:
                 self.params = copy.deepcopy(other)
             except TypeError:
-                self.params = unicode(other)
+                self.params = six.text_type(other)
 
         return self
 
@@ -223,6 +234,8 @@ class Message(_userString.UserString, object):
         return self.data
 
     def __str__(self):
+        if six.PY3:
+            return self.__unicode__()
         return self.data.encode('utf-8')
 
     def __getstate__(self):
@@ -319,7 +332,7 @@ def get_localized_message(message, user_locale):
     if isinstance(message, Message):
         if user_locale:
             message.locale = user_locale
-        return unicode(message)
+        return six.text_type(message)
     else:
         return message
 
