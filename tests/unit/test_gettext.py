@@ -23,6 +23,7 @@ import logging.handlers
 import os
 
 import mock
+import six
 
 from openstack.common import gettextutils
 from tests import utils
@@ -54,8 +55,12 @@ class GettextTest(utils.BaseTestCase):
         # set lazy off
         gettextutils.USE_LAZY = False
 
-        self.mox.StubOutWithMock(gettextutils._t, 'ugettext')
-        gettextutils._t.ugettext('blah').AndReturn('translated blah')
+        if six.PY3:
+            self.mox.StubOutWithMock(gettextutils._t, 'gettext')
+            gettextutils._t.gettext('blah').AndReturn('translated blah')
+        else:
+            self.mox.StubOutWithMock(gettextutils._t, 'ugettext')
+            gettextutils._t.ugettext('blah').AndReturn('translated blah')
         self.mox.ReplayAll()
 
         result = gettextutils._('blah')
@@ -74,7 +79,7 @@ class GettextTest(utils.BaseTestCase):
 
     def test_gettextutils_install(self):
         gettextutils.install('blaa')
-        self.assertTrue(isinstance(_('A String'), unicode))  # noqa
+        self.assertTrue(isinstance(_('A String'), six.text_type))  # noqa
 
         gettextutils.install('blaa', lazy=True)
         self.assertTrue(isinstance(_('A Message'),  # noqa
@@ -88,9 +93,15 @@ class GettextTest(utils.BaseTestCase):
                 gettextutils.install('blaa')
 
                 environ_get.assert_called_once_with('BLAA_LOCALEDIR')
-                gettext_install.assert_called_once_with('blaa',
-                                                        localedir='/foo/bar',
-                                                        unicode=True)
+                if six.PY3:
+                    gettext_install.assert_called_once_with(
+                        'blaa',
+                        localedir='/foo/bar')
+                else:
+                    gettext_install.assert_called_once_with(
+                        'blaa',
+                        localedir='/foo/bar',
+                        unicode=True)
 
     def test_get_localized_message(self):
         non_message = 'Non-translatable Message'
@@ -109,7 +120,7 @@ class GettextTest(utils.BaseTestCase):
             return self.data
 
         self.stubs.Set(gettextutils.Message,
-                       '__unicode__', _mock_translation_and_unicode)
+                       '__str__', _mock_translation_and_unicode)
 
         self.assertEqual(es_translation,
                          gettextutils.get_localized_message(message, 'es'))
@@ -167,13 +178,9 @@ class GettextTest(utils.BaseTestCase):
 class MessageTestCase(utils.BaseTestCase):
     """Unit tests for locale Message class."""
 
-    def setUp(self):
-        super(MessageTestCase, self).setUp()
-
-        def _message_with_domain(msg):
-            return gettextutils.Message(msg, 'oslo')
-
-        self._lazy_gettext = _message_with_domain
+    @staticmethod
+    def _lazy_gettext(msg):
+        return gettextutils.Message(msg, 'oslo')
 
     def tearDown(self):
         # need to clean up stubs early since they interfere
@@ -255,19 +262,6 @@ class MessageTestCase(utils.BaseTestCase):
                   'port': 1234,
                   'url': 'test2',
                   'headers': {'h1': 'val1'}}
-
-        result = self._lazy_gettext(msgid) % params
-
-        self.assertEqual(result, msgid % params)
-
-    def test_regex_dict_is_parameter(self):
-        msgid = ("Test that we can inject a dictionary %s")
-        params = {'description': 'test1',
-                  'cmd': 'test2',
-                  'exit_code': 'test3',
-                  'stdout': 'test4',
-                  'stderr': 'test5',
-                  'something': 'trimmed'}
 
         result = self._lazy_gettext(msgid) % params
 
@@ -395,7 +389,10 @@ class MessageTestCase(utils.BaseTestCase):
                             languages=['test_locale'],
                             fallback=True,
                             localedir='/tmp/blah').AndReturn(fake_lang)
-        fake_lang.ugettext(msgid).AndReturn(msgid)
+        if six.PY3:
+            fake_lang.gettext(msgid).AndReturn(msgid)
+        else:
+            fake_lang.ugettext(msgid).AndReturn(msgid)
 
         self.mox.ReplayAll()
         result = result.data
@@ -511,10 +508,10 @@ class MessageTestCase(utils.BaseTestCase):
 
     def test_to_unicode(self):
         message = self._get_full_test_message()
-        message_str = unicode(message)
+        message_str = six.u(str(message))
 
         self.assertEqual(message, message_str)
-        self.assertTrue(isinstance(message_str, unicode))
+        self.assertTrue(isinstance(message_str, six.text_type))
 
     def test_upper(self):
         # test an otherwise uncovered __getattribute__ path
