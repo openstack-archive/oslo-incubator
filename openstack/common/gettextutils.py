@@ -57,6 +57,8 @@ def _(msg):
     if USE_LAZY:
         return Message(msg, 'oslo')
     else:
+        if six.PY3:
+            return _t.gettext(msg)
         return _t.ugettext(msg)
 
 
