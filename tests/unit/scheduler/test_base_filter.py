@@ -13,15 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from openstack.common.fixture import moxstubout
 from openstack.common.scheduler import base_filter
+from openstack.common import test
 
-from tests import utils
 
-
-class TestBaseFilter(utils.BaseTestCase):
+class TestBaseFilter(test.BaseTestCase):
 
     def setUp(self):
         super(TestBaseFilter, self).setUp()
+        self.mox = self.useFixture(moxstubout.MoxStubout()).mox
         self.filter = base_filter.BaseFilter()
 
     def test_filter_one_is_called(self):
@@ -100,10 +101,11 @@ class FakeExtensionManager(list):
         self.namespace = namespace
 
 
-class TestBaseFilterHandler(utils.BaseTestCase):
+class TestBaseFilterHandler(test.BaseTestCase):
 
     def setUp(self):
         super(TestBaseFilterHandler, self).setUp()
+        self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
         self.stubs.Set(base_filter.base_handler.extension, 'ExtensionManager',
                        FakeExtensionManager)
         self.handler = base_filter.BaseFilterHandler(BaseFakeFilter,

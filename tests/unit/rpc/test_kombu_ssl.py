@@ -23,9 +23,8 @@ import eventlet
 import ssl
 eventlet.monkey_patch()
 
-from oslo.config import cfg
-
-from tests import utils as test_utils
+from openstack.common.fixture import config
+from openstack.common import test
 
 
 try:
@@ -42,15 +41,16 @@ SSL_CERT = "/tmp/cert.blah.blah"
 SSL_CA_CERT = "/tmp/cert.ca.blah.blah"
 SSL_KEYFILE = "/tmp/keyfile.blah.blah"
 
-FLAGS = cfg.CONF
 
-
-class RpcKombuSslTestCase(test_utils.BaseTestCase):
+class RpcKombuSslTestCase(test.BaseTestCase):
 
     def setUp(self):
         super(RpcKombuSslTestCase, self).setUp()
         if kombu is None:
             self.skipTest("Test requires kombu")
+        configfixture = self.useFixture(config.Config())
+        self.config = configfixture.config
+        self.FLAGS = configfixture.conf
         self.config(kombu_ssl_keyfile=SSL_KEYFILE,
                     kombu_ssl_ca_certs=SSL_CA_CERT,
                     kombu_ssl_certfile=SSL_CERT,
@@ -60,7 +60,7 @@ class RpcKombuSslTestCase(test_utils.BaseTestCase):
 
     def test_ssl_on_extended(self):
         rpc = impl_kombu
-        conn = rpc.create_connection(FLAGS, True)
+        conn = rpc.create_connection(self.FLAGS, True)
         c = conn.connection
         #This might be kombu version dependent...
         #Since we are now peaking into the internals of kombu...
@@ -74,12 +74,15 @@ class RpcKombuSslTestCase(test_utils.BaseTestCase):
         #Into python ssl creation...
 
 
-class RpcKombuSslBadVersionTestCase(test_utils.BaseTestCase):
+class RpcKombuSslBadVersionTestCase(test.BaseTestCase):
 
     def setUp(self):
         super(RpcKombuSslBadVersionTestCase, self).setUp()
         if kombu is None:
             self.skipTest("Test requires kombu")
+        configfixture = self.useFixture(config.Config())
+        self.config = configfixture.config
+        self.FLAGS = configfixture.conf
         self.config(kombu_ssl_keyfile=SSL_KEYFILE,
                     kombu_ssl_ca_certs=SSL_CA_CERT,
                     kombu_ssl_certfile=SSL_CERT,
@@ -90,4 +93,4 @@ class RpcKombuSslBadVersionTestCase(test_utils.BaseTestCase):
     def test_bad_ssl_version(self):
         rpc = impl_kombu
         self.assertRaises(RuntimeError,
-                          rpc.create_connection, FLAGS, True)
+                          rpc.create_connection, self.FLAGS, True)

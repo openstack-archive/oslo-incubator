@@ -19,24 +19,28 @@ Unit Tests for rpc.proxy
 """
 
 import copy
-import mox
 
 import six
 
 from openstack.common import context
+from openstack.common.fixture import config
+from openstack.common.fixture import moxstubout
 from openstack.common import lockutils
 from openstack.common import rpc
 from openstack.common.rpc import common as rpc_common
 from openstack.common.rpc import proxy
 from openstack.common.rpc import serializer as rpc_serializer
-from tests import utils
+from openstack.common import test
 
 
-class RpcProxyTestCase(utils.BaseTestCase):
+class RpcProxyTestCase(test.BaseTestCase):
 
     def setUp(self):
         super(RpcProxyTestCase, self).setUp()
-        self.mox = mox.Mox()
+        self.config = self.useFixture(config.Config()).config
+        moxfixture = self.useFixture(moxstubout.MoxStubout())
+        self.mox = moxfixture.mox
+        self.stubs = moxfixture.stubs
 
     def cleanUp(self):
         super(RpcProxyTestCase, self).cleanUp()
