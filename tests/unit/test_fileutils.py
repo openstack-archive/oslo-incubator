@@ -15,7 +15,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import __builtin__
 import errno
 import os
 import shutil
@@ -23,6 +22,7 @@ import tempfile
 
 import mock
 import mox
+from six import moves
 
 from openstack.common import fileutils
 from openstack.common import test
@@ -62,7 +62,7 @@ class TestCachedFile(test.BaseTestCase):
 
     def test_read_modified_cached_file(self):
         self.mox.StubOutWithMock(os.path, "getmtime")
-        self.mox.StubOutWithMock(__builtin__, 'open')
+        self.mox.StubOutWithMock(moves.builtins, 'open')
         os.path.getmtime(mox.IgnoreArg()).AndReturn(2)
 
         fake_contents = "lorem ipsum"
@@ -74,7 +74,7 @@ class TestCachedFile(test.BaseTestCase):
                                       mox.IgnoreArg(),
                                       mox.IgnoreArg())
 
-        __builtin__.open(mox.IgnoreArg()).AndReturn(fake_context_manager)
+        moves.builtins.open(mox.IgnoreArg()).AndReturn(fake_context_manager)
 
         self.mox.ReplayAll()
         fileutils._FILE_CACHE = {
