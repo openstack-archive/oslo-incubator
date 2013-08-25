@@ -15,28 +15,31 @@
 
 import socket
 
-from oslo.config import cfg
-
 from openstack.common import context
+from openstack.common.fixture import config
+from openstack.common.fixture import moxstubout
 from openstack.common import log
 from openstack.common.notifier import api as notifier_api
 from openstack.common.notifier import log_notifier
 from openstack.common.notifier import no_op_notifier
 from openstack.common import rpc
-from tests import utils as test_utils
+from openstack.common import test
 
 
 ctxt = context.get_admin_context()
 ctxt2 = context.get_admin_context()
 
 
-class NotifierTestCase(test_utils.BaseTestCase):
+class NotifierTestCase(test.BaseTestCase):
     """Test case for notifications."""
     def setUp(self):
         super(NotifierTestCase, self).setUp()
         notification_driver = [
             'openstack.common.notifier.no_op_notifier'
         ]
+        self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
+        self.config = self.useFixture(config.Config()).config
+        self.CONF = self.useFixture(config.Config()).conf
         self.config(notification_driver=notification_driver)
         self.config(default_publisher_id='publisher')
         self.addCleanup(notifier_api._reset_drivers)
@@ -76,7 +79,7 @@ class NotifierTestCase(test_utils.BaseTestCase):
                             notifier_api.WARN, dict(a=3))
 
     def _test_rpc_notify(self, driver, envelope=False):
-        self.stubs.Set(cfg.CONF, 'notification_driver', [driver])
+        self.stubs.Set(self.CONF, 'notification_driver', [driver])
         self.mock_notify = False
         self.envelope = False
 
@@ -103,9 +106,9 @@ class NotifierTestCase(test_utils.BaseTestCase):
                           'event_type', 'not a priority', dict(a=3))
 
     def test_rpc_priority_queue(self):
-        self.stubs.Set(cfg.CONF, 'notification_driver',
+        self.stubs.Set(self.CONF, 'notification_driver',
                        ['openstack.common.notifier.rpc_notifier'])
-        self.stubs.Set(cfg.CONF, 'notification_topics',
+        self.stubs.Set(self.CONF, 'notification_topics',
                        ['testnotify', ])
 
         self.test_topic = None
@@ -202,11 +205,13 @@ class NotifierTestCase(test_utils.BaseTestCase):
         self.assertEqual(self.context_arg, None)
 
 
-class MultiNotifierTestCase(test_utils.BaseTestCase):
+class MultiNotifierTestCase(test.BaseTestCase):
     """Test case for notifications."""
 
     def setUp(self):
         super(MultiNotifierTestCase, self).setUp()
+        self.config = self.useFixture(config.Config()).config
+        self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
         # Mock log to add one to exception_count when log.exception is called
 
         def mock_exception(cls, *args):

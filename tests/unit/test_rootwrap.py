@@ -23,15 +23,17 @@ import uuid
 import fixtures
 from six import moves
 
+from openstack.common.fixture import moxstubout
 from openstack.common.rootwrap import filters
 from openstack.common.rootwrap import wrapper
-from tests import utils
+from openstack.common import test
 
 
-class RootwrapTestCase(utils.BaseTestCase):
+class RootwrapTestCase(test.BaseTestCase):
 
     def setUp(self):
         super(RootwrapTestCase, self).setUp()
+        self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
         self.filters = [
             filters.RegExpFilter("/bin/ls", "root", 'ls', '/[a-z]+'),
             filters.CommandFilter("/usr/bin/foo_bar_not_exist", "root"),
@@ -384,7 +386,7 @@ class RootwrapTestCase(utils.BaseTestCase):
         self.assertEqual(config.syslog_log_level, logging.INFO)
 
 
-class PathFilterTestCase(utils.BaseTestCase):
+class PathFilterTestCase(test.BaseTestCase):
     def setUp(self):
         super(PathFilterTestCase, self).setUp()
 

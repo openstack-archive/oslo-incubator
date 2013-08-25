@@ -25,11 +25,12 @@ from eventlet import greenthread
 from eventlet import semaphore
 from oslo.config import cfg
 
+from openstack.common.fixture import config
 from openstack.common import lockutils
-from tests import utils
+from openstack.common import test
 
 
-class TestFileLocks(utils.BaseTestCase):
+class TestFileLocks(test.BaseTestCase):
 
     def test_concurrent_green_lock_succeeds(self):
         """Verify spawn_n greenthreads with two locks run concurrently."""
@@ -65,7 +66,11 @@ class TestFileLocks(utils.BaseTestCase):
                 shutil.rmtree(tmpdir)
 
 
-class LockTestCase(utils.BaseTestCase):
+class LockTestCase(test.BaseTestCase):
+
+    def setUp(self):
+        super(LockTestCase, self).setUp()
+        self.config = self.useFixture(config.Config()).config
 
     def test_synchronized_wrapped_function_metadata(self):
         @lockutils.synchronized('whatever', 'test-')

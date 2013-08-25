@@ -23,13 +23,13 @@ from oslo.config import cfg
 import six
 
 from openstack.common import context
+from openstack.common.fixture import config
+from openstack.common.fixture import moxstubout
 from openstack.common import jsonutils
 from openstack.common import log
 from openstack.common import log_handler
 from openstack.common.notifier import api as notifier
-from tests import utils as test_utils
-
-CONF = cfg.CONF
+from openstack.common import test
 
 
 def _fake_context():
@@ -43,6 +43,7 @@ class CommonLoggerTestsMixIn(object):
 
     def setUp(self):
         super(CommonLoggerTestsMixIn, self).setUp()
+        self.config = self.useFixture(config.Config()).config
 
         # common context has different fields to the defaults in log.py
         self.config(logging_context_format_string='%(asctime)s %(levelname)s '
@@ -92,19 +93,24 @@ class CommonLoggerTestsMixIn(object):
             self.assertRaises(AttributeError, getattr, log, func)
 
 
-class LoggerTestCase(CommonLoggerTestsMixIn, test_utils.BaseTestCase):
+class LoggerTestCase(CommonLoggerTestsMixIn, test.BaseTestCase):
     def setUp(self):
         super(LoggerTestCase, self).setUp()
         self.log = log.getLogger()
 
 
-class LazyLoggerTestCase(CommonLoggerTestsMixIn, test_utils.BaseTestCase):
+class LazyLoggerTestCase(CommonLoggerTestsMixIn, test.BaseTestCase):
     def setUp(self):
         super(LazyLoggerTestCase, self).setUp()
         self.log = log.getLazyLogger()
 
 
-class LogHandlerTestCase(test_utils.BaseTestCase):
+class LogHandlerTestCase(test.BaseTestCase):
+
+    def setUp(self):
+        super(LogHandlerTestCase, self).setUp()
+        self.config = self.useFixture(config.Config()).config
+
     def test_log_path_logdir(self):
         self.config(log_dir='/some/path', log_file=None)
         self.assertEqual(log._get_log_file_path(binary='foo-bar'),
@@ -126,10 +132,12 @@ class LogHandlerTestCase(test_utils.BaseTestCase):
                          '/some/path/foo-bar.log')
 
 
-class PublishErrorsHandlerTestCase(test_utils.BaseTestCase):
+class PublishErrorsHandlerTestCase(test.BaseTestCase):
     """Tests for log.PublishErrorsHandler"""
     def setUp(self):
         super(PublishErrorsHandlerTestCase, self).setUp()
+        self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
+        self.config = self.useFixture(config.Config()).config
         self.publiserrorshandler = log_handler.\
             PublishErrorsHandler(logging.ERROR)
 
@@ -149,11 +157,13 @@ class PublishErrorsHandlerTestCase(test_utils.BaseTestCase):
         self.assertTrue(self.stub_flg)
 
 
-class LogLevelTestCase(test_utils.BaseTestCase):
+class LogLevelTestCase(test.BaseTestCase):
     def setUp(self):
         super(LogLevelTestCase, self).setUp()
-        levels = CONF.default_log_levels
+        self.CONF = self.useFixture(config.Config()).conf
+        levels = self.CONF.default_log_levels
         levels.append("nova-test=AUDIT")
+        self.config = self.useFixture(config.Config()).config
         self.config(default_log_levels=levels,
                     verbose=True)
         log.setup('testing')
@@ -167,7 +177,7 @@ class LogLevelTestCase(test_utils.BaseTestCase):
         self.assertEqual(logging.AUDIT, l.logger.getEffectiveLevel())
 
 
-class JSONFormatterTestCase(test_utils.BaseTestCase):
+class JSONFormatterTestCase(test.BaseTestCase):
     def setUp(self):
         super(JSONFormatterTestCase, self).setUp()
         self.log = log.getLogger('test-json')
@@ -220,9 +230,10 @@ class JSONFormatterTestCase(test_utils.BaseTestCase):
         self.assertTrue(data['traceback'])
 
 
-class ContextFormatterTestCase(test_utils.BaseTestCase):
+class ContextFormatterTestCase(test.BaseTestCase):
     def setUp(self):
         super(ContextFormatterTestCase, self).setUp()
+        self.config = self.useFixture(config.Config()).config
         self.config(logging_context_format_string="HAS CONTEXT "
                                                   "[%(request_id)s]: "
                                                   "%(message)s",
@@ -253,7 +264,7 @@ class ContextFormatterTestCase(test_utils.BaseTestCase):
         self.assertEqual("NOCTXT: baz --DBG\n", self.stream.getvalue())
 
 
-class ExceptionLoggingTestCase(test_utils.BaseTestCase):
+class ExceptionLoggingTestCase(test.BaseTestCase):
     """Test that Exceptions are logged."""
 
     def test_excepthook_logs_exception(self):
@@ -281,13 +292,14 @@ class ExceptionLoggingTestCase(test_utils.BaseTestCase):
         self.assertTrue(sys.excepthook != sys.__excepthook__)
 
 
-class FancyRecordTestCase(test_utils.BaseTestCase):
+class FancyRecordTestCase(test.BaseTestCase):
     """Test how we handle fancy record keys that are not in the
     base python logging.
     """
 
     def setUp(self):
         super(FancyRecordTestCase, self).setUp()
+        self.config = self.useFixture(config.Config()).config
         # NOTE(sdague): use the different formatters to demonstrate format
         # string with valid fancy keys and without. Slightly hacky, but given
         # the way log objects layer up seemed to be most concise approach
@@ -335,7 +347,7 @@ class FancyRecordTestCase(test_utils.BaseTestCase):
         self.assertEqual(infoexpected + warnexpected, self.stream.getvalue())
 
 
-class SetDefaultsTestCase(test_utils.BaseTestCase):
+class SetDefaultsTestCase(test.BaseTestCase):
     class TestConfigOpts(cfg.ConfigOpts):
         def __call__(self, args=None):
             return cfg.ConfigOpts.__call__(self,
@@ -364,57 +376,62 @@ class SetDefaultsTestCase(test_utils.BaseTestCase):
         self.assertEqual(self.conf.logging_context_format_string, my_default)
 
 
-class LogConfigOptsTestCase(test_utils.BaseTestCase):
+class LogConfigOptsTestCase(test.BaseTestCase):
+
+    def setUp(self):
+        super(LogConfigOptsTestCase, self).setUp()
+        self.CONF = self.useFixture(config.Config()).conf
 
     def test_print_help(self):
         f = six.StringIO()
-        CONF([])
-        CONF.print_help(file=f)
+        self.CONF([])
+        self.CONF.print_help(file=f)
         self.assertTrue('debug' in f.getvalue())
         self.assertTrue('verbose' in f.getvalue())
         self.assertTrue('log-config' in f.getvalue())
         self.assertTrue('log-format' in f.getvalue())
 
     def test_debug_verbose(self):
-        CONF(['--debug', '--verbose'])
+        self.CONF(['--debug', '--verbose'])
 
-        self.assertEqual(CONF.debug, True)
-        self.assertEqual(CONF.verbose, True)
+        self.assertEqual(self.CONF.debug, True)
+        self.assertEqual(self.CONF.verbose, True)
 
     def test_logging_opts(self):
-        CONF([])
+        self.CONF([])
 
-        self.assertTrue(CONF.log_config is None)
-        self.assertTrue(CONF.log_file is None)
-        self.assertTrue(CONF.log_dir is None)
-        self.assertTrue(CONF.log_format is None)
+        self.assertTrue(self.CONF.log_config is None)
+        self.assertTrue(self.CONF.log_file is None)
+        self.assertTrue(self.CONF.log_dir is None)
+        self.assertTrue(self.CONF.log_format is None)
 
-        self.assertEqual(CONF.log_date_format, log._DEFAULT_LOG_DATE_FORMAT)
+        self.assertEqual(self.CONF.log_date_format,
+                         log._DEFAULT_LOG_DATE_FORMAT)
 
-        self.assertEqual(CONF.use_syslog, False)
+        self.assertEqual(self.CONF.use_syslog, False)
 
     def test_log_file(self):
         log_file = '/some/path/foo-bar.log'
-        CONF(['--log-file', log_file])
-        self.assertEqual(CONF.log_file, log_file)
+        self.CONF(['--log-file', log_file])
+        self.assertEqual(self.CONF.log_file, log_file)
 
     def test_logfile_deprecated(self):
         logfile = '/some/other/path/foo-bar.log'
-        CONF(['--logfile', logfile])
-        self.assertEqual(CONF.log_file, logfile)
+        self.CONF(['--logfile', logfile])
+        self.assertEqual(self.CONF.log_file, logfile)
 
     def test_log_dir(self):
         log_dir = '/some/path/'
-        CONF(['--log-dir', log_dir])
-        self.assertEqual(CONF.log_dir, log_dir)
+        self.CONF(['--log-dir', log_dir])
+        self.assertEqual(self.CONF.log_dir, log_dir)
 
     def test_logdir_deprecated(self):
         logdir = '/some/other/path/'
-        CONF(['--logdir', logdir])
-        self.assertEqual(CONF.log_dir, logdir)
+        self.CONF(['--logdir', logdir])
+        self.assertEqual(self.CONF.log_dir, logdir)
 
     def test_log_format_overrides_formatter(self):
-        CONF(['--log-format', '[Any format]'])
+        self.CONF(['--log-format', '[Any format]'])
         log._setup_logging_from_conf()
         logger = log._loggers[None].logger
         for handler in logger.handlers:
@@ -429,7 +446,7 @@ class LogConfigOptsTestCase(test_utils.BaseTestCase):
             self.assertTrue(isinstance(formatter, log.ContextFormatter))
 
 
-class LogConfigTestCase(test_utils.BaseTestCase):
+class LogConfigTestCase(test.BaseTestCase):
 
     minimal_config = """[loggers]
 keys=root
@@ -443,6 +460,10 @@ keys=
 [logger_root]
 handlers=
 """
+
+    def setUp(self):
+        super(LogConfigTestCase, self).setUp()
+        self.config = self.useFixture(config.Config()).config
 
     def _create_tempfile(self, basename, contents, ext='.conf'):
         (fd, path) = tempfile.mkstemp(prefix=basename, suffix=ext)
