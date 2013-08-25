@@ -27,6 +27,7 @@ import time
 
 import eventlet
 
+from openstack.common.gettextutils import _  # noqa
 from openstack.common.rpc import common as rpc_common
 
 CONSUMERS = {}
@@ -146,7 +147,7 @@ def multicall(conf, context, topic, msg, timeout=None):
     try:
         consumer = CONSUMERS[topic][0]
     except (KeyError, IndexError):
-        raise rpc_common.Timeout("No consumers available")
+        raise rpc_common.Timeout(_("No consumers available"))
     else:
         return consumer.call(context, version, method, namespace, args,
                              timeout)
