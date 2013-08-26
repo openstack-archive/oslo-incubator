@@ -172,3 +172,74 @@ class UtilsTestCase(test.BaseTestCase):
                 self.assertEqual(fp.read(), 'hello')
         finally:
             os.unlink(dst_path)
+
+
+class WriteToTempfileTestCase(test.BaseTestCase):
+    def setUp(self):
+        super(WriteToTempfileTestCase, self).setUp()
+        self.content = 'testing123'
+
+    def check_file_content(self, path):
+        with open(path, 'r') as fd:
+            ans = fd.read()
+            self.assertEqual(self.content, ans)
+
+    def test_file_without_path_and_suffix(self):
+        res = fileutils.write_to_tempfile(self.content)
+        self.assertTrue(os.path.exists(res))
+
+        (basepath, tmpfile) = os.path.split(res)
+        self.assertTrue(basepath.startswith('/tmp'))
+        self.assertTrue(tmpfile.startswith('tmp'))
+
+        self.check_file_content(res)
+
+    def test_file_with_not_existing_path(self):
+        path = '/tmp/testing/test1'
+        res = fileutils.write_to_tempfile(self.content, path=path)
+        self.assertTrue(os.path.exists(res))
+        (basepath, tmpfile) = os.path.split(res)
+        self.assertEqual(basepath, path)
+        self.assertTrue(tmpfile.startswith('tmp'))
+
+        self.check_file_content(res)
+        shutil.rmtree('/tmp/testing')
+
+    def test_file_with_not_default_suffix(self):
+        suffix = '.conf'
+        res = fileutils.write_to_tempfile(self.content, suffix=suffix)
+        self.assertTrue(os.path.exists(res))
+
+        (basepath, tmpfile) = os.path.split(res)
+        self.assertTrue(basepath.startswith('/tmp'))
+        self.assertTrue(tmpfile.startswith('tmp'))
+        self.assertTrue(tmpfile.endswith('.conf'))
+
+        self.check_file_content(res)
+
+    def test_file_with_not_existing_path_and_not_default_suffix(self):
+        suffix = '.txt'
+        path = '/tmp/testing/test2'
+        res = fileutils.write_to_tempfile(self.content,
+                                          path=path,
+                                          suffix=suffix)
+        self.assertTrue(os.path.exists(res))
+
+        (basepath, tmpfile) = os.path.split(res)
+        self.assertTrue(tmpfile.startswith('tmp'))
+        self.assertEqual(basepath, path)
+        self.assertTrue(tmpfile.endswith(suffix))
+
+        self.check_file_content(res)
+        shutil.rmtree('/tmp/testing')
+
+    def test_file_with_not_default_prefix(self):
+        prefix = 'test'
+        res = fileutils.write_to_tempfile(self.content, prefix=prefix)
+        self.assertTrue(os.path.exists(res))
+
+        (basepath, tmpfile) = os.path.split(res)
+        self.assertTrue(tmpfile.startswith(prefix))
+        self.assertTrue(basepath.startswith('/tmp'))
+
+        self.check_file_content(res)
