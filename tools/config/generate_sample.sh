@@ -46,13 +46,19 @@ done
 
 # Give BASEDIR a reasonable default
 BASEDIR=${BASEDIR:-`pwd`}
-
 if ! [ -d $BASEDIR ]
 then
     echo "${0##*/}: missing project base directory" >&2 ; print_hint ; exit 1
+elif [[ $BASEDIR != /* ]]
+then
+    BASEDIR=$(cd "$BASEDIR" && pwd)
 fi
 
 PACKAGENAME=${PACKAGENAME:-${BASEDIR##*/}}
+if ! [ -d $BASEDIR/$PACKAGENAME ]
+then
+    echo "${0##*/}: invalid package name" >&2 ; print_hint ; exit 1
+fi
 
 OUTPUTDIR=${OUTPUTDIR:-$BASEDIR/etc}
 # Some projects put their sample config in etc/, some in etc/$PACKAGENAME/
