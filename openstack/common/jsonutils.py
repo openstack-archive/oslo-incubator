@@ -39,7 +39,11 @@ import inspect
 import itertools
 import json
 import types
-import xmlrpclib
+try:
+    import xmlrpclib
+except ImportError:
+    # NOTE(jd): xmlrpclib is not shipped with Python 3
+    xmlrpclib = None
 
 import six
 
@@ -126,7 +130,7 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
         # It's not clear why xmlrpclib created their own DateTime type, but
         # for our purposes, make it a datetime type which is explicitly
         # handled
-        if isinstance(value, xmlrpclib.DateTime):
+        if xmlrpclib and isinstance(value, xmlrpclib.DateTime):
             value = datetime.datetime(*tuple(value.timetuple())[:6])
 
         if convert_datetime and isinstance(value, datetime.datetime):
