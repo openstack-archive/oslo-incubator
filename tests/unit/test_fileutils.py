@@ -145,3 +145,169 @@ class UtilsTestCase(test.BaseTestCase):
                 self.assertEqual(fp.read(), 'hello')
         finally:
             os.unlink(dst_path)
+
+
+class CreateTempfileTestCase(test.BaseTestCase):
+    def test_file_without_path_and_suffix(self):
+        content = 'testing123'
+        res = fileutils.create_tempfile(content)
+        self.assertTrue(os.path.exists(res))
+
+        (basepath, tmpfile) = os.path.split(res)
+        self.assertTrue(basepath.startswith('/tmp'))
+        self.assertTrue(tmpfile.startswith('tmp'))
+
+        with open(res, 'r') as fd:
+            ans = fd.read()
+            self.assertEquals(content, ans)
+
+    def test_file_with_path(self):
+        path = '/tmp/test.conf'
+        content = 'testing123'
+        res = fileutils.create_tempfile(content, path=path)
+        self.assertTrue(os.path.exists(res))
+        self.assertEquals(res, path)
+
+        with open(res, 'r') as fd:
+            ans = fd.read()
+            self.assertEquals(content, ans)
+
+    def test_file_with_suffix(self):
+        suffix = '.conf'
+        content = 'testing123'
+        res = fileutils.create_tempfile(content, suffix=suffix)
+        self.assertTrue(os.path.exists(res))
+
+        (basepath, tmpfile) = os.path.split(res)
+        self.assertTrue(basepath.startswith('/tmp'))
+        self.assertTrue(tmpfile.startswith('tmp'))
+        self.assertTrue(tmpfile.endswith('.conf'))
+
+        with open(res, 'r') as fd:
+            ans = fd.read()
+            self.assertEquals(content, ans)
+
+    def test_file_with_correct_path_and_suffix(self):
+        suffix = '.txt'
+        content = 'testing123'
+        path = '/tmp/test.conf'
+        res = fileutils.create_tempfile(content, path=path, suffix=suffix)
+        self.assertTrue(os.path.exists(res))
+
+        self.assertEquals(res, path)
+        self.assertFalse(res.endswith(suffix))
+
+        with open(res, 'r') as fd:
+            ans = fd.read()
+            self.assertEquals(content, ans)
+
+    def test_file_with_incorrect_path_and_suffix(self):
+        suffix = '.txt'
+        content = 'testing123'
+        # it is not absolute path
+        path = 'test.conf'
+        res = fileutils.create_tempfile(content, path=path, suffix=suffix)
+        self.assertTrue(os.path.exists(res))
+
+        (basepath, tmpfile) = os.path.split(res)
+        self.assertTrue(tmpfile.startswith('tmp'))
+        self.assertTrue(basepath.startswith('/tmp'))
+        self.assertTrue(tmpfile.endswith(suffix))
+        self.assertFalse(path in res)
+
+        with open(res, 'r') as fd:
+            ans = fd.read()
+            self.assertEquals(content, ans)
+
+
+class CreateTempfilesTestCase(test.BaseTestCase):
+    def test_empty_files(self):
+        files = [{}, {}]
+        res = fileutils.create_tempfiles(files)
+        for i in xrange(len(files)):
+            self.assertTrue(os.path.exists(res[i]))
+
+        for i in xrange(len(files)):
+            with open(res[i], 'r') as fd:
+                ans = fd.read()
+                self.assertEquals('', ans)
+
+    def test_files_only_content(self):
+        files = [{'content': 'testing123'},
+                 {'content': 'testing456'}]
+        res = fileutils.create_tempfiles(files)
+        for i in xrange(len(files)):
+            self.assertTrue(os.path.exists(res[i]))
+            basepath, tmpfile = os.path.split(res[i])
+            self.assertTrue(basepath.startswith('/tmp'))
+            self.assertTrue(tmpfile.startswith('tmp'))
+
+        for i in xrange(len(files)):
+            with open(res[i], 'r') as fd:
+                ans = fd.read()
+                self.assertEquals(files[i]['content'], ans)
+
+    def test_files_with_path(self):
+        files = [{'path': '/tmp/test',
+                  'content': 'testing123'},
+                 {'path': '/tmp/test.conf',
+                  'content': 'testing456'}]
+        res = fileutils.create_tempfiles(files)
+        for i in xrange(len(files)):
+            self.assertTrue(os.path.exists(res[i]))
+            self.assertEquals(files[i]['path'], res[i])
+
+        for i in xrange(len(files)):
+            with open(res[i], 'r') as fd:
+                ans = fd.read()
+                self.assertEquals(files[i]['content'], ans)
+
+    def test_files_with_suffix(self):
+        files = [{'suffix': '.conf',
+                  'content': 'testing123'},
+                 {'suffix': '.txt',
+                  'content': 'testing456'}]
+        res = fileutils.create_tempfiles(files)
+        for i in xrange(len(files)):
+            self.assertTrue(os.path.exists(res[i]))
+            self.assertTrue(res[i].endswith(files[i]['suffix']))
+            basepath, tmpfile = os.path.split(res[i])
+            self.assertTrue(basepath.startswith('/tmp'))
+            self.assertTrue(tmpfile.startswith('tmp'))
+
+        for i in xrange(len(files)):
+            with open(res[i], 'r') as fd:
+                ans = fd.read()
+                self.assertEquals(files[i]['content'], ans)
+
+    def test_files_with_suffix_and_path(self):
+        files = [{'suffix': '.conf',
+                  'content': 'testing123'},
+                 {'suffix': '.txt',
+                  'content': 'testing456'},
+                 {'path': '/tmp/test',
+                  'content': 'testing789'},
+                 {'path': '/tmp/test.conf',
+                  'content': 'testing111'}]
+
+        res = fileutils.create_tempfiles(files)
+        for i in xrange(2):
+            self.assertTrue(os.path.exists(res[i]))
+            self.assertTrue(res[i].endswith(files[i]['suffix']))
+            basepath, tmpfile = os.path.split(res[i])
+            self.assertTrue(basepath.startswith('/tmp'))
+            self.assertTrue(tmpfile.startswith('tmp'))
+
+        for i in xrange(2):
+            with open(res[i], 'r') as fd:
+                ans = fd.read()
+                self.assertEquals(files[i]['content'], ans)
+
+        for i in xrange(2, len(files)):
+            self.assertTrue(os.path.exists(res[i]))
+            self.assertEquals(files[i]['path'], res[i])
+
+        for i in xrange(2, len(files)):
+            with open(res[i], 'r') as fd:
+                ans = fd.read()
+                self.assertEquals(files[i]['content'], ans)
