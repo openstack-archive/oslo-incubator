@@ -19,6 +19,7 @@
 import contextlib
 import errno
 import os
+import tempfile
 
 from openstack.common import excutils
 from openstack.common.gettextutils import _  # noqa
@@ -108,3 +109,24 @@ def file_open(*args, **kwargs):
     state at all (for unit tests)
     """
     return file(*args, **kwargs)
+
+
+def write_to_tempfile(content, path=None, suffix='', prefix='tmp'):
+    """Create temporary file or use existing file.
+
+    This util is needed for creating temporary file with
+    specified content and extension. If path exists,
+    it will be used for writing content.
+
+    For example: it can be used in database tests for creating
+    configuration files.
+    """
+    if path:
+        ensure_tree(path)
+
+    (fd, path) = tempfile.mkstemp(suffix=suffix, dir=path, prefix=prefix)
+    try:
+        os.write(fd, content)
+    finally:
+        os.close(fd)
+    return path
