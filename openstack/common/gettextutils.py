@@ -29,7 +29,10 @@ import gettext
 import logging
 import os
 import re
-import UserString
+try:
+    import UserString as _userString
+except ImportError:
+    import collections as _userString
 
 from babel import localedata
 import six
@@ -111,7 +114,7 @@ def install(domain, lazy=False):
                         unicode=True)
 
 
-class Message(UserString.UserString, object):
+class Message(_userString.UserString, object):
     """Class used to encapsulate translatable messages."""
     def __init__(self, msg, domain):
         # _msg is the gettext msgid and should never change
@@ -252,7 +255,7 @@ class Message(UserString.UserString, object):
         if name in ops:
             return getattr(self.data, name)
         else:
-            return UserString.UserString.__getattribute__(self, name)
+            return _userString.UserString.__getattribute__(self, name)
 
 
 def get_available_languages(domain):
