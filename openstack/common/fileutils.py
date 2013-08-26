@@ -19,6 +19,7 @@
 import contextlib
 import errno
 import os
+import tempfile
 
 from openstack.common import excutils
 from openstack.common.gettextutils import _  # noqa
@@ -108,3 +109,53 @@ def file_open(*args, **kwargs):
     state at all (for unit tests)
     """
     return file(*args, **kwargs)
+
+
+def create_tempfile(content, path='', suffix=''):
+    """Create temporary file or use existed file.
+
+    This util is needed for creating tempfile with
+    specified content and extension. If path are existed,
+    it will be used for wriring content.
+
+    For example: it can be used in database tests for creating
+    configuration files.
+    """
+    if not os.path.isabs(path):
+        (fd, path) = tempfile.mkstemp(suffix=suffix)
+    else:
+        fd = os.open(path, os.O_CREAT | os.O_WRONLY)
+    try:
+        os.write(fd, content)
+    finally:
+        os.close(fd)
+    return path
+
+
+def create_tempfiles(files):
+    """Create some temporary files or use existed files.
+
+    This util is needed for creating some tempfiles with
+    specified content and extension.
+
+    :param files: list of dictionaries with description file.
+                  File has following attribute:
+                  path - absolute path by existing file with
+                         extension.
+                  content - information for writing in file.
+                  suffix - suffix for tempfile.
+    """
+    tempfiles = []
+    params = {}
+    for current_file in files:
+        for val in ('path', 'suffix', 'content'):
+            if val in current_file:
+                params[val] = current_file[val]
+            else:
+                params[val] = ''
+
+        path = create_tempfile(path=params['path'],
+                               suffix=params['suffix'],
+                               content=params['content'])
+        tempfiles.append(path)
+    return tempfiles
