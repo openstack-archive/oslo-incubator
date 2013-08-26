@@ -102,14 +102,16 @@ class ServiceLauncher(Launcher):
         # Allow the process to be killed again and die from natural causes
         signal.signal(signal.SIGTERM, signal.SIG_DFL)
         signal.signal(signal.SIGINT, signal.SIG_DFL)
-        signal.signal(signal.SIGHUP, signal.SIG_DFL)
+        if sys.platform != 'win32':
+            signal.signal(signal.SIGHUP, signal.SIG_DFL)
 
         raise SignalExit(signo)
 
     def handle_signal(self):
         signal.signal(signal.SIGTERM, self._handle_signal)
         signal.signal(signal.SIGINT, self._handle_signal)
-        signal.signal(signal.SIGHUP, self._handle_signal)
+        if sys.platform != 'win32':
+            signal.signal(signal.SIGHUP, self._handle_signal)
 
     def _wait_for_exit_or_signal(self):
         status = None
@@ -121,9 +123,12 @@ class ServiceLauncher(Launcher):
         try:
             super(ServiceLauncher, self).wait()
         except SignalExit as exc:
-            signame = {signal.SIGTERM: 'SIGTERM',
-                       signal.SIGINT: 'SIGINT',
-                       signal.SIGHUP: 'SIGHUP'}[exc.signo]
+            signals = {signal.SIGTERM: 'SIGTERM',
+                       signal.SIGINT: 'SIGINT'}
+            if sys.platform != 'win32':
+                signals[signal.SIGHUP] = 'SIGHUP'
+
+            signame = signals[exc.signo]
             LOG.info(_('Caught %s, exiting'), signame)
             status = exc.code
             signo = exc.signo
@@ -144,7 +149,7 @@ class ServiceLauncher(Launcher):
         while True:
             self.handle_signal()
             status, signo = self._wait_for_exit_or_signal()
-            if signo != signal.SIGHUP:
+            if sys.platform == 'win32' or signo != signal.SIGHUP:
                 return status
             self.restart()
 
@@ -169,7 +174,8 @@ class ProcessLauncher(object):
     def handle_signal(self):
         signal.signal(signal.SIGTERM, self._handle_signal)
         signal.signal(signal.SIGINT, self._handle_signal)
-        signal.signal(signal.SIGHUP, self._handle_signal)
+        if sys.platform != 'win32':
+            signal.signal(signal.SIGHUP, self._handle_signal)
 
     def _handle_signal(self, signo, frame):
         self.sigcaught = signo
@@ -178,7 +184,8 @@ class ProcessLauncher(object):
         # Allow the process to be killed again and die from natural causes
         signal.signal(signal.SIGTERM, signal.SIG_DFL)
         signal.signal(signal.SIGINT, signal.SIG_DFL)
-        signal.signal(signal.SIGHUP, signal.SIG_DFL)
+        if sys.platform != 'win32':
+            signal.signal(signal.SIGHUP, signal.SIG_DFL)
 
     def _pipe_watcher(self):
         # This will block until the write end is closed when the parent
@@ -200,7 +207,8 @@ class ProcessLauncher(object):
             raise SignalExit(signal.SIGHUP)
 
         signal.signal(signal.SIGTERM, _sigterm)
-        signal.signal(signal.SIGHUP, _sighup)
+        if sys.platform != 'win32':
+            signal.signal(signal.SIGHUP, _sighup)
         # Block SIGINT and let the parent send us a SIGTERM
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 
@@ -211,9 +219,12 @@ class ProcessLauncher(object):
         try:
             launcher.wait()
         except SignalExit as exc:
-            signame = {signal.SIGTERM: 'SIGTERM',
-                       signal.SIGINT: 'SIGINT',
-                       signal.SIGHUP: 'SIGHUP'}[exc.signo]
+            signals = {signal.SIGTERM: 'SIGTERM',
+                       signal.SIGINT: 'SIGINT'}
+            if sys.platform != 'win32':
+                signals[signal.SIGHUP] = 'SIGHUP'
+
+            signame = signals[exc.signo]
             LOG.info(_('Caught %s, exiting'), signame)
             status = exc.code
             signo = exc.signo
@@ -269,7 +280,7 @@ class ProcessLauncher(object):
             while True:
                 self._child_process_handle_signal()
                 status, signo = self._child_wait_for_exit_or_signal(launcher)
-                if signo != signal.SIGHUP:
+                if sys.platform == 'win32' or signo != signal.SIGHUP:
                     break
                 launcher.restart()
 
@@ -339,11 +350,14 @@ class ProcessLauncher(object):
             self.handle_signal()
             self._respawn_children()
             if self.sigcaught:
-                signame = {signal.SIGTERM: 'SIGTERM',
-                           signal.SIGINT: 'SIGINT',
-                           signal.SIGHUP: 'SIGHUP'}[self.sigcaught]
+                signals = {signal.SIGTERM: 'SIGTERM',
+                           signal.SIGINT: 'SIGINT'}
+                if sys.platform != 'win32':
+                    signals[signal.SIGHUP] = 'SIGHUP'
+
+                signame = signals[self.sigcaught]
                 LOG.info(_('Caught %s, stopping children'), signame)
-            if self.sigcaught != signal.SIGHUP:
+            if sys.platform == 'win32' or self.sigcaught != signal.SIGHUP:
                 break
 
             for pid in self.children:
