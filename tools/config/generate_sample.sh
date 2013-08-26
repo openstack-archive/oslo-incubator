@@ -69,6 +69,12 @@ BASEDIRESC=`echo $BASEDIR | sed -e 's/\//\\\\\//g'`
 FILES=$(find $BASEDIR/$PACKAGENAME -type f -name "*.py" ! -path "*/tests/*" \
         -exec grep -l "Opt(" {} + | sed -e "s/^$BASEDIRESC\///g" | sort -u)
 
+EXTRA_MODULES_FILE="`dirname $0`/oslo.config.generator.extra-modules.conf"
+if test -r "$EXTRA_MODULES_FILE"
+then
+    export OSLO_CONFIG_GENERATOR_EXTRA_MODULES=$(cat $EXTRA_MODULES_FILE)
+fi
+
 export EVENTLET_NO_GREENDNS=yes
 
 OS_VARS=$(set | sed -n '/^OS_/s/=[^=]*$//gp' | xargs)
