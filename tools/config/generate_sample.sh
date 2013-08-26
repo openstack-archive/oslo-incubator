@@ -59,8 +59,7 @@ OUTPUTDIR=${OUTPUTDIR:-$BASEDIR/etc}
 if [ -d $OUTPUTDIR/$PACKAGENAME ]
 then
     OUTPUTDIR=$OUTPUTDIR/$PACKAGENAME
-fi
-if ! [ -d $OUTPUTDIR ]
+elif ! [ -d $OUTPUTDIR ]
 then
     echo "${0##*/}: cannot access \`$OUTPUTDIR': No such file or directory" >&2
     exit 1
