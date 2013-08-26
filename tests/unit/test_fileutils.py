@@ -145,3 +145,76 @@ class UtilsTestCase(test.BaseTestCase):
                 self.assertEqual(fp.read(), 'hello')
         finally:
             os.unlink(dst_path)
+
+
+class CreateTempfileTestCase(test.BaseTestCase):
+    def test_file_without_path_and_suffix(self):
+        content = 'testing123'
+        res = fileutils.create_tempfile(content)
+        self.assertTrue(os.path.exists(res))
+
+        (basepath, tmpfile) = os.path.split(res)
+        self.assertTrue(basepath.startswith('/tmp'))
+        self.assertTrue(tmpfile.startswith('tmp'))
+
+        with open(res, 'r') as fd:
+            ans = fd.read()
+            self.assertEquals(content, ans)
+
+    def test_file_with_path(self):
+        path = '/tmp/test.conf'
+        content = 'testing123'
+        res = fileutils.create_tempfile(content, path=path)
+        self.assertTrue(os.path.exists(res))
+        self.assertEquals(res, path)
+
+        with open(res, 'r') as fd:
+            ans = fd.read()
+            self.assertEquals(content, ans)
+
+    def test_file_with_suffix(self):
+        suffix = '.conf'
+        content = 'testing123'
+        res = fileutils.create_tempfile(content, suffix=suffix)
+        self.assertTrue(os.path.exists(res))
+
+        (basepath, tmpfile) = os.path.split(res)
+        self.assertTrue(basepath.startswith('/tmp'))
+        self.assertTrue(tmpfile.startswith('tmp'))
+        self.assertTrue(tmpfile.endswith('.conf'))
+
+        with open(res, 'r') as fd:
+            ans = fd.read()
+            self.assertEquals(content, ans)
+
+    def test_file_with_correct_path_and_suffix(self):
+        suffix = '.txt'
+        content = 'testing123'
+        path = '/tmp/test.conf'
+        res = fileutils.create_tempfile(content, path=path, suffix=suffix)
+        self.assertTrue(os.path.exists(res))
+
+        self.assertEquals(res, path)
+        self.assertFalse(res.endswith(suffix))
+
+        with open(res, 'r') as fd:
+            ans = fd.read()
+            self.assertEquals(content, ans)
+
+    def test_file_with_incorrect_path_and_suffix(self):
+        suffix = '.txt'
+        content = 'testing123'
+        # it is not absolute path
+        path = 'test.conf'
+        res = fileutils.create_tempfile(content, path=path, suffix=suffix)
+        self.assertTrue(os.path.exists(res))
+
+        (basepath, tmpfile) = os.path.split(res)
+        self.assertTrue(tmpfile.startswith('tmp'))
+        self.assertTrue(basepath.startswith('/tmp'))
+        self.assertTrue(tmpfile.endswith(suffix))
+        self.assertFalse(path in res)
+
+        with open(res, 'r') as fd:
+            ans = fd.read()
+            self.assertEquals(content, ans)
