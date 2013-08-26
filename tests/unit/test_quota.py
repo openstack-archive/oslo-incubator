@@ -85,6 +85,7 @@ class DbQuotaDriverTestCase(test.BaseTestCase):
         dbapi.quota_usage_get_all_by_project = mock.Mock(
             return_value=dict([('r%d' % i, {'in_use': i, 'reserved': i + 1})
                                for i in range(3)]))
+        self.dbapi = dbapi
         self.driver = quota.DbQuotaDriver(dbapi)
         self.ctxt = FakeContext()
         return super(DbQuotaDriverTestCase, self).setUp()
@@ -123,6 +124,18 @@ class DbQuotaDriverTestCase(test.BaseTestCase):
 
     def test_get_user_quotas(self):
         actual = self.driver.get_user_quotas(
+            self.ctxt, self.sample_resources.copy(), 'p1', 'u1')
+        expected = {'r1': {'in_use': 2, 'limit': 5, 'reserved': 1},
+                    'r2': {'in_use': 3, 'limit': 6, 'reserved': 2}}
+        self.assertEqual(actual, expected)
+
+    def test_get_default_user_quotas(self):
+        self.dbapi.quota_get_all_by_project_and_user = mock.Mock(
+            return_value={'project_id': 'p1', 'user_id': 'u1'})
+        self.dbapi.quota_get_all_by_project = mock.Mock(
+            return_value={'r1': 5, 'r2': 6})
+        driver = quota.DbQuotaDriver(self.dbapi)
+        actual = driver.get_user_quotas(
             self.ctxt, self.sample_resources.copy(), 'p1', 'u1')
         expected = {'r1': {'in_use': 2, 'limit': 5, 'reserved': 1},
                     'r2': {'in_use': 3, 'limit': 6, 'reserved': 2}}
