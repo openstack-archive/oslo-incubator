@@ -18,6 +18,7 @@ import fcntl
 import os
 import shutil
 import tempfile
+import threading
 
 import eventlet
 from eventlet import greenpool
@@ -257,7 +258,8 @@ class LockTestCase(test.BaseTestCase):
             # Note(flaper87): Lock is not external, which means
             # a semaphore will be yielded
             with lockutils.lock("test") as sem:
-                self.assertTrue(isinstance(sem, semaphore.Semaphore))
+                semaphores = (semaphore.Semaphore, threading._Semaphore)
+                self.assertTrue(isinstance(sem, semaphores))
 
                 # NOTE(flaper87): Lock is external so an InterProcessLock
                 # will be yielded.
@@ -282,7 +284,8 @@ class LockTestCase(test.BaseTestCase):
 
         try:
             with lockutils.lock("test") as sem:
-                self.assertTrue(isinstance(sem, semaphore.Semaphore))
+                semaphores = (semaphore.Semaphore, threading._Semaphore)
+                self.assertTrue(isinstance(sem, semaphores))
 
                 with lockutils.lock("test2", external=True,
                                     lock_path=lock_dir):
