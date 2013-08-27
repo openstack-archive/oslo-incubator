@@ -18,9 +18,9 @@ while true; do
             echo ""
             echo "options:"
             echo "-h, --help                show brief help"
-            echo "-b, --base-dir=DIR        Project base directory"
-            echo "-p, --package-name=NAME   Project package name"
-            echo "-o, --output-dir=DIR      File output directory"
+            echo "-b, --base-dir=DIR        project base directory"
+            echo "-p, --package-name=NAME   project package name"
+            echo "-o, --output-dir=DIR      file output directory"
             exit 0
             ;;
         -b|--base-dir)
@@ -44,7 +44,6 @@ while true; do
     esac
 done
 
-# Give BASEDIR a reasonable default
 BASEDIR=${BASEDIR:-`pwd`}
 if ! [ -d $BASEDIR ]
 then
@@ -55,13 +54,15 @@ then
 fi
 
 PACKAGENAME=${PACKAGENAME:-${BASEDIR##*/}}
-if ! [ -d $BASEDIR/$PACKAGENAME ]
+TARGETDIR=$BASEDIR/$PACKAGENAME
+if ! [ -d $TARGETDIR ]
 then
-    echo "${0##*/}: invalid package name" >&2 ; print_hint ; exit 1
+    echo "${0##*/}: invalid project package name" >&2 ; print_hint ; exit 1
 fi
 
 OUTPUTDIR=${OUTPUTDIR:-$BASEDIR/etc}
-# Some projects put their sample config in etc/, some in etc/$PACKAGENAME/
+# NOTE(bnemec): Some projects put their sample config in etc/,
+#               some in etc/$PACKAGENAME/
 if [ -d $OUTPUTDIR/$PACKAGENAME ]
 then
     OUTPUTDIR=$OUTPUTDIR/$PACKAGENAME
@@ -72,7 +73,7 @@ then
 fi
 
 BASEDIRESC=`echo $BASEDIR | sed -e 's/\//\\\\\//g'`
-FILES=$(find $BASEDIR/$PACKAGENAME -type f -name "*.py" ! -path "*/tests/*" \
+FILES=$(find $TARGETDIR -type f -name "*.py" ! -path "*/tests/*" \
         -exec grep -l "Opt(" {} + | sed -e "s/^$BASEDIRESC\///g" | sort -u)
 
 export EVENTLET_NO_GREENDNS=yes
