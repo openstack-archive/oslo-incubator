@@ -35,6 +35,10 @@ FLAGS = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
+class MyException(Exception):
+    pass
+
+
 class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
     """Base test class for all AMQP-based RPC tests."""
     def test_proxycallback_handles_exceptions(self):
@@ -188,3 +192,33 @@ class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
         # assert first arg in args was a dict type
         args = mock_msg.update.call_args[0]
         self.assertIsInstance(args[0], dict)
+
+    def test_callback_wrapper_exception_no_wait(self):
+        def my_callback(message, **kwargs):
+            raise MyException("boom")
+
+        x = rpc_amqp.CallbackWrapper(FLAGS, my_callback, self.conn.pool,
+                                     wait_for_consumers=False)
+        try:
+            x({'foo': 'blah'})
+        except Exception:
+            self.fail("Should not raise")
+
+    def test_callback_wrapper_exception_wait(self):
+        def my_callback(message, **kwargs):
+            raise MyException("boom")
+
+        x = rpc_amqp.CallbackWrapper(FLAGS, my_callback, self.conn.pool,
+                                     wait_for_consumers=True)
+        self.assertRaises(MyException, x, {'foo': 'blah'})
+
+    def test_callback_wrapper_no_exception_wait(self):
+        def my_callback(message, **kwargs):
+            pass
+
+        x = rpc_amqp.CallbackWrapper(FLAGS, my_callback, self.conn.pool,
+                                     wait_for_consumers=True)
+        try:
+            x({'foo': 'blah'})
+        except Exception:
+            self.fail("Should not raise")
