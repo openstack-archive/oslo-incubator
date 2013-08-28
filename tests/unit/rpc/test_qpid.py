@@ -36,6 +36,7 @@ from openstack.common import jsonutils
 from openstack.common.rpc import amqp as rpc_amqp
 from tests import utils
 from openstack.common.rpc import common as rpc_common
+import tests.utils
 
 try:
     import qpid
@@ -47,9 +48,8 @@ except ImportError:
 FLAGS = cfg.CONF
 
 
-class RpcQpidTestCase(utils.BaseTestCase):
-    """
-    Exercise the public API of impl_qpid utilizing mox.
+class RpcQpidTestCase(tests.utils.BaseTestCase):
+    """Exercise the public API of impl_qpid utilizing mox.
 
     This set of tests utilizes mox to replace the Qpid objects and ensures
     that the right operations happen on them when the various public rpc API
@@ -114,7 +114,9 @@ class RpcQpidTestCase(utils.BaseTestCase):
         connection = impl_qpid.create_connection(FLAGS)
         connection.close()
 
-    def _test_create_consumer(self, fanout):
+    def _test_create_consumer(self, fanout, topology_version=1):
+        self.config(qpid_topology_version=topology_version)
+
         self.mock_connection = self.mox.CreateMock(self.orig_connection)
         self.mock_session = self.mox.CreateMock(self.orig_session)
         self.mock_receiver = self.mox.CreateMock(self.orig_receiver)
@@ -124,20 +126,33 @@ class RpcQpidTestCase(utils.BaseTestCase):
         self.mock_connection.session().AndReturn(self.mock_session)
         if fanout:
             # The link name includes a UUID, so match it with a regex.
-            expected_address = mox.Regex(
-                r'^impl_qpid_test_fanout ; '
-                '{"node": {"x-declare": {"auto-delete": true, "durable": '
-                'false, "type": "fanout"}, "type": "topic"}, "create": '
-                '"always", "link": {"x-declare": {"auto-delete": true, '
-                '"exclusive": true, "durable": false}, "durable": true, '
-                '"name": "impl_qpid_test_fanout_.*"}}$')
+            if topology_version == 1:
+                expected_address = mox.Regex(
+                    r'^impl_qpid_test_fanout ; '
+                    '{"node": {"x-declare": {"auto-delete": true, "durable": '
+                    'false, "type": "fanout"}, "type": "topic"}, "create": '
+                    '"always", "link": {"x-declare": {"auto-delete": true, '
+                    '"exclusive": true, "durable": false}, "durable": true, '
+                    '"name": "impl_qpid_test_fanout_.*"}}$')
+            elif topology_version == 2:
+                expected_address = (
+                    'amq.topic/fanout/impl_qpid_test ; {"link": '
+                    '{"x-declare": {"auto-delete": true, '
+                    '"exclusive": true}}}')
         else:
-            expected_address = (
-                'openstack/impl_qpid_test ; {"node": {"x-declare": '
-                '{"auto-delete": true, "durable": true}, "type": "topic"}, '
-                '"create": "always", "link": {"x-declare": {"auto-delete": '
-                'false, "exclusive": false, "durable": false}, "durable": '
-                'true, "name": "impl_qpid_test"}}')
+            if topology_version == 1:
+                expected_address = (
+                    'openstack/impl_qpid_test ; {"node": {"x-declare": '
+                    '{"auto-delete": true, "durable": true}, '
+                    '"type": "topic"}, "create": "always", '
+                    '"link": {"x-declare": {"auto-delete": '
+                    'false, "exclusive": false, "durable": false}, "durable": '
+                    'true, "name": "impl_qpid_test"}}')
+            elif topology_version == 2:
+                expected_address = (
+                    'amq.topic/topic/openstack/impl_qpid_test ; {"link": '
+                    '{"x-declare": {"auto-delete": false, '
+                    '"durable": false}}}')
         self.mock_session.receiver(expected_address).AndReturn(
             self.mock_receiver)
         self.mock_receiver.capacity = 1
@@ -154,10 +169,18 @@ class RpcQpidTestCase(utils.BaseTestCase):
     def test_create_consumer(self):
         self._test_create_consumer(fanout=False)
 
+    def test_create_consumer_top2(self):
+        self._test_create_consumer(fanout=False, topology_version=2)
+
     def test_create_consumer_fanout(self):
         self._test_create_consumer(fanout=True)
 
-    def test_create_worker(self):
+    def test_create_consumer_fanout_top2(self):
+        self._test_create_consumer(fanout=True, topology_version=2)
+
+    def _test_create_worker(self, topology_version=1):
+        self.config(qpid_topology_version=topology_version)
+
         self.mock_connection = self.mox.CreateMock(self.orig_connection)
         self.mock_session = self.mox.CreateMock(self.orig_session)
         self.mock_receiver = self.mox.CreateMock(self.orig_receiver)
@@ -165,12 +188,18 @@ class RpcQpidTestCase(utils.BaseTestCase):
         self.mock_connection.opened().AndReturn(False)
         self.mock_connection.open()
         self.mock_connection.session().AndReturn(self.mock_session)
-        expected_address = (
-            'openstack/impl_qpid_test ; {"node": {"x-declare": '
-            '{"auto-delete": true, "durable": true}, "type": "topic"}, '
-            '"create": "always", "link": {"x-declare": {"auto-delete": '
-            'false, "exclusive": false, "durable": false}, "durable": '
-            'true, "name": "impl.qpid.test.workers"}}')
+        if topology_version == 1:
+            expected_address = (
+                'openstack/impl_qpid_test ; {"node": {"x-declare": '
+                '{"auto-delete": true, "durable": true}, "type": "topic"}, '
+                '"create": "always", "link": {"x-declare": {"auto-delete": '
+                'false, "exclusive": false, "durable": false}, "durable": '
+                'true, "name": "impl.qpid.test.workers"}}')
+        elif topology_version == 2:
+            expected_address = (
+                'amq.topic/topic/openstack/impl_qpid_test ; '
+                '{"link": {"x-declare": '
+                '{"auto-delete": false, "durable": false}}}')
         self.mock_session.receiver(expected_address).AndReturn(
             self.mock_receiver)
         self.mock_receiver.capacity = 1
@@ -185,7 +214,15 @@ class RpcQpidTestCase(utils.BaseTestCase):
                                  )
         connection.close()
 
-    def test_join_consumer_pool(self):
+    def test_create_worker(self):
+        self._test_create_worker()
+
+    def test_create_worker_top2(self):
+        self._test_create_worker(topology_version=2)
+
+    def _test_join_consumer_pool(self, topology_version=1):
+        self.config(qpid_topology_version=topology_version)
+
         self.mock_connection = self.mox.CreateMock(self.orig_connection)
         self.mock_session = self.mox.CreateMock(self.orig_session)
         self.mock_receiver = self.mox.CreateMock(self.orig_receiver)
@@ -193,12 +230,18 @@ class RpcQpidTestCase(utils.BaseTestCase):
         self.mock_connection.opened().AndReturn(False)
         self.mock_connection.open()
         self.mock_connection.session().AndReturn(self.mock_session)
-        expected_address = (
-            'exchange-name/impl_qpid_test ; {"node": {"x-declare": '
-            '{"auto-delete": true, "durable": true}, "type": "topic"}, '
-            '"create": "always", "link": {"x-declare": {"auto-delete": '
-            'false, "exclusive": false, "durable": false}, "durable": '
-            'true, "name": "impl.qpid.test.consumer.pool"}}')
+        if topology_version == 1:
+            expected_address = (
+                'exchange-name/impl_qpid_test ; {"node": {"x-declare": '
+                '{"auto-delete": true, "durable": true}, "type": "topic"}, '
+                '"create": "always", "link": {"x-declare": {"auto-delete": '
+                'false, "exclusive": false, "durable": false}, "durable": '
+                'true, "name": "impl.qpid.test.consumer.pool"}}')
+        elif topology_version == 2:
+            expected_address = (
+                'amq.topic/topic/exchange-name/impl_qpid_test ; '
+                '{"link": {"x-declare": '
+                '{"auto-delete": false, "durable": false}}}')
         self.mock_session.receiver(expected_address).AndReturn(
             self.mock_receiver)
         self.mock_receiver.capacity = 1
@@ -215,7 +258,9 @@ class RpcQpidTestCase(utils.BaseTestCase):
         )
         connection.close()
 
-    def test_topic_consumer(self):
+    def _test_topic_consumer(self, topology_version=1):
+        self.config(qpid_topology_version=topology_version)
+
         self.mock_connection = self.mox.CreateMock(self.orig_connection)
         self.mock_session = self.mox.CreateMock(self.orig_session)
         self.mock_receiver = self.mox.CreateMock(self.orig_receiver)
@@ -223,12 +268,18 @@ class RpcQpidTestCase(utils.BaseTestCase):
         self.mock_connection.opened().AndReturn(False)
         self.mock_connection.open()
         self.mock_connection.session().AndReturn(self.mock_session)
-        expected_address = (
-            'foobar/impl_qpid_test ; {"node": {"x-declare": '
-            '{"auto-delete": true, "durable": true}, "type": "topic"}, '
-            '"create": "always", "link": {"x-declare": {"auto-delete": '
-            'false, "exclusive": false, "durable": false}, "durable": '
-            'true, "name": "impl.qpid.test.workers"}}')
+        if topology_version == 1:
+            expected_address = (
+                'foobar/impl_qpid_test ; {"node": {"x-declare": '
+                '{"auto-delete": true, "durable": true}, "type": "topic"}, '
+                '"create": "always", "link": {"x-declare": {"auto-delete": '
+                'false, "exclusive": false, "durable": false}, "durable": '
+                'true, "name": "impl.qpid.test.workers"}}')
+        elif topology_version == 2:
+            expected_address = (
+                'amq.topic/topic/foobar/impl_qpid_test ; '
+                '{"link": {"x-declare":'
+                ' {"auto-delete": false, "durable": false}}}')
         self.mock_session.receiver(expected_address).AndReturn(
             self.mock_receiver)
         self.mock_receiver.capacity = 1
@@ -243,7 +294,15 @@ class RpcQpidTestCase(utils.BaseTestCase):
                                           exchange_name='foobar')
         connection.close()
 
-    def _test_cast(self, fanout, server_params=None):
+    def test_topic_consumer(self):
+        self._test_topic_consumer()
+
+    def test_topic_consumer_top2(self):
+        self._test_topic_consumer(topology_version=2)
+
+    def _test_cast(self, fanout, server_params=None, topology_version=1):
+        self.config(qpid_topology_version=topology_version)
+
         self.mock_connection = self.mox.CreateMock(self.orig_connection)
         self.mock_session = self.mox.CreateMock(self.orig_session)
         self.mock_sender = self.mox.CreateMock(self.orig_sender)
@@ -253,16 +312,22 @@ class RpcQpidTestCase(utils.BaseTestCase):
 
         self.mock_connection.session().AndReturn(self.mock_session)
         if fanout:
-            expected_address = (
-                'impl_qpid_test_fanout ; '
-                '{"node": {"x-declare": {"auto-delete": true, '
-                '"durable": false, "type": "fanout"}, '
-                '"type": "topic"}, "create": "always"}')
+            if topology_version == 1:
+                expected_address = (
+                    'impl_qpid_test_fanout ; '
+                    '{"node": {"x-declare": {"auto-delete": true, '
+                    '"durable": false, "type": "fanout"}, '
+                    '"type": "topic"}, "create": "always"}')
+            elif topology_version == 2:
+                expected_address = 'amq.topic/fanout/impl_qpid_test'
         else:
-            expected_address = (
-                'openstack/impl_qpid_test ; {"node": {"x-declare": '
-                '{"auto-delete": true, "durable": false}, "type": "topic"}, '
-                '"create": "always"}')
+            if topology_version == 1:
+                expected_address = (
+                    'openstack/impl_qpid_test ; {"node": {"x-declare": '
+                    '{"auto-delete": true, "durable": false}, '
+                    '"type": "topic"}, "create": "always"}')
+            elif topology_version == 2:
+                expected_address = 'amq.topic/topic/openstack/impl_qpid_test'
         self.mock_session.sender(expected_address).AndReturn(self.mock_sender)
         self.mock_sender.send(mox.IgnoreArg())
         if not server_params:
@@ -302,8 +367,14 @@ class RpcQpidTestCase(utils.BaseTestCase):
     def test_cast(self):
         self._test_cast(fanout=False)
 
+    def test_cast_top2(self):
+        self._test_cast(fanout=False, topology_version=2)
+
     def test_fanout_cast(self):
         self._test_cast(fanout=True)
+
+    def test_fanout_cast_top2(self):
+        self._test_cast(fanout=True, topology_version=2)
 
     def _setup_to_server_tests(self, server_params):
         class MyConnection(impl_qpid.Connection):
@@ -534,6 +605,7 @@ class RpcQpidTestCase(utils.BaseTestCase):
         class stub(object):
             amqp_durable_queues = False
             amqp_auto_delete = False
+            qpid_topology_version = 1
 
         consumer = impl_qpid.DirectConsumer(stub,
                                             mock_session,
