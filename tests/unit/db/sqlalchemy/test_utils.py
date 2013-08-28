@@ -27,6 +27,7 @@ from sqlalchemy.exc import SAWarning
 from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType, NullType
 
+from openstack.common.db.sqlalchemy import migration
 from openstack.common.db.sqlalchemy import test_migrations
 from openstack.common.db.sqlalchemy import utils
 from tests import utils as testutils
@@ -166,6 +167,10 @@ class TestPaginateQuery(testutils.BaseTestCase):
 
 class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
     """Class for testing utils that are used in db migrations."""
+
+    def setUp(self):
+        super(TestMigrationUtils, self).setUp()
+        migration.patch_migrate()
 
     def _populate_db_for_drop_duplicate_entries(self, engine, meta,
                                                 table_name):
