@@ -20,7 +20,6 @@ import os
 import shutil
 import tempfile
 
-import mock
 import mox
 from six import moves
 
@@ -100,17 +99,22 @@ class DeleteIfExists(test.BaseTestCase):
         fileutils.delete_if_exists(tmpfile)
         self.assertFalse(os.path.exists(tmpfile))
 
-    @mock.patch('os.unlink')
-    def test_file_error(self, osunlink):
+    def test_dir_present(self):
+        tmpdir = tempfile.mktemp()
+        os.mkdir(tmpdir)
+
+        fileutils.delete_if_exists(tmpdir, remove=os.rmdir)
+        self.assertFalse(os.path.exists(tmpdir))
+
+    def test_file_error(self):
+        def errm(path):
+            raise OSError(errno.EINVAL, '')
+
         tmpfile = tempfile.mktemp()
 
         open(tmpfile, 'w')
-
-        error = OSError()
-        error.errno = errno.EINVAL
-        osunlink.side_effect = error
-
-        self.assertRaises(OSError, fileutils.delete_if_exists, tmpfile)
+        self.assertRaises(OSError, fileutils.delete_if_exists, tmpfile, errm)
+        os.unlink(tmpfile)
 
 
 class RemovePathOnError(test.BaseTestCase):
@@ -132,6 +136,29 @@ class RemovePathOnError(test.BaseTestCase):
             pass
         self.assertTrue(os.path.exists(tmpfile))
         os.unlink(tmpfile)
+
+    def test_remove(self):
+        tmpfile = tempfile.mktemp()
+        open(tmpfile, 'w')
+
+        try:
+            with fileutils.remove_path_on_error(tmpfile, remove=lambda x: x):
+                raise Exception
+        except Exception:
+            self.assertTrue(os.path.exists(tmpfile))
+        os.unlink(tmpfile)
+
+    def test_remove_dir(self):
+        tmpdir = tempfile.mktemp()
+        os.mkdir(tmpdir)
+
+        try:
+            with fileutils.remove_path_on_error(
+                    tmpdir,
+                    lambda path: fileutils.delete_if_exists(path, os.rmdir)):
+                raise Exception
+        except Exception:
+            self.assertFalse(os.path.exists(tmpdir))
 
 
 class UtilsTestCase(test.BaseTestCase):
