@@ -123,13 +123,20 @@ class TimeUtilsTest(test.BaseTestCase):
         self._test_is_newer_than(timeutils.strtime)
 
     def test_utcnow_ts(self):
-        skynet_self_aware_timestamp = 872835240
-        dt = datetime.datetime.utcfromtimestamp(skynet_self_aware_timestamp)
-        self.assertEqual(self.skynet_self_aware_time, dt)
-        with mock.patch('datetime.datetime') as datetime_mock:
-            datetime_mock.utcnow.return_value = self.skynet_self_aware_time
+        skynet_self_aware_ts = 872835240
+        skynet_dt = datetime.datetime.utcfromtimestamp(skynet_self_aware_ts)
+        self.assertEqual(self.skynet_self_aware_time, skynet_dt)
+
+        # NOTE(kgriffs): timeutils.utcnow_ts() uses time.time()
+        # IFF time override is not set.
+        with mock.patch('time.time') as time_mock:
+            time_mock.return_value = skynet_self_aware_ts
             ts = timeutils.utcnow_ts()
-            self.assertEqual(ts, skynet_self_aware_timestamp)
+            self.assertEqual(ts, skynet_self_aware_ts)
+
+        timeutils.set_time_override(skynet_dt)
+        ts = timeutils.utcnow_ts()
+        self.assertEqual(ts, skynet_self_aware_ts)
 
     def test_utcnow(self):
         timeutils.set_time_override(mock.sentinel.utcnow)
