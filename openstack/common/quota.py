@@ -483,7 +483,6 @@ class DbQuotaDriver(object):
         user_quotas = self._get_quotas(context, resources, values.keys(),
                                        has_sync=False, project_id=project_id,
                                        user_id=user_id)
-
         # Check the quotas and construct a list of the resources that
         # would be put over limit by the desired values
         overs = [key for key, val in values.items()
@@ -558,7 +557,6 @@ class DbQuotaDriver(object):
         user_quotas = self._get_quotas(context, resources, deltas.keys(),
                                        has_sync=True, project_id=project_id,
                                        user_id=user_id)
-
         # NOTE(Vek): Most of the work here has to be done in the DB
         #            API, because we have to do it in a transaction,
         #            which means access to the session.  Since the
@@ -855,7 +853,7 @@ class QuotaEngine(object):
         return self.__driver
 
     def __contains__(self, resource):
-        return resource in self._resources
+        return resource in self.resources
 
     def register_resource(self, resource):
         """Register a resource."""
@@ -929,7 +927,7 @@ class QuotaEngine(object):
                        will also be returned.
         """
 
-        return self._driver.get_user_quotas(context, self._resources,
+        return self._driver.get_user_quotas(context, self.resources,
                                             project_id, user_id,
                                             quota_class=quota_class,
                                             defaults=defaults,
@@ -954,7 +952,7 @@ class QuotaEngine(object):
                         will be returned.
         """
 
-        return self._driver.get_project_quotas(context, self._resources,
+        return self._driver.get_project_quotas(context, self.resources,
                                                project_id,
                                                quota_class=quota_class,
                                                defaults=defaults,
@@ -973,7 +971,7 @@ class QuotaEngine(object):
         :param user_id: The ID of the user to return quotas for.
         """
 
-        return self._driver.get_settable_quotas(context, self._resources,
+        return self._driver.get_settable_quotas(context, self.resources,
                                                 project_id,
                                                 user_id=user_id)
 
@@ -1024,7 +1022,7 @@ class QuotaEngine(object):
                         common user.
         """
 
-        return self._driver.limit_check(context, self._resources, values,
+        return self._driver.limit_check(context, self.resources, values,
                                         project_id=project_id, user_id=user_id)
 
     def reserve(self, context, expire=None, project_id=None, user_id=None,
@@ -1063,7 +1061,7 @@ class QuotaEngine(object):
                            common user's tenant.
         """
 
-        reservations = self._driver.reserve(context, self._resources, deltas,
+        reservations = self._driver.reserve(context, self.resources, deltas,
                                             expire=expire,
                                             project_id=project_id,
                                             user_id=user_id)
