@@ -30,10 +30,11 @@ from sqlalchemy.types import UserDefinedType, NullType
 from openstack.common.db.sqlalchemy import migration
 from openstack.common.db.sqlalchemy import test_migrations
 from openstack.common.db.sqlalchemy import utils
-from tests import utils as testutils
+from openstack.common.fixture import moxstubout
+from openstack.common import test
 
 
-class TestSanitizeDbUrl(testutils.BaseTestCase):
+class TestSanitizeDbUrl(test.BaseTestCase):
 
     def test_url_with_cred(self):
         db_url = 'myproto://johndoe:secret@localhost/myschema'
@@ -74,9 +75,11 @@ class FakeModel(object):
         return '<FakeModel: %s>' % self.values
 
 
-class TestPaginateQuery(testutils.BaseTestCase):
+class TestPaginateQuery(test.BaseTestCase):
     def setUp(self):
         super(TestPaginateQuery, self).setUp()
+        moxfixture = self.useFixture(moxstubout.MoxStubout())
+        self.mox = moxfixture.mox
         self.query = self.mox.CreateMockAnything()
         self.mox.StubOutWithMock(sqlalchemy, 'asc')
         self.mox.StubOutWithMock(sqlalchemy, 'desc')
