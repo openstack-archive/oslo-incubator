@@ -19,7 +19,10 @@
 from eventlet import tpool
 
 from openstack.common.db import api
-from tests import utils as test_utils
+from openstack.common import fileutils
+from openstack.common.fixture import config
+from openstack.common.fixture import moxstubout
+from openstack.common import test
 
 
 def get_backend():
@@ -31,27 +34,35 @@ class DBAPI(object):
         return args, kwargs
 
 
-class DBAPITestCase(test_utils.BaseTestCase):
+class DBAPITestCase(test.BaseTestCase):
+
+    def setUp(self):
+        super(DBAPITestCase, self).setUp()
+        configfixture = self.useFixture(config.Config())
+        self.conf = configfixture.conf
+        self.config = configfixture.config
+
+        moxfixture = self.useFixture(moxstubout.MoxStubout())
+        self.write_to_tempfile = fileutils.write_to_tempfile
+        self.stubs = moxfixture.stubs
 
     def test_deprecated_dbapi_parameters(self):
-        paths = self.create_tempfiles([('test',
-                                        '[DEFAULT]\n'
-                                        'db_backend=test_123\n'
-                                        'dbapi_use_tpool=True\n'
-                                        )])
+        path = self.write_to_tempfile('[DEFAULT]\n'
+                                      'db_backend=test_123\n'
+                                      'dbapi_use_tpool=True\n'
+                                      )
 
-        self.conf(['--config-file', paths[0]])
+        self.conf(['--config-file', path])
         self.assertEqual(self.conf.database.backend, 'test_123')
         self.assertEqual(self.conf.database.use_tpool, True)
 
     def test_dbapi_parameters(self):
-        paths = self.create_tempfiles([('test',
-                                        '[database]\n'
-                                        'backend=test_123\n'
-                                        'use_tpool=True\n'
-                                        )])
+        path = self.write_to_tempfile('[database]\n'
+                                      'backend=test_123\n'
+                                      'use_tpool=True\n'
+                                      )
 
-        self.conf(['--config-file', paths[0]])
+        self.conf(['--config-file', path])
         self.assertEqual(self.conf.database.backend, 'test_123')
         self.assertEqual(self.conf.database.use_tpool, True)
 
