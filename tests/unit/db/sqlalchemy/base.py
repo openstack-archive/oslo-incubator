@@ -15,30 +15,28 @@
 
 
 import fixtures
-from oslo.config import cfg
 
 from openstack.common.db.sqlalchemy import session
-from tests import utils as test_utils
+from openstack.common.fixture import config
+from openstack.common import test
 
 
 class SqliteInMemoryFixture(fixtures.Fixture):
     """SQLite in-memory DB recreated for each test case."""
 
-    def __init__(self):
-        self.conf = cfg.CONF
+    def setUp(self):
+        super(SqliteInMemoryFixture, self).setUp()
+        configfixture = self.useFixture(config.Config())
+        self.conf = configfixture.conf
         self.conf.import_opt('connection',
                              'openstack.common.db.sqlalchemy.session',
                              group='database')
 
-    def setUp(self):
-        super(SqliteInMemoryFixture, self).setUp()
-
         self.conf.set_default('connection', "sqlite://", group='database')
-        self.addCleanup(self.conf.reset)
         self.addCleanup(session.cleanup)
 
 
-class DbTestCase(test_utils.BaseTestCase):
+class DbTestCase(test.BaseTestCase):
     """Base class for testing of DB code (uses in-memory SQLite DB fixture)."""
 
     def setUp(self):
