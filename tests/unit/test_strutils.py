@@ -15,11 +15,17 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import math
+
 import mock
 import six
+import testscenarios
 
 from openstack.common import strutils
 from openstack.common import test
+from openstack.common import units
+
+load_tests = testscenarios.load_tests_apply_scenarios
 
 
 class StrUtilsTest(test.BaseTestCase):
@@ -170,38 +176,6 @@ class StrUtilsTest(test.BaseTestCase):
         self.assertEqual('ni\xc3\xb1o', safe_encode('ni\xc3\xb1o',
                                                     incoming='ascii'))
 
-    def test_string_conversions(self):
-        working_examples = {
-            '1024KB': 1048576,
-            '1024TB': 1125899906842624,
-            '1024K': 1048576,
-            '1024T': 1125899906842624,
-            '1TB': 1099511627776,
-            '1T': 1099511627776,
-            '1KB': 1024,
-            '1K': 1024,
-            '1B': 1,
-            '1': 1,
-            '1MB': 1048576,
-            '7MB': 7340032,
-            '0MB': 0,
-            '0KB': 0,
-            '0TB': 0,
-            '': 0,
-        }
-        for (in_value, expected_value) in working_examples.items():
-            b_value = strutils.to_bytes(in_value)
-            self.assertEqual(expected_value, b_value)
-            if in_value:
-                in_value = "-" + in_value
-                b_value = strutils.to_bytes(in_value)
-                self.assertEqual(expected_value * -1, b_value)
-        breaking_examples = [
-            'junk1KB', '1023BBBB',
-        ]
-        for v in breaking_examples:
-            self.assertRaises(TypeError, strutils.to_bytes, v)
-
     def test_slugify(self):
         to_slug = strutils.to_slug
         self.assertRaises(TypeError, to_slug, True)
@@ -216,3 +190,98 @@ class StrUtilsTest(test.BaseTestCase):
         self.assertEqual(six.u("perche"), to_slug("perch\xc3\xa9"))
         self.assertEqual(six.u("strange"),
                          to_slug("\x80strange", errors="ignore"))
+
+
+class StringToBytesTest(test.BaseTestCase):
+
+    _unit_system = [
+        ('si', dict(unit_system='SI')),
+        ('iec', dict(unit_system='IEC')),
+        ('garbage', dict(unit_system='asdf')),
+    ]
+
+    _sign = [
+        ('none', dict(sign='')),
+        ('plus', dict(sign='+')),
+        ('minus', dict(sign='-')),
+    ]
+
+    _magnitude = [
+        ('integer', dict(magnitude='79')),
+        ('decimal', dict(magnitude='7.9')),
+        ('garbage', dict(magnitude='asdf')),
+    ]
+
+    _unit_prefix = [
+        ('none', dict(unit_prefix='')),
+        ('k', dict(unit_prefix='k')),
+        ('K', dict(unit_prefix='K')),
+        ('M', dict(unit_prefix='M')),
+        ('G', dict(unit_prefix='G')),
+        ('T', dict(unit_prefix='T')),
+        ('Ki', dict(unit_prefix='Ki')),
+        ('Mi', dict(unit_prefix='Mi')),
+        ('Gi', dict(unit_prefix='Gi')),
+        ('Ti', dict(unit_prefix='Ti')),
+        ('garbage', dict(unit_prefix='asdf')),
+    ]
+
+    _unit_postfix = [
+        ('b', dict(unit_postfix='b')),
+        ('bit', dict(unit_postfix='bit')),
+        ('B', dict(unit_postfix='B')),
+        ('garbage', dict(unit_postfix='asdf')),
+    ]
+
+    _return_int = [
+        ('return_float', dict(return_int=False)),
+        ('return_int', dict(return_int=True)),
+    ]
+
+    @classmethod
+    def generate_scenarios(cls):
+        cls.scenarios = testscenarios.multiply_scenarios(cls._unit_system,
+                                                         cls._sign,
+                                                         cls._magnitude,
+                                                         cls._unit_prefix,
+                                                         cls._unit_postfix,
+                                                         cls._return_int)
+
+    def test_string_to_bytes(self):
+        
+        def _get_constant(unit_prefix, unit_system):
+            if not unit_prefix:
+                return 1
+            elif unit_system == 'SI':
+                res = getattr(units, unit_prefix)
+            elif unit_system == 'IEC':
+                if unit_prefix.endswith('i'):
+                    res = getattr(units, unit_prefix)
+                else:
+                    res = getattr(units, '%si' % unit_prefix)
+            return res
+
+        text = ''.join([self.sign, self.magnitude, self.unit_prefix,
+                        self.unit_postfix])
+        garbage_err = 'asdf' in [self.unit_system, self.magnitude,
+                                   self.unit_prefix, self.unit_postfix]
+        si_err = self.unit_system == 'SI' and (self.unit_prefix == 'K' or
+                                               self.unit_prefix.endswith('i'))
+        iec_err = self.unit_system == 'IEC' and self.unit_prefix == 'k'
+        if garbage_err or si_err or iec_err:
+            self.assertRaises(TypeError, strutils.string_to_bytes,
+                              text, unit_system=self.unit_system,
+                              return_int=self.return_int)
+            return
+        actual = strutils.string_to_bytes(text, unit_system=self.unit_system,
+                                          return_int=self.return_int)
+        expected = (float('%s%s' % (self.sign, self.magnitude)) *
+                    _get_constant(self.unit_prefix, self.unit_system))
+        if self.unit_postfix in ['b', 'bit']:
+            expected /= 8
+        if self.return_int:
+            self.assertEqual(actual, int(math.ceil(expected)))
+        else:
+            self.assertAlmostEqual(actual, expected)
+
+StringToBytesTest.generate_scenarios()
