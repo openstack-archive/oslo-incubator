@@ -39,6 +39,24 @@ BYTE_MULTIPLIERS = {
 }
 BYTE_REGEX = re.compile(r'(^-?\d+)(\D*)')
 
+UNIT_PREFIX_EXPONENT = {
+    'k': 1,
+    'K': 1,
+    'Ki': 1,
+    'M': 2,
+    'Mi': 2,
+    'G': 3,
+    'Gi': 3,
+    'T': 4,
+    'Ti': 4,
+}
+UNIT_SYSTEM_BASE = {
+    'IEC': 1024,
+    'SI': 1000,
+}
+IEC_BYTE_REGEX = re.compile(r'(^-?\d+)(K|Ki|M|Mi|G|Gi|T|Ti)?(b|bit|B)$')
+SI_BYTE_REGEX = re.compile(r'(^-?\d+)([kMGT])?(b|bit|B)$')
+
 TRUE_STRINGS = ('1', 't', 'true', 'on', 'y', 'yes')
 FALSE_STRINGS = ('0', 'f', 'false', 'off', 'n', 'no')
 
@@ -163,7 +181,34 @@ def safe_encode(text, incoming=None,
     return text
 
 
-def to_bytes(text, default=0):
+def string_to_bytes(text, unit_system='IEC'):
+    """Converts a string into an float representation of bytes.
+
+    :param text: String input for bytes size conversion.
+    :param unit_system: Unit system for byte size conversion.
+
+    """
+    try:
+        reg_ex = globals()['%s_BYTE_REGEX' % unit_system]
+    except KeyError:
+        msg = _('Invalid unit system: "%s"') % unit_system
+        raise TypeError(msg)
+    match = reg_ex.match(text)
+    if match:
+        magnitude = float(match.group(1))
+        unit_prefix = match.group(2)
+        if match.group(3) in ['b', 'bit']:
+            magnitude /= 8
+    else:
+        msg = _('Invalid string format: %s') % text
+        raise TypeError(msg)
+    if not unit_prefix:
+        return magnitude
+    return magnitude * pow(UNIT_SYSTEM_BASE[unit_system],
+                           UNIT_PREFIX_EXPONENT[unit_prefix])
+
+
+def to_bytes(text, default=0, unit_system=None):
     """Converts a string into an integer of bytes.
 
     Looks at the last characters of the text to determine
@@ -174,6 +219,8 @@ def to_bytes(text, default=0):
     :param default: Default return value when text is blank.
 
     """
+    if unit_system:
+        return string_to_bytes(text, unit_system=unit_system)
     match = BYTE_REGEX.search(text)
     if match:
         magnitude = int(match.group(1))
