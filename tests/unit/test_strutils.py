@@ -213,3 +213,120 @@ class StrUtilsTest(test.BaseTestCase):
         self.assertEqual(six.u("perche"), to_slug("perch\xc3\xa9"))
         self.assertEqual(six.u("strange"),
                          to_slug("\x80strange", errors="ignore"))
+
+
+class StringToBytesTest(test.BaseTestCase):
+
+    def test_b(self):
+        iec_val = strutils.string_to_bytes('79b')
+        iec_bit_val = strutils.string_to_bytes('79bit')
+        si_val = strutils.string_to_bytes('79b', 'SI')
+        expect = 9.875
+        self.assertTrue(expect == iec_val == iec_bit_val == si_val)
+
+    def test_B(self):
+        iec_val = strutils.string_to_bytes('79B')
+        iec_no_unit_val = strutils.string_to_bytes('79')
+        si_val = strutils.string_to_bytes('79B', 'SI')
+        si_no_unit_val = strutils.string_to_bytes('79', 'SI')
+        expect = 79.0
+        self.assertTrue(expect == iec_val == iec_no_unit_val ==
+                        si_val == si_no_unit_val)
+
+    def test_iec_kb(self):
+        self.assertRaises(TypeError, strutils.string_to_bytes, '79kb')
+        self.assertRaises(TypeError, strutils.string_to_bytes, '79kbit')
+        self.assertRaises(TypeError, strutils.string_to_bytes, '79kib')
+        self.assertRaises(TypeError, strutils.string_to_bytes, '79kibit')
+
+    def test_iec_kB(self):
+        self.assertRaises(TypeError, strutils.string_to_bytes, '79kB')
+        self.assertRaises(TypeError, strutils.string_to_bytes, '79kiB')
+
+    def test_iec_Kb(self):
+        iec_kb_val = strutils.string_to_bytes('79Kb')
+        iec_kib_val = strutils.string_to_bytes('79Kib')
+        iec_kibit_val = strutils.string_to_bytes('79Kibit')
+        expect = 79.0 / 8 * 1024
+        self.assertTrue(expect == iec_kb_val == iec_kib_val == iec_kibit_val)
+
+    def test_iec_KB(self):
+        iec_kb_val = strutils.string_to_bytes('79KB')
+        iec_kib_val = strutils.string_to_bytes('79KiB')
+        expect = 79.0 * 1024
+        self.assertTrue(expect == iec_kb_val == iec_kib_val)
+
+    def test_iec_Mb(self):
+        iec_mb_val = strutils.string_to_bytes('79Mb')
+        iec_mib_val = strutils.string_to_bytes('79Mib')
+        iec_mibit_val = strutils.string_to_bytes('79Mibit')
+        expect = 79.0 / 8 * pow(1024, 2)
+        self.assertTrue(expect == iec_mb_val == iec_mib_val == iec_mibit_val)
+
+    def test_iec_MB(self):
+        iec_mb_val = strutils.string_to_bytes('79MB')
+        iec_mib_val = strutils.string_to_bytes('79MiB')
+        expect = 79.0 * pow(1024, 2)
+        self.assertTrue(expect == iec_mb_val == iec_mib_val)
+
+    def test_iec_Gb(self):
+        iec_gb_val = strutils.string_to_bytes('79Gb')
+        iec_gib_val = strutils.string_to_bytes('79Gib')
+        iec_gibit_val = strutils.string_to_bytes('79Gibit')
+        expect = 79.0 / 8 * pow(1024, 3)
+        self.assertTrue(expect == iec_gb_val == iec_gib_val == iec_gibit_val)
+
+    def test_iec_GB(self):
+        iec_gb_val = strutils.string_to_bytes('79GB')
+        iec_gib_val = strutils.string_to_bytes('79GiB')
+        expect = 79.0 * pow(1024, 3)
+        self.assertTrue(expect == iec_gb_val == iec_gib_val)
+
+    def test_iec_Tb(self):
+        iec_tb_val = strutils.string_to_bytes('79Tb')
+        iec_tib_val = strutils.string_to_bytes('79Tib')
+        iec_tibit_val = strutils.string_to_bytes('79Tibit')
+        expect = 79.0 / 8 * pow(1024, 4)
+        self.assertTrue(expect == iec_tb_val == iec_tib_val == iec_tibit_val)
+
+    def test_iec_TB(self):
+        iec_tb_val = strutils.string_to_bytes('79TB')
+        iec_tib_val = strutils.string_to_bytes('79TiB')
+        expect = 79.0 * pow(1024, 4)
+        self.assertTrue(expect == iec_tb_val == iec_tib_val)
+
+    def test_si_kb(self):
+        iec_kb_val = strutils.string_to_bytes('79kb', unit_system='SI')
+        expect = 79.0 / 8 * 1000
+        self.assertEqual(expect, iec_kb_val)
+
+    def test_si_kB(self):
+        iec_kb_val = strutils.string_to_bytes('79kB', unit_system='SI')
+        expect = 79.0 * 1000
+        self.assertEqual(expect, iec_kb_val)
+
+    def test_si_Kb(self):
+        self.assertRaises(TypeError, strutils.string_to_bytes,
+                          '79Kb', unit_system='SI')
+
+    def test_si_KB(self):
+        self.assertRaises(TypeError, strutils.string_to_bytes,
+                          '79KB', unit_system='SI')
+
+    def test_si_Mb(self):
+        pass
+
+    def test_si_MB(self):
+        pass
+
+    def test_si_Gb(self):
+        pass
+
+    def test_si_GB(self):
+        pass
+
+    def test_si_Tb(self):
+        pass
+
+    def test_si_TB(self):
+        pass
