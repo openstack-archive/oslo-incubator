@@ -79,7 +79,8 @@ class QemuImgInfo(object):
             elif not unit_of_mesure:
                 return int(magnitude)
         try:
-            details = strutils.to_bytes('%s%s' % (magnitude, unit_of_mesure))
+            details = strutils.string_to_bytes('%s%sB' % (magnitude,
+                                                          unit_of_mesure))
         except TypeError:
             pass
         return details
