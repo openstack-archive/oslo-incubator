@@ -21,6 +21,7 @@
 Helper methods to deal with images.
 """
 
+import math
 import re
 
 from openstack.common.gettextutils import _  # noqa
@@ -79,7 +80,8 @@ class QemuImgInfo(object):
             return int(real_size.group(4))
         elif not unit_of_measure:
             return int(magnitude)
-        return strutils.to_bytes('%s%s' % (magnitude, unit_of_measure))
+        res = strutils.string_to_bytes('%s%sB' % (magnitude, unit_of_measure))
+        return int(math.ceil(res))
 
     def _extract_details(self, root_cmd, root_details, lines_after):
         real_details = root_details
