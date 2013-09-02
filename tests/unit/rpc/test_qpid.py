@@ -501,6 +501,45 @@ class RpcQpidTestCase(utils.BaseTestCase):
     def test_multicall(self):
         self._test_call(multi=True)
 
+    def _test_publisher(self, message=True):
+        """Test that messages containing long strings are correctly serialized
+           in a way that Qpid can handle.
+
+        :param message: The publisher may be passed either a Qpid Message
+        object or a bare dict.  This parameter controls which of those the test
+        will send.
+        """
+        self.sent_msg = None
+
+        def send_stub(msg):
+            self.sent_msg = msg
+
+        # Qpid cannot serialize a dict containing a string > 65535 chars.
+        raw_msg = {'test': 'a' * 65536}
+        if message:
+            base_msg = qpid.messaging.Message(raw_msg)
+        else:
+            base_msg = raw_msg
+        expected_msg = qpid.messaging.Message(jsonutils.dumps(raw_msg))
+        expected_msg.content_type = impl_qpid.JSON_CONTENT_TYPE
+        mock_session = self.mox.CreateMock(self.orig_session)
+        mock_sender = self.mox.CreateMock(self.orig_sender)
+        mock_session.sender(mox.IgnoreArg()).AndReturn(mock_sender)
+        self.stubs.Set(mock_sender, 'send', send_stub)
+        self.mox.ReplayAll()
+
+        publisher = impl_qpid.Publisher(mock_session, 'test_node')
+        publisher.send(base_msg)
+
+        self.assertEqual(self.sent_msg.content, expected_msg.content)
+        self.assertEqual(self.sent_msg.content_type, expected_msg.content_type)
+
+    def test_publisher_long_message(self):
+        self._test_publisher(message=True)
+
+    def test_publisher_long_dict(self):
+        self._test_publisher(message=False)
+
     def _test_consumer_long_message(self, json=True):
         """Verify that the Qpid implementation correctly deserializes
            message content.
