@@ -263,6 +263,9 @@ class ContextAdapter(BaseLoggerAdapter):
         instance_extra = ''
         if instance:
             instance_extra = CONF.instance_format % instance
+        elif extra.get('instance_uuid', None):
+            instance_extra = (CONF.instance_uuid_format
+                              % {'uuid': extra['instance_uuid']})
         else:
             instance_uuid = kwargs.pop('instance_uuid', None)
             if instance_uuid:
