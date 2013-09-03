@@ -56,7 +56,7 @@ def _subprocess_setup():
 
 
 def _exit_error(execname, message, errorcode, log=True):
-    print("%s: %s" % (execname, message))
+    print("%s: %s" % (execname, message), file=sys.stderr)
     if log:
         logging.error(message)
     sys.exit(errorcode)
