@@ -305,6 +305,7 @@ class FancyRecordTestCase(test.BaseTestCase):
         # the way log objects layer up seemed to be most concise approach
         self.config(logging_context_format_string="%(color)s "
                                                   "[%(request_id)s]: "
+                                                  "%(instance)s"
                                                   "%(message)s",
                     logging_default_format_string="%(missing)s: %(message)s")
         self.stream = six.StringIO()
@@ -330,21 +331,27 @@ class FancyRecordTestCase(test.BaseTestCase):
 
         sys.stderr = error
 
-    def test_fancy_key_in_log_msg(self):
-        ctxt = _fake_context()
-
-        # TODO(sdague): there should be a way to retrieve this from the
-        # color handler
+    def _validate_keys(self, ctxt, keyed_log_string):
         infocolor = '\033[00;36m'
         warncolor = '\033[01;33m'
-        infoexpected = "%s [%s]: info\n" % (infocolor, ctxt.request_id)
-        warnexpected = "%s [%s]: warn\n" % (warncolor, ctxt.request_id)
+        infoexpected = "%s %s info\n" % (infocolor, keyed_log_string)
+        warnexpected = "%s %s warn\n" % (warncolor, keyed_log_string)
 
         self.colorlog.info("info", context=ctxt)
         self.assertEqual(infoexpected, self.stream.getvalue())
 
         self.colorlog.warn("warn", context=ctxt)
         self.assertEqual(infoexpected + warnexpected, self.stream.getvalue())
+
+    def test_fancy_key_in_log_msg(self):
+        ctxt = _fake_context()
+        self._validate_keys(ctxt, '[%s]:' % ctxt.request_id)
+
+    def test_instance_key_in_log_msg(self):
+        ctxt = _fake_context()
+        ctxt.instance_uuid = '1234'
+        self._validate_keys(ctxt, ('[%s]: [instance: %s]' %
+                                   (ctxt.request_id, ctxt.instance_uuid)))
 
 
 class SetDefaultsTestCase(test.BaseTestCase):
