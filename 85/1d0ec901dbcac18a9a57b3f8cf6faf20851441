@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Code-Review+1: Daniel Berrange <berrange@redhat.com>
+Approved+1: Zhongyue Luo <zhongyue.luo@gmail.com>
+Code-Review+2: Zhongyue Luo <zhongyue.luo@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Thu, 05 Sep 2013 07:03:23 +0000
+Reviewed-on: https://review.openstack.org/36318
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
