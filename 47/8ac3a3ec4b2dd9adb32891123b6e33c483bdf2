@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Approved+1: Thierry Carrez <thierry@openstack.org>
+Code-Review+2: Thierry Carrez <thierry@openstack.org>
+Code-Review+2: Russell Bryant <rbryant@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 06 Sep 2013 13:10:07 +0000
+Reviewed-on: https://review.openstack.org/44700
+Project: openstack/oslo-incubator
+Branch: refs/heads/stable/folsom
