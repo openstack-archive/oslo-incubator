@@ -62,6 +62,15 @@ def _exit_error(execname, message, errorcode, log=True):
     sys.exit(errorcode)
 
 
+def _getlogin():
+    try:
+        return os.getlogin()
+    except OSError:
+        return (os.getenv('USER') or
+                os.getenv('USERNAME') or
+                os.getenv('LOGNAME'))
+
+
 def main():
     # Split arguments, require at least a command
     execname = sys.argv.pop(0)
@@ -106,7 +115,7 @@ def main():
                                               exec_dirs=config.exec_dirs)
             if config.use_syslog:
                 logging.info("(%s > %s) Executing %s (filter match = %s)" % (
-                    os.getlogin(), pwd.getpwuid(os.getuid())[0],
+                    _getlogin(), pwd.getpwuid(os.getuid())[0],
                     command, filtermatch.name))
 
             obj = subprocess.Popen(command,
