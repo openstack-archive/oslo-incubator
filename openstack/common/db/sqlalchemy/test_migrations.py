@@ -20,16 +20,23 @@
 import commands
 import ConfigParser
 import os
+import tempfile
 import urlparse
 
+from alembic import command
+from alembic import migration
+from oslo.config import cfg
 import sqlalchemy
 import sqlalchemy.exc
 
+from openstack.common.db.sqlalchemy import session
 from openstack.common import lockutils
 from openstack.common import log as logging
 from openstack.common import test
 
 LOG = logging.getLogger(__name__)
+CONF = cfg.CONF
+lockutils.set_defaults(tempfile.mkdtemp())
 
 
 def _get_connect_string(backend, user, passwd, database):
@@ -95,6 +102,21 @@ def get_db_connection_info(conn_pieces):
 
 class BaseMigrationTestCase(test.BaseTestCase):
     """Base class fort testing of migration utils."""
+    # Database settings
+    USER = 'openstack_citest'
+    PASSWD = 'openstack_citest'
+    DATABASE = 'openstack_citest'
+
+    # Migrate repo settings
+    REPOSITORY = None
+    INIT_VERSION = 0
+    MIGRATION_API = None
+
+    # Alembic repo settings
+    ALEMBIC_CONFIG = None
+
+    # Base model for project
+    MODEL_BASE = None
 
     def __init__(self, *args, **kwargs):
         super(BaseMigrationTestCase, self).__init__(*args, **kwargs)
@@ -106,7 +128,6 @@ class BaseMigrationTestCase(test.BaseTestCase):
         self.CONFIG_FILE_PATH = os.environ.get('TEST_MIGRATIONS_CONF',
                                                self.DEFAULT_CONFIG_FILE)
         self.test_databases = {}
-        self.migration_api = None
 
     def setUp(self):
         super(BaseMigrationTestCase, self).setUp()
@@ -140,6 +161,7 @@ class BaseMigrationTestCase(test.BaseTestCase):
         # and recreate it, which ensures that we have no side-effects
         # from the tests
         self._reset_databases()
+        session.cleanup()
         super(BaseMigrationTestCase, self).tearDown()
 
     def execute_cmd(self, cmd=None):
@@ -175,6 +197,7 @@ class BaseMigrationTestCase(test.BaseTestCase):
             conn_string = self.test_databases[key]
             conn_pieces = urlparse.urlparse(conn_string)
             engine.dispose()
+            session.cleanup()
             if conn_string.startswith('sqlite'):
                 # We can just delete the SQLite database, which is
                 # the easiest and cleanest solution
@@ -200,6 +223,58 @@ class BaseMigrationTestCase(test.BaseTestCase):
 
 
 class WalkVersionsMixin(object):
+
+    def _get_alembic_versions(self):
+        ret = []
+        alembic_history = []
+        self.ALEMBIC_CONFIG.print_stdout = \
+            lambda rev: alembic_history.append(str(rev).split("\n")[0])
+        command.history(self.ALEMBIC_CONFIG)
+        del self.ALEMBIC_CONFIG.print_stdout
+        for rev in alembic_history:
+            # 'Rev: 17738166b91 (head)' or 'Rev: 43b1a023dfaa'
+            if rev:
+                ret.append(rev.split(' ')[1])
+        ret.reverse()
+        return ret
+
+    def _walk_versions_alembic(self, engine=None, snake_walk=False,
+                               downgrade=True):
+        # Determine latest version script from the repo, then
+        # upgrade from 1 through to the latest, with no data
+        # in the databases. This just checks that the schema itself
+        # upgrades successfully.
+
+        CONF.set_override('connection', str(engine.url), group='database')
+        session.cleanup()
+        versions = self._get_alembic_versions()
+        up_and_down_versions = zip(versions, ['-1'] + versions)
+        for ver_up, ver_down in up_and_down_versions:
+            # upgrade -> downgrade -> upgrade
+            self._migrate_up(engine, ver_up, with_data=True, alembic=True)
+            if snake_walk:
+                downgraded = self._migrate_down(engine, ver_down,
+                                                with_data=True, alembic=True,
+                                                next_version=ver_up)
+                if downgraded:
+                    self._migrate_up(engine, ver_up, alembic=True)
+
+        if downgrade:
+            # Now walk it back down to 0 from the latest, testing
+            # the downgrade paths.
+            up_and_down_versions.reverse()
+            for ver_up, ver_down in up_and_down_versions:
+                # downgrade -> upgrade -> downgrade
+                downgraded = self._migrate_down(engine,
+                                                ver_down,
+                                                alembic=True,
+                                                next_version=ver_up)
+
+                if snake_walk and downgraded:
+                    self._migrate_up(engine, ver_up, alembic=True)
+                    self._migrate_down(engine, ver_down, alembic=True,
+                                       next_version=ver_up)
+
     def _walk_versions(self, engine=None, snake_walk=False, downgrade=True):
         # Determine latest version script from the repo, then
         # upgrade from 1 through to the latest, with no data
@@ -207,10 +282,10 @@ class WalkVersionsMixin(object):
         # upgrades successfully.
 
         # Place the database under version control
-        self.migration_api.version_control(engine, self.REPOSITORY,
+        self.MIGRATION_API.version_control(engine, self.REPOSITORY,
                                            self.INIT_VERSION)
         self.assertEqual(self.INIT_VERSION,
-                         self.migration_api.db_version(engine,
+                         self.MIGRATION_API.db_version(engine,
                                                        self.REPOSITORY))
 
         LOG.debug('latest version is %s' % self.REPOSITORY.latest)
@@ -236,29 +311,48 @@ class WalkVersionsMixin(object):
                     self._migrate_up(engine, version)
                     self._migrate_down(engine, version - 1)
 
-    def _migrate_down(self, engine, version, with_data=False):
+    def _get_version_from_db(self, engine, alembic):
+        if not alembic:
+            return self.MIGRATION_API.db_version(engine, self.REPOSITORY)
+        conn = engine.connect()
         try:
-            self.migration_api.downgrade(engine, self.REPOSITORY, version)
+            context = migration.MigrationContext.configure(conn)
+            version = context.get_current_revision() or '-1'
+        finally:
+            conn.close()
+        return version
+
+    def _migrate(self, engine, alembic, version, cmd):
+        if alembic:
+            getattr(command, cmd)(self.ALEMBIC_CONFIG, version)
+        else:
+            getattr(self.MIGRATION_API, cmd)(engine, self.REPOSITORY, version)
+
+    def _migrate_down(self, engine, version, with_data=False,
+                      alembic=False, next_version=None):
+        try:
+            self._migrate(engine, alembic, version, 'downgrade')
         except NotImplementedError:
             # NOTE(sirp): some migrations, namely release-level
             # migrations, don't support a downgrade.
             return False
-
-        self.assertEqual(
-            version, self.migration_api.db_version(engine, self.REPOSITORY))
+        self.assertEqual(version, self._get_version_from_db(engine,
+                                                            alembic))
 
         # NOTE(sirp): `version` is what we're downgrading to (i.e. the 'target'
         # version). So if we have any downgrade checks, they need to be run for
         # the previous (higher numbered) migration.
         if with_data:
+            if next_version is None:
+                next_version = "%03d" % (version + 1)
             post_downgrade = getattr(
-                self, "_post_downgrade_%03d" % (version + 1), None)
+                self, "_post_downgrade_%s" % next_version, None)
             if post_downgrade:
                 post_downgrade(engine)
 
         return True
 
-    def _migrate_up(self, engine, version, with_data=False):
+    def _migrate_up(self, engine, version, with_data=False, alembic=False):
         """migrate up to a new version of the db.
 
         We allow for data insertion and post checks at every
@@ -267,20 +361,19 @@ class WalkVersionsMixin(object):
         """
         # NOTE(sdague): try block is here because it's impossible to debug
         # where a failed data migration happens otherwise
+        check_version = version if alembic else '%03d' % version
         try:
             if with_data:
                 data = None
                 pre_upgrade = getattr(
-                    self, "_pre_upgrade_%03d" % version, None)
+                    self, "_pre_upgrade_%s" % check_version, None)
                 if pre_upgrade:
                     data = pre_upgrade(engine)
-
-            self.migration_api.upgrade(engine, self.REPOSITORY, version)
-            self.assertEqual(version,
-                             self.migration_api.db_version(engine,
-                                                           self.REPOSITORY))
+            self._migrate(engine, alembic, version, 'upgrade')
+            self.assertEqual(version, self._get_version_from_db(engine,
+                                                                alembic))
             if with_data:
-                check = getattr(self, "_check_%03d" % version, None)
+                check = getattr(self, "_check_%s" % check_version, None)
                 if check:
                     check(engine, data)
         except Exception:
