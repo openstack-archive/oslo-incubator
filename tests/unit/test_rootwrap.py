@@ -21,9 +21,11 @@ import subprocess
 import uuid
 
 import fixtures
+import mock
 from six import moves
 
 from openstack.common.fixture import moxstubout
+from openstack.common.rootwrap import cmd
 from openstack.common.rootwrap import filters
 from openstack.common.rootwrap import wrapper
 from openstack.common import test
@@ -384,6 +386,21 @@ class RootwrapTestCase(test.BaseTestCase):
         raw.set('DEFAULT', 'syslog_log_level', 'INFO')
         config = wrapper.RootwrapConfig(raw)
         self.assertEqual(config.syslog_log_level, logging.INFO)
+
+    def test_getlogin(self):
+        with mock.patch('os.getlogin') as os_getlogin:
+            os_getlogin.return_value = 'foo'
+            self.assertEqual(cmd._getlogin(), 'foo')
+
+    def test_getlogin_bad(self):
+        with mock.patch('os.getenv') as os_getenv:
+            with mock.patch('os.getlogin') as os_getlogin:
+                os_getenv.side_effect = [None, None, 'bar']
+                os_getlogin.side_effect = OSError(
+                    '[Errno 22] Invalid argument')
+                self.assertEqual(cmd._getlogin(), 'bar')
+                os_getlogin.assert_called_once_with()
+                self.assertEqual(os_getenv.call_count, 3)
 
 
 class PathFilterTestCase(test.BaseTestCase):
