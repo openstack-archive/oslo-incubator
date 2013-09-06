@@ -39,29 +39,33 @@ class RequestContext(object):
     accesses the system, as well as additional request information.
     """
 
-    def __init__(self, auth_token=None, user=None, tenant=None, is_admin=False,
-                 read_only=False, show_deleted=False, request_id=None,
-                 instance_uuid=None):
+    def __init__(self, auth_token=None, domain_id=None, domain_name=None,
+                 instance_uuid=None, is_admin=False, read_only=False,
+                 request_id=None, show_deleted=False, tenant=None, user=None):
         self.auth_token = auth_token
-        self.user = user
-        self.tenant = tenant
+        self.domain_id = domain_id
+        self.domain_name = domain_name
+        self.instance_uuid = instance_uuid
         self.is_admin = is_admin
         self.read_only = read_only
         self.show_deleted = show_deleted
-        self.instance_uuid = instance_uuid
+        self.tenant = tenant
+        self.user = user
         if not request_id:
             request_id = generate_request_id()
         self.request_id = request_id
 
     def to_dict(self):
-        return {'user': self.user,
-                'tenant': self.tenant,
+        return {'auth_token': self.auth_token,
+                'domain_id': self.domain_id,
+                'domain_name': self.domain_name,
+                'instance_uuid': self.instance_uuid,
                 'is_admin': self.is_admin,
                 'read_only': self.read_only,
-                'show_deleted': self.show_deleted,
-                'auth_token': self.auth_token,
                 'request_id': self.request_id,
-                'instance_uuid': self.instance_uuid}
+                'show_deleted': self.show_deleted,
+                'tenant': self.tenant,
+                'user': self.user}
 
 
 def get_admin_context(show_deleted=False):
