@@ -51,6 +51,9 @@ secure_message_group = cfg.OptGroup('secure_messages',
                                     title='Secure Messaging options')
 
 LOG = logging.getLogger(__name__)
+CONF = cfg.CONF
+CONF.register_group(secure_message_group)
+CONF.register_opts(secure_message_opts, group='secure_messages')
 
 
 class SecureMessageException(Exception):
@@ -347,9 +350,6 @@ class SecureMessage(object):
 
     def __init__(self, topic, host, conf, key=None, key_store=None,
                  encrypt=None, enctype='AES', hashtype='SHA256'):
-
-        conf.register_group(secure_message_group)
-        conf.register_opts(secure_message_opts, group='secure_messages')
 
         self._name = '%s.%s' % (topic, host)
         self._key = key
