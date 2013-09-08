@@ -91,7 +91,7 @@ def is_newer_than(after, seconds):
 
 def utcnow_ts():
     """Timestamp version of our utcnow function."""
-    if utcnow.override_time is None:
+    if not hasattr(utcnow, 'override_time'):
         # NOTE(kgriffs): This is several times faster
         # than going through calendar.timegm(...)
         return int(time.time())
