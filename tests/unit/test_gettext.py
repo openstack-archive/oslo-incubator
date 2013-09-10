@@ -127,6 +127,81 @@ class GettextTest(test.BaseTestCase):
         self.assertEqual(non_message,
                          gettextutils.get_localized_message(non_message, 'A'))
 
+    @mock.patch('gettext.translation')
+    def test_get_localized_message_with_message_param(self, mock_translation):
+        message_with_params = 'A message with param: %s'
+        es_translation = 'A message with param in Spanish: %s'
+        message_param = 'A message param'
+        es_param_translation = 'A message param in Spanish'
+
+        translations = {message_with_params: es_translation,
+                        message_param: es_param_translation}
+        translator = TestTranslations.translator(translations, 'es')
+        mock_translation.side_effect = translator
+
+        msg = gettextutils.Message(message_with_params, 'test_domain')
+        msg_param = gettextutils.Message(message_param, 'test_domain')
+        msg = msg % msg_param
+
+        expected_translation = es_translation % es_param_translation
+        self._assert_translations(msg, 'es', expected_translation)
+
+    @mock.patch('gettext.translation')
+    def test_get_localized_message_with_message_params(self, mock_translation):
+        message_with_params = 'A message with params: %s %s'
+        es_translation = 'A message with params in Spanish: %s %s'
+        message_param = 'A message param'
+        es_param_translation = 'A message param in Spanish'
+        another_message_param = 'Another message param'
+        another_es_param_translation = 'Another message param in Spanish'
+
+        translations = {message_with_params: es_translation,
+                        message_param: es_param_translation,
+                        another_message_param: another_es_param_translation}
+        translator = TestTranslations.translator(translations, 'es')
+        mock_translation.side_effect = translator
+
+        msg = gettextutils.Message(message_with_params, 'test_domain')
+        param_1 = gettextutils.Message(message_param, 'test_domain')
+        param_2 = gettextutils.Message(another_message_param, 'test_domain')
+        msg = msg % (param_1, param_2)
+
+        expected_translation = es_translation % (es_param_translation,
+                                                 another_es_param_translation)
+        self._assert_translations(msg, 'es', expected_translation)
+
+    @mock.patch('gettext.translation')
+    def test_get_localized_message_with_named_params(self, mock_translation):
+        message_with_params = 'A message with params: %(param)s'
+        es_translation = 'A message with params in Spanish: %(param)s'
+        message_param = 'A Message param'
+        es_param_translation = 'A message param in Spanish'
+
+        translations = {message_with_params: es_translation,
+                        message_param: es_param_translation}
+        translator = TestTranslations.translator(translations, 'es')
+        mock_translation.side_effect = translator
+
+        msg = gettextutils.Message(message_with_params, 'test_domain')
+        msg_param = gettextutils.Message(message_param, 'test_domain')
+        msg = msg % {'param': msg_param}
+
+        expected_translation = es_translation % {'param': es_param_translation}
+        self._assert_translations(msg, 'es', expected_translation)
+
+    def _assert_translations(self, msg, locale, expected_translation):
+        """Validates that the message translation in the given locale is as
+        expected. For sanity, other locales are tested too and those should
+        result in the same message being passed in."""
+        self.assertEqual(unicode(msg),
+                         gettextutils.get_localized_message(msg, 'en'))
+        self.assertEqual(unicode(msg),
+                         gettextutils.get_localized_message(msg, 'XX'))
+        self.assertEqual(unicode(msg),
+                         gettextutils.get_localized_message(msg, None))
+        self.assertEqual(unicode(expected_translation),
+                         gettextutils.get_localized_message(msg, locale))
+
     def test_get_available_languages(self):
         # All the available languages for which locale data is available
         def _mock_locale_identifiers():
@@ -577,6 +652,27 @@ class LocaleHandlerTestCase(test.BaseTestCase):
         self.logger.info(msgid)
 
         self.assertTrue(self.emit_called)
+
+
+class TestTranslations(gettext.GNUTranslations):
+    """A test GNUTranslations class that takes a map of msg -> translations"""
+
+    def __init__(self, translations):
+        self.translations = translations
+
+    def ugettext(self, msgid):
+        return self.translations.get(msgid, msgid)
+
+    @staticmethod
+    def translator(translation_map, language):
+        """Returns a mock gettext.translation function that uses
+        TestTranslation to translate in the given locale."""
+        def _translation(domain, localedir=None,
+                         languages=None, fallback=None):
+            if languages and language in languages:
+                return TestTranslations(translation_map)
+            return gettext.NullTranslations()
+        return _translation
 
 
 class SomeObject(object):
