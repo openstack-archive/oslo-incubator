@@ -127,6 +127,43 @@ class GettextTest(test.BaseTestCase):
         self.assertEqual(non_message,
                          gettextutils.get_localized_message(non_message, 'A'))
 
+    @mock.patch('gettext.translation')
+    def test_get_localized_message_with_message_params(self, mock_translation):
+        message_with_params = 'A message with params: %(param)s'
+        es_translation = 'A message with params in Spanish: %(param)s'
+        message_param = 'A Message param'
+        es_param_translation = 'A message param in Spanish'
+
+        class MockESTranslations(gettext.GNUTranslations):
+            def ugettext(self, msgid):
+                if msgid == message_with_params:
+                    return es_translation
+                elif msgid == message_param:
+                    return es_param_translation
+                return msgid
+
+        def translation(domain, localedir=None, languages=None, fallback=None):
+            if languages and 'es' in languages:
+                return MockESTranslations()
+            return gettext.NullTranslations()
+
+        mock_translation.side_effect = translation
+
+        msg = gettextutils.Message(message_with_params, 'test_domain')
+        msg_param = gettextutils.Message(message_param, 'test_domain')
+        msg = msg % {'param': msg_param}
+
+        expected_en_message = message_with_params % {'param': message_param}
+        expected_translation = es_translation % {'param': es_param_translation}
+        self.assertEqual(unicode(expected_translation),
+                         gettextutils.get_localized_message(msg, 'es'))
+        self.assertEqual(unicode(expected_en_message),
+                         gettextutils.get_localized_message(msg, 'en'))
+        self.assertEqual(unicode(expected_en_message),
+                         gettextutils.get_localized_message(msg, 'XX'))
+        self.assertEqual(unicode(expected_en_message),
+                         gettextutils.get_localized_message(msg, None))
+
     def test_get_available_languages(self):
         # All the available languages for which locale data is available
         def _mock_locale_identifiers():
