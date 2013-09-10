@@ -121,8 +121,8 @@ class Message(_userString.UserString, object):
         self._msg = msg
         self._left_extra_msg = ''
         self._right_extra_msg = ''
+        self._locale = None
         self.params = None
-        self.locale = None
         self.domain = domain
 
     @property
@@ -150,6 +150,23 @@ class Message(_userString.UserString, object):
             full_msg = full_msg % self.params
 
         return six.text_type(full_msg)
+
+    @property
+    def locale(self):
+        return self._locale
+
+    @locale.setter
+    def locale(self, value):
+        self._locale = value
+        if not self.params:
+            return
+        # This Message object may have been constructed with other Message
+        # objects as substitution parameters, so when setting the locale for
+        # this object we need to set it for those params too.
+        for param_key in self.params:
+            param = self.params[param_key]
+            if isinstance(param, Message):
+                param.locale = value
 
     def _save_dictionary_parameter(self, dict_param):
         full_msg = self.data
@@ -201,7 +218,7 @@ class Message(_userString.UserString, object):
 
     def __getstate__(self):
         to_copy = ['_msg', '_right_extra_msg', '_left_extra_msg',
-                   'domain', 'params', 'locale']
+                   'domain', 'params', '_locale']
         new_dict = self.__dict__.fromkeys(to_copy)
         for attr in to_copy:
             new_dict[attr] = copy.deepcopy(self.__dict__[attr])
