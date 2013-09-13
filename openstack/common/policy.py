@@ -449,7 +449,6 @@ class OrCheck(BaseCheck):
         for rule in self.rules:
             if rule(target, cred, enforcer):
                 return True
-
         return False
 
     def add_check(self, rule):
@@ -846,7 +845,13 @@ class GenericCheck(Check):
         """
 
         # TODO(termie): do dict inspection via dot syntax
-        match = self.match % target
+        try:
+            match = self.match % target
+        except KeyError:
+            # While doing GenericCheck if key not
+            # present in Target return false
+            return False
+
         if self.kind in creds:
             return match == six.text_type(creds[self.kind])
         return False

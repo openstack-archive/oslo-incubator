@@ -906,3 +906,10 @@ class GenericCheckTestCase(PolicyBaseTestCase):
         self.assertEqual(check(dict(name='spam'),
                                dict(name='spam'),
                                self.enforcer), True)
+
+    def test_no_key_match_in_target(self):
+        check = policy.GenericCheck('name', '%(name)s')
+
+        self.assertEqual(check(dict(name1='spam'),
+                               dict(name='spam'),
+                               self.enforcer), False)
