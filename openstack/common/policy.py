@@ -447,8 +447,17 @@ class OrCheck(BaseCheck):
         """
 
         for rule in self.rules:
+            #try:
             if rule(target, cred, enforcer):
                 return True
+            #except KeyError:
+                # This is possible while evaluating multiple rules
+                # where target is empty or not having the key which
+                # is expected by rule under evaluation.
+                # We should gracefully move to evaluate next rule.
+             #   LOG.debug(_("Rule %s can not be evaluated due to KeyError")
+             #             % rule)
+             #   pass
 
         return False
 
@@ -846,7 +855,13 @@ class GenericCheck(Check):
         """
 
         # TODO(termie): do dict inspection via dot syntax
-        match = self.match % target
+        try:
+            match = self.match % target
+        except KeyError:
+            # While doing GenericCheck if key not
+            # present in Target return false
+            return False
+
         if self.kind in creds:
             return match == six.text_type(creds[self.kind])
         return False
