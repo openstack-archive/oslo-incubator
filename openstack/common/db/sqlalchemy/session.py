@@ -617,6 +617,13 @@ def _ping_listener(dbapi_conn, connection_rec, connection_proxy):
             raise
 
 
+def _set_mode_traditional(dbapi_con, connection_rec, connection_proxy):
+    """Set engine mode to 'traditional' to prevent silent trancating at
+    insert or update.
+    """
+    dbapi_con.cursor().execute("SET sql_mode = TRADITIONAL;")
+
+
 def _is_db_connection_error(args):
     """Return True if error in connecting to db."""
     # NOTE(adam_g): This is currently MySQL specific and needs to be extended
@@ -671,6 +678,7 @@ def create_engine(sql_connection, sqlite_fk=False):
 
     if 'mysql' in connection_dict.drivername:
         sqlalchemy.event.listen(engine, 'checkout', _ping_listener)
+        sqlalchemy.event.listen(engine, 'checkout', _set_mode_traditional)
     elif 'sqlite' in connection_dict.drivername:
         if not CONF.sqlite_synchronous:
             sqlalchemy.event.listen(engine, 'connect',
