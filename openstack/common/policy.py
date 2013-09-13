@@ -447,8 +447,17 @@ class OrCheck(BaseCheck):
         """
 
         for rule in self.rules:
-            if rule(target, cred, enforcer):
-                return True
+            try:
+                if rule(target, cred, enforcer):
+                    return True
+            except KeyError:
+                # This is possible while evaluating multiple rules
+                # where target is empty or not having the key which
+                # is expected by rule under evaluation.
+                # We should gracefully move to evaluate next rule.
+                LOG.debug(_("Rule %s can not be evaluated due to KeyError")
+                          % rule)
+                pass
 
         return False
 
