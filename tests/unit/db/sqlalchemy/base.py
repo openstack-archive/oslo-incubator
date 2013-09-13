@@ -36,6 +36,7 @@ class DbFixture(fixtures.Fixture):
         return os.getenv('OS_TEST_DBAPI_CONNECTION', 'sqlite://')
 
     def __init__(self):
+        super(DbFixture, self).__init__()
         self.conf = cfg.CONF
         self.conf.import_opt('connection',
                              'openstack.common.db.sqlalchemy.session',
@@ -60,6 +61,7 @@ class DbTestCase(test_utils.BaseTestCase):
 
     def setUp(self):
         super(DbTestCase, self).setUp()
+        self.addCleanup(session.cleanup)
         self.useFixture(self.FIXTURE())
 
 
