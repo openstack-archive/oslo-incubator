@@ -416,6 +416,14 @@ class OrCheckTestCase(test.BaseTestCase):
         rules[0].assert_called_once_with('target', 'cred', None)
         rules[1].assert_called_once_with('target', 'cred', None)
 
+    def test_call_second_true_first_key_error(self):
+        rules = [mock.Mock(side_effect=KeyError), mock.Mock(return_value=True)]
+        check = policy.OrCheck(rules)
+
+        self.assertEqual(check('target', 'cred', None), True)
+        rules[0].assert_called_once_with('target', 'cred', None)
+        rules[1].assert_called_once_with('target', 'cred', None)       
+
 
 class ParseCheckTestCase(test.BaseTestCase):
     def test_false(self):

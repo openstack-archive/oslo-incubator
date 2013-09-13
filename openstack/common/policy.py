@@ -447,8 +447,13 @@ class OrCheck(BaseCheck):
         """
 
         for rule in self.rules:
-            if rule(target, cred, enforcer):
-                return True
+            try:
+                if rule(target, cred, enforcer):
+                    return True
+            except KeyError:
+                # This is possible while evaluating multiple rules.
+                # We should gracefully move to evaluate next rule.
+                pass
 
         return False
 
