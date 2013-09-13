@@ -22,6 +22,7 @@ import mock
 import sqlalchemy
 from sqlalchemy import Column, MetaData, Table, UniqueConstraint
 from sqlalchemy import DateTime, Integer, String
+from sqlalchemy.exc import DataError
 from sqlalchemy.ext.declarative import declarative_base
 
 from openstack.common.db import exception as db_exc
@@ -315,3 +316,28 @@ class TestDBDisconnected(test.BaseTestCase):
                 connection = ('ibm_db_sa://db2inst1:openstack@fakehost:50000'
                               '/fakedab')
                 self._test_ping_listener_disconnected(connection)
+
+
+class MySQLTraditionalModeTestCase(test_base.MySQLOpportunisticTestCase):
+
+    def setUp(self):
+        super(MySQLTraditionalModeTestCase, self).setUp()
+
+        self.engine = session.get_engine(mysql_traditional_mode=True)
+        self.connection = self.engine.connect()
+
+        meta = MetaData()
+        meta.bind = self.engine
+        self.test_table = Table(_TABLE_NAME + "mode", meta,
+                                Column('id', Integer, primary_key=True),
+                                Column('bar', String(255)))
+        self.test_table.create()
+
+        self.addCleanup(session.cleanup)
+        self.addCleanup(self.test_table.drop)
+        self.addCleanup(self.connection.close)
+
+    def test_string_too_long(self):
+        with self.connection.begin():
+            self.assertRaises(DataError, self.connection.execute,
+                              self.test_table.insert(), bar='a' * 512)
