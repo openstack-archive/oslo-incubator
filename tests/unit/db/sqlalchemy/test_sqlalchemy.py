@@ -20,11 +20,13 @@
 
 from sqlalchemy import Column, MetaData, Table, UniqueConstraint
 from sqlalchemy import DateTime, Integer, String
+from sqlalchemy.exc import DataError
 from sqlalchemy.ext.declarative import declarative_base
 
 from openstack.common.db import exception as db_exc
 from openstack.common.db.sqlalchemy import models
 from openstack.common.db.sqlalchemy import session
+from oslo.config import cfg
 from tests.unit.db.sqlalchemy import base as test_base
 from tests import utils as test_utils
 
@@ -212,3 +214,42 @@ class SlaveBackendTestCase(test_utils.BaseTestCase):
     def test_slave_backend_nomatch(self):
         session.CONF.database.slave_connection = "mysql:///localhost"
         self.assertRaises(AssertionError, session._assert_matching_drivers)
+
+
+class MySQLTraditionalModeTestCase(test_base.MySQLdbTestCase):
+
+    def setUp(self):
+        super(MySQLTraditionalModeTestCase, self).setUp()
+        self.conf = cfg.CONF
+        self.conf.import_opt('mysql_traditional_mode',
+                             'openstack.common.db.sqlalchemy.session',
+                             group='database')
+        self.conf.set_default('mysql_traditional_mode',
+                              True, group='database')
+
+        self.engine = session.get_engine()
+
+        if self.engine.url.drivername != 'mysql':
+            self.skip('MySQL backend is not available.')
+
+        self.connection = self.engine.connect()
+
+        meta = MetaData()
+        meta.bind = self.engine
+        self.test_table = Table(_TABLE_NAME + "mode", meta,
+                                Column('id', Integer, primary_key=True),
+                                Column('bar', String(255)))
+        self.test_table.create()
+
+    def tearDown(self):
+        super(MySQLTraditionalModeTestCase, self).tearDown()
+        self.test_table.drop()
+
+    def _insert_string(self, string):
+        with self.connection.begin() as trans:
+            self.connection.execute(self.test_table.insert(), bar=string)
+            trans.commit()
+
+    def test_string_too_long(self):
+        # NOTE: if ORM used DBError wraper will be raised.
+        self.assertRaises(DataError, self._insert_string, 'a'*512)
