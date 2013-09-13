@@ -15,31 +15,90 @@
 
 
 import fixtures
+from oslo.config import cfg
 
 from openstack.common.db.sqlalchemy import session
-from openstack.common.fixture import config
-from openstack.common import test
+from openstack.common.db.sqlalchemy import test_migrations as tm
+from tests import utils as test_utils
 
 
-class SqliteInMemoryFixture(fixtures.Fixture):
-    """SQLite in-memory DB recreated for each test case."""
+class DBFixture(fixtures.Fixture):
+    """Base database fixture. Allows to use various backend connection uri."""
 
-    def setUp(self):
-        super(SqliteInMemoryFixture, self).setUp()
-        config_fixture = self.useFixture(config.Config())
-        self.conf = config_fixture.conf
+    CONNECTION = None
+    DRIVER = None
+    USERNAME = None
+    DBNAME = None
+    PASSWORD = None
+
+    def __init__(self):
+        self.conf = cfg.CONF
         self.conf.import_opt('connection',
                              'openstack.common.db.sqlalchemy.session',
                              group='database')
 
-        self.conf.set_default('connection', "sqlite://", group='database')
+        self.CONNECTION = tm._get_connect_string(backend=self.DRIVER,
+                                                 user=self.USERNAME,
+                                                 passwd=self.PASSWORD,
+                                                 database=self.DBNAME)
+
+    def setUp(self):
+        super(DBFixture, self).setUp()
+
+        self.conf.set_default('connection', self.CONNECTION, group='database')
+        self.addCleanup(self.conf.reset)
         self.addCleanup(session.cleanup)
 
 
-class DbTestCase(test.BaseTestCase):
-    """Base class for testing of DB code (uses in-memory SQLite DB fixture)."""
+class SqliteInMemoryFixture(DBFixture):
+    """SQLite in-memory DB recreated for each test case."""
+
+    CONNECTION = "sqlite://"
+
+
+class MySQLFixture(DBFixture):
+    """MySQL specific fixture
+
+    Be careful and use this fixture to run only MySQL specific
+    tests because create/drop and other actions can take extremly long time.
+    Please note, until test database does not dropped all of a tables and an
+    entries remain in the database. And database will be dropped only after
+    all the test cases will be completed. Those the cleanup process is
+    BaseTestCase subclasses business:
+
+    class FooTestCase(VariousBackendFixture):
+        def setUp(self):
+            ...
+            self.test_table.create()
+            self.sddCleanp(self.test_table.drop)
+    """
+
+    DRIVER = 'mysql'
+    DBNAME = PASSWORD = USERNAME = 'openstack_citest'
+
+
+class DbTestCase(test_utils.BaseTestCase):
+    """Base class for testing of DB code."""
+
+    FIXTURE = SqliteInMemoryFixture
 
     def setUp(self):
         super(DbTestCase, self).setUp()
 
-        self.useFixture(SqliteInMemoryFixture())
+        credentials = (
+            self.FIXTURE.DRIVER,
+            self.FIXTURE.USERNAME,
+            self.FIXTURE.PASSWORD,
+            self.FIXTURE.DBNAME)
+
+        if not tm._is_backend_avail(*credentials):
+            msg = '%s backend is not available.' % self.FIXTURE.DRIVER
+            return self.skip(msg)
+
+        self.useFixture(self.FIXTURE())
+
+
+class MySQLdbTestCase(DbTestCase):
+    """Test case to test MySQL specific features."""
+
+    FIXTURE = MySQLFixture
