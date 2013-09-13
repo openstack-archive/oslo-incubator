@@ -282,6 +282,12 @@ database_opts = [
                                                   group='DATABASE'),
                                 cfg.DeprecatedOpt('connection',
                                                   group='sql'), ]),
+    cfg.StrOpt('mysql_traditional_mode',
+               default=False,
+               help='Make MySQL behave like a "traditional" SQL database '
+               'system. A simple description of this mode is '
+               '"give an error instead of a warning" when inserting an '
+               'incorrect value into a column.'),
     cfg.StrOpt('slave_connection',
                default='',
                help='The SQLAlchemy connection string used to connect to the '
@@ -619,6 +625,17 @@ def _ping_listener(dbapi_conn, connection_rec, connection_proxy):
             raise
 
 
+def _set_mode_traditional(dbapi_con, connection_rec, connection_proxy):
+    """Set engine mode to 'traditional'.
+
+    Required to prevent silent truncates at insert or update operations
+    under MySQL. By default MySQL truncate inserted string if it longer
+    than a declared field just with warning. That is fraught with data
+    corruption.
+    """
+    dbapi_con.cursor().execute("SET SESSION sql_mode = TRADITIONAL;")
+
+
 def _is_db_connection_error(args):
     """Return True if error in connecting to db."""
     # NOTE(adam_g): This is currently MySQL specific and needs to be extended
@@ -673,6 +690,8 @@ def create_engine(sql_connection, sqlite_fk=False):
 
     if 'mysql' in connection_dict.drivername:
         sqlalchemy.event.listen(engine, 'checkout', _ping_listener)
+        if CONF.database.mysql_traditional_mode:
+            sqlalchemy.event.listen(engine, 'checkout', _set_mode_traditional)
     elif 'sqlite' in connection_dict.drivername:
         if not CONF.sqlite_synchronous:
             sqlalchemy.event.listen(engine, 'connect',
