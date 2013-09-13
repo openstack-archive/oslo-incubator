@@ -20,6 +20,7 @@
 
 from sqlalchemy import Column, MetaData, Table, UniqueConstraint
 from sqlalchemy import DateTime, Integer, String
+from sqlalchemy.exc import DataError
 from sqlalchemy.ext.declarative import declarative_base
 
 from openstack.common.db import exception as db_exc
@@ -212,3 +213,37 @@ class SlaveBackendTestCase(test_utils.BaseTestCase):
     def test_slave_backend_nomatch(self):
         session.CONF.database.slave_connection = "mysql:///localhost"
         self.assertRaises(AssertionError, session._assert_matching_drivers)
+
+
+class TraditionalModeTestCase(test_base.MySQLdbTestCase):
+
+    def __init__(self, *args, **kwargs):
+        super(TraditionalModeTestCase, self).__init__(*args, **kwargs)
+
+    def setUp(self):
+        super(TraditionalModeTestCase, self).setUp()
+        engine = session.get_engine()
+        self.connection = engine.connect()
+
+        meta = MetaData()
+        meta.bind = engine
+        self.test_table = Table(_TABLE_NAME + "mode", meta,
+                                Column(
+                                'id', Integer,
+                                    primary_key=True),
+                                Column('bar', String(255)))
+        self.test_table.create()
+
+    def tearDown(self):
+        super(TraditionalModeTestCase, self).tearDown()
+        self.test_table.drop()
+
+    def _insert_string(self, string):
+        with self.connection.begin() as trans:
+            self.connection.execute(self.test_table.insert(), bar=string)
+            trans.commit()
+
+    def test_string_too_long(self):
+        string = 'a'*512
+        # NOTE: if ORM used DBError wraper will be raised.
+        self.assertRaises(DataError, self._insert_string, string)
