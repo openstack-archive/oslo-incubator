@@ -212,3 +212,47 @@ class SlaveBackendTestCase(test_utils.BaseTestCase):
     def test_slave_backend_nomatch(self):
         session.CONF.database.slave_connection = "mysql:///localhost"
         self.assertRaises(AssertionError, session._assert_matching_drivers)
+
+
+_MODE_TABLE_NAME = _TABLE_NAME + "mode"
+
+
+class ModeTable(BASE, models.ModelBase):
+    __tablename__ = _MODE_TABLE_NAME
+    id = Column(Integer, primary_key=True)
+    bar = Column(String(255))
+
+
+class TraditionalModeTestCase(test_utils.BaseTestCase):
+
+    def __init__(self, *args, **kwargs):
+        super(TraditionalModeTestCase, self).__init__(*args, **kwargs)
+        meta = MetaData()
+        meta.bind = session.get_engine()
+        self.test_table = Table(_MODE_TABLE_NAME, meta,
+                           Column('id', Integer, primary_key=True,
+                                  nullable=False),
+                           Column('bar', String(255)))
+
+    def setUp(self):
+        super(TraditionalModeTestCase, self).setUp()
+        self.test_table.create()
+
+    def tearDown(self):
+        super(TraditionalModeTestCase, self).tearDown()
+        self.test_table.drop()
+
+    def _insert_string(self, string):
+        _session = session.get_session()
+        with _session.begin():
+            inst = ModeTable()
+            inst.update({'bar': string})
+            return inst.save(session=_session)
+
+    def test_string_too_long(self):
+        string = 'a'*512
+        self._insert_string(string)
+
+    def test_corresponding_line_length(self):
+        string = 'a'
+        self._insert_string(string)
