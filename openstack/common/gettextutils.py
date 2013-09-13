@@ -29,6 +29,7 @@ import gettext
 import logging
 import os
 import re
+import sys
 try:
     import UserString as _userString
 except ImportError:
@@ -197,7 +198,7 @@ class Message(_userString.UserString, object):
         return self.data
 
     def __str__(self):
-        return self.data.encode('utf-8')
+        return self.data.encode(sys.getdefaultencoding())
 
     def __getstate__(self):
         to_copy = ['_msg', '_right_extra_msg', '_left_extra_msg',
