@@ -137,6 +137,7 @@ class SessionErrorWrapperTestCase(test_base.DbTestCase):
                            Column('foo', Integer),
                            UniqueConstraint('foo', name='uniq_foo'))
         test_table.create()
+        self.addCleanup(test_table.drop)
 
     def test_flush_wrapper(self):
         tbl = TmpTable()
@@ -182,6 +183,7 @@ class RegexpFilterTestCase(test_base.DbTestCase):
                                   nullable=False),
                            Column('bar', String(255)))
         test_table.create()
+        self.addCleanup(test_table.drop)
 
     def _test_regexp_filter(self, regexp, expected):
         _session = session.get_session()
