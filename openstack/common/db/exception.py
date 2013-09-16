@@ -49,3 +49,8 @@ class DbMigrationError(DBError):
     """Wraps migration specific exception."""
     def __init__(self, message=None):
         super(DbMigrationError, self).__init__(str(message))
+
+
+class DBConnectionError(DBError):
+    """Wraps connection specific exception."""
+    pass
