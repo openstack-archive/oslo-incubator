@@ -13,33 +13,74 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from functools import wraps
+import os
 
 import fixtures
+from oslo.config import cfg
 
 from openstack.common.db.sqlalchemy import session
-from openstack.common.fixture import config
-from openstack.common import test
+from tests import utils as test_utils
 
 
-class SqliteInMemoryFixture(fixtures.Fixture):
-    """SQLite in-memory DB recreated for each test case."""
+class DbFixture(fixtures.Fixture):
+    """Database fixture.
+    Allows to run tests on various db backends, such as SQLite, MySQL and
+    PostgreSQL.
+    When using real backends please note: Create/drop and other actions can
+    take extremly long time.
+    """
 
-    def setUp(self):
-        super(SqliteInMemoryFixture, self).setUp()
-        config_fixture = self.useFixture(config.Config())
-        self.conf = config_fixture.conf
+    def __init__(self):
+        self.conf = cfg.CONF
         self.conf.import_opt('connection',
                              'openstack.common.db.sqlalchemy.session',
                              group='database')
+        self.uri = os.getenv('OS_TEST_DBAPI_CONNECTION', 'sqlite://')
 
-        self.conf.set_default('connection', "sqlite://", group='database')
+    def setUp(self):
+        super(DbFixture, self).setUp()
+        # To prevent existance of prepared engine with wrong connection
+        session.cleanup()
+
+        self.conf.set_default('connection', self.uri, group='database')
+        self.addCleanup(self.conf.reset)
         self.addCleanup(session.cleanup)
 
 
-class DbTestCase(test.BaseTestCase):
-    """Base class for testing of DB code (uses in-memory SQLite DB fixture)."""
+class DbTestCase(test_utils.BaseTestCase):
+    """Base class for testing of DB code.
+    To use backend other than sqlite: override env variable
+    OS_TEST_DBAPI_ADMIN_CONNECTION defined in tox.ini file.
+    Can't be used outside of tox.
+    """
 
     def setUp(self):
         super(DbTestCase, self).setUp()
+        self.useFixture(DbFixture())
 
-        self.useFixture(SqliteInMemoryFixture())
+
+ALLOWED_DIALECTS = ['sqlite', 'mysql', 'postgres']
+
+
+def backend_specific(*dialects):
+    """Decorator to skip backend specific tests on inappropriate engines
+
+    ::dialects: list of dialects names under which the test will be launched.
+    """
+    def wrap(f):
+        @wraps(f)
+        def ins_wrap(self):
+            if dialects not in ALLOWED_DIALECTS:
+                raise NameError(
+                        "Please use allowed dialects: %s" % ALLOWED_DIALECTS)
+            engine = session.get_engine()
+            if engine.name not in dialects:
+                msg = ' '.join(('The test "%s" can be run only on %s.',
+                                'Current engine is %s.'))
+                args = (f.__name__, ' '.join(dialects), engine.name)
+                self.skip(msg % args)
+            else:
+                return f(self)
+        return ins_wrap
+    return wrap
