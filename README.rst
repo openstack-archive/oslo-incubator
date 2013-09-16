@@ -29,3 +29,7 @@ To run tests in the current environment:
 
   sudo pip install -r requirements.txt
   nosetests
+
+To run tests using MySQL or PostgreSQL as a DB backend do:
+OS_TEST_DBAPI_ADMIN_CONNECTION=mysql://user:password@host/database tox -e py27
+Note, that your DB user must have permissions to create and drop databases.
