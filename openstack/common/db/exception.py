@@ -49,3 +49,10 @@ class DbMigrationError(DBError):
     """Wraps migration specific exception."""
     def __init__(self, message=None):
         super(DbMigrationError, self).__init__(str(message))
+
+
+class DBConnectionError(Exception):
+    def __init__(self, uri):
+        msg = ('%s does not match database admin '
+               'credentials or database does not exist.')
+        super(DBConnectionError, self).__init__(msg % uri)
