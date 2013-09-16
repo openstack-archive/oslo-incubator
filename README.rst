@@ -29,3 +29,9 @@ To run tests in the current environment:
 
   sudo pip install -r requirements.txt
   nosetests
+
+To use ability to run all tests under backend which is not sqlite, you should
+define environment variable OS_TEST_DBAPI_ADMIN_CONNECTION. Environment
+variable contain user defined database uri in the format:
+driver://username:password@host/database. Required to create a temporary test
+database.

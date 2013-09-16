@@ -65,6 +65,7 @@ class TestSqliteUniqueConstraints(test_base.DbTestCase):
         self.addCleanup(session.cleanup)
         self.addCleanup(test_table.drop)
 
+    @test_base.backend_specific('sqlite')
     def test_get_unique_constraints(self):
         table = self.reflected_table
 
@@ -75,6 +76,7 @@ class TestSqliteUniqueConstraints(test_base.DbTestCase):
         )
         self.assertEqual(should_be, existing)
 
+    @test_base.backend_specific('sqlite')
     def test_add_unique_constraint(self):
         table = self.reflected_table
         UniqueConstraint(table.c.a, table.c.c, name='unique_a_c').create()
@@ -87,6 +89,7 @@ class TestSqliteUniqueConstraints(test_base.DbTestCase):
         )
         self.assertEqual(should_be, existing)
 
+    @test_base.backend_specific('sqlite')
     def test_drop_unique_constraint(self):
         table = self.reflected_table
         UniqueConstraint(table.c.a, table.c.b, name='unique_a_b').drop()
