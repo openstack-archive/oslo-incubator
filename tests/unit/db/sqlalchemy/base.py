@@ -15,9 +15,10 @@
 
 
 import fixtures
-from oslo.config import cfg
+import os
 
 from openstack.common.db.sqlalchemy import session
+from oslo.config import cfg
 from tests import utils as test_utils
 
 
@@ -38,10 +39,55 @@ class SqliteInMemoryFixture(fixtures.Fixture):
         self.addCleanup(session.cleanup)
 
 
+class VariousBackendFixture(fixtures.Fixture):
+    """Database fixture.
+    Allows to run tests on various db backends, such as MySQL and
+    PostgreSQL. Be careful and use this fixture to run only engine specific
+    tests because create/drop and other actions can take extremly long time.
+    Please note, until test database does not dropped all of a tables and an
+    entries remain in the database. And database will be dropped only after
+    all the test cases will be completed. Those the cleanup process is
+    BaseTestCase subclasses business. Use tearDown method to cleanup the
+    database:
+
+    class FooTestCase(VariousBackendFixture):
+        def setUp(self):
+            ...
+            self.test_table.create()
+
+        def tearDown(self):
+            ...
+            self.test_table.create()
+    """
+    def __init__(self):
+        self.conf = cfg.CONF
+        self.conf.import_opt('connection',
+                             'openstack.common.db.sqlalchemy.session',
+                             group='database')
+
+    def setUp(self):
+        super(VariousBackendFixture, self).setUp()
+        uri = os.getenv('OS_TEST_DBAPI_CONNECTION', 'sqlite://')
+
+        self.conf.set_default('connection', uri, group='database')
+        self.addCleanup(self.conf.reset)
+        self.addCleanup(session.cleanup)
+
+
 class DbTestCase(test_utils.BaseTestCase):
     """Base class for testing of DB code (uses in-memory SQLite DB fixture)."""
 
     def setUp(self):
         super(DbTestCase, self).setUp()
-
         self.useFixture(SqliteInMemoryFixture())
+
+
+class VariousBackendTestCase(test_utils.BaseTestCase):
+    """Test case to run engine specific tests with given db backend.
+    WARNING: use this test case exclusively only engine specific tests,
+    because create/drop and other actions can take extremly long time.
+    """
+
+    def setUp(self):
+        super(VariousBackendTestCase, self).setUp()
+        self.useFixture(VariousBackendFixture())
