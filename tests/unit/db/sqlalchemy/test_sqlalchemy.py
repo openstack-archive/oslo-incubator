@@ -18,6 +18,7 @@
 
 """Unit tests for SQLAlchemy specific code."""
 
+import os
 from sqlalchemy import Column, MetaData, Table, UniqueConstraint
 from sqlalchemy import DateTime, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -212,3 +213,17 @@ class SlaveBackendTestCase(test_utils.BaseTestCase):
     def test_slave_backend_nomatch(self):
         session.CONF.database.slave_connection = "mysql:///localhost"
         self.assertRaises(AssertionError, session._assert_matching_drivers)
+
+
+class VariousBackendTestCase(test_base.DbTestCase):
+
+    USE_BACKEND = 'mysql'
+
+    def test_is_backend_changed(self):
+        """Test is engine run correct backend
+        For real world testing required add OS_TEST_DBAPI_ADMIN_CONNECTION env
+        variable to the tox.ini file.
+        """
+        engine = session.get_engine()
+        test_uri = os.getenv('OS_TEST_DBAPI_CONNECTION')
+        self.assertTrue(test_uri.startswith(engine.url.drivername))
