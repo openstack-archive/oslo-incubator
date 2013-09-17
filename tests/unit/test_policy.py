@@ -136,19 +136,6 @@ class EnforcerTest(PolicyBaseTestCase):
         self.assertIn('default', self.enforcer.rules)
         self.assertIn('admin', self.enforcer.rules)
 
-    def test_reload(self):
-        self.enforcer.set_rules({'test': 'test'})
-        self.enforcer.load_rules(force_reload=True)
-
-        self.assertNotEquals(self.enforcer.rules, {'test': 'test'})
-        self.assertIn('default', self.enforcer.rules)
-
-    def test_set_rules(self):
-        # Make sure the rules are set properly
-        self.enforcer.rules = None
-        self.enforcer.set_rules({'test': 1})
-        self.assertEqual(self.enforcer.rules, {'test': 1})
-
     def test_set_rules_type(self):
         self.assertRaises(TypeError,
                           self.enforcer.set_rules,
@@ -237,11 +224,6 @@ class CheckFunctionTestCase(PolicyBaseTestCase):
 
     def test_check_no_rules(self):
         result = self.enforcer.enforce('rule', "target", "creds")
-        self.assertEqual(result, False)
-
-    def test_check_missing_rule(self):
-        result = self.enforcer.enforce('rule', 'target', 'creds')
-
         self.assertEqual(result, False)
 
     def test_check_with_rule(self):
