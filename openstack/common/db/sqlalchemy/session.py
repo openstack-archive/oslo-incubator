@@ -332,11 +332,20 @@ class SqliteForeignKeysListener(PoolListener):
 #               'c1'")
 # N columns - (IntegrityError) (1062, "Duplicate entry 'values joined
 #               with -' for key 'name_of_our_constraint'")
+#
+# ibm_db_sa:
+# N columns - (IntegrityError) SQL0803N  One or more values in the INSERT
+#                statement, UPDATE statement, or foreign key update caused by a
+#                DELETE statement are not valid because the primary key, unique
+#                constraint or unique index identified by "2" constrains table
+#                "NOVA.KEY_PAIRS" from having duplicate values for the index
+#                key.
 _DUP_KEY_RE_DB = {
     "sqlite": (re.compile(r"^.*columns?([^)]+)(is|are)\s+not\s+unique$"),
                re.compile(r"^.*UNIQUE\s+constraint\s+failed:\s+(.+)$")),
     "postgresql": (re.compile(r"^.*duplicate\s+key.*\"([^\"]+)\"\s*\n.*$"),),
-    "mysql": (re.compile(r"^.*\(1062,.*'([^\']+)'\"\)$"),)
+    "mysql": (re.compile(r"^.*\(1062,.*'([^\']+)'\"\)$"),),
+    "ibm_db_sa": (re.compile(r"^.*SQL0803N.*$"),),
 }
 
 
@@ -358,7 +367,7 @@ def _raise_if_duplicate_entry_error(integrity_error, engine_name):
             return [columns]
         return columns[len(uniqbase):].split("0")[1:]
 
-    if engine_name not in ["mysql", "sqlite", "postgresql"]:
+    if engine_name not in ["ibm_db_sa", "mysql", "sqlite", "postgresql"]:
         return
 
     # FIXME(johannes): The usage of the .message attribute has been
@@ -373,7 +382,12 @@ def _raise_if_duplicate_entry_error(integrity_error, engine_name):
     else:
         return
 
-    columns = match.group(1)
+    # NOTE(mriedem): The ibm_db_sa integrity error message doesn't provide the
+    # columns so we have to omit that from the DBDuplicateEntry error.
+    columns = ''
+
+    if engine_name != 'ibm_db_sa':
+        columns = match.group(1)
 
     if engine_name == "sqlite":
         columns = [c.split('.')[-1] for c in columns.strip().split(", ")]
