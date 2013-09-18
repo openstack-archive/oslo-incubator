@@ -20,6 +20,7 @@
 
 from sqlalchemy import Column, MetaData, Table, UniqueConstraint
 from sqlalchemy import DateTime, Integer, String
+from sqlalchemy import exc as sqla_exc
 from sqlalchemy.ext.declarative import declarative_base
 
 from openstack.common.db import exception as db_exc
@@ -146,6 +147,40 @@ class SessionErrorWrapperTestCase(test_base.DbTestCase):
                 update
             self.assertRaises(db_exc.DBDuplicateEntry,
                               method, {'foo': 20})
+
+    def test_ibm_db_sa_raise_if_duplicate_entry_error_duplicate(self):
+        # Tests that the session._raise_if_duplicate_entry_error method
+        # translates the duplicate entry integrity error for the DB2 engine.
+        statement = ('INSERT INTO key_pairs (created_at, updated_at, '
+                     'deleted_at, deleted, name, user_id, fingerprint) VALUES '
+                     '(?, ?, ?, ?, ?, ?, ?)')
+        params = ['20130918001123627099', None, None, 0, 'keypair-23474772',
+                  '974a7c9ffde6419f9811fcf94a917f47',
+                  '7d:2c:58:7f:97:66:14:3f:27:c7:09:3c:26:95:66:4d']
+        orig = sqla_exc.SQLAlchemyError(
+            'SQL0803N  One or more values in the INSERT statement, UPDATE '
+            'statement, or foreign key update caused by a DELETE statement are'
+            ' not valid because the primary key, unique constraint or unique '
+            'index identified by "2" constrains table "NOVA.KEY_PAIRS" from '
+            'having duplicate values for the index key.')
+        integrity_error = sqla_exc.IntegrityError(statement, params, orig)
+        self.assertRaises(db_exc.DBDuplicateEntry,
+                          session._raise_if_duplicate_entry_error,
+                          integrity_error, 'ibm_db_sa')
+
+    def test_ibm_db_sa_raise_if_duplicate_entry_error_no_match(self):
+        # Tests that the session._raise_if_duplicate_entry_error method
+        # does not raise a DBDuplicateEntry exception when it's not a matching
+        # integrity error.
+        statement = ('ALTER TABLE instance_types ADD CONSTRAINT '
+                     'uniq_name_x_deleted UNIQUE (name, deleted)')
+        params = None
+        orig = sqla_exc.SQLAlchemyError(
+            'SQL0542N  The column named "NAME" cannot be a column of a '
+            'primary key or unique key constraint because it can contain null '
+            'values.')
+        integrity_error = sqla_exc.IntegrityError(statement, params, orig)
+        session._raise_if_duplicate_entry_error(integrity_error, 'ibm_db_sa')
 
 
 _REGEXP_TABLE_NAME = _TABLE_NAME + "regexp"
