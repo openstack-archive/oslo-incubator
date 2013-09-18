@@ -101,11 +101,6 @@ export VENV_NAME
 export WITH_VENV
 export VENV=${VENV_PATH}/${VENV_DIR}
 
-function init_testr {
-  if [ ! -d .testrepository ]; then
-    ${WRAPPER} testr init
-  fi
-}
 
 function run_tests {
   # Cleanup *pyc
@@ -239,7 +234,6 @@ if [ ${RECREATE_DB} -eq 1 ]; then
     rm -f tests.sqlite
 fi
 
-init_testr
 run_tests
 
 # NOTE(sirp): we only want to run pep8 when we're running the full-test suite,
