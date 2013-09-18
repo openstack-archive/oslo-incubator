@@ -246,7 +246,7 @@ class RpcCommonTestCase(test.BaseTestCase):
             pass
 
         self.assertTrue(isinstance(e, rpc_common.ClientException))
-        self.assertTrue(e._exc_info[1], ValueError)
+        self.assertEqual(e._exc_info[1], ValueError)
 
     def test_catch_client_exception(self):
         def naughty(param):
