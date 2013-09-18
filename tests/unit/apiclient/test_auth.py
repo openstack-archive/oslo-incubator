@@ -101,10 +101,10 @@ class GlobalFunctionsTest(test.BaseTestCase):
         auth.load_auth_system_opts(parser)
         options = parser.parse_args(
             ["--os-auth-url=fake-url", "--os_auth_system=fake-system"])
-        self.assertTrue(options.os_tenant_name, "fake-project")
-        self.assertTrue(options.os_username, "fake-username")
-        self.assertTrue(options.os_auth_url, "fake-url")
-        self.assertTrue(options.os_auth_system, "fake-system")
+        self.assertEqual(options.os_tenant_name, "fake-project")
+        self.assertEqual(options.os_username, "fake-username")
+        self.assertEqual(options.os_auth_url, "fake-url")
+        self.assertEqual(options.os_auth_system, "fake-system")
 
 
 class MockEntrypoint(object):

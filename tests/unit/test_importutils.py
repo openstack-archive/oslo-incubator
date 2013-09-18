@@ -41,12 +41,12 @@ class ImportUtilsTest(test.BaseTestCase):
 
     def test_import_object_optional_arg_not_present(self):
         obj = importutils.import_object('tests.unit.fake.FakeDriver')
-        self.assertTrue(obj.__class__.__name__, 'FakeDriver')
+        self.assertEqual(obj.__class__.__name__, 'FakeDriver')
 
     def test_import_object_optional_arg_present(self):
         obj = importutils.import_object('tests.unit.fake.FakeDriver',
                                         first_arg=False)
-        self.assertTrue(obj.__class__.__name__, 'FakeDriver')
+        self.assertEqual(obj.__class__.__name__, 'FakeDriver')
 
     def test_import_object_required_arg_not_present(self):
         # arg 1 isn't optional here
@@ -56,17 +56,17 @@ class ImportUtilsTest(test.BaseTestCase):
     def test_import_object_required_arg_present(self):
         obj = importutils.import_object('tests.unit.fake.FakeDriver2',
                                         first_arg=False)
-        self.assertTrue(obj.__class__.__name__, 'FakeDriver2')
+        self.assertEqual(obj.__class__.__name__, 'FakeDriver2')
 
     # namespace tests
     def test_import_object_ns_optional_arg_not_present(self):
         obj = importutils.import_object_ns('tests.unit', 'fake.FakeDriver')
-        self.assertTrue(obj.__class__.__name__, 'FakeDriver')
+        self.assertEqual(obj.__class__.__name__, 'FakeDriver')
 
     def test_import_object_ns_optional_arg_present(self):
         obj = importutils.import_object_ns('tests.unit', 'fake.FakeDriver',
                                            first_arg=False)
-        self.assertTrue(obj.__class__.__name__, 'FakeDriver')
+        self.assertEqual(obj.__class__.__name__, 'FakeDriver')
 
     def test_import_object_ns_required_arg_not_present(self):
         # arg 1 isn't optional here
@@ -76,19 +76,19 @@ class ImportUtilsTest(test.BaseTestCase):
     def test_import_object_ns_required_arg_present(self):
         obj = importutils.import_object_ns('tests.unit', 'fake.FakeDriver2',
                                            first_arg=False)
-        self.assertTrue(obj.__class__.__name__, 'FakeDriver2')
+        self.assertEqual(obj.__class__.__name__, 'FakeDriver2')
 
     # namespace tests
     def test_import_object_ns_full_optional_arg_not_present(self):
         obj = importutils.import_object_ns('tests.unit2',
                                            'tests.unit.fake.FakeDriver')
-        self.assertTrue(obj.__class__.__name__, 'FakeDriver')
+        self.assertEqual(obj.__class__.__name__, 'FakeDriver')
 
     def test_import_object_ns_full_optional_arg_present(self):
         obj = importutils.import_object_ns('tests.unit2',
                                            'tests.unit.fake.FakeDriver',
                                            first_arg=False)
-        self.assertTrue(obj.__class__.__name__, 'FakeDriver')
+        self.assertEqual(obj.__class__.__name__, 'FakeDriver')
 
     def test_import_object_ns_full_required_arg_not_present(self):
         # arg 1 isn't optional here
@@ -99,7 +99,7 @@ class ImportUtilsTest(test.BaseTestCase):
         obj = importutils.import_object_ns('tests.unit2',
                                            'tests.unit.fake.FakeDriver2',
                                            first_arg=False)
-        self.assertTrue(obj.__class__.__name__, 'FakeDriver2')
+        self.assertEqual(obj.__class__.__name__, 'FakeDriver2')
 
     def test_import_object(self):
         dt = importutils.import_object('datetime.time')
