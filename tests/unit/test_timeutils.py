@@ -17,9 +17,11 @@
 
 import calendar
 import datetime
+import time
 
 import iso8601
 import mock
+from testtools import matchers
 
 from openstack.common import test
 from openstack.common import timeutils
@@ -121,6 +123,18 @@ class TimeUtilsTest(test.BaseTestCase):
 
     def test_is_newer_than_str(self):
         self._test_is_newer_than(timeutils.strtime)
+
+    def test_set_time_override_using_default(self):
+        now = timeutils.utcnow_ts()
+
+        # NOTE(kgriffs): Normally it's bad form to sleep in a unit test,
+        # but this is the only way to test that set_time_override defaults
+        # to setting the override to the current time.
+        time.sleep(1)
+
+        timeutils.set_time_override()
+        overriden_now = timeutils.utcnow_ts()
+        self.assertThat(now, matchers.LessThan(overriden_now))
 
     def test_utcnow_ts(self):
         skynet_self_aware_ts = 872835240
