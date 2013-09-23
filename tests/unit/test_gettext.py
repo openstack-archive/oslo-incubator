@@ -139,6 +139,22 @@ class GettextTest(test.BaseTestCase):
                          gettextutils.get_localized_message(non_message, 'A'))
 
     @mock.patch('gettext.translation')
+    def test_get_localized_message_with_param(self, mock_translation):
+        message_with_params = 'A message: %s'
+        es_translation = 'A message: %s'
+        param = 'A Message param'
+
+        translations = {message_with_params: es_translation}
+        translator = TestTranslations.translator(translations, 'es')
+        mock_translation.side_effect = translator
+
+        msg = gettextutils.Message(message_with_params, 'test_domain')
+        msg = msg % param
+
+        expected_translation = es_translation % param
+        self._assert_translations(msg, 'es', expected_translation)
+
+    @mock.patch('gettext.translation')
     def test_get_localized_message_with_message_param(self, mock_translation):
         message_with_params = 'A message with param: %s'
         es_translation = 'A message with param in Spanish: %s'
