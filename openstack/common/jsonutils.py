@@ -46,6 +46,7 @@ except ImportError:
 
 import six
 
+from openstack.common import gettextutils
 from openstack.common import importutils
 from openstack.common import timeutils
 
@@ -89,6 +90,10 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
     #   6491 <type 'float'>
     #    283 <type 'tuple'>
     #     19 <type 'long'>
+
+    if isinstance(value, gettextutils.Message):
+        value = unicode(value)
+
     if isinstance(value, _simple_types):
         return value
 
