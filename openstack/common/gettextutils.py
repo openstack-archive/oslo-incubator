@@ -184,9 +184,10 @@ class Message(_userString.UserString, object):
                 if isinstance(param, Message):
                     param.locale = value
             return
-        for param in self.params.values():
-            if isinstance(param, Message):
-                param.locale = value
+        if isinstance(self.params, dict):
+            for param in self.params.values():
+                if isinstance(param, Message):
+                    param.locale = value
 
     def _save_dictionary_parameter(self, dict_param):
         full_msg = self.data
