@@ -25,6 +25,7 @@ import netaddr
 import six
 import testtools
 
+from openstack.common import gettextutils
 from openstack.common import jsonutils
 from openstack.common import test
 
@@ -181,3 +182,9 @@ class ToPrimitiveTestCase(test.BaseTestCase):
         thing = {'ip_addr': netaddr.IPAddress('1.2.3.4')}
         ret = jsonutils.to_primitive(thing)
         self.assertEqual({'ip_addr': '1.2.3.4'}, ret)
+
+    def test_message(self):
+        message_with_params = 'A message with param: %s'
+        msg = gettextutils.Message(message_with_params, 'test_domain')
+        ret = jsonutils.to_primitive(msg)
+        self.assertEqual(message_with_params, ret)
