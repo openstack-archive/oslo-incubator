@@ -108,7 +108,8 @@ def load_filters(filters_path):
     for filterdir in filters_path:
         if not os.path.isdir(filterdir):
             continue
-        for filterfile in os.listdir(filterdir):
+        for filterfile in filter(lambda f: not f.startswith('.'),
+                                 os.listdir(filterdir)):
             filterconfig = moves.configparser.RawConfigParser()
             filterconfig.read(os.path.join(filterdir, filterfile))
             for (name, value) in filterconfig.items("Filters"):
