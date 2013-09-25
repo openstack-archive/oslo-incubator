@@ -19,6 +19,7 @@
 from babel import localedata
 import copy
 import gettext
+import logging
 import logging.handlers
 import os
 
@@ -106,6 +107,24 @@ class GettextTest(test.BaseTestCase):
                         localedir='/foo/bar',
                         unicode=True)
 
+    def test_is_basestring_instance(self):
+        if not six.PY3:
+            message = gettextutils.Message('test', 'test_domain')
+            self.assertTrue(isinstance(message, basestring))
+
+    def test_logging(self):
+        message = gettextutils.Message('test ' + unichr(300), 'test')
+        logger = logging.getLogger('whatever')
+        logger.setLevel(logging.DEBUG)
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s '
+                                      '- %(user)s - %(message)s')
+        ch.setFormatter(formatter)
+        logger.addHandler(ch)
+        params = {'user': unicode('test')}
+        logger.info(message, extra=params)
+
     def test_get_localized_message(self):
         non_message = 'Non-translatable Message'
         en_message = 'A message in the default locale'
@@ -114,16 +133,28 @@ class GettextTest(test.BaseTestCase):
         message = gettextutils.Message(en_message, 'test_domain')
 
         # In the Message class the translation ultimately occurs when the
-        # message is turned into a string, and that is what we mock here
-        def _mock_translation_and_unicode(self):
-            if self.locale == 'es':
-                return es_translation
-            if self.locale == 'zh':
-                return zh_translation
-            return self.data
+        # message ID is resolved, and that is what we mock here
+        def _mock_es(msg):
+            return es_translation
+
+        def _mock_zh(msg):
+            return zh_translation
+
+        def _mock_def(msg):
+            return msg
+
+        def _mock_gtm(domain, locale):
+            if locale == 'es':
+                return _mock_es
+            if locale == 'zh':
+                return _mock_zh
+            return _mock_def
+
+        _mock_gtm = staticmethod(_mock_gtm)
 
         self.stubs.Set(gettextutils.Message,
-                       '__unicode__', _mock_translation_and_unicode)
+                       'get_translation_method', _mock_gtm)
+
 
         self.assertEqual(es_translation,
                          gettextutils.get_localized_message(message, 'es'))
@@ -279,7 +310,8 @@ class MessageTestCase(test.BaseTestCase):
 
     @staticmethod
     def _lazy_gettext(msg):
-        return gettextutils.Message(msg, 'oslo')
+        message = gettextutils.Message(msg, 'oslo')
+        return message
 
     def tearDown(self):
         # need to clean up stubs early since they interfere
@@ -482,30 +514,6 @@ class MessageTestCase(test.BaseTestCase):
         self.assertIn('msgid', result)
         self.assertNotIn('blah', result)
 
-    def test_locale_set_does_translation(self):
-        msgid = "Some msgid string"
-        result = self._lazy_gettext(msgid)
-        result.domain = 'test_domain'
-        result.locale = 'test_locale'
-        os.environ['TEST_DOMAIN_LOCALEDIR'] = '/tmp/blah'
-
-        self.mox.StubOutWithMock(gettext, 'translation')
-        fake_lang = self.mox.CreateMock(gettext.GNUTranslations)
-
-        gettext.translation('test_domain',
-                            languages=['test_locale'],
-                            fallback=True,
-                            localedir='/tmp/blah').AndReturn(fake_lang)
-        if six.PY3:
-            fake_lang.gettext(msgid).AndReturn(msgid)
-        else:
-            fake_lang.ugettext(msgid).AndReturn(msgid)
-
-        self.mox.ReplayAll()
-        result = result.data
-        os.environ.pop('TEST_DOMAIN_LOCALEDIR')
-        self.assertEqual(msgid, result)
-
     def _get_testmsg_inner_params(self):
         return {'params': {'test1': 'blah1',
                            'test2': 'blah2',
@@ -518,10 +526,13 @@ class MessageTestCase(test.BaseTestCase):
     def _get_full_test_message(self):
         msgid = "Some msgid string: %(test1)s %(test2)s %(test3)s"
         message = self._lazy_gettext(msgid)
-        attrs = self._get_testmsg_inner_params()
-        for (k, v) in attrs.items():
-            setattr(message, k, v)
-
+        message.domain = 'test_domain'
+        message = message % {'test1': 'blah1',
+                             'test2': 'blah2',
+                             'test3': SomeObject()}
+        message = message.translate_into('en_US')
+        message = message.__add__('Extra .')
+        message = message.__radd__('. More Extra.')
         return copy.deepcopy(message)
 
     def test_message_copyable(self):
@@ -530,27 +541,11 @@ class MessageTestCase(test.BaseTestCase):
 
         self.assertIsNot(message, copied_msg)
 
-        for k in self._get_testmsg_inner_params():
+        for k in message.__getstate__():
             self.assertEqual(getattr(message, k),
                              getattr(copied_msg, k))
 
         self.assertEqual(message, copied_msg)
-
-        message._msg = 'Some other msgid string'
-
-        self.assertNotEqual(message, copied_msg)
-
-    def test_message_copy_deepcopied(self):
-        message = self._get_full_test_message()
-        inner_obj = SomeObject()
-        message.params['test3'] = inner_obj
-
-        copied_msg = copy.copy(message)
-
-        self.assertIsNot(message, copied_msg)
-
-        inner_obj.tag = 'different'
-        self.assertNotEqual(message, copied_msg)
 
     def test_add_returns_copy(self):
         msgid = "Some msgid string: %(test1)s %(test2)s"
@@ -635,7 +630,8 @@ class LocaleHandlerTestCase(test.BaseTestCase):
         self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
 
         def _message_with_domain(msg):
-            return gettextutils.Message(msg, 'oslo')
+            message = gettextutils.Message(msg, 'oslo')
+            return message
 
         self._lazy_gettext = _message_with_domain
         self.buffer_handler = logging.handlers.BufferingHandler(40)
