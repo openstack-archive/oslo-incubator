@@ -111,7 +111,8 @@ class GettextTest(test.BaseTestCase):
         en_message = 'A message in the default locale'
         es_translation = 'A message in Spanish'
         zh_translation = 'A message in Chinese'
-        message = gettextutils.Message(en_message, 'test_domain')
+        message = gettextutils.Message(en_message)
+        message.domain = 'test_domain'
 
         # In the Message class the translation ultimately occurs when the
         # message is turned into a string, and that is what we mock here
@@ -166,8 +167,10 @@ class GettextTest(test.BaseTestCase):
         translator = TestTranslations.translator(translations, 'es')
         mock_translation.side_effect = translator
 
-        msg = gettextutils.Message(message_with_params, 'test_domain')
-        msg_param = gettextutils.Message(message_param, 'test_domain')
+        msg = gettextutils.Message(message_with_params)
+        msg.domain =  'test_domain'
+        msg_param = gettextutils.Message(message_param)
+        msg_param.domain = 'test_domain'
         msg = msg % msg_param
 
         expected_translation = es_translation % es_param_translation
@@ -188,9 +191,12 @@ class GettextTest(test.BaseTestCase):
         translator = TestTranslations.translator(translations, 'es')
         mock_translation.side_effect = translator
 
-        msg = gettextutils.Message(message_with_params, 'test_domain')
-        param_1 = gettextutils.Message(message_param, 'test_domain')
-        param_2 = gettextutils.Message(another_message_param, 'test_domain')
+        msg = gettextutils.Message(message_with_params)
+        msg.domain =  'test_domain'
+        param_1 = gettextutils.Message(message_param)
+        param_1.domain = 'test_domain'
+        param_2 = gettextutils.Message(another_message_param)
+        param_2.domain = 'test_domain'
         msg = msg % (param_1, param_2)
 
         expected_translation = es_translation % (es_param_translation,
@@ -209,8 +215,10 @@ class GettextTest(test.BaseTestCase):
         translator = TestTranslations.translator(translations, 'es')
         mock_translation.side_effect = translator
 
-        msg = gettextutils.Message(message_with_params, 'test_domain')
-        msg_param = gettextutils.Message(message_param, 'test_domain')
+        msg = gettextutils.Message(message_with_params)
+        msg.domain = 'test_domain'
+        msg_param = gettextutils.Message(message_param)
+        msg_param.domain = 'test_domain'
         msg = msg % {'param': msg_param}
 
         expected_translation = es_translation % {'param': es_param_translation}
@@ -279,7 +287,9 @@ class MessageTestCase(test.BaseTestCase):
 
     @staticmethod
     def _lazy_gettext(msg):
-        return gettextutils.Message(msg, 'oslo')
+        message = gettextutils.Message(msg)
+        message.domain = 'oslo'
+        return message
 
     def tearDown(self):
         # need to clean up stubs early since they interfere
@@ -518,9 +528,16 @@ class MessageTestCase(test.BaseTestCase):
     def _get_full_test_message(self):
         msgid = "Some msgid string: %(test1)s %(test2)s %(test3)s"
         message = self._lazy_gettext(msgid)
-        attrs = self._get_testmsg_inner_params()
-        for (k, v) in attrs.items():
-            setattr(message, k, v)
+        message.domain = 'test_domain'
+        message = message % {'test1': 'blah1',
+                             'test2': 'blah2',
+                             'test3': SomeObject()}
+        message = message.translate_into('en_US')
+        message = message.__add__('Extra .')
+        message = message.__radd__('. More Extra.')
+        #attrs = self._get_testmsg_inner_params()
+        #for (k, v) in attrs.items():
+        #    setattr(message, k, v)
 
         return copy.deepcopy(message)
 
@@ -530,15 +547,15 @@ class MessageTestCase(test.BaseTestCase):
 
         self.assertIsNot(message, copied_msg)
 
-        for k in self._get_testmsg_inner_params():
+        for k in message.__getstate__():
             self.assertEqual(getattr(message, k),
                              getattr(copied_msg, k))
 
         self.assertEqual(message, copied_msg)
 
-        message._msg = 'Some other msgid string'
+        #message._msg = 'Some other msgid string'
 
-        self.assertNotEqual(message, copied_msg)
+        #self.assertNotEqual(message, copied_msg)
 
     def test_message_copy_deepcopied(self):
         message = self._get_full_test_message()
@@ -550,6 +567,10 @@ class MessageTestCase(test.BaseTestCase):
         self.assertIsNot(message, copied_msg)
 
         inner_obj.tag = 'different'
+
+        # The immutable portion of the message
+        # must be updated.
+        message = message._new_instance()
         self.assertNotEqual(message, copied_msg)
 
     def test_add_returns_copy(self):
@@ -616,7 +637,6 @@ class MessageTestCase(test.BaseTestCase):
     def test_to_unicode(self):
         message = self._get_full_test_message()
         message_str = six.text_type(message)
-
         self.assertEqual(message, message_str)
         self.assertTrue(isinstance(message_str, six.text_type))
 
@@ -635,7 +655,9 @@ class LocaleHandlerTestCase(test.BaseTestCase):
         self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
 
         def _message_with_domain(msg):
-            return gettextutils.Message(msg, 'oslo')
+            message = gettextutils.Message(msg)
+            message.domain = 'oslo'
+            return message
 
         self._lazy_gettext = _message_with_domain
         self.buffer_handler = logging.handlers.BufferingHandler(40)
