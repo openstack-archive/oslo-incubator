@@ -114,16 +114,25 @@ class GettextTest(test.BaseTestCase):
         message = gettextutils.Message(en_message, 'test_domain')
 
         # In the Message class the translation ultimately occurs when the
-        # message is turned into a string, and that is what we mock here
-        def _mock_translation_and_unicode(self):
-            if self.locale == 'es':
-                return es_translation
-            if self.locale == 'zh':
-                return zh_translation
-            return self.data
+        # message ID is resolved, and that is what we mock here
+        def _mock_es(msg):
+            return es_translation
+
+        def _mock_zh(msg):
+            return zh_translation
+
+        def _mock_def(msg):
+            return msg
+
+        def _mock_get_translation_method(self):
+            if self._locale == 'es':
+                return _mock_es
+            if self._locale == 'zh':
+                return _mock_zh
+            return _mock_def
 
         self.stubs.Set(gettextutils.Message,
-                       '__unicode__', _mock_translation_and_unicode)
+                       '_get_translation_method', _mock_get_translation_method)
 
         self.assertEqual(es_translation,
                          gettextutils.get_localized_message(message, 'es'))
@@ -279,7 +288,8 @@ class MessageTestCase(test.BaseTestCase):
 
     @staticmethod
     def _lazy_gettext(msg):
-        return gettextutils.Message(msg, 'oslo')
+        message = gettextutils.Message(msg, 'oslo')
+        return message
 
     def tearDown(self):
         # need to clean up stubs early since they interfere
@@ -486,7 +496,7 @@ class MessageTestCase(test.BaseTestCase):
         msgid = "Some msgid string"
         result = self._lazy_gettext(msgid)
         result.domain = 'test_domain'
-        result.locale = 'test_locale'
+        result = result.translate_into('test_locale')
         os.environ['TEST_DOMAIN_LOCALEDIR'] = '/tmp/blah'
 
         self.mox.StubOutWithMock(gettext, 'translation')
@@ -518,10 +528,13 @@ class MessageTestCase(test.BaseTestCase):
     def _get_full_test_message(self):
         msgid = "Some msgid string: %(test1)s %(test2)s %(test3)s"
         message = self._lazy_gettext(msgid)
-        attrs = self._get_testmsg_inner_params()
-        for (k, v) in attrs.items():
-            setattr(message, k, v)
-
+        message.domain = 'test_domain'
+        message = message % {'test1': 'blah1',
+                             'test2': 'blah2',
+                             'test3': SomeObject()}
+        message = message.translate_into('en_US')
+        message = message.__add__('Extra .')
+        message = message.__radd__('. More Extra.')
         return copy.deepcopy(message)
 
     def test_message_copyable(self):
@@ -530,27 +543,11 @@ class MessageTestCase(test.BaseTestCase):
 
         self.assertIsNot(message, copied_msg)
 
-        for k in self._get_testmsg_inner_params():
+        for k in message.__getstate__():
             self.assertEqual(getattr(message, k),
                              getattr(copied_msg, k))
 
         self.assertEqual(message, copied_msg)
-
-        message._msg = 'Some other msgid string'
-
-        self.assertNotEqual(message, copied_msg)
-
-    def test_message_copy_deepcopied(self):
-        message = self._get_full_test_message()
-        inner_obj = SomeObject()
-        message.params['test3'] = inner_obj
-
-        copied_msg = copy.copy(message)
-
-        self.assertIsNot(message, copied_msg)
-
-        inner_obj.tag = 'different'
-        self.assertNotEqual(message, copied_msg)
 
     def test_add_returns_copy(self):
         msgid = "Some msgid string: %(test1)s %(test2)s"
@@ -635,7 +632,8 @@ class LocaleHandlerTestCase(test.BaseTestCase):
         self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
 
         def _message_with_domain(msg):
-            return gettextutils.Message(msg, 'oslo')
+            message = gettextutils.Message(msg, 'oslo')
+            return message
 
         self._lazy_gettext = _message_with_domain
         self.buffer_handler = logging.handlers.BufferingHandler(40)
