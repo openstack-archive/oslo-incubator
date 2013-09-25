@@ -29,10 +29,6 @@ import gettext
 import logging
 import os
 import re
-try:
-    import UserString as _userString
-except ImportError:
-    import collections as _userString
 
 from babel import localedata
 import six
@@ -58,7 +54,8 @@ def enable_lazy():
 
 def _(msg):
     if USE_LAZY:
-        return Message(msg, 'oslo')
+        message = Message.build_msg({'domain': 'oslo', '_msg': msg})
+        return message
     else:
         if six.PY3:
             return _t.gettext(msg)
@@ -105,7 +102,8 @@ def install(domain, lazy=False):
             Message encapsulates a string so that we can translate
             it later when needed.
             """
-            return Message(msg, domain)
+            message = Message.build_msg({'domain': domain, '_msg': msg})
+            return message
 
         from six import moves
         moves.builtins.__dict__['_'] = _lazy_gettext
@@ -120,31 +118,53 @@ def install(domain, lazy=False):
                             unicode=True)
 
 
-class Message(_userString.UserString, object):
+class Message(six.text_type):
     """Class used to encapsulate translatable messages."""
-    def __init__(self, msg, domain):
-        # _msg is the gettext msgid and should never change
-        self._msg = msg
+    def __new__(cls, *args, **kwargs):
+        """Use for testing only; for run-time use, use build_msg."""
+        self = super(Message, cls).__new__(cls, args[0], **kwargs)
+        return self
+
+    def __init__(self, *args, **kwargs):
+        """Use for testing only; for run-time use, use build_msg."""
+        self._msg = args[0]
         self._left_extra_msg = ''
         self._right_extra_msg = ''
         self._locale = None
         self.params = None
-        self.domain = domain
+        self.domain = args[1]
 
-    @property
-    def data(self):
-        # NOTE(mrodden): this should always resolve to a unicode string
-        # that best represents the state of the message currently
+    @classmethod
+    def build_msg(cls, attr):
+        """Class method used to construct new Message objects, setting
+        the message text (vs. id) to the value retrieved via gettext.
+        """
+        msg_id = attr['_msg']
+        # domain is required, locale is not
+        method = cls.get_translation_method(attr['domain'],
+                                            attr.get('_locale'))
+        left_extra_msg = attr.get('_left_extra_msg') or ''
+        right_extra_msg = attr.get('_right_extra_msg') or ''
+        msg_txt = left_extra_msg + method(msg_id) + right_extra_msg
 
-        localedir = os.environ.get(self.domain.upper() + '_LOCALEDIR')
-        if self.locale:
-            lang = gettext.translation(self.domain,
+        if attr.get('params') is not None:
+            msg_txt = msg_txt % attr.get('params')
+
+        msg = cls(six.text_type(msg_txt), attr['domain'])
+        msg._set_attributes(attr)
+        return msg
+
+    @staticmethod
+    def get_translation_method(domain, locale):
+        localedir = os.environ.get(domain.upper() + '_LOCALEDIR')
+        if locale:
+            lang = gettext.translation(domain,
                                        localedir=localedir,
-                                       languages=[self.locale],
+                                       languages=[locale],
                                        fallback=True)
         else:
             # use system locale for translations
-            lang = gettext.translation(self.domain,
+            lang = gettext.translation(domain,
                                        localedir=localedir,
                                        fallback=True)
 
@@ -152,45 +172,46 @@ class Message(_userString.UserString, object):
             ugettext = lang.gettext
         else:
             ugettext = lang.ugettext
-
-        full_msg = (self._left_extra_msg +
-                    ugettext(self._msg) +
-                    self._right_extra_msg)
-
-        if self.params is not None:
-            full_msg = full_msg % self.params
-
-        return six.text_type(full_msg)
+        return ugettext
 
     @property
     def locale(self):
         return self._locale
 
-    @locale.setter
-    def locale(self, value):
-        self._locale = value
-        if not self.params:
+    @staticmethod
+    def _set_locale(attr, value):
+        params = attr.get('params')
+        if not params:
             return
 
         # This Message object may have been constructed with one or more
         # Message objects as substitution parameters, given as a single
         # Message, or a tuple or Map containing some, so when setting the
-        # locale for this Message we need to set it for those Messages too.
-        if isinstance(self.params, Message):
-            self.params.locale = value
+        # locale for this Message we need to translate those Messages too.
+        if isinstance(params, Message):
+            attr['params'] = params.translate_into(value)
             return
-        if isinstance(self.params, tuple):
-            for param in self.params:
+        if isinstance(params, tuple):
+            contains_msg = False
+            for param in params:
                 if isinstance(param, Message):
-                    param.locale = value
+                    contains_msg = True
+            if contains_msg:
+                new_tup = ()
+                for param in params:
+                    if isinstance(param, Message):
+                        param = param.translate_into(value)
+                    new_tup = new_tup + (param, )
+                attr['params'] = new_tup
             return
-        if isinstance(self.params, dict):
-            for param in self.params.values():
+        if isinstance(params, dict):
+            for key in params.keys():
+                param = params[key]
                 if isinstance(param, Message):
-                    param.locale = value
+                    params[key] = param.translate_into(value)
 
-    def _save_dictionary_parameter(self, dict_param):
-        full_msg = self.data
+    @staticmethod
+    def _save_dictionary_parameter(full_msg, dict_param):
         # look for %(blah) fields in string;
         # ignore %% and deal with the
         # case where % is first character on the line
@@ -211,35 +232,42 @@ class Message(_userString.UserString, object):
 
         return params
 
-    def _save_parameters(self, other):
+    @staticmethod
+    def _save_parameters(attr, other):
         # we check for None later to see if
         # we actually have parameters to inject,
         # so encapsulate if our parameter is actually None
         if other is None:
-            self.params = (other, )
+            attr['params'] = (other, )
         elif isinstance(other, dict):
-            self.params = self._save_dictionary_parameter(other)
+            # Get the original translated message
+            method = Message.get_translation_method(attr['domain'],
+                                                    attr.get('locale'))
+            text = method(attr['_msg'])
+            attr['params'] = Message._save_dictionary_parameter(text, other)
         else:
             # fallback to casting to unicode,
             # this will handle the problematic python code-like
             # objects that cannot be deep-copied
             try:
-                self.params = copy.deepcopy(other)
+                attr['params'] = copy.deepcopy(other)
             except TypeError:
-                self.params = six.text_type(other)
+                attr['params'] = six.text_type(other)
 
-        return self
-
-    # overrides to be more string-like
-    def __unicode__(self):
-        return self.data
-
-    def __str__(self):
-        if six.PY3:
-            return self.__unicode__()
-        return self.data.encode('utf-8')
+    def translate_into(self, locale):
+        """Operation that results in a new Message object
+        translated into the target locale.
+        """
+        # Create a copy so the source object remains unchanged.
+        attr = self._copy_attributes()
+        attr['_locale'] = locale
+        Message._set_locale(attr, locale)
+        return Message.build_msg(attr)
 
     def __getstate__(self):
+        return self._copy_attributes()
+
+    def _copy_attributes(self):
         to_copy = ['_msg', '_right_extra_msg', '_left_extra_msg',
                    'domain', 'params', '_locale']
         new_dict = self.__dict__.fromkeys(to_copy)
@@ -249,53 +277,27 @@ class Message(_userString.UserString, object):
         return new_dict
 
     def __setstate__(self, state):
+        self._set_attributes(state)
+
+    def _set_attributes(self, state):
         for (k, v) in state.items():
             setattr(self, k, v)
 
     # operator overloads
     def __add__(self, other):
-        copied = copy.deepcopy(self)
-        copied._right_extra_msg += other.__str__()
-        return copied
+        attr = self._copy_attributes()
+        attr['_right_extra_msg'] += other.__str__()
+        return Message.build_msg(attr)
 
     def __radd__(self, other):
-        copied = copy.deepcopy(self)
-        copied._left_extra_msg += other.__str__()
-        return copied
+        attr = self._copy_attributes()
+        attr['_left_extra_msg'] += other.__str__()
+        return Message.build_msg(attr)
 
     def __mod__(self, other):
-        # do a format string to catch and raise
-        # any possible KeyErrors from missing parameters
-        self.data % other
-        copied = copy.deepcopy(self)
-        return copied._save_parameters(other)
-
-    def __mul__(self, other):
-        return self.data * other
-
-    def __rmul__(self, other):
-        return other * self.data
-
-    def __getitem__(self, key):
-        return self.data[key]
-
-    def __getslice__(self, start, end):
-        return self.data.__getslice__(start, end)
-
-    def __getattribute__(self, name):
-        # NOTE(mrodden): handle lossy operations that we can't deal with yet
-        # These override the UserString implementation, since UserString
-        # uses our __class__ attribute to try and build a new message
-        # after running the inner data string through the operation.
-        # At that point, we have lost the gettext message id and can just
-        # safely resolve to a string instead.
-        ops = ['capitalize', 'center', 'decode', 'encode',
-               'expandtabs', 'ljust', 'lstrip', 'replace', 'rjust', 'rstrip',
-               'strip', 'swapcase', 'title', 'translate', 'upper', 'zfill']
-        if name in ops:
-            return getattr(self.data, name)
-        else:
-            return _userString.UserString.__getattribute__(self, name)
+        attr = self._copy_attributes()
+        Message._save_parameters(attr, other)
+        return Message.build_msg(attr)
 
 
 def get_available_languages(domain):
@@ -331,9 +333,7 @@ def get_available_languages(domain):
 def get_localized_message(message, user_locale):
     """Gets a localized version of the given message in the given locale."""
     if isinstance(message, Message):
-        if user_locale:
-            message.locale = user_locale
-        return six.text_type(message)
+        return message.translate_into(user_locale)
     else:
         return message
 
@@ -358,8 +358,14 @@ class LocaleHandler(logging.Handler):
         self.target = target
 
     def emit(self, record):
-        if isinstance(record.msg, Message):
-            # set the locale and resolve to a string
-            record.msg.locale = self.locale
+        org_msg = record.msg
+        if isinstance(org_msg, Message):
+            # translate message into the locale
+            record.msg = org_msg.translate_into(self.locale)
 
         self.target.emit(record)
+
+        if isinstance(org_msg, Message):
+            # Restore the original message, in case there are other handlers.
+            # They should get an unaltered message.
+            record.msg = org_msg
