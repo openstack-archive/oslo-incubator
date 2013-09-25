@@ -58,7 +58,9 @@ def enable_lazy():
 
 def _(msg):
     if USE_LAZY:
-        return Message(msg, 'oslo')
+        message = Message(msg)
+        message.domain = 'oslo'
+        return message
     else:
         if six.PY3:
             return _t.gettext(msg)
@@ -105,7 +107,9 @@ def install(domain, lazy=False):
             Message encapsulates a string so that we can translate
             it later when needed.
             """
-            return Message(msg, domain)
+            message = Message(msg)
+            message.domain = domain
+            return message
 
         from six import moves
         moves.builtins.__dict__['_'] = _lazy_gettext
@@ -120,16 +124,15 @@ def install(domain, lazy=False):
                             unicode=True)
 
 
-class Message(_userString.UserString, object):
+class Message(_userString.UserString, six.text_type):
     """Class used to encapsulate translatable messages."""
-    def __init__(self, msg, domain):
+    def __init__(self, msg):
         # _msg is the gettext msgid and should never change
         self._msg = msg
         self._left_extra_msg = ''
         self._right_extra_msg = ''
         self._locale = None
         self.params = None
-        self.domain = domain
 
     @property
     def data(self):
@@ -175,19 +178,28 @@ class Message(_userString.UserString, object):
         # This Message object may have been constructed with one or more
         # Message objects as substitution parameters, given as a single
         # Message, or a tuple or Map containing some, so when setting the
-        # locale for this Message we need to set it for those Messages too.
+        # locale for this Message we need to translate those Messages too.
         if isinstance(self.params, Message):
-            self.params.locale = value
+            self.params = self.params.translate_into(value)
             return
         if isinstance(self.params, tuple):
+            containsMsg = False
             for param in self.params:
                 if isinstance(param, Message):
-                    param.locale = value
+                    containsMsg = True
+            if containsMsg:
+                new_tup = ()
+                for param in self.params:
+                    if isinstance(param, Message):
+                        param = param.translate_into(value)
+                    new_tup = new_tup + (param, )
+                self.params = new_tup
             return
         if isinstance(self.params, dict):
-            for param in self.params.values():
+            for key in self.params.keys():
+                param = self.params[key]
                 if isinstance(param, Message):
-                    param.locale = value
+                    self.params[key] = param.translate_into(value)
 
     def _save_dictionary_parameter(self, dict_param):
         full_msg = self.data
@@ -230,6 +242,30 @@ class Message(_userString.UserString, object):
 
         return self
 
+    def translate_into(self, locale):
+        """Operation that results in a new Message object
+        translated into the target locale.
+        """
+        # Create a copy so the source object remains
+        # unchanged.
+        msg = copy.deepcopy(self)
+        msg.locale = locale
+        return msg._new_instance()
+
+    def _new_instance(self):
+        """Creates a new instance based on the current instance
+        but with an updated underlying unicode object for any
+        operations that require an up-to-date unicode string,
+        such as operation.eq. Note that all the mutable attribute
+        values are preserved, but changes to locale should be
+        followed by replacing a Message instance using this method,
+        similar to the way other operations such as % result in
+        a new instance with a current unicode object.
+        """
+        msg = Message(self.__unicode__())
+        msg.__setstate__(self.__getstate__())
+        return msg
+
     # overrides to be more string-like
     def __unicode__(self):
         return self.data
@@ -256,19 +292,19 @@ class Message(_userString.UserString, object):
     def __add__(self, other):
         copied = copy.deepcopy(self)
         copied._right_extra_msg += other.__str__()
-        return copied
+        return copied._new_instance()
 
     def __radd__(self, other):
         copied = copy.deepcopy(self)
         copied._left_extra_msg += other.__str__()
-        return copied
+        return copied._new_instance()
 
     def __mod__(self, other):
         # do a format string to catch and raise
         # any possible KeyErrors from missing parameters
         self.data % other
         copied = copy.deepcopy(self)
-        return copied._save_parameters(other)
+        return copied._save_parameters(other)._new_instance()
 
     def __mul__(self, other):
         return self.data * other
@@ -332,7 +368,7 @@ def get_localized_message(message, user_locale):
     """Gets a localized version of the given message in the given locale."""
     if isinstance(message, Message):
         if user_locale:
-            message.locale = user_locale
+            return message.translate_into(user_locale)
         return six.text_type(message)
     else:
         return message
