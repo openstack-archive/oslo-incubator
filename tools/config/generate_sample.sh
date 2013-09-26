@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# NOTE(mikal): this file is synced from oslo. Do not edit the locally
+# imported copies!
+
 print_hint() {
     echo "Try \`${0##*/} --help' for more information." >&2
 }
@@ -21,6 +24,10 @@ while true; do
             echo "-b, --base-dir=DIR        project base directory"
             echo "-p, --package-name=NAME   project package name"
             echo "-o, --output-dir=DIR      file output directory"
+	    echo ""
+	    echo "To generate a new config, try something like:"
+	    echo "   ${0##*/} -b ./ -p nova -o etc/nova/"
+
             exit 0
             ;;
         -b|--base-dir)
