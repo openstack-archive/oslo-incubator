@@ -602,17 +602,24 @@ def _thread_yield(dbapi_con, con_record):
 
 
 def _ping_listener(dbapi_conn, connection_rec, connection_proxy):
-    """Ensures that MySQL connections checked out of the pool are alive.
+    """Ensures that MySQL and DB2 connections checked out of the
+    pool are alive.
 
     Borrowed from:
     http://groups.google.com/group/sqlalchemy/msg/a4ce563d802c929f
     """
     try:
-        dbapi_conn.cursor().execute('select 1')
-    except dbapi_conn.OperationalError as ex:
-        if ex.args[0] in (2006, 2013, 2014, 2045, 2055):
-            LOG.warn(_('Got mysql server has gone away: %s'), ex)
-            raise sqla_exc.DisconnectionError("Database server went away")
+        cursor = dbapi_conn.cursor()
+        ping_sql = 'select 1'
+        if _ENGINE.name == 'ibm_db_sa':
+            # DB2 requires a table expression
+            ping_sql = 'select 1 from (values (1)) AS t1'
+        cursor.execute(ping_sql)
+    except Exception as ex:
+        if _ENGINE.dialect.is_disconnect(ex, dbapi_conn, cursor):
+            msg = _('Database server has gone away: %s') % ex
+            LOG.warn(msg)
+            raise sqla_exc.DisconnectionError(msg)
         else:
             raise
 
@@ -669,7 +676,7 @@ def create_engine(sql_connection, sqlite_fk=False):
 
     sqlalchemy.event.listen(engine, 'checkin', _thread_yield)
 
-    if 'mysql' in connection_dict.drivername:
+    if connection_dict.drivername in ['mysql', 'ibm_db_sa']:
         sqlalchemy.event.listen(engine, 'checkout', _ping_listener)
     elif 'sqlite' in connection_dict.drivername:
         if not CONF.sqlite_synchronous:
