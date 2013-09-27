@@ -144,3 +144,52 @@ class NotifierMiddlewareTest(utils.BaseTestCase):
         req = webob.Request.blank('/foo/bar',
                                   environ={'REQUEST_METHOD': 'GET'})
         middleware.process_response(req, webob.response.Response())
+
+    def test_service_name_opt(self):
+        middleware = notifier.RequestNotifier(FakeApp(),
+                                              service_name='resource_id')
+        req = webob.Request.blank('/foo/bar',
+                                  environ={'REQUEST_METHOD': 'GET'})
+        with mock.patch('openstack.common.notifier.api.notify') as notify:
+            middleware(req)
+            # Check first notification with only 'request'
+            call_args = notify.call_args_list[0][0]
+            self.assertEqual(call_args[2], 'http.request')
+            self.assertEqual(call_args[3], api.INFO)
+            self.assertEqual(set(call_args[4].keys()),
+                             set(['request']))
+
+            request = call_args[4]['request']
+            self.assertEqual(request['PATH_INFO'], '/foo/bar')
+            self.assertEqual(request['REQUEST_METHOD'], 'GET')
+            self.assertEqual(request['HTTP_X_SERVICE_NAME'], 'resource_id')
+
+    def test_ignore_get_opt(self):
+        middleware = notifier.RequestNotifier(FakeApp(),
+                                              ignore_get=True)
+        req = webob.Request.blank('/skip/foo',
+                                  environ={'REQUEST_METHOD': 'GET'})
+        req2 = webob.Request.blank('/accept/foo',
+                                   environ={'REQUEST_METHOD': 'POST'})
+        with mock.patch('openstack.common.notifier.api.notify') as notify:
+            # Check GET request does not send notification
+            middleware(req)
+            self.assertEqual(len(notify.call_args_list), 0)
+
+            # Check non-GET request does send notification
+            middleware(req2)
+            call_args = notify.call_args_list[0][0]
+            self.assertEqual(call_args[2], 'http.request')
+            self.assertEqual(call_args[3], api.INFO)
+            self.assertEqual(set(call_args[4].keys()),
+                             set(['request']))
+
+            request = call_args[4]['request']
+            self.assertEqual(request['PATH_INFO'], '/accept/foo')
+            self.assertEqual(request['REQUEST_METHOD'], 'POST')
+
+            call_args = notify.call_args_list[1][0]
+            self.assertEqual(call_args[2], 'http.response')
+            self.assertEqual(call_args[3], api.INFO)
+            self.assertEqual(set(call_args[4].keys()),
+                             set(['request', 'response']))
