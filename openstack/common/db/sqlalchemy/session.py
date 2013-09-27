@@ -602,17 +602,22 @@ def _thread_yield(dbapi_con, con_record):
 
 
 def _ping_listener(dbapi_conn, connection_rec, connection_proxy):
-    """Ensures that MySQL connections checked out of the pool are alive.
+    """Ensures that MySQL and DB2 connections checked out of the
+    pool are alive.
 
     Borrowed from:
     http://groups.google.com/group/sqlalchemy/msg/a4ce563d802c929f
     """
+
     try:
-        dbapi_conn.cursor().execute('select 1')
-    except dbapi_conn.OperationalError as ex:
-        if ex.args[0] in (2006, 2013, 2014, 2045, 2055):
-            LOG.warn(_('Got mysql server has gone away: %s'), ex)
-            raise sqla_exc.DisconnectionError("Database server went away")
+        cursor = dbapi_conn.cursor()
+        cursor.execute('select 1 from migrate_version')
+    except Exception as ex:
+        is_disconnect = _ENGINE.dialect.is_disconnect(ex, dbapi_conn, cursor)
+        if is_disconnect:
+            msg = 'Database server has gone away: %s' % ex
+            LOG.warn(msg)
+            raise sqlalchemy.exc.DisconnectionError(msg)
         else:
             raise
 
