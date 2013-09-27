@@ -18,6 +18,7 @@
 
 """Unit tests for SQLAlchemy specific code."""
 
+import sqlalchemy
 from sqlalchemy import Column, MetaData, Table, UniqueConstraint
 from sqlalchemy import DateTime, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -27,6 +28,9 @@ from openstack.common.db.sqlalchemy import models
 from openstack.common.db.sqlalchemy import session
 from tests.unit.db.sqlalchemy import base as test_base
 from tests import utils as test_utils
+
+import _mysql_exceptions
+import ibm_db_dbi
 
 
 BASE = declarative_base()
@@ -212,3 +216,64 @@ class SlaveBackendTestCase(test_utils.BaseTestCase):
     def test_slave_backend_nomatch(self):
         session.CONF.database.slave_connection = "mysql:///localhost"
         self.assertRaises(AssertionError, session._assert_matching_drivers)
+
+
+class FakeDBAPIConnection():
+    def cursor(self):
+        return FakeCursor()
+
+
+class FakeCursor():
+    def execute(self, sql):
+        pass
+
+
+class FakeConnectionProxy():
+    pass
+
+
+class FakeConnectionRec():
+    pass
+
+
+class TestDBDisconnected(test_utils.BaseTestCase):
+
+    def test_mysql_ping_listener(self):
+        def fake_execute(self, sql):
+            raise _mysql_exceptions.OperationalError(2006, ('MySQL server has'
+                                                            ' gone away'))
+
+        self.stubs.Set(FakeCursor, 'execute', fake_execute)
+
+        engine_args = {
+            'pool_recycle': 3600,
+            'echo': False,
+            'convert_unicode': True}
+
+        connection = 'mysql://root:password@fakehost/glance?charset=utf8'
+
+        session._ENGINE = sqlalchemy.create_engine(connection, **engine_args)
+
+        self.assertRaises(sqlalchemy.exc.DisconnectionError,
+                          session._ping_listener, FakeDBAPIConnection(),
+                          FakeConnectionRec(), FakeConnectionProxy())
+
+    def test_db2_ping_listener(self):
+        def fake_execute(self, sql):
+            raise ibm_db_dbi.OperationalError('SQL30081N: DB2 Server '
+                                              'connection is no longer active')
+
+        self.stubs.Set(FakeCursor, 'execute', fake_execute)
+
+        engine_args = {
+            'pool_recycle': 3600,
+            'echo': False,
+            'convert_unicode': True}
+
+        connection = 'ibm_db_sa://db2inst1:openstack@fakehost:50000/glance'
+
+        session._ENGINE = sqlalchemy.create_engine(connection, **engine_args)
+
+        self.assertRaises(sqlalchemy.exc.DisconnectionError,
+                          session._ping_listener, FakeDBAPIConnection(),
+                          FakeConnectionRec(), FakeConnectionProxy())

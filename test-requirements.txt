@@ -14,3 +14,5 @@ redis
 sphinx>=1.1.2
 testrepository>=0.0.17
 testtools>=0.9.32
+ibm_db>=2.0.4
+ibm_db_sa>=0.3
