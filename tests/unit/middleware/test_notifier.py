@@ -144,3 +144,37 @@ class NotifierMiddlewareTest(utils.BaseTestCase):
         req = webob.Request.blank('/foo/bar',
                                   environ={'REQUEST_METHOD': 'GET'})
         middleware.process_response(req, webob.response.Response())
+
+    def test_ignore_req_opt(self):
+        middleware = notifier.RequestNotifier(FakeApp(),
+                                              ignore_req_list='GET,PUT')
+        req = webob.Request.blank('/skip/foo',
+                                  environ={'REQUEST_METHOD': 'GET'})
+        req1 = webob.Request.blank('/skip/foo',
+                                   environ={'REQUEST_METHOD': 'PUT'})
+        req2 = webob.Request.blank('/accept/foo',
+                                   environ={'REQUEST_METHOD': 'POST'})
+        with mock.patch('openstack.common.notifier.api.notify') as notify:
+            # Check GET request does not send notification
+            middleware(req)
+            middleware(req1)
+            self.assertEqual(len(notify.call_args_list), 0)
+
+            # Check non-GET request does send notification
+            middleware(req2)
+            self.assertEqual(len(notify.call_args_list), 2)
+            call_args = notify.call_args_list[0][0]
+            self.assertEqual(call_args[2], 'http.request')
+            self.assertEqual(call_args[3], api.INFO)
+            self.assertEqual(set(call_args[4].keys()),
+                             set(['request']))
+
+            request = call_args[4]['request']
+            self.assertEqual(request['PATH_INFO'], '/accept/foo')
+            self.assertEqual(request['REQUEST_METHOD'], 'POST')
+
+            call_args = notify.call_args_list[1][0]
+            self.assertEqual(call_args[2], 'http.response')
+            self.assertEqual(call_args[3], api.INFO)
+            self.assertEqual(set(call_args[4].keys()),
+                             set(['request', 'response']))
