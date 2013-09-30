@@ -23,14 +23,14 @@ from oslo.config import cfg
 import six
 
 from openstack.common import context
-from openstack.common.fixture import config
-from openstack.common.fixture import moxstubout
-from openstack.common import gettextutils
 from openstack.common import jsonutils
 from openstack.common import log
 from openstack.common import log_handler
-from openstack.common.notifier import api as notifier
 from openstack.common import test
+from openstack.common.apiclient import exceptions
+from openstack.common.fixture import config
+from openstack.common.fixture import moxstubout
+from openstack.common.notifier import api as notifier
 
 
 def _fake_context():
@@ -124,7 +124,8 @@ class LogHandlerTestCase(test.BaseTestCase):
 
     def test_log_path_none(self):
         self.config(log_dir=None, log_file=None)
-        self.assertTrue(log._get_log_file_path(binary='foo-bar') is None)
+        self.assertRaises(exceptions.MissingArgs,
+                          log._get_log_file_path(binary='foo-bar'))
 
     def test_log_path_logfile_overrides_logdir(self):
         self.config(log_dir='/some/other/path',
@@ -263,19 +264,6 @@ class ContextFormatterTestCase(test.BaseTestCase):
     def test_debugging_log(self):
         self.log.debug("baz")
         self.assertEqual("NOCTXT: baz --DBG\n", self.stream.getvalue())
-
-    def test_message_logging(self):
-        # NOTE(luisg): Logging message objects with unicode objects
-        # may cause trouble by the logging mechanism trying to coerce
-        # the Message object, with a wrong encoding. This test case
-        # tests that problem does not occur.
-        ctxt = _fake_context()
-        ctxt.request_id = unicode('99')
-        message = gettextutils.Message('test ' + unichr(128), 'test')
-        self.log.info(message, context=ctxt)
-        expected = "HAS CONTEXT [%s]: %s\n" % (ctxt.request_id,
-                                               unicode(message))
-        self.assertEqual(expected, self.stream.getvalue())
 
 
 class ExceptionLoggingTestCase(test.BaseTestCase):

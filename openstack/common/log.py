@@ -41,10 +41,11 @@ import traceback
 from oslo.config import cfg
 from six import moves
 
-from openstack.common.gettextutils import _  # noqa
 from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import local
+from openstack.common.apiclient import exceptions
+from openstack.common.gettextutils import _  # noqa
 
 
 _DEFAULT_LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
@@ -206,6 +207,9 @@ def _get_log_file_path(binary=None):
     if logdir:
         binary = binary or _get_binary_name()
         return '%s.log' % (os.path.join(logdir, binary),)
+
+    missing = ["logfile", "logdir"]
+    raise exceptions.MissingArgs(missing)
 
 
 class BaseLoggerAdapter(logging.LoggerAdapter):
