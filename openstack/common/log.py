@@ -197,15 +197,20 @@ def _get_log_file_path(binary=None):
     logfile = CONF.log_file
     logdir = CONF.log_dir
 
-    if logfile and not logdir:
-        return logfile
+    ret = None
+    if logfile:
+        if logdir:
+            ret = os.path.join(logdir, logfile)
+        else:
+            ret = logfile
+    else:
+        if logdir:
+            binary = binary or _get_binary_name()
+            ret = '%s.log' % (os.path.join(logdir, binary),)
+        else:
+            raise error("Both logfile and logdir are not set.")
 
-    if logfile and logdir:
-        return os.path.join(logdir, logfile)
-
-    if logdir:
-        binary = binary or _get_binary_name()
-        return '%s.log' % (os.path.join(logdir, binary),)
+    return ret
 
 
 class BaseLoggerAdapter(logging.LoggerAdapter):
