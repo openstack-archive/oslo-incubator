@@ -207,6 +207,8 @@ def _get_log_file_path(binary=None):
         binary = binary or _get_binary_name()
         return '%s.log' % (os.path.join(logdir, binary),)
 
+    return None
+
 
 class BaseLoggerAdapter(logging.LoggerAdapter):
 
