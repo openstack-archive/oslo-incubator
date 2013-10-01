@@ -41,6 +41,7 @@ import traceback
 from oslo.config import cfg
 from six import moves
 
+from openstack.common import gettextutils
 from openstack.common.gettextutils import _  # noqa
 from openstack.common import importutils
 from openstack.common import jsonutils
@@ -276,6 +277,20 @@ class ContextAdapter(BaseLoggerAdapter):
         return msg, kwargs
 
 
+class MessageAdapter(ContextAdapter):
+    """Resolves gettextutils.Messages to unicode
+
+    The MessageAdapter aids when logging Message objects by ensuring they
+    are unicode objects before they reach the logging internals, to avoid
+    encoding issues.
+    """
+
+    def process(self, msg, kwargs):
+        if isinstance(msg, gettextutils.Message):
+            msg = unicode(msg)
+        return ContextAdapter.process(self, msg, kwargs)
+
+
 class JSONFormatter(logging.Formatter):
     def __init__(self, fmt=None, datefmt=None):
         # NOTE(jkoelker) we ignore the fmt argument, but its still there
@@ -452,7 +467,7 @@ _loggers = {}
 
 def getLogger(name='unknown', version='unknown'):
     if name not in _loggers:
-        _loggers[name] = ContextAdapter(logging.getLogger(name),
+        _loggers[name] = MessageAdapter(logging.getLogger(name),
                                         name,
                                         version)
     return _loggers[name]
