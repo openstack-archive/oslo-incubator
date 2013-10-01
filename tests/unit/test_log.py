@@ -25,6 +25,7 @@ import six
 from openstack.common import context
 from openstack.common.fixture import config
 from openstack.common.fixture import moxstubout
+from openstack.common import gettextutils
 from openstack.common import jsonutils
 from openstack.common import log
 from openstack.common import log_handler
@@ -262,6 +263,19 @@ class ContextFormatterTestCase(test.BaseTestCase):
     def test_debugging_log(self):
         self.log.debug("baz")
         self.assertEqual("NOCTXT: baz --DBG\n", self.stream.getvalue())
+
+    def test_message_logging(self):
+        # NOTE(luisg): Logging message objects with unicode objects
+        # may cause trouble by the logging mechanism trying to coerce
+        # the Message object, with a wrong encoding. This test case
+        # tests that problem does not occur.
+        ctxt = _fake_context()
+        ctxt.request_id = unicode('99')
+        message = gettextutils.Message('test ' + unichr(128), 'test')
+        self.log.info(message, context=ctxt)
+        expected = "HAS CONTEXT [%s]: %s\n" % (ctxt.request_id,
+                                               unicode(message))
+        self.assertEqual(expected, self.stream.getvalue())
 
 
 class ExceptionLoggingTestCase(test.BaseTestCase):
