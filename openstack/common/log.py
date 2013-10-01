@@ -41,6 +41,7 @@ import traceback
 from oslo.config import cfg
 from six import moves
 
+from openstack.common import gettextutils
 from openstack.common.gettextutils import _  # noqa
 from openstack.common import importutils
 from openstack.common import jsonutils
@@ -228,7 +229,18 @@ class LazyAdapter(BaseLoggerAdapter):
         return self._logger
 
 
-class ContextAdapter(BaseLoggerAdapter):
+class MessageAdapter(BaseLoggerAdapter):
+    """The MessageAdapter aids when logging Message objects by ensuring they
+    are unicode objects before they reach the logging internals, to avoid
+    encoding issues."""
+
+    def process(self, msg, kwargs):
+        if isinstance(msg, gettextutils.Message):
+            msg = unicode(msg)
+        return msg, kwargs
+
+
+class ContextAdapter(MessageAdapter):
     warn = logging.LoggerAdapter.warning
 
     def __init__(self, logger, project_name, version_string):
@@ -249,6 +261,9 @@ class ContextAdapter(BaseLoggerAdapter):
             self.warn(stdmsg, *args, **kwargs)
 
     def process(self, msg, kwargs):
+        # NOTE(mrodden): LoggingAdapter is an old-style class on py26
+        #                so we can't user super() here
+        msg, kwargs = MessageAdapter.process(self, msg, kwargs)
         if 'extra' not in kwargs:
             kwargs['extra'] = {}
         extra = kwargs['extra']
