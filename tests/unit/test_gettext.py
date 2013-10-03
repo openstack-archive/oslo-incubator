@@ -130,11 +130,11 @@ class GettextTest(test.BaseTestCase):
         self.assertEqual(zh_translation,
                          gettextutils.get_localized_message(message, 'zh'))
         self.assertEqual(en_message,
+                         gettextutils.get_localized_message(message, None))
+        self.assertEqual(en_message,
                          gettextutils.get_localized_message(message, 'en'))
         self.assertEqual(en_message,
                          gettextutils.get_localized_message(message, 'XX'))
-        self.assertEqual(en_message,
-                         gettextutils.get_localized_message(message, None))
         self.assertEqual(non_message,
                          gettextutils.get_localized_message(non_message, 'A'))
 

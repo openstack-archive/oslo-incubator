@@ -329,13 +329,15 @@ def get_available_languages(domain):
 
 
 def get_localized_message(message, user_locale):
-    """Gets a localized version of the given message in the given locale."""
+    """Gets a localized version of the given message in the given locale.
+
+    If the message is not a Message object the message is returned as-is.
+    If the locale is None the message is translated to the default locale.
+    """
     if isinstance(message, Message):
-        if user_locale:
-            message.locale = user_locale
+        message.locale = user_locale
         return six.text_type(message)
-    else:
-        return message
+    return message
 
 
 class LocaleHandler(logging.Handler):
