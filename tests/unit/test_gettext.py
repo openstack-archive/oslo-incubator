@@ -125,16 +125,20 @@ class GettextTest(test.BaseTestCase):
         self.stubs.Set(gettextutils.Message,
                        '__unicode__', _mock_translation_and_unicode)
 
+        message.locale = 'constant'
         self.assertEqual(es_translation,
                          gettextutils.get_localized_message(message, 'es'))
+        # Test that the message's locale was not changed by translation
+        self.assertEqual('constant', message.locale)
         self.assertEqual(zh_translation,
                          gettextutils.get_localized_message(message, 'zh'))
+        # Test that using None as locale returns the default
+        self.assertEqual(en_message,
+                         gettextutils.get_localized_message(message, None))
         self.assertEqual(en_message,
                          gettextutils.get_localized_message(message, 'en'))
         self.assertEqual(en_message,
                          gettextutils.get_localized_message(message, 'XX'))
-        self.assertEqual(en_message,
-                         gettextutils.get_localized_message(message, None))
         self.assertEqual(non_message,
                          gettextutils.get_localized_message(non_message, 'A'))
 
