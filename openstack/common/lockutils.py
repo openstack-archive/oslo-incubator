@@ -24,6 +24,7 @@ import threading
 import time
 import weakref
 
+import fixtures
 from oslo.config import cfg
 
 from openstack.common import fileutils
@@ -275,3 +276,13 @@ def synchronized_with_prefix(lock_file_prefix):
     """
 
     return functools.partial(synchronized, lock_file_prefix=lock_file_prefix)
+
+
+class LockFixture(fixtures.Fixture):
+    def __init__(self, name, lock_file_prefix=None):
+        self.mgr = lock(name, lock_file_prefix, True)
+
+    def setUp(self):
+        super(LockFixture, self).setUp()
+        self.addCleanup(self.mgr.__exit__, None, None, None)
+        self.mgr.__enter__()
