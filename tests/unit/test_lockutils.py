@@ -314,3 +314,30 @@ class LockTestCase(test.BaseTestCase):
             pass
 
         self.assertRaises(cfg.RequiredOptError, foo)
+
+
+class TestLockFixture(test.BaseTestCase):
+
+    def setUp(self):
+        super(TestLockFixture, self).setUp()
+        self.config = self.useFixture(config.Config()).config
+        self.tempdir = tempfile.mkdtemp()
+
+    def _check_in_lock(self):
+        # Check that the lock file exists during teardown
+        lock_path = os.path.join(self.tempdir, 'test-lock')
+        self.assertTrue(os.path.exists(lock_path))
+
+    def tearDown(self):
+        self._check_in_lock()
+        super(TestLockFixture, self).tearDown()
+
+    def _cleanup_tempdir(self):
+        if os.path.exists(self.tempdir):
+            shutil.rmtree(self.tempdir)
+
+    def test_lock_fixture(self):
+        # Setup lock fixture to test that teardown is inside the lock
+        self.config(lock_path=self.tempdir)
+        self.addCleanup(self._cleanup_tempdir)
+        self.useFixture(lockutils.LockFixture('test-lock'))
