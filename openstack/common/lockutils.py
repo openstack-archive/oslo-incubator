@@ -245,10 +245,11 @@ def synchronized(name, lock_file_prefix=None, external=False, lock_path=None):
             with lock(name, lock_file_prefix, external, lock_path):
                 LOG.debug(_('Got semaphore / lock "%(function)s"'),
                           {'function': f.__name__})
-                return f(*args, **kwargs)
-
-            LOG.debug(_('Semaphore / lock released "%(function)s"'),
-                      {'function': f.__name__})
+                try:
+                    return f(*args, **kwargs)
+                finally:
+                    LOG.debug(_('Semaphore / lock released "%(function)s"'),
+                              {'function': f.__name__})
         return inner
     return wrap
 
