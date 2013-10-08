@@ -39,6 +39,7 @@ import sys
 import traceback
 
 from oslo.config import cfg
+import six
 from six import moves
 
 from openstack.common.gettextutils import _  # noqa
@@ -253,8 +254,8 @@ class ContextAdapter(BaseLoggerAdapter):
         #                coerce to unicode before they can get
         #                to the python logging and possibly
         #                cause string encoding trouble
-        if not isinstance(msg, basestring):
-            msg = unicode(msg)
+        if not isinstance(msg, six.string_types):
+            msg = six.text_type(msg)
 
         if 'extra' not in kwargs:
             kwargs['extra'] = {}
