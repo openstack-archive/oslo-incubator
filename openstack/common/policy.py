@@ -221,7 +221,7 @@ class Enforcer(object):
         if policy_file:
             return policy_file
 
-        raise cfg.ConfigFilesNotFoundError((CONF.policy_file,))
+        raise cfg.ConfigFilesNotFoundError((self.policy_file,))
 
     def enforce(self, rule, target, creds, do_raise=False,
                 exc=None, *args, **kwargs):
