@@ -196,10 +196,19 @@ class EnforcerTest(PolicyBaseTestCase):
         self.assertEqual(self.enforcer.rules, {'test': 'test',
                                                'test1': 'test1'})
 
+    def test_enforcer_with_default_policy_file(self):
+        enforcer = policy.Enforcer()
+        self.assertEqual(cfg.CONF.policy_file, enforcer.policy_file)
+
+    def test_enforcer_with_policy_file(self):
+        enforcer = policy.Enforcer(policy_file='non-default.json')
+        self.assertEqual('non-default.json', enforcer.policy_file)
+
     def test_get_policy_path_raises_exc(self):
         enforcer = policy.Enforcer(policy_file='raise_error.json')
-        self.assertRaises(cfg.ConfigFilesNotFoundError,
-                          enforcer._get_policy_path)
+        e = self.assertRaises(cfg.ConfigFilesNotFoundError,
+                              enforcer._get_policy_path)
+        self.assertEqual(('raise_error.json', ), e.config_files)
 
 
 class FakeCheck(policy.BaseCheck):
