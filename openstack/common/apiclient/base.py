@@ -26,6 +26,7 @@ Base utilities to build API operation managers and objects on top of.
 # pylint: disable=E1102
 
 import abc
+import six
 import urllib
 
 from openstack.common.apiclient import exceptions
@@ -201,10 +202,9 @@ class BaseManager(HookableMixin):
         return self.client.delete(url)
 
 
+@six.add_metaclass(abc.ABCMeta)
 class ManagerWithFind(BaseManager):
     """Manager with additional `find()`/`findall()` methods."""
-
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def list(self):

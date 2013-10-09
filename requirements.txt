@@ -14,7 +14,7 @@ stevedore>=0.10
 sqlalchemy-migrate>=0.7.2
 SQLAlchemy>=0.7.8,<=0.7.99
 qpid-python
-six
+six>=1.4.1
 netaddr
 pycrypto>=2.6
 Babel>=0.9.6
