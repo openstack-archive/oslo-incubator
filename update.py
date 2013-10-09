@@ -208,7 +208,6 @@ def _copy_module(mod, base, dest_dir):
         os.path.join('tools', mod, '*.sh'),
         os.path.join('tools', mod + '*'),
         os.path.join('etc', 'oslo', mod + '*.conf'),
-        os.path.join('contrib', mod + '*'),
     ]
 
     for matches in [glob.glob(g) for g in globs_to_copy]:
