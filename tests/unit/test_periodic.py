@@ -82,7 +82,6 @@ class ManagerMetaTestCase(test.BaseTestCase):
 
     def test_meta(self):
         class Manager(periodic_task.PeriodicTasks):
-            __metaclass__ = periodic_task._PeriodicTasksMeta
 
             @periodic_task.periodic_task
             def foo(self):
@@ -112,7 +111,6 @@ class ManagerTestCase(test.BaseTestCase):
 
     def test_periodic_tasks_with_idle(self):
         class Manager(periodic_task.PeriodicTasks):
-            __metaclass__ = periodic_task._PeriodicTasksMeta
 
             @periodic_task.periodic_task(spacing=200)
             def bar(self):
@@ -128,7 +126,6 @@ class ManagerTestCase(test.BaseTestCase):
 
     def test_periodic_tasks_constant(self):
         class Manager(periodic_task.PeriodicTasks):
-            __metaclass__ = periodic_task._PeriodicTasksMeta
 
             @periodic_task.periodic_task(spacing=0)
             def bar(self):
@@ -143,7 +140,6 @@ class ManagerTestCase(test.BaseTestCase):
         timeutils.set_time_override(fake_time)
 
         class Manager(periodic_task.PeriodicTasks):
-            __metaclass__ = periodic_task._PeriodicTasksMeta
 
             @periodic_task.periodic_task(spacing=10)
             def bar(self, context):
@@ -179,7 +175,6 @@ class ManagerTestCase(test.BaseTestCase):
         timeutils.set_time_override(fake_time)
 
         class Manager(periodic_task.PeriodicTasks):
-            __metaclass__ = periodic_task._PeriodicTasksMeta
 
             @periodic_task.periodic_task(spacing=10, run_immediately=True)
             def bar(self, context):
@@ -214,7 +209,6 @@ class ManagerTestCase(test.BaseTestCase):
 
     def test_periodic_tasks_disabled(self):
         class Manager(periodic_task.PeriodicTasks):
-            __metaclass__ = periodic_task._PeriodicTasksMeta
 
             @periodic_task.periodic_task(spacing=-1)
             def bar(self):
@@ -228,7 +222,6 @@ class ManagerTestCase(test.BaseTestCase):
         self.config(run_external_periodic_tasks=True)
 
         class Manager(periodic_task.PeriodicTasks):
-            __metaclass__ = periodic_task._PeriodicTasksMeta
 
             @periodic_task.periodic_task(spacing=200, external_process_ok=True)
             def bar(self):
@@ -241,7 +234,6 @@ class ManagerTestCase(test.BaseTestCase):
         self.config(run_external_periodic_tasks=False)
 
         class Manager(periodic_task.PeriodicTasks):
-            __metaclass__ = periodic_task._PeriodicTasksMeta
 
             @periodic_task.periodic_task(spacing=200, external_process_ok=True)
             def bar(self):
