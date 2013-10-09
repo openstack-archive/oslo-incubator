@@ -22,6 +22,8 @@ import ConfigParser
 import os
 import tempfile
 import urlparse
+import uuid
+
 try:
     from alembic import command
     from alembic import migration
@@ -128,6 +130,11 @@ class BaseMigrationTestCase(test.BaseTestCase):
     # it should be declared for alembic repo here.
     ALEMBIC_CONFIG = None
 
+    # Base model for project
+    # Each component of OpenStack has a models based on
+    # sqlalchemy.ext.declarative. Here we should specify this base class.
+    MODEL_BASE = None
+
     def __init__(self, *args, **kwargs):
         super(BaseMigrationTestCase, self).__init__(*args, **kwargs)
 
@@ -173,7 +180,7 @@ class BaseMigrationTestCase(test.BaseTestCase):
         # We destroy the test data store between each test case,
         # and recreate it, which ensures that we have no side-effects
         # from the tests
-        self._reset_databases()
+        self._reset_databases(tear_down=True)
         super(BaseMigrationTestCase, self).tearDown()
 
     def execute_cmd(self, cmd=None):
@@ -204,7 +211,7 @@ class BaseMigrationTestCase(test.BaseTestCase):
         os.unsetenv('PGPASSWORD')
         os.unsetenv('PGUSER')
 
-    def _reset_databases(self):
+    def _reset_databases(self, tear_down=False):
         for key, engine in self.engines.items():
             conn_string = self.test_databases[key]
             conn_pieces = urlparse.urlparse(conn_string)
@@ -225,14 +232,36 @@ class BaseMigrationTestCase(test.BaseTestCase):
                 # than using SQLAlchemy to do this via MetaData...trust me.
                 (user, password, database, host) = \
                     get_db_connection_info(conn_pieces)
-                sql = ("drop database if exists %(db)s; "
-                       "create database %(db)s;") % {'db': database}
+                sql = ("drop database if exists %(db)s; ") % {'db': database}
+                if not tear_down:
+                    sql += ("create database %(db)s;") % {'db': database}
                 cmd = ("mysql -u \"%(user)s\" -p\"%(password)s\" -h %(host)s "
                        "-e \"%(sql)s\"") % {'user': user, 'password': password,
                                             'host': host, 'sql': sql}
                 self.execute_cmd(cmd)
             elif conn_string.startswith('postgresql'):
                 self._reset_pg(conn_pieces)
+
+    def _create_database(self, conn_string):
+        """Creation of temporary database.
+        """
+        conn_pieces = urlparse.urlparse(conn_string)
+        if conn_string.startswith('mysql'):
+            (user, password, database, host) = \
+                get_db_connection_info(conn_pieces)
+            sql = ("create database %(db)s;") % {'db': database}
+            cmd = ("mysql -u \"%(user)s\" -p\"%(password)s\" -h %(host)s "
+                   "-e \"%(sql)s\"") % {'user': user, 'password': password,
+                                        'host': host, 'sql': sql}
+            self.execute_cmd(cmd)
+        elif conn_string.startswith('postgresql'):
+            self._reset_pg(conn_pieces)
+
+    def _generate_db_name(self):
+        """Returns a random database's name with default prefix.
+           As a prefix self.DATABASE will be used.
+        """
+        return "_".join((self.DATABASE, str(uuid.uuid4())[:8]))
 
 
 class WalkVersionsMixin(object):
@@ -404,6 +433,137 @@ class WalkVersionsMixin(object):
 
 
 class SyncModelsWithMigrations(BaseMigrationTestCase, WalkVersionsMixin):
+    # Tested dialects ('mysql', 'postgres')
+    DIALECTS = []
+    # List of tables that can be presented only in one of places
+    # (in models or db). When such is the deliberate creation.
+    # Example: backup tables, shadow_tables...
+    EXCLUDE_TABLES = []
+
+    def test_sync_models_postgresql(self):
+        """Testing of models with migrations to equality on postgres.
+        """
+        dialect = 'postgres'
+        if dialect not in self.DIALECTS:
+            self.skipTest("%s not available" % dialect)
+        self._test_list_of_tables(dialect)
+
+    def test_walk_versions_postgresql(self):
+        """Testing of migrations in up>down>up mode and in down>up>down mode
+        on postgres.
+        """
+        dialect = 'postgres'
+        if dialect not in self.DIALECTS:
+            self.skipTest("%s not available" % dialect)
+        self._check_migrations_in_snake_mode(dialect)
+
+    def test_sync_models_mysql(self):
+        """Testing of models with migrations to equality on mysql.
+        """
+        dialect = 'mysql'
+        if dialect not in self.DIALECTS:
+            self.skipTest("%s not available" % dialect)
+        self._test_list_of_tables(dialect)
+
+    def test_walk_versions_mysql(self):
+        """Testing of migrations in up>down>up mode and in down>up>down mode
+        on mysql.
+        """
+        dialect = 'mysql'
+        if dialect not in self.DIALECTS:
+            self.skipTest("%s not available" % dialect)
+        self._check_migrations_in_snake_mode(dialect)
+
+    def _check_migrations_in_snake_mode(self, dialect):
+        """Helper method that implements testing of each migration in all ways
+        (from up to down and in backward mode). It will work with both types
+        of repo.
+        """
+        if dialect == 'mysql':
+            check_backend = _have_mysql
+        elif dialect == 'postgres':
+            check_backend = _have_postgresql
+        database = self._generate_db_name()
+        connect_string = _get_connect_string(dialect,
+                                             self.USER,
+                                             self.PASSWD,
+                                             database)
+        self._create_database(connect_string)
+        if not check_backend(self.USER,
+                             self.PASSWD,
+                             database):
+            self.skipTest("%s not available" % dialect)
+        engine = sqlalchemy.create_engine(connect_string)
+        self.engines[database] = engine
+        self.test_databases[database] = connect_string
+        if self.MIGRATION_API is not None and self.REPOSITORY is not None:
+            self._walk_versions(engine, snake_walk=True, downgrade=True,
+                                alembic=False)
+        if self.ALEMBIC_CONFIG is not None:
+            self._reset_databases()
+            if self.MIGRATION_API is not None and self.REPOSITORY is not None:
+                self.MIGRATION_API.version_control(engine, self.REPOSITORY,
+                                                   self.INIT_VERSION)
+                self.MIGRATION_API.upgrade(engine, self.REPOSITORY)
+            self._walk_versions(engine, snake_walk=True, downgrade=True,
+                                alembic=True)
+
+    def _test_list_of_tables(self, dialect, test_mode=False):
+        """Helper method that implements testing of equality models with
+        migrations. All differences will be presented as a list of needed
+        changes.
+        """
+        if dialect == 'mysql':
+            check_backend = _have_mysql
+        elif dialect == 'postgres':
+            check_backend = _have_postgresql
+        database = self._generate_db_name()
+        connect_string = _get_connect_string(dialect,
+                                             self.USER,
+                                             self.PASSWD,
+                                             database)
+        self._create_database(connect_string)
+        if not check_backend(self.USER,
+                             self.PASSWD,
+                             database):
+            self.skipTest("%s not available" % dialect)
+        engine = sqlalchemy.create_engine(connect_string)
+        self.engines[database] = engine
+        self.test_databases[database] = connect_string
+        if self.MIGRATION_API is not None and self.REPOSITORY is not None:
+            self.MIGRATION_API.version_control(engine, self.REPOSITORY,
+                                               self.INIT_VERSION)
+            self.MIGRATION_API.upgrade(engine, self.REPOSITORY)
+        if self.ALEMBIC_CONFIG is not None:
+            CONF.set_override('connection', str(engine.url), group='database')
+            session.cleanup()
+            command.upgrade(self.ALEMBIC_CONFIG, "head")
+        metadata = sqlalchemy.MetaData(bind=engine)
+        metadata.reflect()
+        db_tables = metadata.tables
+        self.errors = []
+        models_tables = self.MODEL_BASE.metadata.tables
+        self.EXCLUDE_TABLES.extend(['migrate_version', 'alembic_version'])
+        tables = self._check_intersection(models_tables.keys(),
+                                          db_tables.keys(),
+                                          "Tables",
+                                          "models",
+                                          exclude=set(self.EXCLUDE_TABLES))
+        for table_name in tables:
+            table = models_tables[table_name]
+            self._check_columns(table, db_tables[table_name],
+                                engine.dialect)
+            # All checked UniqueConstraints should be excluded from indexes.
+            uc = self._check_uniques(table, db_tables[table_name], dialect)
+            # All checked ForeignKeys should be excluded from indexes.
+            fc = self._check_fkeys(table, db_tables[table_name])
+            excluded_indexes = uc | fc
+            self._check_indexes(table,
+                                db_tables[table_name],
+                                excluded_indexes,
+                                dialect)
+        self.assertEqual(self.errors, [],
+                         message="\n".join(self.errors))
 
     def _check_column_type(self, column_model, column_db, column_name,
                            table_name, dialect):
