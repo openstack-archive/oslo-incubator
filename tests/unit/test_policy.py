@@ -552,8 +552,8 @@ class ParseStateMetaTestCase(test.BaseTestCase):
         self.assertEqual(spam.reducers, [['d', 'e', 'f'], ['a', 'b', 'c']])
 
     def test_parse_state_meta(self):
+        @six.add_metaclass(policy.ParseStateMeta)
         class FakeState(object):
-            __metaclass__ = policy.ParseStateMeta
 
             @policy.reducer('a', 'b', 'c')
             @policy.reducer('d', 'e', 'f')

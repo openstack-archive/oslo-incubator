@@ -23,6 +23,7 @@ import abc
 import argparse
 import logging
 import os
+import six
 
 from stevedore import extension
 
@@ -102,14 +103,13 @@ def load_plugin_from_args(args):
     raise exceptions.AuthPluginOptionsMissing(["auth_system"])
 
 
+@six.add_metaclass(abc.ABCMeta)
 class BaseAuthPlugin(object):
     """Base class for authentication plugins.
 
     An authentication plugin needs to override at least the authenticate
     method to be a valid plugin.
     """
-
-    __metaclass__ = abc.ABCMeta
 
     auth_system = None
     opt_names = []
