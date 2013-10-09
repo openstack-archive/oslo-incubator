@@ -239,13 +239,6 @@ M: Sergey Skripnick <sskripnick@mirantis.com>
 S: Maintained
 F: quota.py
 
-== redhat-eventlet.patch ==
-
-M: Mark McLoughlin <markmc@redhat.com>
-S: Maintained
-F: contrib/redhat-eventlet.patch
-F: tools/patch_tox_venv.py
-
 == rootwrap ==
 
 M: Thierry Carrez <thierry@openstack.org>
