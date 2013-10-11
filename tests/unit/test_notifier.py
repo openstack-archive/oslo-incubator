@@ -202,7 +202,7 @@ class NotifierTestCase(test.BaseTestCase):
         # Test missing context
         self.assertEqual(3, example_api2(1, 2, bananas="delicious"))
         self.assertEqual(self.notify_called, True)
-        self.assertEqual(self.context_arg, None)
+        self.assertIsNone(self.context_arg)
 
 
 class MultiNotifierTestCase(test.BaseTestCase):

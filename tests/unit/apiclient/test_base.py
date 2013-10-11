@@ -133,7 +133,7 @@ class ResourceTest(test.BaseTestCase):
 
     def test_human_id(self):
         r = base.Resource(None, {"name": "1"})
-        self.assertEqual(r.human_id, None)
+        self.assertIsNone(r.human_id)
         r = HumanResource(None, {"name": "1"})
         self.assertEqual(r.human_id, "1")
 

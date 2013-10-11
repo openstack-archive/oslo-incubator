@@ -43,7 +43,7 @@ class MemorycacheTest(test.BaseTestCase):
     def test_set_delete(self):
         self.client.set('foo', 'bar')
         self.client.delete('foo')
-        self.assertEqual(self.client.get('foo'), None)
+        self.assertIsNone(self.client.get('foo'))
 
     def test_timeout(self):
         try:
@@ -53,6 +53,6 @@ class MemorycacheTest(test.BaseTestCase):
             timeutils.set_time_override(now + datetime.timedelta(seconds=1))
             self.assertEqual(self.client.get('foo'), 'bar')
             timeutils.set_time_override(now + datetime.timedelta(seconds=3))
-            self.assertEqual(self.client.get('foo'), None)
+            self.assertIsNone(self.client.get('foo'))
         finally:
             timeutils.clear_time_override()

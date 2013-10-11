@@ -39,8 +39,8 @@ class ConfigFilterTestCase(test.BaseTestCase):
     def test_register_opt_none_default(self):
         self.fconf.register_opt(cfg.StrOpt('foo'))
 
-        self.assertTrue(self.fconf.foo is None)
-        self.assertTrue(self.fconf['foo'] is None)
+        self.assertIsNone(self.fconf.foo)
+        self.assertIsNone(self.fconf['foo'])
         self.assertTrue('foo' in self.fconf)
         self.assertEqual(list(self.fconf), ['foo'])
         self.assertEqual(len(self.fconf), 1)
@@ -61,8 +61,8 @@ class ConfigFilterTestCase(test.BaseTestCase):
     def test_register_grouped_opt_none_default(self):
         self.fconf.register_opt(cfg.StrOpt('foo'), group='blaa')
 
-        self.assertTrue(self.fconf.blaa.foo is None)
-        self.assertTrue(self.fconf['blaa']['foo'] is None)
+        self.assertIsNone(self.fconf.blaa.foo)
+        self.assertIsNone(self.fconf['blaa']['foo'])
         self.assertTrue('blaa' in self.fconf)
         self.assertTrue('foo' in self.fconf.blaa)
         self.assertEqual(list(self.fconf), ['blaa'])
@@ -75,8 +75,8 @@ class ConfigFilterTestCase(test.BaseTestCase):
         self.fconf.register_group(group)
         self.fconf.register_opt(cfg.StrOpt('foo'), group=group)
 
-        self.assertTrue(self.fconf.blaa.foo is None)
-        self.assertTrue(self.fconf['blaa']['foo'] is None)
+        self.assertIsNone(self.fconf.blaa.foo)
+        self.assertIsNone(self.fconf['blaa']['foo'])
         self.assertTrue('blaa' in self.fconf)
         self.assertTrue('foo' in self.fconf.blaa)
         self.assertEqual(list(self.fconf), ['blaa'])
@@ -94,7 +94,7 @@ class ConfigFilterTestCase(test.BaseTestCase):
 
         self.assertTrue('foo' in self.conf)
         self.assertEqual(len(self.conf), 1)
-        self.assertTrue(self.conf.foo is None)
+        self.assertIsNone(self.conf.foo)
         self.assertFalse('foo' in self.fconf)
         self.assertEqual(len(self.fconf), 0)
         self.assertRaises(cfg.NoSuchOptError, getattr, self.fconf, 'foo')

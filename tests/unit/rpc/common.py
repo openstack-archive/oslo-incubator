@@ -116,7 +116,7 @@ class BaseRpcTestCase(test.BaseTestCase):
                                     {"method": "multicall_three_nones",
                                      "args": {"value": value}})
         for i, x in enumerate(result):
-            self.assertEqual(x, None)
+            self.assertIsNone(x)
         # i should have been 0, 1, and finally 2:
         self.assertEqual(i, 2)
 
@@ -187,7 +187,7 @@ class BaseRpcTestCase(test.BaseTestCase):
             # failure.
             result = QUEUE.get(True, 2)
         except Exception:
-            self.assertEqual(value, None)
+            self.assertIsNone(value)
 
         conn.close()
         self.assertEqual(value, result)
