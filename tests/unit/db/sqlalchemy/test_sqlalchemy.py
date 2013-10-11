@@ -1,4 +1,3 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
 # encoding=UTF8
 
 # Copyright (c) 2012 Rackspace Hosting
