@@ -255,18 +255,18 @@ class GettextTest(test.BaseTestCase):
         # and it should also always be the first element since order matters
         domain_1_languages = gettextutils.get_available_languages('domain_1')
         domain_2_languages = gettextutils.get_available_languages('domain_2')
-        self.assertEquals('en_US', domain_1_languages[0])
-        self.assertEquals('en_US', domain_2_languages[0])
+        self.assertEqual('en_US', domain_1_languages[0])
+        self.assertEqual('en_US', domain_2_languages[0])
         # Only the domain languages should be included after en_US
-        self.assertEquals(3, len(domain_1_languages))
+        self.assertEqual(3, len(domain_1_languages))
         self.assertIn('zh', domain_1_languages)
         self.assertIn('es', domain_1_languages)
-        self.assertEquals(2, len(domain_2_languages))
+        self.assertEqual(2, len(domain_2_languages))
         self.assertIn('fr', domain_2_languages)
-        self.assertEquals(2, len(gettextutils._AVAILABLE_LANGUAGES))
+        self.assertEqual(2, len(gettextutils._AVAILABLE_LANGUAGES))
         # Now test an unknown domain, only en_US should be included
         unknown_domain_languages = gettextutils.get_available_languages('huh')
-        self.assertEquals(1, len(unknown_domain_languages))
+        self.assertEqual(1, len(unknown_domain_languages))
         self.assertIn('en_US', unknown_domain_languages)
 
 

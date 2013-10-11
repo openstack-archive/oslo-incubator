@@ -84,7 +84,7 @@ class TestOpenstackGenerators(utils.BaseTestCase):
                       '  from_cow = True\n'
                       '  sharpness = 1\n'
                       '  name = cheddar')
-        self.assertEquals(target_str, str(model))
+        self.assertEqual(target_str, str(model))
 
     def test_package_report_generator(self):
         class VersionObj(object):
@@ -103,4 +103,4 @@ class TestOpenstackGenerators(utils.BaseTestCase):
         target_str = ('product = Sharp Cheddar\n'
                       'version = 1.0.0\n'
                       'vendor = Cheese Shoppe')
-        self.assertEquals(target_str, str(model))
+        self.assertEqual(target_str, str(model))
