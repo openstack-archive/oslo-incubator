@@ -205,7 +205,7 @@ class TryCmdTestCase(test.BaseTestCase):
             'openstack.common.processutils.execute', fake_execute_raises))
         o, e = processutils.trycmd('this is a command'.split(' '),
                                    discard_warnings=True)
-        self.assertNotEqual(None, o)
+        self.assertIsNotNone(o)
         self.assertNotEqual('', e)
 
     def test_discard_warnings(self):
@@ -213,7 +213,7 @@ class TryCmdTestCase(test.BaseTestCase):
             'openstack.common.processutils.execute', fake_execute))
         o, e = processutils.trycmd('this is a command'.split(' '),
                                    discard_warnings=True)
-        self.assertNotEqual(None, o)
+        self.assertIsNotNone(o)
         self.assertEqual('', e)
 
 

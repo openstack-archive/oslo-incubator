@@ -46,7 +46,7 @@ class RulesTestCase(test.BaseTestCase):
         rules = policy.Rules()
 
         self.assertEqual(rules, {})
-        self.assertEqual(rules.default_rule, None)
+        self.assertIsNone(rules.default_rule)
 
     def test_init(self):
         rules = policy.Rules(dict(a=1, b=2, c=3), 'a')
