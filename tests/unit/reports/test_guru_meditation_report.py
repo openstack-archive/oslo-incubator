@@ -80,13 +80,13 @@ class TestGuruMeditationReport(utils.BaseTestCase):
                              '========================================================================']  # noqa
 
         # first the header and version info...
-        self.assertEquals(target_str_header,
-                          report_lines[0:len(target_str_header)])
+        self.assertEqual(target_str_header,
+                         report_lines[0:len(target_str_header)])
 
         # followed by at least one thread...
         self.assertTrue(re.match(r'------(\s+)Thread #\d+\1\s?------',
                                  report_lines[len(target_str_header)]))
-        self.assertEquals('', report_lines[len(target_str_header) + 1])
+        self.assertEqual('', report_lines[len(target_str_header) + 1])
 
         # followed by more thread stuff stuff...
         curr_line = skip_body_lines(len(target_str_header) + 2, report_lines)
@@ -98,8 +98,8 @@ class TestGuruMeditationReport(utils.BaseTestCase):
                          '------                        Green Thread                        ------',  # noqa
                          '']
         end_bound = curr_line + len(target_str_gt)
-        self.assertEquals(target_str_gt,
-                          report_lines[curr_line:end_bound])
+        self.assertEqual(target_str_gt,
+                         report_lines[curr_line:end_bound])
 
         # followed by some more green thread stuff
         curr_line = skip_body_lines(curr_line + len(target_str_gt),
@@ -111,8 +111,8 @@ class TestGuruMeditationReport(utils.BaseTestCase):
                              '========================================================================',  # noqa
                              '']
         end_bound = curr_line + len(target_str_config)
-        self.assertEquals(target_str_config,
-                          report_lines[curr_line:end_bound])
+        self.assertEqual(target_str_config,
+                         report_lines[curr_line:end_bound])
 
     def test_reg_persistent_section(self):
         def fake_gen():
