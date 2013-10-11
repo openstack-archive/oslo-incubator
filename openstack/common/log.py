@@ -105,7 +105,10 @@ logging_cli_opts = [
 generic_log_opts = [
     cfg.BoolOpt('use_stderr',
                 default=True,
-                help='Log output to standard error')
+                help='Log output to standard error'),
+    cfg.BoolOpt('log_disable_existing',
+                default=True,
+                help='Disable existing loggers.'),
 ]
 
 log_opts = [
@@ -354,9 +357,11 @@ class LogConfigError(Exception):
                                    err_msg=self.err_msg)
 
 
-def _load_log_config(log_config):
+def _load_log_config(log_config, log_disable_existing):
     try:
-        logging.config.fileConfig(log_config)
+        logging.config.fileConfig(log_config,
+                                  disable_existing_loggers=
+                                  log_disable_existing)
     except moves.configparser.Error as exc:
         raise LogConfigError(log_config, str(exc))
 
@@ -364,7 +369,7 @@ def _load_log_config(log_config):
 def setup(product_name):
     """Setup logging."""
     if CONF.log_config:
-        _load_log_config(CONF.log_config)
+        _load_log_config(CONF.log_config, CONF.log_disable_existing)
     else:
         _setup_logging_from_conf()
     sys.excepthook = _create_logging_excepthook(product_name)
