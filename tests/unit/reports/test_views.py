@@ -34,15 +34,15 @@ class TestModelReportType(utils.BaseTestCase):
         model = mwdv_generator()
 
         model.set_current_view_type('text')
-        self.assertEquals('int = 1\nstring = value', str(model))
+        self.assertEqual('int = 1\nstring = value', str(model))
 
         model.set_current_view_type('json')
-        self.assertEquals('{"int": 1, "string": "value"}', str(model))
+        self.assertEqual('{"int": 1, "string": "value"}', str(model))
 
         model.set_current_view_type('xml')
 
-        self.assertEquals('<model><int>1</int><string>value</string></model>',
-                          str(model))
+        self.assertEqual('<model><int>1</int><string>value</string></model>',
+                         str(model))
 
     def test_recursive_type_propogation(self):
         model = mwdv_generator()
@@ -50,14 +50,14 @@ class TestModelReportType(utils.BaseTestCase):
 
         model.set_current_view_type('json')
 
-        self.assertEquals(model.submodel.views['json'],
-                          model.submodel.attached_view)
+        self.assertEqual(model.submodel.views['json'],
+                         model.submodel.attached_view)
 
     def test_report_of_type(self):
         rep = report.ReportOfType('json')
         rep.add_section(lambda x: str(x), mwdv_generator)
 
-        self.assertEquals('{"int": 1, "string": "value"}', rep.run())
+        self.assertEqual('{"int": 1, "string": "value"}', rep.run())
 
     # NOTE: this also tests views.text.header
     def test_text_report(self):
@@ -81,13 +81,13 @@ class TestModelReportType(utils.BaseTestCase):
                       '========================================================================\n'  # noqa
                       'int = 1\n'                                                                   # noqa
                       'string = value')                                                             # noqa
-        self.assertEquals(target_str, rep.run())
+        self.assertEqual(target_str, rep.run())
 
     def test_to_type(self):
         model = mwdv_generator()
 
-        self.assertEquals('<model><int>1</int><string>value</string></model>',
-                          model.to_xml())
+        self.assertEqual('<model><int>1</int><string>value</string></model>',
+                         model.to_xml())
 
 
 class TestGenericXMLView(utils.BaseTestCase):
@@ -104,7 +104,7 @@ class TestGenericXMLView(utils.BaseTestCase):
                       '<int>1</int>'
                       '<dt><a>1</a><b>2</b></dt>'
                       '<string>value</string></model>')
-        self.assertEquals(target_str, str(self.model))
+        self.assertEqual(target_str, str(self.model))
 
     def test_list_serialization(self):
         self.model['lt'] = ['a', 'b']
@@ -113,7 +113,7 @@ class TestGenericXMLView(utils.BaseTestCase):
                       '<int>1</int>'
                       '<lt><item>a</item><item>b</item></lt>'
                       '<string>value</string></model>')
-        self.assertEquals(target_str, str(self.model))
+        self.assertEqual(target_str, str(self.model))
 
     def test_list_in_dict_serialization(self):
         self.model['dt'] = {'a': 1, 'b': [2, 3]}
@@ -123,7 +123,7 @@ class TestGenericXMLView(utils.BaseTestCase):
                       '<dt><a>1</a>'
                       '<b><item>2</item><item>3</item></b></dt>'
                       '<string>value</string></model>')
-        self.assertEquals(target_str, str(self.model))
+        self.assertEqual(target_str, str(self.model))
 
     def test_dict_in_list_serialization(self):
         self.model['lt'] = [1, {'b': 2, 'c': 3}]
@@ -133,7 +133,7 @@ class TestGenericXMLView(utils.BaseTestCase):
                       '<lt><item>1</item>'
                       '<item><c>3</c><b>2</b></item></lt>'
                       '<string>value</string></model>')
-        self.assertEquals(target_str, str(self.model))
+        self.assertEqual(target_str, str(self.model))
 
     def test_submodel_serialization(self):
         sm = mwdv_generator()
@@ -148,7 +148,7 @@ class TestGenericXMLView(utils.BaseTestCase):
                       '<model><int>1</int><string>value</string></model>'
                       '</submodel>'
                       '</model>')
-        self.assertEquals(target_str, str(self.model))
+        self.assertEqual(target_str, str(self.model))
 
     def test_wrapper_name(self):
         self.model.attached_view.wrapper_name = 'cheese'
@@ -157,7 +157,7 @@ class TestGenericXMLView(utils.BaseTestCase):
                       '<int>1</int>'
                       '<string>value</string>'
                       '</cheese>')
-        self.assertEquals(target_str, str(self.model))
+        self.assertEqual(target_str, str(self.model))
 
 
 class TestGenericJSONViews(utils.BaseTestCase):
@@ -172,7 +172,7 @@ class TestGenericJSONViews(utils.BaseTestCase):
         self.model = base_model.ReportModel(data={'string': 'value', 'int': 1},
                                             attached_view=attached_view)
 
-        self.assertEquals('{"int": 1, "string": "value"}', str(self.model))
+        self.assertEqual('{"int": 1, "string": "value"}', str(self.model))
 
     def test_dict_serialization(self):
         self.model['dt'] = {'a': 1, 'b': 2}
@@ -182,7 +182,7 @@ class TestGenericJSONViews(utils.BaseTestCase):
                       '"dt": {"a": 1, "b": 2}, '
                       '"string": "value"'
                       '}')
-        self.assertEquals(target_str, str(self.model))
+        self.assertEqual(target_str, str(self.model))
 
     def test_list_serialization(self):
         self.model['lt'] = ['a', 'b']
@@ -192,7 +192,7 @@ class TestGenericJSONViews(utils.BaseTestCase):
                       '"lt": ["a", "b"], '
                       '"string": "value"'
                       '}')
-        self.assertEquals(target_str, str(self.model))
+        self.assertEqual(target_str, str(self.model))
 
     def test_list_in_dict_serialization(self):
         self.model['dt'] = {'a': 1, 'b': [2, 3]}
@@ -202,7 +202,7 @@ class TestGenericJSONViews(utils.BaseTestCase):
                       '"dt": {"a": 1, "b": [2, 3]}, '
                       '"string": "value"'
                       '}')
-        self.assertEquals(target_str, str(self.model))
+        self.assertEqual(target_str, str(self.model))
 
     def test_dict_in_list_serialization(self):
         self.model['lt'] = [1, {'b': 2, 'c': 3}]
@@ -212,7 +212,7 @@ class TestGenericJSONViews(utils.BaseTestCase):
                       '"lt": [1, {"c": 3, "b": 2}], '
                       '"string": "value"'
                       '}')
-        self.assertEquals(target_str, str(self.model))
+        self.assertEqual(target_str, str(self.model))
 
     def test_submodel_serialization(self):
         sm = mwdv_generator()
@@ -225,7 +225,7 @@ class TestGenericJSONViews(utils.BaseTestCase):
                       '"string": "value", '
                       '"submodel": {"int": 1, "string": "value"}'
                       '}')
-        self.assertEquals(target_str, str(self.model))
+        self.assertEqual(target_str, str(self.model))
 
 
 class TestGenericTextViews(utils.BaseTestCase):
@@ -249,14 +249,14 @@ class TestGenericTextViews(utils.BaseTestCase):
                       'string = value\n'
                       'int = 2\n'
                       'string = value')
-        self.assertEquals(target_str, str(self.model))
+        self.assertEqual(target_str, str(self.model))
 
     def test_basic_kv_view(self):
         attached_view = text_generic.BasicKeyValueView()
         self.model = base_model.ReportModel(data={'string': 'value', 'int': 1},
                                             attached_view=attached_view)
 
-        self.assertEquals('int = 1\nstring = value\n', str(self.model))
+        self.assertEqual('int = 1\nstring = value\n', str(self.model))
 
     def test_table_view(self):
         column_names = ['Column A', 'Column B']
@@ -273,7 +273,7 @@ class TestGenericTextViews(utils.BaseTestCase):
                       '                 1                 |                 2                  \n'   # noqa
                       '                 3                 |                 4                  \n')  # noqa
 
-        self.assertEquals(target_str, str(self.model))
+        self.assertEqual(target_str, str(self.model))
 
     def test_dict_serialization(self):
         self.model['dt'] = {'a': 1, 'b': 2}
@@ -283,7 +283,7 @@ class TestGenericTextViews(utils.BaseTestCase):
                       '  a = 1\n'
                       '  b = 2\n'
                       'string = value')
-        self.assertEquals(target_str, str(self.model))
+        self.assertEqual(target_str, str(self.model))
 
     def test_list_serialization(self):
         self.model['lt'] = ['a', 'b']
@@ -293,7 +293,7 @@ class TestGenericTextViews(utils.BaseTestCase):
                       '  a\n'
                       '  b\n'
                       'string = value')
-        self.assertEquals(target_str, str(self.model))
+        self.assertEqual(target_str, str(self.model))
 
     def test_list_in_dict_serialization(self):
         self.model['dt'] = {'a': 1, 'b': [2, 3]}
@@ -305,7 +305,7 @@ class TestGenericTextViews(utils.BaseTestCase):
                       '    2\n'
                       '    3\n'
                       'string = value')
-        self.assertEquals(target_str, str(self.model))
+        self.assertEqual(target_str, str(self.model))
 
     def test_dict_in_list_serialization(self):
         self.model['lt'] = [1, {'b': 2, 'c': 3}]
@@ -317,7 +317,7 @@ class TestGenericTextViews(utils.BaseTestCase):
                       '    c = 3\n'
                       '    b = 2\n'
                       'string = value')
-        self.assertEquals(target_str, str(self.model))
+        self.assertEqual(target_str, str(self.model))
 
     def test_submodel_serialization(self):
         sm = mwdv_generator()
@@ -330,7 +330,7 @@ class TestGenericTextViews(utils.BaseTestCase):
                       'submodel = \n'
                       '  int = 1\n'
                       '  string = value')
-        self.assertEquals(target_str, str(self.model))
+        self.assertEqual(target_str, str(self.model))
 
     def test_custom_indent_string(self):
         view = text_generic.KeyValueView(indent_str='~~')
@@ -343,7 +343,7 @@ class TestGenericTextViews(utils.BaseTestCase):
                       '~~a\n'
                       '~~b\n'
                       'string = value')
-        self.assertEquals(target_str, str(self.model))
+        self.assertEqual(target_str, str(self.model))
 
 
 def get_open_mocks(rv):
@@ -367,13 +367,13 @@ class TestJinjaView(utils.BaseTestCase):
     def test_load_from_file(self):
         self.model.attached_view = jv.JinjaView(path='a/b/c/d.jinja.txt')
 
-        self.assertEquals('int is 1, string is value', str(self.model))
+        self.assertEqual('int is 1, string is value', str(self.model))
         self.MM_FILE.assert_called_with_once('a/b/c/d.jinja.txt')
 
     def test_direct_pass(self):
         self.model.attached_view = jv.JinjaView(text=self.TEMPL_STR)
 
-        self.assertEquals('int is 1, string is value', str(self.model))
+        self.assertEqual('int is 1, string is value', str(self.model))
 
     def test_load_from_class(self):
         class TmpJinjaView(jv.JinjaView):
@@ -381,4 +381,4 @@ class TestJinjaView(utils.BaseTestCase):
 
         self.model.attached_view = TmpJinjaView()
 
-        self.assertEquals('int is 1, string is value', str(self.model))
+        self.assertEqual('int is 1, string is value', str(self.model))

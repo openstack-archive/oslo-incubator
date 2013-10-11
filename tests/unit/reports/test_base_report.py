@@ -60,7 +60,7 @@ class TestBasicReport(utils.BaseTestCase):
 
     def test_basic_render(self):
         self.report.add_section(BasicView(), basic_generator)
-        self.assertEquals(self.report.run(), "int: 1;string: value;")
+        self.assertEqual(self.report.run(), "int: 1;string: value;")
 
 
 class TestBaseModel(utils.BaseTestCase):
@@ -88,7 +88,7 @@ class TestBaseModel(utils.BaseTestCase):
             str(model)
         except Exception as e:
             err_str = 'Cannot stringify model: no attached view'
-            self.assertEquals(str(e), err_str)
+            self.assertEqual(str(e), err_str)
         else:
             self.assertTrue(False)
 
@@ -114,6 +114,6 @@ class TestBaseModel(utils.BaseTestCase):
     def test_getattr(self):
         model = base_model.ReportModel(data={'a': 1})
 
-        self.assertEquals(model.a, 1)
+        self.assertEqual(model.a, 1)
 
         self.assertRaises(AttributeError, getattr, model, 'b')
