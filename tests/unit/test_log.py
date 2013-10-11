@@ -59,16 +59,16 @@ class CommonLoggerTestsMixIn(object):
             f = h.formatter
             if isinstance(f, log.ContextFormatter):
                 formatters.append(f)
-        self.assert_(formatters)
+        self.assertTrue(formatters)
         self.assertEqual(len(formatters), len(self.log.logger.handlers))
 
     def test_handles_context_kwarg(self):
         self.log.info("foo", context=_fake_context())
-        self.assert_(True)  # didn't raise exception
+        self.assertTrue(True)  # didn't raise exception
 
     def test_audit_handles_context_arg(self):
         self.log.audit("foo", context=_fake_context())
-        self.assert_(True)  # didn't raise exception
+        self.assertTrue(True)  # didn't raise exception
 
     def test_will_be_verbose_if_verbose_flag_set(self):
         self.config(verbose=True)
