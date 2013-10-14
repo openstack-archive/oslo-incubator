@@ -31,7 +31,10 @@ except ImportError:
     ALEMBIC_LOADED = False
 from oslo.config import cfg
 import sqlalchemy
+import sqlalchemy.dialects.mysql.base as sa_mysql
+import sqlalchemy.dialects.postgresql.base as sa_psql
 import sqlalchemy.exc
+import sqlalchemy.types as sa_types
 
 from openstack.common.db.sqlalchemy import session
 from openstack.common import lockutils
@@ -40,6 +43,23 @@ from openstack.common import test
 
 LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
+
+
+# In user defined data type case we can get a situation when
+# dialect.type_descriptor(SomeType()) can return another type, not SomeType,
+# but in database SomeType will be presented. The main reason in sqlalchemy
+# logic and actually in colspecs attribute for each dialect. It is very
+# limited and will return one of presented types.
+# For example, dialect.type_descriptor(DECIMAL()) will return
+# sqlalchemy.dialects.mysql.base.NUMERIC but in database
+# sqlalchemy.dialects.mysql.base.DECIMAL will be presented.
+# This module contains a test comparing expected type with presented in
+# database. So, in this situation (sqlalchemy bug) we will get an error.
+# We can use a sets of pairs with correct types as a decision of this problem.
+DEFAULT_CORRECT_TYPES = set([
+    (sa_mysql.NUMERIC, sa_mysql.DECIMAL),
+    (sqlalchemy.types.DATETIME, sa_psql.TIMESTAMP),
+])
 
 
 def _get_connect_string(backend, user, passwd, database):
@@ -168,6 +188,7 @@ class BaseMigrationTestCase(test.BaseTestCase):
 
         # We start each test case with a completely blank slate.
         self._reset_databases()
+        self.correct_types = DEFAULT_CORRECT_TYPES.copy()
 
     def tearDown(self):
         # We destroy the test data store between each test case,
@@ -404,3 +425,263 @@ class WalkVersionsMixin(object):
             LOG.error("Failed to migrate to version %s on engine %s" %
                       (version, engine))
             raise
+
+
+class SyncModelsWithMigrations(BaseMigrationTestCase, WalkVersionsMixin):
+
+    def _check_column_type(self, column_model, column_db, column_name,
+                           table_name, dialect):
+        """Checking of column's type declared in models with column's type
+        existed in database. Also limit of length will be checked.
+        """
+        _msg = ("Wrong type for column `%(name)s` in `%(table)s`: `%(model)s` "
+                "in models, expected `%(db)s`.")
+        params = {'name': column_name,
+                  'table': table_name,
+                  'model': type(column_model.type).__name__,
+                  'db': type(column_db.type).__name__}
+        msg = _msg % params
+        model_column_type_len = getattr(column_model.type, 'length', None)
+        model_type = column_model.type
+        model_type_cls = type(model_type)
+        db_type = column_db.type
+        db_type_cls = type(db_type)
+        if isinstance(model_type, sa_types.Boolean):
+            if not isinstance(db_type, (sa_types.Integer, model_type_cls)):
+                self.errors.append(msg)
+        elif isinstance(model_type, sa_types.TypeDecorator):
+            # This is a special check for redefined types like IPAddress, CIDR,
+            # MediumText...
+            # For each redefined type we have sqlalchemy.types.Variant
+            # instance. But only simple types are present in database model.
+            # So we should get one of the base types from each redefined type
+            # and compare it with database implementation.
+            model_type = model_type.load_dialect_impl(dialect)
+            while isinstance(model_type, sa_types.Variant):
+                model_type = model_type.load_dialect_impl(dialect)
+            model_type_cls = type(model_type)
+            if not (issubclass(db_type_cls, model_type_cls) or
+                    (model_type_cls, db_type_cls) in self.correct_types):
+                params['model'] += ':' + model_type_cls.__name__
+                self.errors.append(_msg % params)
+            model_column_type_len = getattr(model_type, 'length', None)
+        else:
+            if not isinstance(db_type, model_type_cls):
+                self.errors.append(msg)
+        db_column_type_len = getattr(db_type, 'length', None)
+
+        if model_column_type_len != db_column_type_len:
+            msg = ("Wrong length for column `%s` in "
+                   "`%s` (model: %s, db: %s)" % (column_name,
+                                                 table_name,
+                                                 model_column_type_len,
+                                                 db_column_type_len))
+            self.errors.append(msg)
+
+    def _check_columns(self, table_model, table_db, dialect):
+        """Checking of equality of columns in table declared in modelas with
+        table existed in database.
+        Attribute for check:
+        - nullable,
+        - unique,
+        - index,
+        - default,
+        - primary key.
+        """
+        table_name = table_model.name
+        check_attrs = [
+            'nullable',
+            'unique',
+            'primary_key',
+            'index',
+        ]
+        columns = self._check_intersection(table_db.c.keys(),
+                                           table_model.c.keys(),
+                                           "Columns",
+                                           table_name)
+        for column_name in columns:
+            column_model = table_model.c[column_name]
+            column_db = table_db.c[column_name]
+            self._check_column_type(column_model,
+                                    column_db,
+                                    column_name,
+                                    table_name,
+                                    dialect)
+            # We can not check default attribute like others in `check_attrs`
+            # because there are a lot of columns in models with predefined
+            # values which skipped in db (created_at, deleted columns).
+            # It is not a bug, but without migration that can fix this
+            # situation (add default values for this columns in db)
+            # we can not check it like other params from `check_attrs`.
+            if column_db.default is not None:
+                if column_db.default != column_model.default:
+                    msg = ("Wrong default value in models for "
+                           "`%s.%s`" % (table_name, column_name,))
+                    self.errors.append(msg)
+            for attr in check_attrs:
+                model_attr = getattr(column_model, attr)
+                db_attr = getattr(column_db, attr)
+                if model_attr != db_attr:
+                    msg = ("Wrong value for `%s` attribute in `%s.%s` "
+                           "(models:%s, db:%s)" % (attr,
+                                                   table_name,
+                                                   column_name,
+                                                   model_attr,
+                                                   db_attr))
+                    self.errors.append(msg)
+
+    def _check_indexes(self, table_model, table_db, excluded_indexes, dialect):
+        """Base checking of index constraint.
+        This test checks name and columns in index.
+        For mysql column's order also will be checked.
+        """
+
+        db_indexes = dict((index.name, index) for index in
+                          table_db.indexes)
+        table_name = table_model.name
+        model_indexes = dict([(index.name, index) for index in
+                             table_model.indexes])
+        indexes = self._check_intersection(db_indexes.keys(),
+                                           model_indexes.keys(),
+                                           "Indexes",
+                                           table_name,
+                                           exclude=excluded_indexes)
+        check_order = self._check_order(dialect)
+        for index_name in indexes:
+            db_index_c = db_indexes[index_name].columns.keys()
+            model_index_c = model_indexes[index_name].columns.keys()
+            self._check_intersection(db_index_c,
+                                     model_index_c,
+                                     "Indexes",
+                                     table_name,
+                                     index_name,
+                                     check_order=check_order)
+
+    def _check_order(self, dialect):
+        """Return boolean value for checking of order columns in index.
+        In mysql case True will be returned.
+        Since before 0.8.2 version columns in indexes have a wrong
+        order for postgres False will be returned in this case.
+        """
+        if dialect == 'mysql':
+            return True
+        version = map(int, sqlalchemy.__version__.split('.'))
+        return dialect == 'postgres' and version >= [0, 8, 2]
+
+    def _check_fkeys(self, table_model, table_db):
+        """Checking of equality of foreign keys declared in models
+        and existed in database.
+        The name for ForeignKey in models is skipped by default.
+        We can see it in this kind of creation:
+        Column(Integer, ForeignKey('table.column')).
+        So, we can only check it by column name.
+        Also for each ForeignKey index in table will be created.
+        After this step we should remove index for this constraint from
+        indexes that we will be checked later (for excluding of duplicate
+        check). Removing will be done from temporary list of indexes
+        not from table.
+        """
+        table_name = table_model.name
+        db_fkeys = dict((c.parent.name, c.column.name)
+                        for c in table_db.foreign_keys)
+        model_fkeys = dict((c.parent.name, c.column.name)
+                           for c in table_model.foreign_keys)
+        fkeys = self._check_intersection(db_fkeys.keys(),
+                                         model_fkeys.keys(),
+                                         "ForeignKeys",
+                                         table_name)
+        for k in fkeys:
+            self._check_intersection([db_fkeys[k]],
+                                     [model_fkeys[k]],
+                                     "ForeignKeys",
+                                     table_name, k)
+        db_fkeys_names = [c.name for c in table_db.foreign_keys
+                          if c.parent.name in fkeys]
+        db_fkeys_names.extend(fkeys)
+        return set(db_fkeys_names)
+
+    def _check_uniques(self, table_model, table_db, dialect):
+        """We can check UC only from list of indexes in actual version
+        of sqlalchemy.
+        If there is a UniqueConstraint in database that skipped
+        in models we will get an error from indexes check.
+        In missing index case for UC that presented only in database
+        mysql check will not give an error, but postgres check will do.
+        """
+        table_name = table_model.name
+        constraint_class = sqlalchemy.schema.UniqueConstraint
+        db_indexes = dict((index.name, index) for index in
+                          table_db.indexes)
+        checked_uniques = []
+        check_order = self._check_order(dialect)
+        for constraint in table_model.constraints:
+            if not isinstance(constraint, constraint_class):
+                continue
+
+            # We have a naming convention for UniqueConstraint (UC).
+            # (uniq_tablename0columnA0columnB...).
+            # But when we use unique=True attribute it can not work
+            # because column name will be taken as UC name.
+            uniq_fields = ['uniq_' + table_name]
+            uniq_fields.extend(constraint.columns.keys())
+            check = "0".join(uniq_fields)
+            constraint_name = constraint.name
+            if constraint_name is None:
+                if len(constraint.columns.keys()) > 1:
+                    constraint_name = check
+                else:
+                    constraint_name = constraint.columns.keys()[0]
+            if constraint_name not in db_indexes:
+                msg = ("%s `%s.%s` declared in models is skipped "
+                       "in migrations." % ("UniqueConstraint",
+                                           table_name,
+                                           constraint_name))
+                self.errors.append(msg)
+                continue
+            checked_uniques.append(constraint_name)
+            db_index = db_indexes[constraint_name]
+            if not db_index.unique:
+                self.errors.append("Index in database `%s.%s` "
+                                   "should be unique as it declared "
+                                   "in models." % (table_name,
+                                                   constraint_name))
+            # Checking list and order of columns in UniqueConstraint
+            # in models and database at equality.
+            self._check_intersection(db_index.columns.keys(),
+                                     constraint.columns.keys(),
+                                     "UniqueConstraint",
+                                     table_name,
+                                     constraint_name,
+                                     check_order=check_order)
+        return set(checked_uniques)
+
+    def _check_intersection(self, db_obj, model_obj, obj_label, table_name,
+                            obj_name="", exclude=None, check_order=False):
+        """Helper method for checking sets at equality and right order
+        of objects in them.
+        """
+        obj_diff = set(db_obj) ^ set(model_obj)
+        full_obj = set(db_obj) & set(model_obj)
+        if exclude is not None:
+            obj_diff -= exclude
+            full_obj -= exclude
+        if obj_diff:
+            diff_model = obj_diff & set(model_obj)
+            diff_db = obj_diff & set(db_obj)
+            msg = ("%s have a difference in %s %s: (%s). "
+                   "Models: (%s). Database: (%s)." % (obj_label,
+                                                      table_name,
+                                                      obj_name,
+                                                      ",".join(obj_diff),
+                                                      ",".join(diff_model),
+                                                      ",".join(diff_db)))
+            self.errors.append(msg)
+        if check_order and db_obj != model_obj:
+            msg = ("%s in `%s.%s` have wrong order in models (%s), "
+                   "expected in database (%s)" % (obj_label,
+                                                  table_name,
+                                                  obj_name,
+                                                  ",".join(model_obj),
+                                                  ",".join(db_obj)))
+            self.errors.append(msg)
+        return full_obj
