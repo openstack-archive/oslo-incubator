@@ -132,7 +132,7 @@ log_opts = [
                     'boto=WARN',
                     'suds=INFO',
                     'keystone=INFO',
-                    'eventlet.wsgi.server=WARN'
+                    'eventlet.wsgi.server=INFO'
                 ],
                 help='list of logger=LEVEL pairs'),
     cfg.BoolOpt('publish_errors',
