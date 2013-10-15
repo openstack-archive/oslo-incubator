@@ -20,13 +20,13 @@ import mock
 
 from openstack.common.db.sqlalchemy import test_migrations as migrate
 from openstack.common import log as logging
+from openstack.common import test
 
-from tests import utils as test_utils
 
 LOG = logging.getLogger(__name__)
 
 
-class TestWalkVersions(test_utils.BaseTestCase, migrate.WalkVersionsMixin):
+class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
     def setUp(self):
         super(TestWalkVersions, self).setUp()
         self.migration_api = mock.MagicMock()
