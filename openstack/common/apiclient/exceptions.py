@@ -392,7 +392,7 @@ class HttpVersionNotSupported(HttpServerError):
 #     _code_map = dict((c.http_status, c)
 #                      for c in HttpError.__subclasses__())
 _code_map = {}
-for obj in sys.modules[__name__].__dict__.values():
+for obj in list(sys.modules[__name__].__dict__.values()):
     if isinstance(obj, type):
         try:
             http_status = obj.http_status
