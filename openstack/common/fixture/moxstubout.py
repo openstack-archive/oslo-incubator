@@ -19,6 +19,7 @@
 
 import fixtures
 import mox
+import stubout
 
 
 class MoxStubout(fixtures.Fixture):
@@ -26,9 +27,14 @@ class MoxStubout(fixtures.Fixture):
 
     def setUp(self):
         super(MoxStubout, self).setUp()
-        # emulate some of the mox stuff, we can't use the metaclass
-        # because it screws with our generators
+        # NOTE(sirp): the order of these cleanup calls is *very* important to
+        # prevent tests from interacting with each other.
+        #
+        # Developers should avoid using mox and stubs at the same time, but if
+        # they must, always STUB BEFORE MOX.
         self.mox = mox.Mox()
-        self.stubs = self.mox.stubs
+        self.stubs = stubout.StubOutForTesting()
+        self.addCleanup(self.stubs.UnsetAll)
+        self.addCleanup(self.stubs.SmartUnsetAll)
         self.addCleanup(self.mox.UnsetStubs)
         self.addCleanup(self.mox.VerifyAll)
