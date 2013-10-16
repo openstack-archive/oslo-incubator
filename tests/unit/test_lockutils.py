@@ -27,6 +27,7 @@ from eventlet import semaphore
 from oslo.config import cfg
 
 from openstack.common.fixture import config
+from openstack.common.fixture import lockutils as fixtures
 from openstack.common import lockutils
 from openstack.common import test
 
@@ -335,4 +336,4 @@ class TestLockFixture(test.BaseTestCase):
     def test_lock_fixture(self):
         # Setup lock fixture to test that teardown is inside the lock
         self.config(lock_path=self.tempdir)
-        self.useFixture(lockutils.LockFixture('test-lock'))
+        self.useFixture(fixtures.LockFixture('test-lock'))
