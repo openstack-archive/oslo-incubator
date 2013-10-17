@@ -25,11 +25,13 @@ from oslo.config import cfg
 import testtools
 
 from openstack.common.fixture import moxstubout
+from openstack.common import lockutils
 
 
 class BaseTestCase(testtools.TestCase):
 
     def setUp(self, conf=cfg.CONF):
+        lockutils.set_defaults(tempfile.mkdtemp())
         super(BaseTestCase, self).setUp()
         moxfixture = self.useFixture(moxstubout.MoxStubout())
         self.mox = moxfixture.mox
