@@ -488,7 +488,7 @@ class ServerTest(test.BaseTestCase):
 class WSGIServerTest(test.BaseTestCase):
 
     def test_pool(self):
-        server = wsgi.Service('fake', 9000)
+        server = wsgi.Service('fake', 9001)
         self.assertTrue(server.tg)
         self.assertTrue(server.tg.pool)
         self.assertEqual(server.tg.pool.free(), 1000)
