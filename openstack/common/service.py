@@ -129,7 +129,7 @@ class ServiceLauncher(Launcher):
     def handle_signal(self):
         _set_signals_handler(self._handle_signal)
 
-    def _wait_for_exit_or_signal(self):
+    def _wait_for_exit_or_signal(self, ready_event=None):
         status = None
         signo = 0
 
@@ -137,6 +137,8 @@ class ServiceLauncher(Launcher):
         CONF.log_opt_values(LOG, std_logging.DEBUG)
 
         try:
+            if ready_event:
+                ready_event.set()
             super(ServiceLauncher, self).wait()
         except SignalExit as exc:
             signame = _signo_to_signame(exc.signo)
@@ -156,10 +158,10 @@ class ServiceLauncher(Launcher):
 
         return status, signo
 
-    def wait(self):
+    def wait(self, ready_event=None):
         while True:
             self.handle_signal()
-            status, signo = self._wait_for_exit_or_signal()
+            status, signo = self._wait_for_exit_or_signal(ready_event)
             if not _is_sighup(signo):
                 return status
             self.restart()
