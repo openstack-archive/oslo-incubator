@@ -13,7 +13,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import mock
 import socket
+import yaml
+
+from stevedore import extension
+from stevedore.tests import manager as test_manager
 
 from openstack.common import context
 from openstack.common.fixture import config
@@ -22,6 +27,7 @@ from openstack.common import log
 from openstack.common.notifier import api as notifier_api
 from openstack.common.notifier import log_notifier
 from openstack.common.notifier import no_op_notifier
+from openstack.common.notifier import routing_notifier
 from openstack.common import rpc
 from openstack.common import test
 
@@ -284,3 +290,186 @@ class MultiNotifierTestCase(test.BaseTestCase):
                          'foobar.' + socket.gethostname())
         self.assertEqual(notifier_api.publisher_id('foobar', 'baz'),
                          'foobar.baz')
+
+
+class RoutingNotifierTestCase(test.BaseTestCase):
+    def _fake_extension_manager(self, ext):
+        return test_manager.TestExtensionManager(
+            [extension.Extension('test', None, None, ext), ])
+
+    def _empty_extension_manager(self):
+        return test_manager.TestExtensionManager([])
+
+    def test_should_load_plugin(self):
+        self.config = self.useFixture(config.Config())
+        self.config.conf.set_override("disabled_notification_driver",
+                                      ['foo', 'blah'])
+        ext = mock.MagicMock()
+        ext.name = "foo"
+        self.assertFalse(routing_notifier._should_load_plugin(ext))
+        ext.name = "zoo"
+        self.assertTrue(routing_notifier._should_load_plugin(ext))
+
+    def test_load_notifiers_no_config(self):
+        # default routing_notifier_config=""
+        with mock.patch('stevedore.dispatch.DispatchExtensionManager',
+                        return_value=self._fake_extension_manager(
+                            mock.MagicMock())):
+            routing_notifier._load_notifiers()
+        self.assertEqual(routing_notifier.groups, {})
+
+    def test_load_notifiers_no_extensions(self):
+        # default routing_notifier_config=""
+        with mock.patch('stevedore.dispatch.DispatchExtensionManager',
+                        return_value=self._empty_extension_manager()):
+            with mock.patch('openstack.common.notifier.'
+                            'routing_notifier.LOG') as mylog:
+                routing_notifier._load_notifiers()
+                self.assertTrue(mylog.warning.called)
+
+    def test_load_notifiers_config(self):
+        self.config = self.useFixture(config.Config())
+        self.config.conf.set_override("routing_notifier_config",
+                                      "routing_notifier.yaml")
+        routing_config = r"""
+group_1:
+   - rpc
+group_2:
+   - rpc
+        """
+
+        config_file = mock.MagicMock()
+        config_file.return_value = routing_config
+
+        with mock.patch('openstack.common.notifier.routing_notifier.'
+                        '_get_notifier_config_file', config_file):
+            with mock.patch('stevedore.dispatch.DispatchExtensionManager',
+                            return_value=self._fake_extension_manager(
+                                mock.MagicMock())):
+                routing_notifier._load_notifiers()
+                groups = routing_notifier.groups.keys()
+                groups.sort()
+                self.assertEquals(['group_1', 'group_2'], groups)
+
+    def test_get_drivers_for_message_accepted_events(self):
+        config = r"""
+group_1:
+   - rpc:
+         accepted_events:
+            - foo.*
+            - blah.zoo.*
+            - zip
+        """
+        groups = yaml.load(config)
+        group = groups['group_1']
+
+        # No matching event ...
+        self.assertEquals([],
+                          routing_notifier._get_drivers_for_message(
+                              group, "unknown", None))
+
+        # Child of foo ...
+        self.assertEquals(['rpc'],
+                          routing_notifier._get_drivers_for_message(
+                              group, "foo.1", None))
+
+        # Foo itself ...
+        self.assertEquals([],
+                          routing_notifier._get_drivers_for_message(
+                              group, "foo", None))
+
+        # Child of blah.zoo
+        self.assertEquals(['rpc'],
+                          routing_notifier._get_drivers_for_message(
+                              group, "blah.zoo.zing", None))
+
+    def test_get_drivers_for_message_accepted_priorities(self):
+        config = r"""
+group_1:
+   - rpc:
+         accepted_priorities:
+            - info
+            - error
+        """
+        groups = yaml.load(config)
+        group = groups['group_1']
+
+        # No matching priority
+        self.assertEquals([],
+                          routing_notifier._get_drivers_for_message(
+                              group, None, "unknown"))
+
+        # Info ...
+        self.assertEquals(['rpc'],
+                          routing_notifier._get_drivers_for_message(
+                              group, None, "info"))
+
+        # Error (to make sure the list is getting processed) ...
+        self.assertEquals(['rpc'],
+                          routing_notifier._get_drivers_for_message(
+                              group, None, "error"))
+
+    def test_get_drivers_for_message_both(self):
+        config = r"""
+group_1:
+   - rpc:
+         accepted_priorities:
+            - info
+         accepted_events:
+            - foo.*
+   - driver_1:
+         accepted_priorities:
+            - info
+   - driver_2:
+        accepted_events:
+            - foo.*
+        """
+        groups = yaml.load(config)
+        group = groups['group_1']
+
+        # Valid event, but no matching priority
+        self.assertEquals(['driver_2'],
+                          routing_notifier._get_drivers_for_message(
+                              group, 'foo.blah', "unknown"))
+
+        # Valid priority, but no matching event
+        self.assertEquals(['driver_1'],
+                          routing_notifier._get_drivers_for_message(
+                              group, 'unknown', "info"))
+
+        # Happy day ...
+        x = routing_notifier._get_drivers_for_message(group, 'foo.blah',
+                                                      "info")
+        x.sort()
+        self.assertEquals(['driver_1', 'driver_2', 'rpc'], x)
+
+    def test_filter_func(self):
+        routing_notifier.groups = {'group_1': None, 'group_2': None}
+
+        ext = mock.MagicMock()
+        ext.name = "rpc"
+
+        message = {'event_type': 'my_event', 'priority': 'my_priority'}
+
+        # Driver included (top-level) ...
+        drivers_mock = mock.MagicMock()
+        drivers_mock.side_effect = [['rpc'], ['foo'], ['blah', 'zip']]
+
+        with mock.patch('openstack.common.notifier.routing_notifier.'
+                        '_get_drivers_for_message', drivers_mock):
+            self.assertTrue(routing_notifier._filter_func(ext, {}, message))
+
+        # Driver included (sub-list) ...
+        drivers_mock = mock.MagicMock()
+        drivers_mock.side_effect = [['foo'], ['blah', 'rpc']]
+
+        with mock.patch('openstack.common.notifier.routing_notifier.'
+                        '_get_drivers_for_message', drivers_mock):
+            self.assertTrue(routing_notifier._filter_func(ext, {}, message))
+
+        # Bad message for this driver ...
+        drivers_mock = mock.MagicMock()
+        drivers_mock.side_effect = [['foo'], ['blah', 'zip']]
+        with mock.patch('openstack.common.notifier.routing_notifier.'
+                        '_get_drivers_for_message', drivers_mock):
+            self.assertFalse(routing_notifier._filter_func(ext, {}, message))
