@@ -21,4 +21,5 @@ pycrypto>=2.6
 Babel>=0.9.6
 pycadf>=0.1.4
 Jinja2
+PyYAML>=3.1.0
 oslo.config>=1.2.0
