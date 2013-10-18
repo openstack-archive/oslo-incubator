@@ -47,9 +47,10 @@ secure_message_opts = [
     cfg.StrOpt('kds_endpoint',
                help='KDS endpoint (ex: http://kds.example.com:35357/v3)'),
 ]
-secure_message_group = cfg.OptGroup('secure_messages',
-                                    title='Secure Messaging options')
-
+CONF = cfg.CONF
+CONF.register_group(cfg.OptGroup('secure_messages',
+                                 title='Secure Messaging options'))
+CONF.register_opts(secure_message_opts, group='secure_messages')
 LOG = logging.getLogger(__name__)
 
 
@@ -347,9 +348,6 @@ class SecureMessage(object):
 
     def __init__(self, topic, host, conf, key=None, key_store=None,
                  encrypt=None, enctype='AES', hashtype='SHA256'):
-
-        conf.register_group(secure_message_group)
-        conf.register_opts(secure_message_opts, group='secure_messages')
 
         self._name = '%s.%s' % (topic, host)
         self._key = key
