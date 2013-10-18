@@ -6,7 +6,7 @@ greenlet>=0.3.2
 requests>=1.1
 Routes>=1.12.3
 prettytable>=0.6,<0.8
-iso8601>=0.1.4
+iso8601>=0.1.4,!=0.1.5
 anyjson>=0.3.3
 kombu>=2.4.8
 argparse
