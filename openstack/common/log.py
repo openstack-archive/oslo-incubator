@@ -64,10 +64,10 @@ common_cli_opts = [
 ]
 
 logging_cli_opts = [
-    cfg.StrOpt('log-config',
+    cfg.StrOpt('log-config-append',
                metavar='PATH',
                help='If this option is specified, the logging configuration '
-                    'file specified is used and overrides any other logging '
+                    'file specified is used and append any other logging '
                     'options specified. Please see the Python logging module '
                     'documentation for details on logging configuration '
                     'files.'),
@@ -355,15 +355,16 @@ class LogConfigError(Exception):
 
 def _load_log_config(log_config):
     try:
-        logging.config.fileConfig(log_config)
+        logging.config.fileConfig(log_config,
+                                  disable_existing_loggers=False)
     except moves.configparser.Error as exc:
         raise LogConfigError(log_config, str(exc))
 
 
 def setup(product_name):
     """Setup logging."""
-    if CONF.log_config:
-        _load_log_config(CONF.log_config)
+    if CONF.log_config_append:
+        _load_log_config(CONF.log_config_append)
     else:
         _setup_logging_from_conf()
     sys.excepthook = _create_logging_excepthook(product_name)
