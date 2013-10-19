@@ -19,6 +19,7 @@ import os
 import sys
 import tempfile
 
+import mock
 from oslo.config import cfg
 import six
 
@@ -421,7 +422,7 @@ class LogConfigOptsTestCase(test.BaseTestCase):
     def test_logging_opts(self):
         self.CONF([])
 
-        self.assertTrue(self.CONF.log_config is None)
+        self.assertTrue(self.CONF.log_config_append is None)
         self.assertTrue(self.CONF.log_file is None)
         self.assertTrue(self.CONF.log_dir is None)
         self.assertTrue(self.CONF.log_format is None)
@@ -494,24 +495,41 @@ handlers=
             os.close(fd)
         return path
 
-    def test_log_config_ok(self):
-        log_config = self._create_tempfile('logging', self.minimal_config)
-        self.config(log_config=log_config)
-        log.setup('test_log_config')
+    def test_log_config_append_ok(self):
+        log_config_append = self._create_tempfile('logging',
+                                                  self.minimal_config)
+        self.config(log_config_append=log_config_append)
+        log.setup('test_log_config_append')
 
-    def test_log_config_not_exist(self):
-        log_config = self._create_tempfile('logging', self.minimal_config)
-        os.remove(log_config)
-        self.config(log_config=log_config)
-        self.assertRaises(log.LogConfigError, log.setup, 'test_log_config')
+    def test_log_config_append_not_exist(self):
+        log_config_append = self._create_tempfile('logging',
+                                                  self.minimal_config)
+        os.remove(log_config_append)
+        self.config(log_config_append=log_config_append)
+        self.assertRaises(log.LogConfigError, log.setup,
+                          'test_log_config_append')
 
-    def test_log_config_invalid(self):
-        log_config = self._create_tempfile('logging', self.minimal_config[5:])
-        self.config(log_config=log_config)
-        self.assertRaises(log.LogConfigError, log.setup, 'test_log_config')
+    def test_log_config_append_invalid(self):
+        log_config_append = self._create_tempfile('logging',
+                                                  self.minimal_config[5:])
+        self.config(log_config_append=log_config_append)
+        self.assertRaises(log.LogConfigError, log.setup,
+                          'test_log_config_append')
 
-    def test_log_config_unreadable(self):
-        log_config = self._create_tempfile('logging', self.minimal_config)
-        os.chmod(log_config, 0)
-        self.config(log_config=log_config)
-        self.assertRaises(log.LogConfigError, log.setup, 'test_log_config')
+    def test_log_config_append_unreadable(self):
+        log_config_append = self._create_tempfile('logging',
+                                                  self.minimal_config)
+        os.chmod(log_config_append, 0)
+        self.config(log_config_append=log_config_append)
+        self.assertRaises(log.LogConfigError, log.setup,
+                          'test_log_config_append')
+
+    def test_log_config_append_disable_existing_loggers(self):
+        log_config_append = self._create_tempfile('logging',
+                                                  self.minimal_config)
+        self.config(log_config_append=log_config_append)
+        with mock.patch('logging.config.fileConfig') as fileConfig:
+            log.setup('test_log_config_append')
+
+        fileConfig.assert_called_once_with(log_config_append,
+                                           disable_existing_loggers=False)
