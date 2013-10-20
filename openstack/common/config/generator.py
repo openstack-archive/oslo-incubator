@@ -137,6 +137,13 @@ def _guess_groups(opt, mod_obj):
             if _is_in_group(opt, value._group):
                 return value._group.name
 
+    # option is not yet registered, our guess
+    # is that it will added to the only cfg.OptGroup
+    # in the module
+    groups = _list_groups(mod_obj)
+    if len(groups) == 1:
+        return groups[0].name
+
     raise RuntimeError(
         "Unable to find group for option %s, "
         "maybe it's defined twice in the same group?"
@@ -162,6 +169,15 @@ def _list_opts(obj):
     for opt in opts:
         ret.setdefault(_guess_groups(opt, obj), []).append(opt)
     return ret.items()
+
+
+def _list_groups(obj):
+    groups = []
+    for attr_str in dir(obj):
+        attr_obj = getattr(obj, attr_str)
+        if isinstance(attr_obj, cfg.OptGroup):
+            groups.append(attr_obj)
+    return groups
 
 
 def print_group_opts(group, opts_by_module):
