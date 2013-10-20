@@ -56,3 +56,6 @@ class CompatTestCase(test.BaseTestCase):
         url = "http://www.yahoo.com"
         result = urlutils.urlunsplit(urlutils.urlsplit(url))
         self.assertEqual(result, 'http://www.yahoo.com')
+
+    def test_urlopen(self):
+        self.assertRaises(IOError, urlutils.urlopen, 'wrong://url')
