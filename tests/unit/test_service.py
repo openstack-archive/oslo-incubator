@@ -25,6 +25,7 @@ from __future__ import print_function
 import errno
 import eventlet
 import mox
+import multiprocessing
 import os
 import signal
 import socket
@@ -230,17 +231,8 @@ class ServiceLauncherTest(ServiceTestBase):
 
 class ServiceRestartTest(ServiceTestBase):
 
-    def _check_process_alive(self):
-        f = os.popen('ps ax -o pid,stat,cmd')
-        f.readline()
-        pid_stat = [tuple(p for p in line.strip().split()[:2])
-                    for line in f.readlines()]
-        for p, stat in pid_stat:
-            if int(p) == self.pid:
-                return stat not in ['Z', 'T', 'Z+']
-        return False
-
     def _spawn_service(self):
+        ready_event = multiprocessing.Event()
         pid = os.fork()
         status = 0
         if pid == 0:
@@ -248,33 +240,30 @@ class ServiceRestartTest(ServiceTestBase):
                 serv = ServiceWithTimer()
                 launcher = service.ServiceLauncher()
                 launcher.launch_service(serv)
-                launcher.wait()
+                launcher.wait(ready_callback=ready_event.set)
             except SystemExit as exc:
                 status = exc.code
             os._exit(status)
         self.pid = pid
+        return ready_event
 
     def test_service_restart(self):
-        self._spawn_service()
+        ready = self._spawn_service()
 
-        cond = self._check_process_alive
         timeout = 5
-        self._wait(cond, timeout)
-
-        ret = self._check_process_alive()
-        self.assertTrue(ret)
+        ready.wait(timeout)
+        self.assertTrue(ready.is_set(), 'Service never became ready')
+        ready.clear()
 
         os.kill(self.pid, signal.SIGHUP)
-        self._wait(cond, timeout)
-
-        ret_restart = self._check_process_alive()
-        self.assertTrue(ret_restart)
+        ready.wait(timeout)
+        self.assertTrue(ready.is_set(), 'Service never back after SIGHUP')
 
     def test_terminate_sigterm(self):
-        self._spawn_service()
-        cond = self._check_process_alive
+        ready = self._spawn_service()
         timeout = 5
-        self._wait(cond, timeout)
+        ready.wait(timeout)
+        self.assertTrue(ready.is_set(), 'Service never became ready')
 
         os.kill(self.pid, signal.SIGTERM)
 
