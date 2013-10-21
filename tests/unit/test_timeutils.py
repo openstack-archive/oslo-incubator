@@ -201,6 +201,13 @@ class TimeUtilsTest(test.BaseTestCase):
             expires = timeutils.utcnow()
             self.assertTrue(timeutils.is_soon(expires, 0))
 
+    def test_epoch_time(self):
+        timeutils.set_time_override(self.skynet_self_aware_ms_time)
+        val = timeutils.time()
+        self.assertEqual(val, 872799240.000123)
+        self.assertEqual(datetime.datetime.fromtimestamp(val),
+                         self.skynet_self_aware_ms_time)
+
 
 class TestIso8601Time(test.BaseTestCase):
 

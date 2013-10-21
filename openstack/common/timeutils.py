@@ -21,7 +21,7 @@ Time related utilities and helper functions.
 
 import calendar
 import datetime
-import time
+import time as time_mod
 
 import iso8601
 import six
@@ -94,7 +94,7 @@ def utcnow_ts():
     if utcnow.override_time is None:
         # NOTE(kgriffs): This is several times faster
         # than going through calendar.timegm(...)
-        return int(time.time())
+        return int(time_mod.time())
 
     return calendar.timegm(utcnow().timetuple())
 
@@ -107,6 +107,11 @@ def utcnow():
         except AttributeError:
             return utcnow.override_time
     return datetime.datetime.utcnow()
+
+
+def time():
+    """Overridable version of time.time."""
+    return float(utcnow().strftime("%s.%f"))
 
 
 def iso8601_from_timestamp(timestamp):
