@@ -245,9 +245,12 @@ import functools
 import os.path
 import re
 import time
+from urllib import unquote_plus
+from urlparse import parse_qsl
 
 from oslo.config import cfg
 import six
+from sqlalchemy.engine.url import URL
 from sqlalchemy import exc as sqla_exc
 import sqlalchemy.interfaces
 from sqlalchemy.interfaces import PoolListener
@@ -258,6 +261,7 @@ from sqlalchemy.sql.expression import literal_column
 from openstack.common.db import exception
 from openstack.common.gettextutils import _  # noqa
 from openstack.common import log as logging
+from openstack.common import network_utils
 from openstack.common import timeutils
 
 sqlite_db_opts = [
@@ -630,6 +634,46 @@ def _is_db_connection_error(args):
     return False
 
 
+def make_url(url):
+    pattern = re.compile(r'''
+            (?P<name>[\w\+]+)://
+            (?:
+                (?P<username>[^:/]*)
+                (?::(?P<password>[^/]*))?
+            @)?
+            (?P<host>[^/]*)
+            (?:/(?P<database>.*))?
+            ''', re.X)
+
+    m = pattern.match(url)
+    if m is not None:
+        components = m.groupdict()
+        if components['database'] is not None:
+            tokens = components['database'].split('?', 2)
+            components['database'] = tokens[0]
+            query = (len(tokens) > 1 and dict(parse_qsl(tokens[1]))) or None
+            if query is not None:
+                query = dict((k.encode('ascii'), query[k]) for k in query)
+        else:
+            query = None
+        components['query'] = query
+
+        if components['host']:
+            (host, port) = network_utils.parse_host_port(components['host'])
+            components['host'] = host
+            if port:
+                components['port'] = port
+
+        if components['password'] is not None:
+            components['password'] = unquote_plus(components['password'])
+
+        name = components.pop('name')
+        return URL(name, **components)
+    else:
+        raise exception.DBError(
+            "Could not parse rfc1738 URL from string '%s'" % url)
+
+
 def create_engine(sql_connection, sqlite_fk=False):
     """Return a new SQLAlchemy engine."""
     # NOTE(geekinutah): At this point we could be connecting to the normal
@@ -637,7 +681,7 @@ def create_engine(sql_connection, sqlite_fk=False):
     #                   _wrap_db_error aren't going to work well if their
     #                   backends don't match. Let's check.
     _assert_matching_drivers()
-    connection_dict = sqlalchemy.engine.url.make_url(sql_connection)
+    connection_url = make_url(sql_connection)
 
     engine_args = {
         "pool_recycle": CONF.database.idle_timeout,
@@ -651,7 +695,7 @@ def create_engine(sql_connection, sqlite_fk=False):
     elif CONF.database.connection_debug >= 50:
         engine_args['echo'] = True
 
-    if "sqlite" in connection_dict.drivername:
+    if "sqlite" in connection_url.drivername:
         if sqlite_fk:
             engine_args["listeners"] = [SqliteForeignKeysListener()]
         engine_args["poolclass"] = NullPool
@@ -667,13 +711,13 @@ def create_engine(sql_connection, sqlite_fk=False):
         if CONF.database.pool_timeout is not None:
             engine_args['pool_timeout'] = CONF.database.pool_timeout
 
-    engine = sqlalchemy.create_engine(sql_connection, **engine_args)
+    engine = sqlalchemy.create_engine(connection_url, **engine_args)
 
     sqlalchemy.event.listen(engine, 'checkin', _thread_yield)
 
-    if 'mysql' in connection_dict.drivername:
+    if 'mysql' in connection_url.drivername:
         sqlalchemy.event.listen(engine, 'checkout', _ping_listener)
-    elif 'sqlite' in connection_dict.drivername:
+    elif 'sqlite' in connection_url.drivername:
         if not CONF.sqlite_synchronous:
             sqlalchemy.event.listen(engine, 'connect',
                                     _synchronous_switch_listener)
