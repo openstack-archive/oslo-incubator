@@ -18,8 +18,10 @@
 
 """Unit tests for SQLAlchemy specific code."""
 
+import mock
 from sqlalchemy import Column, MetaData, Table, UniqueConstraint
 from sqlalchemy import DateTime, Integer, String
+from sqlalchemy.engine.base import Engine
 from sqlalchemy.ext.declarative import declarative_base
 
 from openstack.common.db import exception as db_exc
@@ -226,3 +228,33 @@ class SlaveBackendTestCase(test.BaseTestCase):
     def test_slave_backend_nomatch(self):
         session.CONF.database.slave_connection = "mysql:///localhost"
         self.assertRaises(AssertionError, session._assert_matching_drivers)
+
+
+class ConnectionURLTestCase(test.BaseTestCase):
+    def setUp(self):
+        super(ConnectionURLTestCase, self).setUp()
+        config_fixture = self.useFixture(config.Config())
+        self.conf = config_fixture.conf
+        self.conf.import_opt('connection',
+                             'openstack.common.db.sqlalchemy.session',
+                             group='database')
+        self.addCleanup(session.cleanup)
+
+    def test_host_connection(self):
+        url = 'mysql://root:nova@my.host.com/nova?charset=utf8'
+        self.conf.set_default('connection', url, group='database')
+        with mock.patch.object(Engine, 'connect'):
+            session.get_engine()
+
+    def test_ipv4_connection(self):
+        url = 'mysql://root:nova@127.0.0.1/nova?charset=utf8'
+        self.conf.set_default('connection', url, group='database')
+        with mock.patch.object(Engine, 'connect'):
+            session.get_engine()
+
+    def test_ipv6_connection(self):
+        fake_ip = 'fda4:8e81:a32a:0:f2de:f1ff:fe62:19ea'
+        url = 'mysql://root:nova@[%s]:8888/nova?charset=utf8' % fake_ip
+        self.conf.set_default('connection', url, group='database')
+        with mock.patch.object(Engine, 'connect'):
+            session.get_engine()
