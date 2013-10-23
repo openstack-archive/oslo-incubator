@@ -15,6 +15,7 @@
 #    under the License.
 
 import fcntl
+import multiprocessing
 import os
 import shutil
 import tempfile
@@ -315,6 +316,48 @@ class LockTestCase(test.BaseTestCase):
             pass
 
         self.assertRaises(cfg.RequiredOptError, foo)
+
+
+class LockutilsModuleTestCase(test.BaseTestCase):
+
+    def setUp(self):
+        super(LockutilsModuleTestCase, self).setUp()
+        self.old_env = os.environ.get('OSLO_LOCK_PATH')
+
+    def tearDown(self):
+        if self.old_env is None:
+            del os.environ['OSLO_LOCK_PATH']
+        else:
+            os.environ['OSLO_LOCK_PATH'] = self.old_env
+        super(LockutilsModuleTestCase, self).tearDown()
+
+    def _lock_path_conf_test(self, lock_dir):
+        cfg.CONF.unregister_opts(lockutils.util_opts)
+        lockutils_ = reload(lockutils)
+        with lockutils_.lock('test-lock', external=True):
+            if not os.path.exists(lock_dir):
+                os._exit(2)
+            if not os.path.exists(os.path.join(lock_dir, 'test-lock')):
+                os._exit(3)
+
+    def test_lock_path_from_env(self):
+        lock_dir = tempfile.mkdtemp()
+        os.environ['OSLO_LOCK_PATH'] = lock_dir
+        try:
+            p = multiprocessing.Process(target=self._lock_path_conf_test,
+                                        args=(lock_dir,))
+            p.start()
+            p.join()
+            if p.exitcode == 2:
+                self.fail("lock_path directory %s does not exist" % lock_dir)
+            elif p.exitcode == 3:
+                self.fail("lock file hasn't been created in expected location")
+            else:
+                self.assertEqual(p.exitcode, 0,
+                                 "Subprocess failed with code %s" % p.exitcode)
+        finally:
+            if os.path.exists(lock_dir):
+                shutil.rmtree(lock_dir, ignore_errors=True)
 
 
 class TestLockFixture(test.BaseTestCase):
