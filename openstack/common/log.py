@@ -412,6 +412,10 @@ def _setup_logging_from_conf():
 
     logpath = _get_log_file_path()
     if logpath:
+        # make sure parent directory exists
+        logdir=os.path.dirname(logpath)
+        if not os.path.exists(logdir):
+            os.makedirs(logdir)
         filelog = logging.handlers.WatchedFileHandler(logpath)
         log_root.addHandler(filelog)
 
