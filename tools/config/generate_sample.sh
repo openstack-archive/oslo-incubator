@@ -88,6 +88,6 @@ export EVENTLET_NO_GREENDNS=yes
 OS_VARS=$(set | sed -n '/^OS_/s/=[^=]*$//gp' | xargs)
 [ "$OS_VARS" ] && eval "unset \$OS_VARS"
 
-MODULEPATH=openstack.common.config.generator
+MODULEPATH=${MODULEPATH:-openstack.common.config.generator}
 OUTPUTFILE=$OUTPUTDIR/$PACKAGENAME.conf.sample
 python -m $MODULEPATH $FILES > $OUTPUTFILE
