@@ -18,6 +18,7 @@ import fcntl
 import multiprocessing
 import os
 import shutil
+import sys
 import tempfile
 import threading
 
@@ -358,6 +359,17 @@ class LockutilsModuleTestCase(test.BaseTestCase):
         finally:
             if os.path.exists(lock_dir):
                 shutil.rmtree(lock_dir, ignore_errors=True)
+
+    def test_main(self):
+        script = '\n'.join([
+            'import os',
+            'lock_path = os.environ.get("OSLO_LOCK_PATH")',
+            'assert lock_path is not None',
+            'assert os.path.isdir(lock_path)',
+        ])
+        argv = ['', sys.executable, '-c', script]
+        retval = lockutils.main(argv)
+        self.assertEqual(retval, 0, "Bad OSLO_LOCK_PATH has been set")
 
 
 class TestLockFixture(test.BaseTestCase):
