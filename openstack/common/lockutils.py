@@ -20,6 +20,10 @@ import contextlib
 import errno
 import functools
 import os
+import shutil
+import subprocess
+import sys
+import tempfile
 import threading
 import time
 import weakref
@@ -277,3 +281,27 @@ def synchronized_with_prefix(lock_file_prefix):
     """
 
     return functools.partial(synchronized, lock_file_prefix=lock_file_prefix)
+
+
+def main(argv):
+    """Create a dir for locks and pass it to command from arguments
+
+    If you run this:
+    python -m openstack.common.lockutils python setup.py testr <etc>
+
+    a temporary directory will be created for all your locks and passed to all
+    your tests in environment variable. The temporary dir will be deleted
+    afterwards and the return value will be preserved.
+    """
+
+    lock_dir = tempfile.mkdtemp()
+    os.environ["OSLO_LOCK_PATH"] = lock_dir
+    try:
+        ret_val = subprocess.call(argv[1:])
+    finally:
+        shutil.rmtree(lock_dir)
+    return ret_val
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
