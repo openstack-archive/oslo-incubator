@@ -16,6 +16,8 @@
 #    under the License.
 #
 
+import tempfile
+
 from openstack.common.py3kcompat import urlutils
 from openstack.common import test
 
@@ -56,3 +58,18 @@ class CompatTestCase(test.BaseTestCase):
         url = "http://www.yahoo.com"
         result = urlutils.urlunsplit(urlutils.urlsplit(url))
         self.assertEqual(result, 'http://www.yahoo.com')
+
+    def test_urlopen(self):
+        tmp = tempfile.NamedTemporaryFile()
+        url = 'file://' + tmp.name
+        result = urlutils.urlopen(url)
+        self.assertEqual(result.url, url)
+        tmp.close()
+
+    def test_URLError(self):
+        self.assertRaises(urlutils.URLError, urlutils.urlopen, 'wrong://url')
+
+    def test_pathname2url(self):
+        pathname = '~fake'
+        result = urlutils.pathname2url(pathname)
+        self.assertEqual(result, '%7Efake')

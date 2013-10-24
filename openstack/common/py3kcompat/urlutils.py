@@ -24,7 +24,9 @@ import six
 
 if six.PY3:
     # python3
+    import urllib.error
     import urllib.parse
+    import urllib.request
 
     urlencode = urllib.parse.urlencode
     urljoin = urllib.parse.urljoin
@@ -34,9 +36,14 @@ if six.PY3:
     urlparse = urllib.parse.urlparse
     urlsplit = urllib.parse.urlsplit
     urlunsplit = urllib.parse.urlunsplit
+
+    urlopen = urllib.request.urlopen
+    URLError = urllib.error.URLError
+    pathname2url = urllib.request.pathname2url
 else:
     # python2
     import urllib
+    import urllib2
     import urlparse
 
     urlencode = urllib.urlencode
@@ -49,3 +56,7 @@ else:
     urlparse = parse.urlparse
     urlsplit = parse.urlsplit
     urlunsplit = parse.urlunsplit
+
+    urlopen = urllib2.urlopen
+    URLError = urllib2.URLError
+    pathname2url = urllib.pathname2url
