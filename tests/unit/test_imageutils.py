@@ -40,11 +40,11 @@ disk size: 96K
 blah BLAH: bb
 """
         image_info = imageutils.QemuImgInfo(example_output)
-        self.assertEquals('disk.config', image_info.image)
-        self.assertEquals('raw', image_info.file_format)
-        self.assertEquals(67108864, image_info.virtual_size)
-        self.assertEquals(98304, image_info.disk_size)
-        self.assertEquals(65536, image_info.cluster_size)
+        self.assertEqual('disk.config', image_info.image)
+        self.assertEqual('raw', image_info.file_format)
+        self.assertEqual(67108864, image_info.virtual_size)
+        self.assertEqual(98304, image_info.disk_size)
+        self.assertEqual(65536, image_info.cluster_size)
 
     def test_qemu_info_canon2(self):
         example_output = """image: disk.config
@@ -55,13 +55,13 @@ disk size: 963434
 backing file: /var/lib/nova/a328c7998805951a_2
 """
         image_info = imageutils.QemuImgInfo(example_output)
-        self.assertEquals('disk.config', image_info.image)
-        self.assertEquals('qcow2', image_info.file_format)
-        self.assertEquals(67108844, image_info.virtual_size)
-        self.assertEquals(963434, image_info.disk_size)
-        self.assertEquals(65536, image_info.cluster_size)
-        self.assertEquals('/var/lib/nova/a328c7998805951a_2',
-                          image_info.backing_file)
+        self.assertEqual('disk.config', image_info.image)
+        self.assertEqual('qcow2', image_info.file_format)
+        self.assertEqual(67108844, image_info.virtual_size)
+        self.assertEqual(963434, image_info.disk_size)
+        self.assertEqual(65536, image_info.cluster_size)
+        self.assertEqual('/var/lib/nova/a328c7998805951a_2',
+                         image_info.backing_file)
 
     def test_qemu_backing_file_actual(self):
         example_output = """image: disk.config
@@ -75,13 +75,13 @@ ID        TAG                 VM SIZE                DATE       VM CLOCK
 backing file: /var/lib/nova/a328c7998805951a_2 (actual path: /b/3a988059e51a_2)
 """
         image_info = imageutils.QemuImgInfo(example_output)
-        self.assertEquals('disk.config', image_info.image)
-        self.assertEquals('raw', image_info.file_format)
-        self.assertEquals(67108864, image_info.virtual_size)
-        self.assertEquals(98304, image_info.disk_size)
-        self.assertEquals(1, len(image_info.snapshots))
-        self.assertEquals('/b/3a988059e51a_2',
-                          image_info.backing_file)
+        self.assertEqual('disk.config', image_info.image)
+        self.assertEqual('raw', image_info.file_format)
+        self.assertEqual(67108864, image_info.virtual_size)
+        self.assertEqual(98304, image_info.disk_size)
+        self.assertEqual(1, len(image_info.snapshots))
+        self.assertEqual('/b/3a988059e51a_2',
+                         image_info.backing_file)
 
     def test_qemu_info_convert(self):
         example_output = """image: disk.config
@@ -96,10 +96,10 @@ ID        TAG                 VM SIZE                DATE       VM CLOCK
 junk stuff: bbb
 """
         image_info = imageutils.QemuImgInfo(example_output)
-        self.assertEquals('disk.config', image_info.image)
-        self.assertEquals('raw', image_info.file_format)
-        self.assertEquals(67108864, image_info.virtual_size)
-        self.assertEquals(98304, image_info.disk_size)
+        self.assertEqual('disk.config', image_info.image)
+        self.assertEqual('raw', image_info.file_format)
+        self.assertEqual(67108864, image_info.virtual_size)
+        self.assertEqual(98304, image_info.disk_size)
 
     def test_qemu_info_snaps(self):
         example_output = """image: disk.config
@@ -113,8 +113,8 @@ ID        TAG                 VM SIZE                DATE       VM CLOCK
 4        d9a9784a500742a7bb95627bb3aace38    0 2012-08-20 10:52:46 00:00:00.000
 """
         image_info = imageutils.QemuImgInfo(example_output)
-        self.assertEquals('disk.config', image_info.image)
-        self.assertEquals('raw', image_info.file_format)
-        self.assertEquals(67108864, image_info.virtual_size)
-        self.assertEquals(98304, image_info.disk_size)
-        self.assertEquals(3, len(image_info.snapshots))
+        self.assertEqual('disk.config', image_info.image)
+        self.assertEqual('raw', image_info.file_format)
+        self.assertEqual(67108864, image_info.virtual_size)
+        self.assertEqual(98304, image_info.disk_size)
+        self.assertEqual(3, len(image_info.snapshots))
