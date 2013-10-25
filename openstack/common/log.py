@@ -126,6 +126,7 @@ log_opts = [
                help='prefix each line of exception output with this format'),
     cfg.ListOpt('default_log_levels',
                 default=[
+                    'amqp=WARN',
                     'amqplib=WARN',
                     'sqlalchemy=WARN',
                     'boto=WARN',
