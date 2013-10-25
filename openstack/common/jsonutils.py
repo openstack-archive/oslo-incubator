@@ -42,7 +42,7 @@ try:
     import xmlrpclib
 except ImportError:
     # NOTE(jd): xmlrpclib is not shipped with Python 3
-    xmlrpclib = None
+    import xmlprc.client as xmlrpclib
 
 import six
 
@@ -124,7 +124,7 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
                                       level=level,
                                       max_depth=max_depth)
         if isinstance(value, dict):
-            return dict((k, recursive(v)) for k, v in value.iteritems())
+            return dict((k, recursive(v)) for k, v in six.iteritems(value))
         elif isinstance(value, (list, tuple)):
             return [recursive(lv) for lv in value]
 
