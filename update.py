@@ -144,6 +144,7 @@ def _copy_file(path, dest, base):
 
     if 'rpc/' not in dest:
         _replace(dest, 'oslo', base)
+        _replace(dest, 'OSLO', base.upper())
 
     # Restore the imports for modules that are part of the oslo
     # namespace package. We can't just do something like 'oslo\..+'
