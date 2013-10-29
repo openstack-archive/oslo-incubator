@@ -19,7 +19,7 @@ import os
 import fixtures
 from oslo.config import cfg
 
-from openstack.common.db.sqlalchemy import session
+from openstack.common.db.sqlalchemy import session, test_migrations as tm
 from tests import utils as test_utils
 
 
@@ -88,3 +88,36 @@ def backend_specific(*dialects):
                 return f(self)
         return ins_wrap
     return wrap
+
+
+class OpportunisticFixture(DbFixture):
+     """Base fixture to use default CI databases.
+
+    To start the backend dependent test is not necessary to define
+    environment variables.
+    """
+
+    DRIVER = None
+    DBNAME = PASSWORD = USERNAME = 'openstack_citest'
+
+    def _get_uri(self):
+        return tm._get_connect_string(backend=self.DRIVER,
+                                      user=self.USERNAME,
+                                      passwd=self.PASSWORD,
+                                      database=self.DBNAME)
+
+
+class MySQLOpportunisticFixture(OpportunisticFixture):
+    DRIVER = 'mysql'
+
+
+class PostgreSQLOpportunisticFixture(OpportunisticFixture):
+    DRIVER = 'postgres'
+
+
+class MySQLOpportunisticTestCase(DbTestCase):
+    FIXTURE = MySQLOpportunisticFixture
+
+
+class PostgreSQLOpportunisticTestCase(DbTestCase):
+    FIXTURE = PostgreSQLOpportunisticFixture
