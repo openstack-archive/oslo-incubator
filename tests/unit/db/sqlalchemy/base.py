@@ -20,6 +20,7 @@ import fixtures
 from oslo.config import cfg
 
 from openstack.common.db.sqlalchemy import session
+from openstack.common.db.sqlalchemy import test_migrations as tm
 from tests import utils as test_utils
 
 
@@ -91,3 +92,59 @@ def backend_specific(*dialects):
                 return f(self)
         return ins_wrap
     return wrap
+
+
+class OpportunisticFixture(DbFixture):
+    """Base fixture to use default CI databases.
+
+    The databases exists in OpenStack CI infrastructure. But for the
+    correct functioning in local environment the databases must be
+    created manually.
+    """
+
+    DRIVER = None
+    DBNAME = PASSWORD = USERNAME = 'openstack_citest'
+
+    def _get_uri(self):
+        return tm._get_connect_string(backend=self.DRIVER,
+                                      user=self.USERNAME,
+                                      passwd=self.PASSWORD,
+                                      database=self.DBNAME)
+
+
+class OpportunisticTestCase(DbTestCase):
+    """Base test case to use default CI databases.
+
+    The subclasses of the test case are running only when openstack_citest
+    database is available otherwise a tests will be skipped.
+    """
+
+    def setUp(self):
+        credentials = (
+            self.FIXTURE.DRIVER,
+            self.FIXTURE.USERNAME,
+            self.FIXTURE.PASSWORD,
+            self.FIXTURE.DBNAME)
+
+        if (self.FIXTURE.DRIVER and not tm._is_backend_avail(*credentials)):
+            msg = '%s backend is not available.' % self.FIXTURE.DRIVER
+            return self.skip(msg)
+
+        super(OpportunisticTestCase, self).setUp()
+
+
+
+class MySQLOpportunisticFixture(OpportunisticFixture):
+    DRIVER = 'mysql'
+
+
+class PostgreSQLOpportunisticFixture(OpportunisticFixture):
+    DRIVER = 'postgresql'
+
+
+class MySQLOpportunisticTestCase(OpportunisticTestCase):
+    FIXTURE = MySQLOpportunisticFixture
+
+
+class PostgreSQLOpportunisticTestCase(OpportunisticTestCase):
+    FIXTURE = PostgreSQLOpportunisticFixture
