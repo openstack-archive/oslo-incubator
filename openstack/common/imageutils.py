@@ -31,7 +31,7 @@ class QemuImgInfo(object):
     BACKING_FILE_RE = re.compile((r"^(.*?)\s*\(actual\s+path\s*:"
                                   r"\s+(.*?)\)\s*$"), re.I)
     TOP_LEVEL_RE = re.compile(r"^([\w\d\s\_\-]+):(.*)$")
-    SIZE_RE = re.compile(r"\(\s*(\d+)\s+bytes\s*\)", re.I)
+    SIZE_RE = re.compile(r"(\d+)(\w+)?(\s*\(\s*(\d+)\s+bytes\s*\))?", re.I)
 
     def __init__(self, cmd_output=None):
         details = self._parse(cmd_output or '')
@@ -71,9 +71,15 @@ class QemuImgInfo(object):
         # Replace it with the byte amount
         real_size = self.SIZE_RE.search(details)
         if real_size:
-            details = real_size.group(1)
+            magnitude = real_size.group(1)
+            unit_of_mesure = real_size.group(2)
+            bytes_info = real_size.group(3)
+            if bytes_info:
+                return int(real_size.group(4))
+            elif not unit_of_mesure:
+                return int(magnitude)
         try:
-            details = strutils.to_bytes(details)
+            details = strutils.to_bytes('%s%s' % (magnitude, unit_of_mesure))
         except TypeError:
             pass
         return details
