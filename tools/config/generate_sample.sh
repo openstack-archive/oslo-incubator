@@ -91,3 +91,8 @@ DEFAULT_MODULEPATH=openstack.common.config.generator
 MODULEPATH=${MODULEPATH:-$DEFAULT_MODULEPATH}
 OUTPUTFILE=$OUTPUTDIR/$PACKAGENAME.conf.sample
 python -m $MODULEPATH $FILES > $OUTPUTFILE
+
+# Hook to allow projects to append custom config file snippets
+for CONCAT_FILE in $BASEDIR/tools/config/*.conf.sample; do
+    cat $CONCAT_FILE >> $OUTPUTFILE
+done
