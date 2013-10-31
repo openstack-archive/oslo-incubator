@@ -16,6 +16,7 @@
 Fakes For filter and weight tests.
 """
 
+import gettext
 
 from openstack.common.scheduler import weights
 
@@ -33,3 +34,35 @@ class FakeWeigher2(weights.BaseHostWeigher):
 class FakeClass(object):
     def __init__(self):
         pass
+
+
+class FakeTranslations(gettext.GNUTranslations):
+    """A test GNUTranslations class that takes a map of msg -> translations."""
+
+    def __init__(self, translations):
+        self.translations = translations
+
+    def ugettext(self, msgid):
+        return self.translations.get(msgid, msgid)
+
+    @staticmethod
+    def translator(locales_map):
+        """Returns a mock gettext.translation function that uses
+        individual TestTranslations to translate in the given locales.
+
+        :param locales_map: A map from locale name to a translations mapg.
+                            {
+                             'es': {'Hi': 'Hola", 'Bye': 'Adios'},
+                             'zh': {'Hi': 'Ni Hao', 'Bye': 'Zaijian'}
+                            }
+        """
+        def _translation(domain, localedir=None,
+                         languages=None, fallback=None):
+            if languages:
+                language = languages.pop()
+                if language in locales_map:
+                    return FakeTranslations(locales_map[language])
+            return gettext.NullTranslations()
+        return _translation
+
+
