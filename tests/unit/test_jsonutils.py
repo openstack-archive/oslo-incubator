@@ -183,14 +183,14 @@ class ToPrimitiveTestCase(test.BaseTestCase):
 
     def test_message_with_param(self):
         message_with_params = 'A message with param: %s'
-        msg = gettextutils.Message(message_with_params, 'test_domain')
+        msg = gettextutils.Message(message_with_params, domain='test_domain')
         msg = msg % 'test_domain'
         ret = jsonutils.to_primitive(msg)
         self.assertEqual(msg, ret)
 
     def test_message_with_named_param(self):
         message_with_params = 'A message with params: %(param)s'
-        msg = gettextutils.Message(message_with_params, 'test_domain')
+        msg = gettextutils.Message(message_with_params, domain='test_domain')
         msg = msg % {'param': 'hello'}
         ret = jsonutils.to_primitive(msg)
         self.assertEqual(msg, ret)
