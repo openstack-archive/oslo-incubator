@@ -437,6 +437,16 @@ class LogConfigOptsTestCase(test.BaseTestCase):
         self.CONF(['--log-file', log_file])
         self.assertEqual(self.CONF.log_file, log_file)
 
+    def test_log_dir_handlers(self):
+        log_dir = tempfile.gettempdir()
+        self.CONF(['--log-dir', log_dir])
+        self.CONF.set_default('use_stderr', False)
+        log._setup_logging_from_conf()
+        logger = log._loggers[None].logger
+        self.assertEqual(1, len(logger.handlers))
+        self.assertTrue(isinstance(logger.handlers[0],
+                                   logging.handlers.WatchedFileHandler))
+
     def test_logfile_deprecated(self):
         logfile = '/some/other/path/foo-bar.log'
         self.CONF(['--logfile', logfile])
