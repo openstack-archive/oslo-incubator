@@ -16,10 +16,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import copy
 import gettext
 import logging.handlers
-import os
 
 from babel import localedata
 import mock
@@ -28,6 +26,7 @@ import six
 from openstack.common.fixture import moxstubout
 from openstack.common import gettextutils
 from openstack.common import test
+from tests.unit import fakes
 
 LOG = logging.getLogger(__name__)
 
@@ -106,134 +105,6 @@ class GettextTest(test.BaseTestCase):
                         localedir='/foo/bar',
                         unicode=True)
 
-    def test_get_localized_message(self):
-        non_message = 'Non-translatable Message'
-        en_message = 'A message in the default locale'
-        es_translation = 'A message in Spanish'
-        zh_translation = 'A message in Chinese'
-        message = gettextutils.Message(en_message, 'test_domain')
-
-        # In the Message class the translation ultimately occurs when the
-        # message is turned into a string, and that is what we mock here
-        def _mock_translation_and_unicode(self):
-            if self.locale == 'es':
-                return es_translation
-            if self.locale == 'zh':
-                return zh_translation
-            return self.data
-
-        self.stubs.Set(gettextutils.Message,
-                       '__unicode__', _mock_translation_and_unicode)
-
-        message.locale = 'constant'
-        self.assertEqual(es_translation,
-                         gettextutils.get_localized_message(message, 'es'))
-        # Test that the message's locale was not changed by translation
-        self.assertEqual('constant', message.locale)
-        self.assertEqual(zh_translation,
-                         gettextutils.get_localized_message(message, 'zh'))
-        # Test that using None as locale returns the default
-        self.assertEqual(en_message,
-                         gettextutils.get_localized_message(message, None))
-        self.assertEqual(en_message,
-                         gettextutils.get_localized_message(message, 'en'))
-        self.assertEqual(en_message,
-                         gettextutils.get_localized_message(message, 'XX'))
-        self.assertEqual(non_message,
-                         gettextutils.get_localized_message(non_message, 'A'))
-
-    @mock.patch('gettext.translation')
-    def test_get_localized_message_with_param(self, mock_translation):
-        message_with_params = 'A message: %s'
-        es_translation = 'A message: %s'
-        param = 'A Message param'
-
-        translations = {message_with_params: es_translation}
-        translator = TestTranslations.translator(translations, 'es')
-        mock_translation.side_effect = translator
-
-        msg = gettextutils.Message(message_with_params, 'test_domain')
-        msg = msg % param
-
-        expected_translation = es_translation % param
-        self._assert_translations(msg, 'es', expected_translation)
-
-    @mock.patch('gettext.translation')
-    def test_get_localized_message_with_message_param(self, mock_translation):
-        message_with_params = 'A message with param: %s'
-        es_translation = 'A message with param in Spanish: %s'
-        message_param = 'A message param'
-        es_param_translation = 'A message param in Spanish'
-
-        translations = {message_with_params: es_translation,
-                        message_param: es_param_translation}
-        translator = TestTranslations.translator(translations, 'es')
-        mock_translation.side_effect = translator
-
-        msg = gettextutils.Message(message_with_params, 'test_domain')
-        msg_param = gettextutils.Message(message_param, 'test_domain')
-        msg = msg % msg_param
-
-        expected_translation = es_translation % es_param_translation
-        self._assert_translations(msg, 'es', expected_translation)
-
-    @mock.patch('gettext.translation')
-    def test_get_localized_message_with_message_params(self, mock_translation):
-        message_with_params = 'A message with params: %s %s'
-        es_translation = 'A message with params in Spanish: %s %s'
-        message_param = 'A message param'
-        es_param_translation = 'A message param in Spanish'
-        another_message_param = 'Another message param'
-        another_es_param_translation = 'Another message param in Spanish'
-
-        translations = {message_with_params: es_translation,
-                        message_param: es_param_translation,
-                        another_message_param: another_es_param_translation}
-        translator = TestTranslations.translator(translations, 'es')
-        mock_translation.side_effect = translator
-
-        msg = gettextutils.Message(message_with_params, 'test_domain')
-        param_1 = gettextutils.Message(message_param, 'test_domain')
-        param_2 = gettextutils.Message(another_message_param, 'test_domain')
-        msg = msg % (param_1, param_2)
-
-        expected_translation = es_translation % (es_param_translation,
-                                                 another_es_param_translation)
-        self._assert_translations(msg, 'es', expected_translation)
-
-    @mock.patch('gettext.translation')
-    def test_get_localized_message_with_named_params(self, mock_translation):
-        message_with_params = 'A message with params: %(param)s'
-        es_translation = 'A message with params in Spanish: %(param)s'
-        message_param = 'A Message param'
-        es_param_translation = 'A message param in Spanish'
-
-        translations = {message_with_params: es_translation,
-                        message_param: es_param_translation}
-        translator = TestTranslations.translator(translations, 'es')
-        mock_translation.side_effect = translator
-
-        msg = gettextutils.Message(message_with_params, 'test_domain')
-        msg_param = gettextutils.Message(message_param, 'test_domain')
-        msg = msg % {'param': msg_param}
-
-        expected_translation = es_translation % {'param': es_param_translation}
-        self._assert_translations(msg, 'es', expected_translation)
-
-    def _assert_translations(self, msg, locale, expected_translation):
-        """Validates that the message translation in the given locale is as
-        expected. For sanity, other locales are tested too and those should
-        result in the same message being passed in.
-        """
-        self.assertEqual(six.text_type(msg),
-                         gettextutils.get_localized_message(msg, 'en'))
-        self.assertEqual(six.text_type(msg),
-                         gettextutils.get_localized_message(msg, 'XX'))
-        self.assertEqual(six.text_type(msg),
-                         gettextutils.get_localized_message(msg, None))
-        self.assertEqual(six.text_type(expected_translation),
-                         gettextutils.get_localized_message(msg, locale))
-
     def test_get_available_languages(self):
         # All the available languages for which locale data is available
         def _mock_locale_identifiers():
@@ -277,87 +148,42 @@ class GettextTest(test.BaseTestCase):
 class MessageTestCase(test.BaseTestCase):
     """Unit tests for locale Message class."""
 
-    def setUp(self):
-        super(MessageTestCase, self).setUp()
-        self.mox = self.useFixture(moxstubout.MoxStubout()).mox
-
     @staticmethod
-    def _lazy_gettext(msg):
-        return gettextutils.Message(msg, 'oslo')
+    def message(msg):
+        return gettextutils.Message(msg)
 
-    def tearDown(self):
-        # need to clean up stubs early since they interfere
-        # with super class clean up operations
-        self.mox.UnsetStubs()
-        super(MessageTestCase, self).tearDown()
+    def test_message_id(self):
+        message = gettextutils.Message('1')
+        self.assertEqual('1', message.msgid)
+        message = gettextutils.Message('1', msgid='A')
+        self.assertEqual('A', message.msgid)
 
-    def test_message_equal_to_string(self):
-        msgid = "Some msgid string"
-        result = self._lazy_gettext(msgid)
+    def test_message_is_unicode(self):
+        message = self.message('some %s') % 'message'
+        self.assertTrue(isinstance(message, six.text_type))
 
-        self.assertEqual(result, msgid)
+    def test_translate_returns_unicode(self):
+        message = self.message('some %s') % 'message'
+        self.assertTrue(isinstance(message.translate(), six.text_type))
 
-    def test_message_not_equal(self):
-        msgid = "Some msgid string"
-        result = self._lazy_gettext(msgid)
-
-        self.assertNotEqual(result, "Other string %s" % msgid)
-
-    def test_message_equal_with_param(self):
-        msgid = "Some string with params: %s"
-        params = (0, )
-
-        message = msgid % params
-
-        result = self._lazy_gettext(msgid) % params
-
-        self.assertEqual(result, message)
-
-        result_str = '%s' % result
-        self.assertEqual(result_str, message)
-
-    def test_message_injects_nonetype(self):
-        msgid = "Some string with param: %s"
-        params = None
-
-        message = msgid % params
-
-        result = self._lazy_gettext(msgid) % params
-
-        self.assertEqual(result, message)
-
-        result_str = '%s' % result
-        self.assertIn('None', result_str)
-        self.assertEqual(result_str, message)
-
-    def test_message_iterate(self):
-        msgid = "Some string with params: %s"
-        params = 'blah'
-
-        message = msgid % params
-
-        result = self._lazy_gettext(msgid) % params
-
-        # compare using iterators
-        for (c1, c2) in zip(result, message):
-            self.assertEqual(c1, c2)
-
-    def test_regex_find_named_parameters(self):
+    def test_mod_with_named_parameters(self):
         msgid = ("%(description)s\nCommand: %(cmd)s\n"
                  "Exit code: %(exit_code)s\nStdout: %(stdout)r\n"
                  "Stderr: %(stderr)r %%(something)s")
-        params = {'description': 'test1',
-                  'cmd': 'test2',
-                  'exit_code': 'test3',
-                  'stdout': 'test4',
-                  'stderr': 'test5',
-                  'something': 'trimmed'}
+        params = {'description': u'test1',
+                  'cmd': u'test2',
+                  'exit_code': u'test3',
+                  'stdout': u'test4',
+                  'stderr': u'test5',
+                  'something': u'trimmed'}
 
-        result = self._lazy_gettext(msgid) % params
+        result = self.message(msgid) % params
 
-        self.assertEqual(result, msgid % params)
+        expected = msgid % params
+        self.assertEqual(result, expected)
+        self.assertEqual(result.translate(), expected)
 
-    def test_regex_find_named_parameters_no_space(self):
+    def test_mod_with_named_parameters_no_space(self):
         msgid = ("Request: %(method)s http://%(server)s:"
                  "%(port)s%(url)s with headers %(headers)s")
         params = {'method': 'POST',
@@ -366,20 +192,23 @@ class MessageTestCase(test.BaseTestCase):
                   'url': 'test2',
                   'headers': {'h1': 'val1'}}
 
-        result = self._lazy_gettext(msgid) % params
+        result = self.message(msgid) % params
 
-        self.assertEqual(result, msgid % params)
+        expected = msgid % params
+        self.assertEqual(result, expected)
+        self.assertEqual(result.translate(), expected)
 
-    def test_regex_dict_is_parameter(self):
+    def test_mod_with_dict_parameter(self):
         msgid = ("Test that we can inject a dictionary %s")
-        params = {'description': 'test1'}
+        params = {'description': u'test1'}
 
-        result = self._lazy_gettext(msgid) % params
+        result = self.message(msgid) % params
 
-        self.assertEqual(result, msgid % params)
+        expected = msgid % params
+        self.assertEqual(result, expected)
+        self.assertEqual(result.translate(), expected)
 
-    def test_message_equal_with_dec_param(self):
-        """Verify we can inject numbers into Messages."""
+    def test_mod_with_integer_parameters(self):
         msgid = "Some string with params: %d"
         params = [0, 1, 10, 24124]
 
@@ -387,249 +216,276 @@ class MessageTestCase(test.BaseTestCase):
         results = []
         for param in params:
             messages.append(msgid % param)
-            results.append(self._lazy_gettext(msgid) % param)
+            results.append(self.message(msgid) % param)
 
         for message, result in zip(messages, results):
             self.assertEqual(type(result), gettextutils.Message)
-            self.assertEqual(result, message)
+            self.assertEqual(result.translate(), message)
 
             # simulate writing out as string
-            result_str = '%s' % result
+            result_str = '%s' % result.translate()
             self.assertEqual(result_str, message)
+            self.assertEqual(result, message)
 
-    def test_message_equal_with_extra_params(self):
-        msgid = "Some string with params: %(param1)s %(param2)s"
-        params = {'param1': 'test',
-                  'param2': 'test2',
-                  'param3': 'notinstring'}
+    def test_mod_copies_parameters(self):
+        msgid = "Found object: %(current_value)s"
+        changing_dict = {'current_value': 1}
+        # A message created with some params
+        result = self.message(msgid) % changing_dict
+        # The parameters may change
+        changing_dict['current_value'] = 2
+        # Even if the param changes when the message is
+        # translated it should use the original param
+        self.assertEqual(result.translate(), 'Found object: 1')
 
-        result = self._lazy_gettext(msgid) % params
-
-        self.assertEqual(result, msgid % params)
-
-    def test_message_object_param_copied(self):
-        """Verify that injected parameters get copied."""
-        some_obj = SomeObject()
-        some_obj.tag = 'stub_object'
-        msgid = "Found object: %(some_obj)s"
-
-        result = self._lazy_gettext(msgid) % {'some_obj': some_obj}
-
-        old_some_obj = copy.copy(some_obj)
-        some_obj.tag = 'switched_tag'
-
-        self.assertEqual(result, msgid % {'some_obj': old_some_obj})
-
-    def test_interpolation_with_missing_param(self):
-        msgid = ("Some string with params: %(param1)s %(param2)s"
-                 " and a missing one %(missing)s")
-        params = {'param1': 'test',
-                  'param2': 'test2'}
-
-        test_me = lambda: self._lazy_gettext(msgid) % params
-
-        self.assertRaises(KeyError, test_me)
-
-    def test_operator_add(self):
-        msgid = "Some msgid string"
-        result = self._lazy_gettext(msgid)
-
-        additional = " with more added"
-        expected = msgid + additional
-        result = result + additional
-
-        self.assertEqual(type(result), gettextutils.Message)
-        self.assertEqual(result, expected)
-
-    def test_operator_radd(self):
-        msgid = "Some msgid string"
-        result = self._lazy_gettext(msgid)
-
-        additional = " with more added"
-        expected = additional + msgid
-        result = additional + result
-
-        self.assertEqual(type(result), gettextutils.Message)
-        self.assertEqual(result, expected)
-
-    def test_get_index(self):
-        msgid = "Some msgid string"
-        result = self._lazy_gettext(msgid)
-
-        expected = 'm'
-        result = result[2]
-
-        self.assertEqual(result, expected)
-
-    def test_get_slice(self):
-        msgid = "Some msgid string"
-        result = self._lazy_gettext(msgid)
-
-        expected = msgid[2:-1]
-        result = result[2:-1]
-
-        self.assertEqual(result, expected)
-
-    def test_getitem_string(self):
-        """Verify using string indexes on Message does not work."""
-        msgid = "Some msgid string"
-        result = self._lazy_gettext(msgid)
-
-        test_me = lambda: result['blah']
-
-        self.assertRaises(TypeError, test_me)
-
-    def test_contains(self):
-        msgid = "Some msgid string"
-        result = self._lazy_gettext(msgid)
-
-        self.assertIn('msgid', result)
-        self.assertNotIn('blah', result)
-
-    def test_locale_set_does_translation(self):
-        msgid = "Some msgid string"
-        result = self._lazy_gettext(msgid)
-        result.domain = 'test_domain'
-        result.locale = 'test_locale'
-        os.environ['TEST_DOMAIN_LOCALEDIR'] = '/tmp/blah'
-
-        self.mox.StubOutWithMock(gettext, 'translation')
-        fake_lang = self.mox.CreateMock(gettext.GNUTranslations)
-
-        gettext.translation('test_domain',
-                            languages=['test_locale'],
-                            fallback=True,
-                            localedir='/tmp/blah').AndReturn(fake_lang)
-        if six.PY3:
-            fake_lang.gettext(msgid).AndReturn(msgid)
-        else:
-            fake_lang.ugettext(msgid).AndReturn(msgid)
-
-        self.mox.ReplayAll()
-        result = result.data
-        os.environ.pop('TEST_DOMAIN_LOCALEDIR')
-        self.assertEqual(msgid, result)
-
-    def _get_testmsg_inner_params(self):
-        return {'params': {'test1': 'blah1',
-                           'test2': 'blah2',
-                           'test3': SomeObject()},
-                'domain': 'test_domain',
-                'locale': 'en_US',
-                '_left_extra_msg': 'Extra. ',
-                '_right_extra_msg': '. More Extra.'}
-
-    def _get_full_test_message(self):
-        msgid = "Some msgid string: %(test1)s %(test2)s %(test3)s"
-        message = self._lazy_gettext(msgid)
-        attrs = self._get_testmsg_inner_params()
-        for (k, v) in attrs.items():
-            setattr(message, k, v)
-
-        return copy.deepcopy(message)
-
-    def test_message_copyable(self):
-        message = self._get_full_test_message()
-        copied_msg = copy.copy(message)
-
-        self.assertIsNot(message, copied_msg)
-
-        for k in self._get_testmsg_inner_params():
-            self.assertEqual(getattr(message, k),
-                             getattr(copied_msg, k))
-
-        self.assertEqual(message, copied_msg)
-
-        message._msg = 'Some other msgid string'
-
-        self.assertNotEqual(message, copied_msg)
-
-    def test_message_copy_deepcopied(self):
-        message = self._get_full_test_message()
-        inner_obj = SomeObject()
-        message.params['test3'] = inner_obj
-
-        copied_msg = copy.copy(message)
-
-        self.assertIsNot(message, copied_msg)
-
-        inner_obj.tag = 'different'
-        self.assertNotEqual(message, copied_msg)
-
-    def test_add_returns_copy(self):
+    def test_mod_returns_a_copy(self):
         msgid = "Some msgid string: %(test1)s %(test2)s"
-        message = self._lazy_gettext(msgid)
-        m1 = '10 ' + message + ' 10'
-        m2 = '20 ' + message + ' 20'
-
-        self.assertIsNot(message, m1)
-        self.assertIsNot(message, m2)
-        self.assertIsNot(m1, m2)
-        self.assertEqual(m1, '10 %s 10' % msgid)
-        self.assertEqual(m2, '20 %s 20' % msgid)
-
-    def test_mod_returns_copy(self):
-        msgid = "Some msgid string: %(test1)s %(test2)s"
-        message = self._lazy_gettext(msgid)
+        message = self.message(msgid)
         m1 = message % {'test1': 'foo', 'test2': 'bar'}
         m2 = message % {'test1': 'foo2', 'test2': 'bar2'}
 
         self.assertIsNot(message, m1)
         self.assertIsNot(message, m2)
-        self.assertIsNot(m1, m2)
-        self.assertEqual(m1, msgid % {'test1': 'foo', 'test2': 'bar'})
-        self.assertEqual(m2, msgid % {'test1': 'foo2', 'test2': 'bar2'})
+        self.assertEqual(m1.translate(),
+                         msgid % {'test1': 'foo', 'test2': 'bar'})
+        self.assertEqual(m2.translate(),
+                         msgid % {'test1': 'foo2', 'test2': 'bar2'})
 
-    def test_comparator_operators(self):
-        """Verify Message comparison is equivalent to string comparision."""
-        m1 = self._get_full_test_message()
-        m2 = copy.deepcopy(m1)
-        m3 = "1" + m1
+    def test_mod_with_none_parameter(self):
+        msgid = "Some string with params: %s"
+        message = self.message(msgid) % None
+        self.assertEqual(msgid % None, message)
+        self.assertEqual(msgid % None, message.translate())
 
-        # m1 and m2 are equal
-        self.assertEqual(m1 >= m2, str(m1) >= str(m2))
-        self.assertEqual(m1 <= m2, str(m1) <= str(m2))
-        self.assertEqual(m2 >= m1, str(m2) >= str(m1))
-        self.assertEqual(m2 <= m1, str(m2) <= str(m1))
+    def test_mod_with_missing_parameters(self):
+        msgid = "Some string with params: %s %s"
+        test_me = lambda: self.message(msgid) % 'just one'
+        # Just like with strings missing parameters raise TypeError
+        self.assertRaises(TypeError, test_me)
 
-        # m1 is greater than m3
-        self.assertEqual(m1 >= m3, str(m1) >= str(m3))
-        self.assertEqual(m1 > m3, str(m1) > str(m3))
+    def test_mod_with_extra_parameters(self):
+        msgid = "Some string with params: %(param1)s %(param2)s"
+        params = {'param1': 'test',
+                  'param2': 'test2',
+                  'param3': 'notinstring'}
 
-        # m3 is not greater than m1
-        self.assertEqual(m3 >= m1, str(m3) >= str(m1))
-        self.assertEqual(m3 > m1, str(m3) > str(m1))
+        result = self.message(msgid) % params
 
-        # m3 is less than m1
-        self.assertEqual(m3 <= m1, str(m3) <= str(m1))
-        self.assertEqual(m3 < m1, str(m3) < str(m1))
+        expected = msgid % params
+        self.assertEqual(result, expected)
+        self.assertEqual(result.translate(), expected)
 
-        # m3 is not less than m1
-        self.assertEqual(m1 <= m3, str(m1) <= str(m3))
-        self.assertEqual(m1 < m3, str(m1) < str(m3))
+    def test_mod_with_missing_named_parameters(self):
+        msgid = ("Some string with params: %(param1)s %(param2)s"
+                 " and a missing one %(missing)s")
+        params = {'param1': 'test',
+                  'param2': 'test2'}
 
-    def test_mul_operator(self):
-        message = self._get_full_test_message()
-        message_str = str(message)
+        test_me = lambda: self.message(msgid) % params
+        # Just like with strings missing named parameters raise KeyError
+        self.assertRaises(KeyError, test_me)
 
-        self.assertEqual(message * 10, message_str * 10)
-        self.assertEqual(message * 20, message_str * 20)
-        self.assertEqual(10 * message, 10 * message_str)
-        self.assertEqual(20 * message, 20 * message_str)
+    def test_add_disabled(self):
+        msgid = "A message"
+        test_me = lambda: self.message(msgid) + ' some string'
+        self.assertRaises(TypeError, test_me)
 
-    def test_to_unicode(self):
-        message = self._get_full_test_message()
-        message_str = six.text_type(message)
+    def test_radd_disabled(self):
+        msgid = "A message"
+        test_me = lambda: SomeObject('test') + self.message(msgid)
+        self.assertRaises(TypeError, test_me)
 
-        self.assertEqual(message, message_str)
-        self.assertTrue(isinstance(message_str, six.text_type))
+    def test_str_disabled(self):
+        msgid = "A message"
+        test_me = lambda: str(self.message(msgid))
+        self.assertRaises(UnicodeError, test_me)
 
-    def test_upper(self):
-        # test an otherwise uncovered __getattribute__ path
-        msgid = "Some msgid string"
-        result = self._lazy_gettext(msgid)
+    @mock.patch('gettext.translation')
+    def test_translate(self, mock_translation):
+        en_message = 'A message in the default locale'
+        es_translation = 'A message in Spanish'
+        message = gettextutils.Message(en_message)
 
-        self.assertEqual(msgid.upper(), result.upper())
+        es_translations = {en_message: es_translation}
+        translations_map = {'es': es_translations}
+        translator = fakes.FakeTranslations.translator(translations_map)
+        mock_translation.side_effect = translator
+
+        self.assertEqual(es_translation, message.translate('es'))
+
+    @mock.patch('gettext.translation')
+    def test_translate_message_from_unicoded_object(self, mock_translation):
+        en_message = 'A message in the default locale'
+        es_translation = 'A message in Spanish'
+        message = gettextutils.Message(en_message)
+        es_translations = {en_message: es_translation}
+        translations_map = {'es': es_translations}
+        translator = fakes.FakeTranslations.translator(translations_map)
+        mock_translation.side_effect = translator
+
+        # Here we are not testing the Message object directly but the result
+        # of unicoding() an object whose unicode representation is a Message
+        obj = SomeObject(message)
+        unicoded_obj = six.text_type(obj)
+
+        self.assertEqual(es_translation, unicoded_obj.translate('es'))
+
+    @mock.patch('gettext.translation')
+    def test_translate_multiple_languages(self, mock_translation):
+        en_message = 'A message in the default locale'
+        es_translation = 'A message in Spanish'
+        zh_translation = 'A message in Chinese'
+        message = gettextutils.Message(en_message)
+
+        es_translations = {en_message: es_translation}
+        zh_translations = {en_message: zh_translation}
+        translations_map = {'es': es_translations,
+                            'zh': zh_translations}
+        translator = fakes.FakeTranslations.translator(translations_map)
+        mock_translation.side_effect = translator
+
+        self.assertEqual(es_translation, message.translate('es'))
+        self.assertEqual(zh_translation, message.translate('zh'))
+        self.assertEqual(en_message, message.translate(None))
+        self.assertEqual(en_message, message.translate('en'))
+        self.assertEqual(en_message, message.translate('XX'))
+
+    @mock.patch('gettext.translation')
+    def test_translate_message_with_param(self, mock_translation):
+        message_with_params = 'A message: %s'
+        es_translation = 'A message in Spanish: %s'
+        param = 'A Message param'
+
+        translations = {message_with_params: es_translation}
+        translator = fakes.FakeTranslations.translator({'es': translations})
+        mock_translation.side_effect = translator
+
+        msg = gettextutils.Message(message_with_params)
+        msg = msg % param
+
+        default_translation = message_with_params % param
+        expected_translation = es_translation % param
+        self.assertEqual(expected_translation, msg.translate('es'))
+        self.assertEqual(default_translation, msg.translate('XX'))
+
+    @mock.patch('gettext.translation')
+    def test_translate_message_with_object_param(self, mock_translation):
+        message_with_params = 'A message: %s'
+        es_translation = 'A message in Spanish: %s'
+        param = 'A Message param'
+        param_translation = 'A Message param in Spanish'
+
+        translations = {message_with_params: es_translation,
+                        param: param_translation}
+        translator = fakes.FakeTranslations.translator({'es': translations})
+        mock_translation.side_effect = translator
+
+        msg = gettextutils.Message(message_with_params)
+        param_msg = gettextutils.Message(param)
+
+        # Here we are testing translation of a Message with another object
+        # that can be translated via its unicode() representation, this is
+        # very common for instance when modding an Exception with a Message
+        obj = SomeObject(param_msg)
+        msg = msg % obj
+
+        default_translation = message_with_params % param
+        expected_translation = es_translation % param_translation
+
+        self.assertEqual(expected_translation, msg.translate('es'))
+        self.assertEqual(default_translation, msg.translate('XX'))
+
+    @mock.patch('gettext.translation')
+    def test_translate_message_with_param_from_unicoded_obj(self,
+                                                            mock_translation):
+        message_with_params = 'A message: %s'
+        es_translation = 'A message in Spanish: %s'
+        param = 'A Message param'
+
+        translations = {message_with_params: es_translation}
+        translator = fakes.FakeTranslations.translator({'es': translations})
+        mock_translation.side_effect = translator
+
+        msg = gettextutils.Message(message_with_params)
+        msg = msg % param
+
+        default_translation = message_with_params % param
+        expected_translation = es_translation % param
+
+        obj = SomeObject(msg)
+        unicoded_obj = six.text_type(obj)
+
+        self.assertEqual(expected_translation, unicoded_obj.translate('es'))
+        self.assertEqual(default_translation, unicoded_obj.translate('XX'))
+
+    @mock.patch('gettext.translation')
+    def test_translate_message_with_message_parameter(self, mock_translation):
+        message_with_params = 'A message with param: %s'
+        es_translation = 'A message with param in Spanish: %s'
+        message_param = 'A message param'
+        es_param_translation = 'A message param in Spanish'
+
+        translations = {message_with_params: es_translation,
+                        message_param: es_param_translation}
+        translator = fakes.FakeTranslations.translator({'es': translations})
+        mock_translation.side_effect = translator
+
+        msg = gettextutils.Message(message_with_params)
+        msg_param = gettextutils.Message(message_param)
+        msg = msg % msg_param
+
+        default_translation = message_with_params % message_param
+        expected_translation = es_translation % es_param_translation
+        self.assertEqual(expected_translation, msg.translate('es'))
+        self.assertEqual(default_translation, msg.translate('XX'))
+
+    @mock.patch('gettext.translation')
+    def test_translate_message_with_message_parameters(self, mock_translation):
+        message_with_params = 'A message with params: %s %s'
+        es_translation = 'A message with params in Spanish: %s %s'
+        message_param = 'A message param'
+        es_param_translation = 'A message param in Spanish'
+        another_message_param = 'Another message param'
+        another_es_param_translation = 'Another message param in Spanish'
+
+        translations = {message_with_params: es_translation,
+                        message_param: es_param_translation,
+                        another_message_param: another_es_param_translation}
+        translator = fakes.FakeTranslations.translator({'es': translations})
+        mock_translation.side_effect = translator
+
+        msg = gettextutils.Message(message_with_params)
+        param_1 = gettextutils.Message(message_param)
+        param_2 = gettextutils.Message(another_message_param)
+        msg = msg % (param_1, param_2)
+
+        default_translation = message_with_params % (message_param,
+                                                     another_message_param)
+        expected_translation = es_translation % (es_param_translation,
+                                                 another_es_param_translation)
+        self.assertEqual(expected_translation, msg.translate('es'))
+        self.assertEqual(default_translation, msg.translate('XX'))
+
+    @mock.patch('gettext.translation')
+    def test_translate_message_with_named_parameters(self, mock_translation):
+        message_with_params = 'A message with params: %(param)s'
+        es_translation = 'A message with params in Spanish: %(param)s'
+        message_param = 'A Message param'
+        es_param_translation = 'A message param in Spanish'
+
+        translations = {message_with_params: es_translation,
+                        message_param: es_param_translation}
+        translator = fakes.FakeTranslations.translator({'es': translations})
+        mock_translation.side_effect = translator
+
+        msg = gettextutils.Message(message_with_params)
+        msg_param = gettextutils.Message(message_param)
+        msg = msg % {'param': msg_param}
+
+        default_translation = message_with_params % {'param': message_param}
+        expected_translation = es_translation % {'param': es_param_translation}
+        self.assertEqual(expected_translation, msg.translate('es'))
+        self.assertEqual(default_translation, msg.translate('XX'))
 
 
 class LocaleHandlerTestCase(test.BaseTestCase):
@@ -639,9 +495,9 @@ class LocaleHandlerTestCase(test.BaseTestCase):
         self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
 
         def _message_with_domain(msg):
-            return gettextutils.Message(msg, 'oslo')
+            return gettextutils.Message(msg)
 
-        self._lazy_gettext = _message_with_domain
+        self._ = _message_with_domain
         self.buffer_handler = logging.handlers.BufferingHandler(40)
         self.locale_handler = gettextutils.LocaleHandler(
             'zh_CN', self.buffer_handler)
@@ -652,12 +508,11 @@ class LocaleHandlerTestCase(test.BaseTestCase):
 
     def test_emit_message(self):
         msgid = 'Some logrecord message.'
-        message = self._lazy_gettext(msgid)
+        message = gettextutils.Message(msgid)
         self.emit_called = False
 
         def emit(record):
-            self.assertEqual(record.msg.locale, 'zh_CN')
-            self.assertEqual(record.msg, msgid)
+            self.assertEqual(record.msg.translate('zh_CN'), msgid)
             self.assertTrue(isinstance(record.msg,
                                        gettextutils.Message))
             self.emit_called = True
@@ -683,44 +538,10 @@ class LocaleHandlerTestCase(test.BaseTestCase):
         self.assertTrue(self.emit_called)
 
 
-class TestTranslations(gettext.GNUTranslations):
-    """A test GNUTranslations class that takes a map of msg -> translations."""
-
-    def __init__(self, translations):
-        self.translations = translations
-
-    def ugettext(self, msgid):
-        return self.translations.get(msgid, msgid)
-
-    @staticmethod
-    def translator(translation_map, language):
-        """Returns a mock gettext.translation function that uses
-        TestTranslation to translate in the given locale.
-        """
-        def _translation(domain, localedir=None,
-                         languages=None, fallback=None):
-            if languages and language in languages:
-                return TestTranslations(translation_map)
-            return gettext.NullTranslations()
-        return _translation
-
-
 class SomeObject(object):
 
-    def __init__(self, tag='default'):
-        self.tag = tag
+    def __init__(self, message):
+        self.message = message
 
-    def __str__(self):
-        return self.tag
-
-    def __getstate__(self):
-        return self.__dict__
-
-    def __setstate__(self, state):
-        for (k, v) in state.items():
-            setattr(self, k, v)
-
-    def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return self.tag == other.tag
-        return False
+    def __unicode__(self):
+        return self.message
