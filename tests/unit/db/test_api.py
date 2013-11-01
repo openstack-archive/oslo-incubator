@@ -56,6 +56,8 @@ class DBAPITestCase(test.BaseTestCase):
         self.assertEqual(self.conf.database.backend, 'test_123')
         self.assertEqual(self.conf.database.use_tpool, True)
 
+        fileutils.delete_if_exists(path)
+
     def test_dbapi_parameters(self):
         path = self.write_to_tempfile('[database]\n'
                                       'backend=test_123\n'
@@ -65,6 +67,8 @@ class DBAPITestCase(test.BaseTestCase):
         self.conf(['--config-file', path])
         self.assertEqual(self.conf.database.backend, 'test_123')
         self.assertEqual(self.conf.database.use_tpool, True)
+
+        fileutils.delete_if_exists(path)
 
     def test_dbapi_api_class_method_and_tpool_false(self):
         backend_mapping = {'test_known': 'tests.unit.db.test_api'}

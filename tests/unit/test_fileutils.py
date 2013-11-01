@@ -179,10 +179,12 @@ class WriteToTempfileTestCase(test.BaseTestCase):
         super(WriteToTempfileTestCase, self).setUp()
         self.content = 'testing123'
 
-    def check_file_content(self, path):
+    def check_file_content_and_delete(self, path):
         with open(path, 'r') as fd:
             ans = fd.read()
             self.assertEqual(self.content, ans)
+
+        fileutils.delete_if_exists(path)
 
     def test_file_without_path_and_suffix(self):
         res = fileutils.write_to_tempfile(self.content)
@@ -192,7 +194,7 @@ class WriteToTempfileTestCase(test.BaseTestCase):
         self.assertTrue(basepath.startswith('/tmp'))
         self.assertTrue(tmpfile.startswith('tmp'))
 
-        self.check_file_content(res)
+        self.check_file_content_and_delete(res)
 
     def test_file_with_not_existing_path(self):
         path = '/tmp/testing/test1'
@@ -202,7 +204,7 @@ class WriteToTempfileTestCase(test.BaseTestCase):
         self.assertEqual(basepath, path)
         self.assertTrue(tmpfile.startswith('tmp'))
 
-        self.check_file_content(res)
+        self.check_file_content_and_delete(res)
         shutil.rmtree('/tmp/testing')
 
     def test_file_with_not_default_suffix(self):
@@ -215,7 +217,7 @@ class WriteToTempfileTestCase(test.BaseTestCase):
         self.assertTrue(tmpfile.startswith('tmp'))
         self.assertTrue(tmpfile.endswith('.conf'))
 
-        self.check_file_content(res)
+        self.check_file_content_and_delete(res)
 
     def test_file_with_not_existing_path_and_not_default_suffix(self):
         suffix = '.txt'
@@ -230,7 +232,7 @@ class WriteToTempfileTestCase(test.BaseTestCase):
         self.assertEqual(basepath, path)
         self.assertTrue(tmpfile.endswith(suffix))
 
-        self.check_file_content(res)
+        self.check_file_content_and_delete(res)
         shutil.rmtree('/tmp/testing')
 
     def test_file_with_not_default_prefix(self):
@@ -242,4 +244,4 @@ class WriteToTempfileTestCase(test.BaseTestCase):
         self.assertTrue(tmpfile.startswith(prefix))
         self.assertTrue(basepath.startswith('/tmp'))
 
-        self.check_file_content(res)
+        self.check_file_content_and_delete(res)
