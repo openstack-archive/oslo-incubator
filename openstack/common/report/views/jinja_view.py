@@ -30,11 +30,11 @@ class JinjaView(object):
     This view renders the given model using the provided Jinja
     template.  The template can be given in various ways.
     If the `VIEw_TEXT` property is defined, that is used as template.
-    Othewise, if a `path` paramter is passed to the constructor, that
+    Othewise, if a `path` parameter is passed to the constructor, that
     is used to load a file containing the template.  If the `path`
     parameter is None, the `text` parameter is used as the template.
 
-    The leading newline character and trailing newline charater are stripped
+    The leading newline character and trailing newline character are stripped
     from the template (provided they exist).  Baseline indentation is
     also stripped from each line.  The baseline indentation is determined by
     checking the indentation of the first line, after stripping off the leading

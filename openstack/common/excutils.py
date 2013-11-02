@@ -43,7 +43,7 @@ class save_and_reraise_exception(object):
     saved exception is logged and the new exception is re-raised.
 
     In some cases the caller may not want to re-raise the exception, and
-    for those circumstances this context provides a reraise flag that
+    for those circumstances this context provides a re_raise flag that
     can be used to suppress the exception.  For example:
 
     except Exception:

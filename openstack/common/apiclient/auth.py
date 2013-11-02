@@ -76,7 +76,7 @@ def load_plugin(auth_system):
 
 
 def load_plugin_from_args(args):
-    """Load requred plugin and populate it with options.
+    """Load required plugin and populate it with options.
 
     Try to guess auth system if it is not specified. Systems are tried in
     alphabetical order.
