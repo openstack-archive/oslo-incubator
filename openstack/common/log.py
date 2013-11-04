@@ -35,6 +35,7 @@ import logging
 import logging.config
 import logging.handlers
 import os
+import re
 import sys
 import traceback
 
@@ -49,6 +50,18 @@ from openstack.common import local
 
 
 _DEFAULT_LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+_SANITIZE_KEYS = ['adminPass', 'admin_pass', 'password']
+
+_SANITIZE_PATTERNS = [
+    re.compile(r'(adminPass\s*[=]\s*[\"\']).*?([\"\'])', re.DOTALL),
+    re.compile(r'(admin_pass\s*[=]\s*[\"\']).*?([\"\'])', re.DOTALL),
+    re.compile(r'(<adminPass>).*?(</adminPass>)', re.DOTALL),
+    re.compile(r'(<admin_pass>).*?(</admin_pass>)', re.DOTALL),
+    re.compile(r'([\"\']adminPass[\"\']\s*:\s*[\"\']).*?([\"\'])', re.DOTALL),
+    re.compile(r'([\"\']admin_pass[\"\']\s*:\s*[\"\']).*?([\"\'])', re.DOTALL),
+    re.compile(r'([\'"].*?password[\'"]\s*:\s*u?[\'"]).*?([\'"])', re.DOTALL)
+]
 
 common_cli_opts = [
     cfg.BoolOpt('debug',
@@ -212,6 +225,41 @@ def _get_log_file_path(binary=None):
         return '%s.log' % (os.path.join(logdir, binary),)
 
     return None
+
+
+def mask_password(message, is_unicode=False, secret="***"):
+    """Replace password with 'secret' in message.
+
+    :param message: The string which include security information.
+    :param is_unicode: Is unicode string ?
+    :param secret: substitution string defaults to "***".
+    :returns: The masked password string
+
+    For example:
+    >>> mask_password("'adminPass' : 'aaaaa'")
+    "'adminPass' : '***'"
+    >>> mask_password("'admin_pass' : 'aaaaa'")
+    "'admin_pass' : '***'"
+    >>> mask_password('"password" : "aaaaa"')
+    '"password" : "***"'
+    >>> mask_password("'original_password' : 'aaaaa'")
+    "'original_password' : '***'"
+    >>> mask_password("u'original_password' :   u'aaaaa'")
+    "u'original_password' :   u'***'"
+    """
+    if is_unicode:
+        message = unicode(message)
+
+    # NOTE(ldbragst): Check to see if anything in message contains any key
+    # specified in _SANITIZE_KEYS, if not then just return the message since
+    # we don't have to mask any passwords.
+    if not (key in message for key in _SANITIZE_KEYS):
+        return message
+
+    secret = r'\g<1>' + secret + r'\g<2>'
+    for pattern in _SANITIZE_PATTERNS:
+        message = re.sub(pattern, secret, message)
+    return message
 
 
 class BaseLoggerAdapter(logging.LoggerAdapter):

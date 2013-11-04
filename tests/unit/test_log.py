@@ -533,3 +533,131 @@ handlers=
 
         fileConfig.assert_called_once_with(log_config_append,
                                            disable_existing_loggers=False)
+
+
+class MaskPasswordTestCase(test.BaseTestCase):
+
+    def test_json(self):
+        payload = """{'adminPass':'mypassword'}"""
+        expected = """{'adminPass':'***'}"""
+        self.assertEqual(expected, log.mask_password(payload))
+        payload = """{ 'adminPass' : 'mypassword' }"""
+        expected = """{ 'adminPass' : '***' }"""
+        self.assertEqual(expected, log.mask_password(payload))
+        payload = """{'admin_pass':'mypassword'}"""
+        expected = """{'admin_pass':'***'}"""
+        self.assertEqual(expected, log.mask_password(payload))
+        payload = """{ 'admin_pass' : 'mypassword' }"""
+        expected = """{ 'admin_pass' : '***' }"""
+        self.assertEqual(expected, log.mask_password(payload))
+
+    def test_xml(self):
+        payload = """<adminPass>mypassword</adminPass>"""
+        expected = """<adminPass>***</adminPass>"""
+        self.assertEqual(expected, log.mask_password(payload))
+        payload = """<adminPass>
+                        mypassword
+                     </adminPass>"""
+        expected = """<adminPass>***</adminPass>"""
+        self.assertEqual(expected, log.mask_password(payload))
+        payload = """<admin_pass>mypassword</admin_pass>"""
+        expected = """<admin_pass>***</admin_pass>"""
+        self.assertEqual(expected, log.mask_password(payload))
+        payload = """<admin_pass>
+                        mypassword
+                     </admin_pass>"""
+        expected = """<admin_pass>***</admin_pass>"""
+        self.assertEqual(expected, log.mask_password(payload))
+
+    def test_xml_attribute(self):
+        payload = """adminPass='mypassword'"""
+        expected = """adminPass='***'"""
+        self.assertEqual(expected, log.mask_password(payload))
+        payload = """adminPass = 'mypassword'"""
+        expected = """adminPass = '***'"""
+        self.assertEqual(expected, log.mask_password(payload))
+        payload = """adminPass = "mypassword\""""
+        expected = """adminPass = "***\""""
+        self.assertEqual(expected, log.mask_password(payload))
+        payload = """admin_pass='mypassword'"""
+        expected = """admin_pass='***'"""
+        self.assertEqual(expected, log.mask_password(payload))
+        payload = """admin_pass = 'mypassword'"""
+        expected = """admin_pass = '***'"""
+        self.assertEqual(expected, log.mask_password(payload))
+        payload = """admin_pass = "mypassword\""""
+        expected = """admin_pass = "***\""""
+        self.assertEqual(expected, log.mask_password(payload))
+
+    def test_json_message(self):
+        payload = """body: {"changePassword": {"adminPass": "1234567"}}"""
+        expected = """body: {"changePassword": {"adminPass": "***"}}"""
+        self.assertEqual(expected, log.mask_password(payload))
+        payload = """body: {"rescue": {"admin_pass": "1234567"}}"""
+        expected = """body: {"rescue": {"admin_pass": "***"}}"""
+        self.assertEqual(expected, log.mask_password(payload))
+
+    def test_xml_message(self):
+        payload = """<?xml version="1.0" encoding="UTF-8"?>
+<rebuild
+    xmlns="http://docs.openstack.org/compute/api/v1.1"
+    name="foobar"
+    imageRef="http://openstack.example.com/v1.1/32278/images/70a599e0-31e7"
+    accessIPv4="1.2.3.4"
+    accessIPv6="fe80::100"
+    adminPass="seekr3t">
+  <metadata>
+    <meta key="My Server Name">Apache1</meta>
+  </metadata>
+</rebuild>"""
+        expected = """<?xml version="1.0" encoding="UTF-8"?>
+<rebuild
+    xmlns="http://docs.openstack.org/compute/api/v1.1"
+    name="foobar"
+    imageRef="http://openstack.example.com/v1.1/32278/images/70a599e0-31e7"
+    accessIPv4="1.2.3.4"
+    accessIPv6="fe80::100"
+    adminPass="***">
+  <metadata>
+    <meta key="My Server Name">Apache1</meta>
+  </metadata>
+</rebuild>"""
+        self.assertEqual(expected, log.mask_password(payload))
+        payload = """<?xml version="1.0" encoding="UTF-8"?>
+<rescue xmlns="http://docs.openstack.org/compute/api/v1.1"
+    admin_pass="MySecretPass"/>"""
+        expected = """<?xml version="1.0" encoding="UTF-8"?>
+<rescue xmlns="http://docs.openstack.org/compute/api/v1.1"
+    admin_pass="***"/>"""
+        self.assertEqual(expected, log.mask_password(payload))
+
+    def test_mask_password(self):
+        message = ("test = 'password': 'aaaaaa', 'param1': 'value1', "
+                   "\"new_password\": 'bbbbbb'")
+        self.assertEqual(log.mask_password(message, True),
+                         u"test = 'password': '***', 'param1': 'value1', "
+                         "\"new_password\": '***'")
+
+        message = "test = 'password'  :   'aaaaaa'"
+        self.assertEqual(log.mask_password(message, False, secret='111'),
+                         "test = 'password'  :   '111'")
+
+        message = u"test = u'password' : u'aaaaaa'"
+        self.assertEqual(log.mask_password(message, True),
+                         u"test = u'password' : u'***'")
+
+        message = 'test = "password" : "aaaaaaaaa"'
+        self.assertEqual(log.mask_password(message),
+                         'test = "password" : "***"')
+
+        message = 'test = "original_password" : "aaaaaaaaa"'
+        self.assertEqual(log.mask_password(message),
+                         'test = "original_password" : "***"')
+
+        message = 'test = "original_password" : ""'
+        self.assertEqual(log.mask_password(message),
+                         'test = "original_password" : "***"')
+
+        message = 'test = "param1" : "value"'
+        self.assertEqual(log.mask_password(message),
+                         'test = "param1" : "value"')
