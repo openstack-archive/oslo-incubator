@@ -16,8 +16,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
-import commands
 import ConfigParser
 import os
 import urlparse
@@ -27,6 +25,7 @@ import sqlalchemy.exc
 
 from openstack.common import lockutils
 from openstack.common import log as logging
+from openstack.common import processutils
 from openstack.common import test
 
 LOG = logging.getLogger(__name__)
@@ -143,9 +142,10 @@ class BaseMigrationTestCase(test.BaseTestCase):
         super(BaseMigrationTestCase, self).tearDown()
 
     def execute_cmd(self, cmd=None):
-        status, output = commands.getstatusoutput(cmd)
+        out, err = processutils.trycmd(cmd, shell=True)
+        output = out + '\n' + err
         LOG.debug(output)
-        self.assertEqual(0, status,
+        self.assertEqual('', err,
                          "Failed to run: %s\n%s" % (cmd, output))
 
     @lockutils.synchronized('pgadmin', 'tests-', external=True)
