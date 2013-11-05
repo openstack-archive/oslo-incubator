@@ -16,10 +16,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
-import commands
 import ConfigParser
 import os
+import subprocess
 import urlparse
 
 import sqlalchemy
@@ -143,9 +142,11 @@ class BaseMigrationTestCase(test.BaseTestCase):
         super(BaseMigrationTestCase, self).tearDown()
 
     def execute_cmd(self, cmd=None):
-        status, output = commands.getstatusoutput(cmd)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT)
+        output = proc.communicate()[0]
         LOG.debug(output)
-        self.assertEqual(0, status,
+        self.assertEqual(0, proc.returncode,
                          "Failed to run: %s\n%s" % (cmd, output))
 
     @lockutils.synchronized('pgadmin', 'tests-', external=True)
