@@ -25,12 +25,12 @@ eventlet.monkey_patch()
 import contextlib
 import functools
 import logging
+import time
 import weakref
 
 import fixtures
 import mock
 import six
-import time
 
 from openstack.common.fixture import config
 from openstack.common.fixture import moxstubout

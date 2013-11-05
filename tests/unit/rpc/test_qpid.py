@@ -23,10 +23,11 @@ Unit Tests for remote procedure calls using qpid
 import eventlet
 eventlet.monkey_patch()
 
-import fixtures
-import mox
 import time
 import uuid
+
+import fixtures
+import mox
 
 from openstack.common import context
 from openstack.common.fixture import config
