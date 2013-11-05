@@ -17,10 +17,10 @@
 
 from __future__ import print_function
 
-import fixtures
 import os
 import tempfile
 
+import fixtures
 import six
 
 from openstack.common import processutils

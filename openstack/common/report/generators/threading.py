@@ -20,13 +20,14 @@ This module defines classes for threading-related
 generators for generating the models in
 :mod:`openstack.common.report.models.threading`.
 """
+import sys
 
 import greenlet
+
 import openstack.common.report.models.threading as tm
 from openstack.common.report.models import with_default_views as mwdv
 import openstack.common.report.utils as rutils
 import openstack.common.report.views.text.generic as text_views
-import sys
 
 
 class ThreadReportGenerator(object):

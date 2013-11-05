@@ -15,13 +15,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import mock
 import os
-import webob
 
+import mock
 from oslo.config import cfg
 import pycadf
 from pycadf.audit import api as cadf_api
+import webob
 
 from openstack.common.middleware import audit
 from openstack.common.notifier import api

@@ -20,9 +20,9 @@ This module defines a class for configuration
 generators for generating the model in
 :mod:`openstack.common.report.models.conf`.
 """
+from oslo.config import cfg
 
 import openstack.common.report.models.conf as cm
-from oslo.config import cfg
 
 
 class ConfigReportGenerator(object):

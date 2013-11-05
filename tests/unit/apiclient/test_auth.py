@@ -20,7 +20,6 @@ import argparse
 import fixtures
 import mock
 import requests
-
 from stevedore import extension
 
 try:

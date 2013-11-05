@@ -19,8 +19,9 @@
 Unit Tests for remote procedure calls using kombu + ssl
 """
 
-import eventlet
 import ssl
+
+import eventlet
 eventlet.monkey_patch()
 
 from openstack.common.fixture import config

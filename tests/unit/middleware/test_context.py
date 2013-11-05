@@ -18,7 +18,6 @@
 import mock
 
 import openstack.common.context
-
 from openstack.common.middleware import context
 from openstack.common import test
 

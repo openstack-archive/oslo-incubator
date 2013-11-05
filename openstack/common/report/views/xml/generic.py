@@ -27,7 +27,6 @@ such strings specially)
 
 import collections as col
 import copy
-
 import xml.etree.ElementTree as ET
 
 import openstack.common.report.utils as utils
