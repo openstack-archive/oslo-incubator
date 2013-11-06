@@ -46,6 +46,7 @@ from openstack.common.gettextutils import _  # noqa
 from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import local
+from openstack.common import log_handler
 
 
 _DEFAULT_LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
@@ -431,10 +432,7 @@ def _setup_logging_from_conf():
         log_root.addHandler(streamlog)
 
     if CONF.publish_errors:
-        handler = importutils.import_object(
-            "openstack.common.log_handler.PublishErrorsHandler",
-            logging.ERROR)
-        log_root.addHandler(handler)
+        log_root.addHandler(log_handler.PublishErrorsHandler)
 
     datefmt = CONF.log_date_format
     for handler in log_root.handlers:
