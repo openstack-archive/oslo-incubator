@@ -39,3 +39,9 @@ class UnitTest(test.BaseTestCase):
         self.assertEqual(units.E, 1000 ** 6)
         self.assertEqual(units.Z, 1000 ** 7)
         self.assertEqual(units.Y, 1000 ** 8)
+
+    def test_time_unit(self):
+        self.assertEqual(units.Minute, 60)
+        self.assertEqual(units.Hour, 3600)
+        self.assertEqual(units.Day, 86400)
+        self.assertEqual(units.Week, 604800)
