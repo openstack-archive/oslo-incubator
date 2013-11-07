@@ -38,3 +38,9 @@ P = 1000 ** 5
 E = 1000 ** 6
 Z = 1000 ** 7
 Y = 1000 ** 8
+
+#Time unit constants
+Minute = 60
+Hour = 60 * Minute
+Day = 24 * Hour
+Week = 7 * Day
