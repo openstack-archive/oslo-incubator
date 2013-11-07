@@ -31,7 +31,7 @@ class QemuImgInfo(object):
     BACKING_FILE_RE = re.compile((r"^(.*?)\s*\(actual\s+path\s*:"
                                   r"\s+(.*?)\)\s*$"), re.I)
     TOP_LEVEL_RE = re.compile(r"^([\w\d\s\_\-]+):(.*)$")
-    SIZE_RE = re.compile(r"\(\s*(\d+)\s+bytes\s*\)", re.I)
+    SIZE_RE = re.compile(r"(\d+)(\w+)?(\s*\(\s*(\d+)\s+bytes\s*\))?", re.I)
 
     def __init__(self, cmd_output=None):
         details = self._parse(cmd_output or '')
@@ -70,13 +70,16 @@ class QemuImgInfo(object):
     def _extract_bytes(self, details):
         # Replace it with the byte amount
         real_size = self.SIZE_RE.search(details)
-        if real_size:
-            details = real_size.group(1)
-        try:
-            details = strutils.to_bytes(details)
-        except TypeError:
-            pass
-        return details
+        if not real_size:
+            raise ValueError(_('Invalid input value "%s".') % details)
+        magnitude = real_size.group(1)
+        unit_of_measure = real_size.group(2)
+        bytes_info = real_size.group(3)
+        if bytes_info:
+            return int(real_size.group(4))
+        elif not unit_of_measure:
+            return int(magnitude)
+        return strutils.to_bytes('%s%s' % (magnitude, unit_of_measure))
 
     def _extract_details(self, root_cmd, root_details, lines_after):
         real_details = root_details
@@ -87,7 +90,10 @@ class QemuImgInfo(object):
                 real_details = backing_match.group(2).strip()
         elif root_cmd in ['virtual_size', 'cluster_size', 'disk_size']:
             # Replace it with the byte amount (if we can convert it)
-            real_details = self._extract_bytes(root_details)
+            if root_details == 'None':
+                real_details = 0
+            else:
+                real_details = self._extract_bytes(root_details)
         elif root_cmd == 'file_format':
             real_details = real_details.strip().lower()
         elif root_cmd == 'snapshot_list':
