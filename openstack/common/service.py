@@ -286,7 +286,10 @@ class ProcessLauncher(object):
                     break
                 launcher.restart()
 
-            os._exit(status)
+            if status is None:
+                os._exit(-1)
+            else:
+                os._exit(status)
 
         LOG.info(_('Started child %d'), pid)
 
