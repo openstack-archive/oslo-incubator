@@ -30,7 +30,7 @@ class Config(fixtures.Fixture):
     the specified configuration option group.
 
     All overrides are automatically cleared at the end of the current
-    test by the reset() method, which is registred by addCleanup().
+    test by the reset() method, which is registered by addCleanup().
     """
 
     def __init__(self, conf=cfg.CONF):

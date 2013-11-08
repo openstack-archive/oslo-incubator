@@ -36,7 +36,7 @@ class RpcProxy(object):
     rpc API.
     """
 
-    # The default namespace, which can be overriden in a subclass.
+    # The default namespace, which can be overridden in a subclass.
     RPC_API_NAMESPACE = None
 
     def __init__(self, topic, default_version, version_cap=None,

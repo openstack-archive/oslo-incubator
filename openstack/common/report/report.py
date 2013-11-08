@@ -108,7 +108,7 @@ class ReportOfType(BasicReport):
     """A Report of a Certain Type
 
     A ReportOfType has a predefined type associated with it.
-    This type is automatically propogated down to the each of
+    This type is automatically propagated down to the each of
     the sections upon serialization by wrapping the generator
     for each section.
 
