@@ -7,6 +7,7 @@ mock>=1.0
 mox>=0.5.3
 MySQL-python
 pep8==1.4.5
+psycopg2
 pyflakes==0.7.2
 pylint==0.25.2
 pyzmq==2.2.0.1
