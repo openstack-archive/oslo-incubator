@@ -31,6 +31,7 @@ class BaseTestCase(testtools.TestCase):
         self._fake_output()
         self.useFixture(fixtures.FakeLogger('openstack.common'))
         self.useFixture(fixtures.NestedTempfile())
+        self.useFixture(fixtures.TempHomeDir())
 
     def _set_timeout(self):
         test_timeout = os.environ.get('OS_TEST_TIMEOUT', 0)
