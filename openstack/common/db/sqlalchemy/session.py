@@ -107,7 +107,7 @@ Recommended ways to use sessions within this framework:
                 filter_by(id=subq.as_scalar()).\
                 update({'bar': newbar})
 
-  For reference, this emits approximagely the following SQL statement:
+  For reference, this emits approximately the following SQL statement:
 
     UPDATE bar SET bar = ${newbar}
         WHERE id=(SELECT bar_id FROM foo WHERE id = ${foo_id} LIMIT 1);
