@@ -40,7 +40,7 @@ Recommended ways to use sessions within this framework:
 
   It is generally fine to issue several queries in a row like this. Even though
   they may be run in separate transactions and/or separate sessions, each one
-  will see the data from the prior calls. If needed, undo- or rollback-like
+  will see the data from the prior calls. If needed, undo or rollback-like
   functionality should be handled at a logical level. For an example, look at
   the code around quotas and reservation_rollback().
 
@@ -109,7 +109,7 @@ Recommended ways to use sessions within this framework:
                 filter_by(id=subq.as_scalar()).\
                 update({'bar': newbar})
 
-  For reference, this emits approximagely the following SQL statement:
+  For reference, this emits approximately the following SQL statement:
 
     UPDATE bar SET bar = ${newbar}
         WHERE id=(SELECT bar_id FROM foo WHERE id = ${foo_id} LIMIT 1);
