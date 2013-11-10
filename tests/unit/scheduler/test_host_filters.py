@@ -258,6 +258,7 @@ class HostFiltersTestCase(test.BaseTestCase):
         self.json_query = jsonutils.dumps(
             ['and', ['>=', '$free_ram_mb', 1024],
              ['>=', '$free_disk_mb', 200 * 1024]])
+        #import pdb; pdb.set_trace()
         namespace = 'openstack.common.scheduler.filters'
         filter_handler = filters.HostFilterHandler(namespace)
         classes = filter_handler.get_all_classes()
@@ -270,6 +271,7 @@ class HostFiltersTestCase(test.BaseTestCase):
         self.assertTrue('JsonFilter' in self.class_map)
         self.assertTrue('CapabilitiesFilter' in self.class_map)
         self.assertTrue('AvailabilityZoneFilter' in self.class_map)
+        self.assertTrue('RetryFilter' in self.class_map)
 
     def _do_test_type_filter_extra_specs(self, ecaps, especs, passes):
         filt_cls = self.class_map['CapabilitiesFilter']()
@@ -676,3 +678,26 @@ class HostFiltersTestCase(test.BaseTestCase):
         host = fakes.FakeHostState('host1',
                                    {'service': service})
         self.assertTrue(filt_cls.host_passes(host, request))
+
+    def test_retry_filter_disabled(self):
+        # Test case where retry/re-scheduling is disabled.
+        filt_cls = self.class_map['RetryFilter']()
+        host = fakes.FakeHostState('host1', {})
+        filter_properties = {}
+        self.assertTrue(filt_cls.host_passes(host, filter_properties))
+
+    def test_retry_filter_pass(self):
+        # Node not previously tried.
+        filt_cls = self.class_map['RetryFilter']()
+        host = fakes.FakeHostState('host1', {})
+        retry = dict(num_attempts=2, hosts=['host2'])
+        filter_properties = dict(retry=retry)
+        self.assertTrue(filt_cls.host_passes(host, filter_properties))
+
+    def test_retry_filter_fail(self):
+        # Node was already tried.
+        filt_cls = self.class_map['RetryFilter']()
+        host = fakes.FakeHostState('host1', {})
+        retry = dict(num_attempts=1, hosts=['host1'])
+        filter_properties = dict(retry=retry)
+        self.assertFalse(filt_cls.host_passes(host, filter_properties))
