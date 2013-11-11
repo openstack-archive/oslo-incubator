@@ -30,6 +30,13 @@ class UUIDUtilsTest(test.BaseTestCase):
         # make sure there are 4 dashes
         self.assertEqual(len(uuid_string.replace('-', '')), 32)
 
+    def test_generate_pure_uuid(self):
+        pure_uuid = uuidutils.generate_pure_uuid()
+        self.assertTrue(isinstance(pure_uuid, uuid.UUID))
+        self.assertEqual(len(str(pure_uuid)), 36)
+        # make sure there are 4 dashes
+        self.assertEqual(len(str(pure_uuid).replace('-', '')), 32)
+
     def test_is_uuid_like(self):
         self.assertTrue(uuidutils.is_uuid_like(str(uuid.uuid4())))
 

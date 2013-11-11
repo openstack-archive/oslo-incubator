@@ -26,6 +26,10 @@ def generate_uuid():
     return str(uuid.uuid4())
 
 
+def generate_pure_uuid():
+    return uuid.uuid4()
+
+
 def is_uuid_like(val):
     """Returns validation of a value as a UUID.
 
