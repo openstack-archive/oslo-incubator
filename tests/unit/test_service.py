@@ -23,8 +23,6 @@ Unit Tests for service class
 from __future__ import print_function
 
 import errno
-import eventlet
-import mox
 import multiprocessing
 import os
 import signal
@@ -32,7 +30,9 @@ import socket
 import time
 import traceback
 
+import eventlet
 from eventlet import event
+import mox
 
 from openstack.common import eventlet_backdoor
 from openstack.common.fixture import config

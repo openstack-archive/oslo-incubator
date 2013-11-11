@@ -24,6 +24,8 @@ import datetime
 import errno
 import socket
 import time
+from xml.dom import minidom
+from xml.parsers import expat
 
 import eventlet.wsgi
 from oslo.config import cfg
@@ -32,8 +34,6 @@ import routes.middleware
 import six
 import webob.dec
 import webob.exc
-from xml.dom import minidom
-from xml.parsers import expat
 
 from openstack.common.gettextutils import _  # noqa
 from openstack.common import jsonutils
@@ -41,6 +41,7 @@ from openstack.common import log as logging
 from openstack.common import service
 from openstack.common import sslutils
 from openstack.common import xmlutils
+
 
 socket_opts = [
     cfg.IntOpt('backlog',

@@ -23,8 +23,8 @@ import abc
 import argparse
 import logging
 import os
-import six
 
+import six
 from stevedore import extension
 
 from openstack.common.apiclient import exceptions

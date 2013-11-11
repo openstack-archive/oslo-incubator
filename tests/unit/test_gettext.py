@@ -16,12 +16,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from babel import localedata
 import copy
 import gettext
 import logging.handlers
 import os
 
+from babel import localedata
 import mock
 import six
 

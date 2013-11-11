@@ -21,7 +21,6 @@ For more information about rpc API version numbers, see:
     rpc/dispatcher.py
 """
 
-
 from openstack.common import rpc
 from openstack.common.rpc import common as rpc_common
 from openstack.common.rpc import serializer as rpc_serializer

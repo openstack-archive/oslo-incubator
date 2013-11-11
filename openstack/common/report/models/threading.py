@@ -20,9 +20,10 @@ This module defines classes representing thread, green
 thread, and stack trace data models
 """
 
+import traceback
+
 import openstack.common.report.models.with_default_views as mwdv
 import openstack.common.report.views.text.threading as text_views
-import traceback
 
 
 class StackTraceModel(mwdv.ModelWithDefaultViews):

@@ -26,8 +26,8 @@ such strings specially)
 """
 
 import copy
-from openstack.common import jsonutils as json
 
+from openstack.common import jsonutils as json
 import openstack.common.report.utils as utils
 
 

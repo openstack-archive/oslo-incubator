@@ -15,16 +15,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import threading
+
+import greenlet
+from oslo.config import cfg
+
 from openstack.common.report.generators import conf as os_cgen
 from openstack.common.report.generators import threading as os_tgen
 from openstack.common.report.generators import version as os_pgen
 from openstack.common.report.models import threading as os_tmod
-from oslo.config import cfg
-
 from tests import utils
-
-import greenlet
-import threading
 
 
 class TestOpenstackGenerators(utils.BaseTestCase):
