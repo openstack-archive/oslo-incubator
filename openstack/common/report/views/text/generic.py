@@ -22,6 +22,8 @@ serializing models into human-readable text.
 
 import collections as col
 
+import six
+
 
 class MultiView(object):
     """A Text View Containing Multiple Views
@@ -123,7 +125,7 @@ class KeyValueView(object):
                 for key in root:
                     res.extend(serialize(root[key], key, indent + 1))
             elif (isinstance(root, col.Sequence) and
-                    not isinstance(root, basestring)):
+                    not isinstance(root, six.string_types)):
                 if rootkey is not None:
                     res[0] += self.list_sep
                     if self.before_list is not None:

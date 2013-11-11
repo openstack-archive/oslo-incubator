@@ -25,6 +25,7 @@ import sys
 import textwrap
 
 import prettytable
+import six
 
 from openstack.common.apiclient import exceptions
 from openstack.common import strutils
@@ -181,7 +182,7 @@ def print_dict(dct, dict_property="Property", wrap=0):
             v = textwrap.fill(str(v), wrap)
         # if value has a newline, add in multiple rows
         # e.g. fault with stacktrace
-        if v and isinstance(v, basestring) and r'\n' in v:
+        if v and isinstance(v, six.string_types) and r'\n' in v:
             lines = v.strip().split(r'\n')
             col1 = k
             for line in lines:

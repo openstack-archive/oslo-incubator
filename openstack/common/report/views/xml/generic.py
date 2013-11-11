@@ -27,8 +27,9 @@ such strings specially)
 
 import collections as col
 import copy
-
 import xml.etree.ElementTree as ET
+
+import six
 
 import openstack.common.report.utils as utils
 
@@ -70,7 +71,7 @@ class KeyValueView(object):
                 for key in rootmodel:
                     res.append(serialize(rootmodel[key], key))
             elif (isinstance(rootmodel, col.Sequence)
-                    and not isinstance(rootmodel, basestring)):
+                    and not isinstance(rootmodel, six.string_types)):
                 for val in rootmodel:
                     res.append(serialize(val, 'item'))
             elif ET.iselement(rootmodel):
