@@ -136,6 +136,7 @@ else:
     InterProcessLock = _PosixLock
 
 _semaphores = weakref.WeakValueDictionary()
+_semaphores_lock = threading.Lock()
 
 
 @contextlib.contextmanager
@@ -158,15 +159,12 @@ def lock(name, lock_file_prefix=None, external=False, lock_path=None):
     special location for external lock files to live. If nothing is set, then
     CONF.lock_path is used as a default.
     """
-    # NOTE(soren): If we ever go natively threaded, this will be racy.
-    #              See http://stackoverflow.com/questions/5390569/dyn
-    #              amically-allocating-and-destroying-mutexes
-    sem = _semaphores.get(name, threading.Semaphore())
-    if name not in _semaphores:
-        # this check is not racy - we're already holding ref locally
-        # so GC won't remove the item and there was no IO switch
-        # (only valid in greenthreads)
-        _semaphores[name] = sem
+    with _semaphores_lock:
+        try:
+            sem = _semaphores[name]
+        except KeyError:
+            sem = threading.Semaphore()
+            _semaphores[name] = sem
 
     with sem:
         LOG.debug(_('Got semaphore "%(lock)s"'), {'lock': name})
