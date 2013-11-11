@@ -19,13 +19,14 @@
 
 import commands
 import ConfigParser
+import functools
 import os
 import urlparse
 
+import lockfile
 import sqlalchemy
 import sqlalchemy.exc
 
-from openstack.common import lockutils
 from openstack.common import log as logging
 from openstack.common import test
 
@@ -93,6 +94,23 @@ def get_db_connection_info(conn_pieces):
     return (user, password, database, host)
 
 
+def _set_db_lock(lock_path=None, lock_prefix=None):
+    def decorator(f):
+        @functools.wraps(f)
+        def wrapper(*args, **kwargs):
+            try:
+                if not lock_path:
+                    lock_path = os.environ.get("OSLO_LOCK_PATH")
+                lock = lockfile.FileLock(os.path.join(lock_path, lock_prefix))
+                with lock:
+                    LOG.debug(_('Got lock "%s"') % f.__name__)
+                    return f(*args, **kwargs)
+            finally:
+                LOG.debug(_('Lock released "%s"') % f.__name__)
+        return wrapper
+    return decorator
+
+
 class BaseMigrationTestCase(test.BaseTestCase):
     """Base class fort testing of migration utils."""
 
@@ -148,7 +166,7 @@ class BaseMigrationTestCase(test.BaseTestCase):
         self.assertEqual(0, status,
                          "Failed to run: %s\n%s" % (cmd, output))
 
-    @lockutils.synchronized('pgadmin', 'tests-', external=True)
+    @_set_db_lock('pgadmin', 'tests-')
     def _reset_pg(self, conn_pieces):
         (user, password, database, host) = get_db_connection_info(conn_pieces)
         os.environ['PGPASSWORD'] = password
