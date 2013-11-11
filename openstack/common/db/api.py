@@ -41,7 +41,6 @@ import functools
 from oslo.config import cfg
 
 from openstack.common import importutils
-from openstack.common import lockutils
 
 
 db_opts = [
@@ -66,20 +65,14 @@ class DBAPI(object):
     def __init__(self, backend_mapping=None):
         if backend_mapping is None:
             backend_mapping = {}
-        self.__backend = None
+        self.__backend = self.__init_backend()
         self.__backend_mapping = backend_mapping
 
-    @lockutils.synchronized('dbapi_backend', 'oslo-')
-    def __get_backend(self):
-        """Get the actual backend.  May be a module or an instance of
-        a class.  Doesn't matter to us.  We do this synchronized as it's
-        possible multiple greenthreads started very quickly trying to do
-        DB calls and eventlet can switch threads before self.__backend gets
-        assigned.
+    def __init_backend(self):
+        """Initialize the actual backend
+
+        Backend may be a module or an class instance
         """
-        if self.__backend:
-            # Another thread assigned it
-            return self.__backend
         backend_name = CONF.database.backend
         self.__use_tpool = CONF.database.use_tpool
         if self.__use_tpool:
@@ -90,12 +83,10 @@ class DBAPI(object):
         backend_path = self.__backend_mapping.get(backend_name,
                                                   backend_name)
         backend_mod = importutils.import_module(backend_path)
-        self.__backend = backend_mod.get_backend()
-        return self.__backend
+        return backend_mod.get_backend()
 
     def __getattr__(self, key):
-        backend = self.__backend or self.__get_backend()
-        attr = getattr(backend, key)
+        attr = getattr(self.__backend, key)
         if not self.__use_tpool or not hasattr(attr, '__call__'):
             return attr
 
