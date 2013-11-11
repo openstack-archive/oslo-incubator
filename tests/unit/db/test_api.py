@@ -117,9 +117,4 @@ class DBAPITestCase(test.BaseTestCase):
     def test_dbapi_unknown_invalid_backend(self):
         self.config(backend='tests.unit.db.not_existent',
                     group='database')
-        dbapi = api.DBAPI()
-
-        def call_it():
-            dbapi.api_class_call1(1, 2, kwarg1='meow')
-
-        self.assertRaises(ImportError, call_it)
+        self.assertRaises(ImportError, api.DBAPI)
