@@ -21,6 +21,7 @@
 import datetime
 
 from oslo.config import cfg
+import six
 
 from openstack.common.gettextutils import _  # noqa
 from openstack.common import importutils
@@ -81,7 +82,7 @@ class QuotaException(Exception):
         super(QuotaException, self).__init__(message)
 
     def format_message(self):
-        return unicode(self)
+        return six.text_type(self)
 
 
 class QuotaError(QuotaException):

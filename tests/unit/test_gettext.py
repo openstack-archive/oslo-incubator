@@ -225,13 +225,13 @@ class GettextTest(test.BaseTestCase):
         expected. For sanity, other locales are tested too and those should
         result in the same message being passed in.
         """
-        self.assertEqual(unicode(msg),
+        self.assertEqual(six.text_type(msg),
                          gettextutils.get_localized_message(msg, 'en'))
-        self.assertEqual(unicode(msg),
+        self.assertEqual(six.text_type(msg),
                          gettextutils.get_localized_message(msg, 'XX'))
-        self.assertEqual(unicode(msg),
+        self.assertEqual(six.text_type(msg),
                          gettextutils.get_localized_message(msg, None))
-        self.assertEqual(unicode(expected_translation),
+        self.assertEqual(six.text_type(expected_translation),
                          gettextutils.get_localized_message(msg, locale))
 
     def test_get_available_languages(self):
