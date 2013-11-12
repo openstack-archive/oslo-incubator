@@ -130,8 +130,9 @@ generic_log_opts = [
 log_opts = [
     cfg.StrOpt('logging_context_format_string',
                default='%(asctime)s.%(msecs)03d %(process)d %(levelname)s '
-                       '%(name)s [%(request_id)s %(user)s %(tenant)s] '
-                       '%(instance)s%(message)s',
+                       '%(name)s [%(request_id)s %(user)s %(domain_id)s '
+                       '%(project_domain_id)s %(user_domain_id)s '
+                       '%(tenant)s] %(instance)s%(message)s',
                help='format string to use for log messages with context'),
     cfg.StrOpt('logging_default_format_string',
                default='%(asctime)s.%(msecs)03d %(process)d %(levelname)s '
@@ -292,6 +293,9 @@ class ContextAdapter(BaseLoggerAdapter):
         self.logger = logger
         self.project = project_name
         self.version = version_string
+        self.domain_info = ['domain_id',
+                            'project_domain_id',
+                            'user_domain_id']
 
     @property
     def handlers(self):
@@ -332,10 +336,15 @@ class ContextAdapter(BaseLoggerAdapter):
         elif instance_uuid:
             instance_extra = (CONF.instance_uuid_format
                               % {'uuid': instance_uuid})
-        extra.update({'instance': instance_extra})
+        extra['instance'] = instance_extra
 
-        extra.update({"project": self.project})
-        extra.update({"version": self.version})
+        for info in self.domain_info:
+            value = (extra.get(info) or kwargs.pop(info, None))
+            if value:
+                extra[info] = value
+
+        extra['project'] = self.project
+        extra['version'] = self.version
         extra['extra'] = extra.copy()
         return msg, kwargs
 
