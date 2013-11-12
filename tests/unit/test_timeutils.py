@@ -184,6 +184,13 @@ class TimeUtilsTest(test.BaseTestCase):
         self.assertAlmostEquals(604859.123456,
                                 timeutils.delta_seconds(before, after))
 
+    def test_total_seconds(self):
+        expected = 86400 + 2 * 3600 + 3 * 60 + 4
+        result = timeutils.total_seconds(days=1, hours=2, minutes=3, seconds=4)
+        self.assertEqual(result, expected)
+
+        self.assertRaises(TypeError, timeutils.total_seconds, invalid_key=5)
+
     def test_iso8601_from_timestamp(self):
         utcnow = timeutils.utcnow()
         iso = timeutils.isotime(utcnow)

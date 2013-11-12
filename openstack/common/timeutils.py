@@ -185,6 +185,17 @@ def delta_seconds(before, after):
                 float(delta.microseconds) / (10 ** 6))
 
 
+def total_seconds(**kwargs):
+    """Return the total seconds of time duration.
+
+    Compute total seconds of time duration , accept same parameters
+    as datetime.timedelta([days[, seconds[, microseconds[,
+    milliseconds[, minutes[, hours[, weeks]]]]]]])
+    """
+    delta = datetime.timedelta(**kwargs)
+    return delta_seconds(datetime.timedelta(), delta)
+
+
 def is_soon(dt, window):
     """Determines if time is going to happen in the next window seconds.
 
