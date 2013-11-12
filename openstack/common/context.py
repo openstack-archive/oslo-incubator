@@ -36,12 +36,16 @@ class RequestContext(object):
     accesses the system, as well as additional request information.
     """
 
-    def __init__(self, auth_token=None, user=None, tenant=None, is_admin=False,
+    def __init__(self, auth_token=None, user=None, tenant=None, domain=None,
+                 user_domain=None, project_domain=None, is_admin=False,
                  read_only=False, show_deleted=False, request_id=None,
                  instance_uuid=None):
         self.auth_token = auth_token
         self.user = user
         self.tenant = tenant
+        self.domain = domain
+        self.user_domain = user_domain
+        self.project_domain = project_domain
         self.is_admin = is_admin
         self.read_only = read_only
         self.show_deleted = show_deleted
@@ -51,14 +55,25 @@ class RequestContext(object):
         self.request_id = request_id
 
     def to_dict(self):
+        base = '{user} {tenant} {domain} {user_domain} {project_domain}'
+        user_identity = base.format(user=self.user or '-',
+                                    tenant=self.tenant or '-',
+                                    domain=self.domain or '-',
+                                    user_domain=self.user_domain or '-',
+                                    project_domain=self.project_domain or '-')
+
         return {'user': self.user,
                 'tenant': self.tenant,
+                'domain': self.domain,
+                'user_domain': self.user_domain,
+                'project_domain': self.project_domain,
                 'is_admin': self.is_admin,
                 'read_only': self.read_only,
                 'show_deleted': self.show_deleted,
                 'auth_token': self.auth_token,
                 'request_id': self.request_id,
-                'instance_uuid': self.instance_uuid}
+                'instance_uuid': self.instance_uuid,
+                'user_identity': user_identity}
 
 
 def get_admin_context(show_deleted=False):

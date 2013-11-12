@@ -370,6 +370,43 @@ class FancyRecordTestCase(test.BaseTestCase):
                                    (ctxt.request_id, ctxt.instance_uuid)))
 
 
+class DomainTestCase(test.BaseTestCase):
+    def setUp(self):
+        super(DomainTestCase, self).setUp()
+        self.config = self.useFixture(config.Config()).config
+        self.config(logging_context_format_string="[%(request_id)s]: "
+                                                  "%(user_identity)s "
+                                                  "%(message)s")
+        self.mylog = log.getLogger()
+        self.stream = six.StringIO()
+        handler = logging.StreamHandler(self.stream)
+        handler.setFormatter(log.ContextFormatter())
+        self.mylog.logger.addHandler(handler)
+        self.mylog.logger.setLevel(logging.DEBUG)
+
+    def _validate_keys(self, ctxt, keyed_log_string):
+        infoexpected = "%s info\n" % (keyed_log_string)
+        warnexpected = "%s warn\n" % (keyed_log_string)
+
+        self.mylog.info("info", context=ctxt)
+        self.assertEqual(infoexpected, self.stream.getvalue())
+
+        self.mylog.warn("warn", context=ctxt)
+        self.assertEqual(infoexpected + warnexpected, self.stream.getvalue())
+
+    def test_domain_in_log_msg(self):
+        ctxt = _fake_context()
+        ctxt.domain = 'mydomain'
+        ctxt.project_domain = 'myprojectdomain'
+        ctxt.user_domain = 'myuserdomain'
+        user_identity = ctxt.to_dict()['user_identity']
+        self.assertTrue(ctxt.domain in user_identity)
+        self.assertTrue(ctxt.project_domain in user_identity)
+        self.assertTrue(ctxt.user_domain in user_identity)
+        self._validate_keys(ctxt, ('[%s]: %s' %
+                                   (ctxt.request_id, user_identity)))
+
+
 class SetDefaultsTestCase(test.BaseTestCase):
     class TestConfigOpts(cfg.ConfigOpts):
         def __call__(self, args=None):
