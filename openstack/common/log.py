@@ -132,8 +132,8 @@ generic_log_opts = [
 log_opts = [
     cfg.StrOpt('logging_context_format_string',
                default='%(asctime)s.%(msecs)03d %(process)d %(levelname)s '
-                       '%(name)s [%(request_id)s %(user)s %(tenant)s] '
-                       '%(instance)s%(message)s',
+                       '%(name)s [%(request_id)s %(user)s %(domain)s '
+                       '%(tenant)s] %(instance)s%(message)s',
                help='format string to use for log messages with context'),
     cfg.StrOpt('logging_default_format_string',
                default='%(asctime)s.%(msecs)03d %(process)d %(levelname)s '
@@ -335,6 +335,10 @@ class ContextAdapter(BaseLoggerAdapter):
                               % {'uuid': instance_uuid})
         extra.update({'instance': instance_extra})
 
+        domain = (extra.get('domain', None) or
+                  kwargs.pop('domain', None))
+        if domain:
+            extra.update({"domain": domain})
         extra.update({"project": self.project})
         extra.update({"version": self.version})
         extra['extra'] = extra.copy()
