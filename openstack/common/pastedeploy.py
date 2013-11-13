@@ -102,10 +102,10 @@ class FilterFactory(AppFactory):
         """The actual paste.filter_factory protocol method."""
         factory = self._import_factory(local_conf)
 
-        def filter(app):
+        def filter_factory(app):
             return factory(app, self.data, **local_conf)
 
-        return filter
+        return filter_factory
 
 
 def app_factory(global_conf, **local_conf):
