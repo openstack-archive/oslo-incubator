@@ -16,6 +16,7 @@
 import warnings
 
 from migrate.changeset import UniqueConstraint
+import mock
 import six
 from six import moves
 import sqlalchemy
@@ -24,10 +25,13 @@ from sqlalchemy import Boolean, Index, Integer, DateTime, String
 from sqlalchemy import MetaData, Table, Column, ForeignKey
 from sqlalchemy.engine import reflection
 from sqlalchemy.exc import SAWarning
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType, NullType
 
 from openstack.common.db.sqlalchemy import migration
+from openstack.common.db.sqlalchemy import models
+from openstack.common.db.sqlalchemy import session as db_session
 from openstack.common.db.sqlalchemy import test_migrations
 from openstack.common.db.sqlalchemy import utils
 from openstack.common.fixture import moxstubout
@@ -549,3 +553,75 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
         self.assertEqual(f_key['referred_table'], 'table0')
         self.assertEqual(f_key['referred_columns'], ['id'])
         self.assertEqual(f_key['constrained_columns'], ['bar'])
+
+
+class MyModel(declarative_base(), models.ModelBase, models.SoftDeleteMixin):
+    __tablename__ = 'model_for_test'
+    id = Column(Integer, primary_key=True)
+    project_id = Column(Integer)
+
+
+class MyDbModel(declarative_base(), models.ModelBase, models.SoftDeleteMixin):
+    __tablename__ = 'one_more_model_for_test'
+    id = Column(Integer, primary_key=True)
+    project_id = Column(Integer)
+
+
+class TestModelQuery(test.BaseTestCase):
+
+    def setUp(self):
+        super(TestModelQuery, self).setUp()
+
+        self.session = mock.MagicMock()
+        self.session.query.return_value = self.session.query
+        self.session.query.filter.return_value = self.session.query
+
+        db_session.get_session = mock.MagicMock(return_value=self.session)
+        self.user_context = mock.MagicMock(is_admin=False, read_deleted='yes',
+                                           user_id=42, project_id=43)
+
+    def test_model_query_with_session(self):
+        utils.model_query(self.user_context, session=self.session,
+                          model=MyModel)
+
+        self.session.query.assert_called_with(MyModel)
+
+    def test_model_query_no_session(self):
+        utils.model_query(self.user_context, model=MyModel)
+
+        db_session.get_session.assert_called_with(slave_session=False)
+
+    @mock.patch.object(utils, "_get_db_model")
+    def test_model_query_read_deleted(self, _get_db_model_mock):
+        _get_db_model_mock.return_value = MyDbModel
+        utils._read_deleted_filter = mock.MagicMock(
+            return_value=self.session.query)
+        utils._project_filter = mock.MagicMock(return_value=self.session.query)
+
+        utils.model_query(self.user_context, session=self.session,
+                          model=MyModel, read_deleted='only')
+
+        utils._get_db_model.assert_called_with(MyModel, None)
+        self.session.query.assert_called_with(MyDbModel)
+        utils._read_deleted_filter.assert_called_with(
+            self.session.query, MyDbModel, 'only')
+        utils._project_filter.assert_called_with(
+            self.session.query, MyDbModel, self.user_context, 'only')
+
+    @mock.patch.object(utils, "_get_db_model")
+    def test_model_query_common(self, _get_db_model_mock):
+        _get_db_model_mock.return_value = MyDbModel
+        utils._read_deleted_filter = mock.MagicMock(
+            return_value=self.session.query)
+        utils._project_filter = mock.MagicMock(return_value=self.session.query)
+
+        utils.model_query(self.user_context, MyModel.id, session=self.session,
+                          base_model=MyModel)
+
+        utils._get_db_model.assert_called_with(MyModel.id, MyModel)
+        self.session.query.assert_called_with(MyDbModel)
+        utils._read_deleted_filter.assert_called_with(
+            self.session.query, MyDbModel, self.user_context.read_deleted)
+        utils._project_filter.assert_called_with(
+            self.session.query, MyDbModel, self.user_context,
+            self.user_context.read_deleted)
