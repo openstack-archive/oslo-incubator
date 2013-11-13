@@ -55,7 +55,7 @@ def filter_factory(global_conf, **local_conf):
     conf = global_conf.copy()
     conf.update(local_conf)
 
-    def filter(app):
+    def f(app):
         return ContextMiddleware(app, conf)
 
-    return filter
+    return f

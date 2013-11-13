@@ -73,5 +73,5 @@ class FilterFactoryTest(test.BaseTestCase):
         with mock.patch(target,
                         mock.Mock(return_value=mock.sentinel.ctx)) as mid:
             mid.side_effect = check_ctx_middleware
-            filter = context.filter_factory(global_conf)
-            self.assertEqual(filter(app), mock.sentinel.ctx)
+            ctx_filter = context.filter_factory(global_conf)
+            self.assertEqual(ctx_filter(app), mock.sentinel.ctx)

@@ -204,19 +204,19 @@ class TimeUtilsTest(test.BaseTestCase):
 
 class TestIso8601Time(test.BaseTestCase):
 
-    def _instaneous(self, timestamp, yr, mon, day, hr, min, sec, micro):
+    def _instaneous(self, timestamp, yr, mon, day, hr, minute, sec, micro):
         self.assertEqual(timestamp.year, yr)
         self.assertEqual(timestamp.month, mon)
         self.assertEqual(timestamp.day, day)
         self.assertEqual(timestamp.hour, hr)
-        self.assertEqual(timestamp.minute, min)
+        self.assertEqual(timestamp.minute, minute)
         self.assertEqual(timestamp.second, sec)
         self.assertEqual(timestamp.microsecond, micro)
 
-    def _do_test(self, time_str, yr, mon, day, hr, min, sec, micro, shift):
+    def _do_test(self, time_str, yr, mon, day, hr, minute, sec, micro, shift):
         DAY_SECONDS = 24 * 60 * 60
         timestamp = timeutils.parse_isotime(time_str)
-        self._instaneous(timestamp, yr, mon, day, hr, min, sec, micro)
+        self._instaneous(timestamp, yr, mon, day, hr, minute, sec, micro)
         offset = timestamp.tzinfo.utcoffset(None)
         self.assertEqual(offset.seconds + offset.days * DAY_SECONDS, shift)
 

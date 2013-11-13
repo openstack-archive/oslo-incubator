@@ -43,10 +43,10 @@ class StubBaseAppController(object):
     def index(self, request):
         return "base app index"
 
-    def show(self, request, id):
+    def show(self, request, req_id):
         return {'fort': 'knox'}
 
-    def update(self, request, id, body=None):
+    def update(self, request, req_id, body=None):
         return {'uneditable': 'original_value'}
 
     def create_resource(self):
