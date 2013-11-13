@@ -21,6 +21,7 @@
 import re
 
 from migrate.changeset import UniqueConstraint
+from oslo.config import cfg
 import sqlalchemy
 from sqlalchemy import Boolean
 from sqlalchemy import CheckConstraint
@@ -31,6 +32,7 @@ from sqlalchemy import func
 from sqlalchemy import Index
 from sqlalchemy import Integer
 from sqlalchemy import MetaData
+from sqlalchemy import or_
 from sqlalchemy.sql.expression import literal_column
 from sqlalchemy.sql.expression import UpdateBase
 from sqlalchemy.sql import select
@@ -40,10 +42,13 @@ from sqlalchemy.types import NullType
 
 from openstack.common.gettextutils import _  # noqa
 
+from openstack.common.db.sqlalchemy import models
+from openstack.common.db.sqlalchemy import session as db_session
 from openstack.common import log as logging
 from openstack.common import timeutils
 
 
+CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 _DBURL_REGEX = re.compile(r"[^:]+://([^:]+):([^@]+)@.+")
@@ -156,6 +161,80 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
     if limit is not None:
         query = query.limit(limit)
 
+    return query
+
+
+def is_user_context(context):
+    """Indicates if the request context is a normal user."""
+    if not context:
+        return False
+    if context.is_admin:
+        return False
+    if not context.user_id or not context.project_id:
+        return False
+    return True
+
+
+def model_query(context, model, *args, **kwargs):
+    """Query helper that accounts for context's `read_deleted` field.
+
+    :param context: context to query under
+    :param use_slave: If true, use slave_connection
+    :param session: if present, the session to use
+    :param read_deleted: if present, overrides context's read_deleted field.
+    :param project_only: if present and context is user-type, then restrict
+            query to match the context's project_id. If set to 'allow_none',
+            restriction includes project_id = None.
+    :param base_model: Where model_query is passed a "model" parameter which is
+            not a subclass of ModelBase, we should pass an extra base_model
+            parameter that is a subclass of ModelBase and corresponds to the
+            model parameter.
+    """
+
+    use_slave = kwargs.get('use_slave') or False
+    if CONF.database.slave_connection == '':
+        use_slave = False
+
+    session = kwargs.get('session')
+    if not session:
+        session = db_session.get_session(slave_session=use_slave)
+    read_deleted = kwargs.get('read_deleted') or context.read_deleted
+    project_only = kwargs.get('project_only', False)
+
+    def issubclassof_nova_base(obj):
+        return isinstance(obj, type) and issubclass(obj, models.ModelBase)
+
+    base_model = model
+    if not issubclassof_nova_base(base_model):
+        base_model = kwargs.get('base_model', None)
+        if not issubclassof_nova_base(base_model):
+            raise Exception(_("model or base_model parameter should be "
+                              "subclass of ModelBase"))
+
+    query = session.query(model, *args)
+
+    default_deleted_value = base_model.__mapper__.c.deleted.default.arg
+    if read_deleted == 'no':
+        query = query.filter(base_model.deleted == default_deleted_value)
+    elif read_deleted == 'yes':
+        pass  # omit the filter to include deleted and active
+    elif read_deleted == 'only':
+        query = query.filter(base_model.deleted != default_deleted_value)
+    else:
+        raise Exception(_("Unrecognized read_deleted value '%s'")
+                        % read_deleted)
+
+
+    if project_only and is_user_context(context):
+        if project_only == 'allow_none':
+            is_none = None
+            project_filter = or_(
+                base_model.project_id == context.project_id,
+                base_model.project_id == is_none,
+            )
+            query = query.filter(project_filter)
+        else:
+            query = query.filter_by(project_id=context.project_id)
     return query
 
 

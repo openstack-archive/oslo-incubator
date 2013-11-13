@@ -18,16 +18,20 @@
 import warnings
 
 from migrate.changeset import UniqueConstraint
+import mox
 import sqlalchemy
 from sqlalchemy.dialects import mysql
 from sqlalchemy import Boolean, Index, Integer, DateTime, String
 from sqlalchemy import MetaData, Table, Column, ForeignKey
 from sqlalchemy.engine import reflection
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import SAWarning
 from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType, NullType
 
 from openstack.common.db.sqlalchemy import migration
+from openstack.common.db.sqlalchemy import models
+from openstack.common.db.sqlalchemy import session as db_session
 from openstack.common.db.sqlalchemy import test_migrations
 from openstack.common.db.sqlalchemy import utils
 from openstack.common.fixture import moxstubout
@@ -549,3 +553,98 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
         self.assertEqual(f_key['referred_table'], 'table0')
         self.assertEqual(f_key['referred_columns'], ['id'])
         self.assertEqual(f_key['constrained_columns'], ['bar'])
+
+
+class MyModel(declarative_base(), models.ModelBase, models.SoftDeleteMixin):
+    __tablename__ = 'model_for_test'
+    id = Column(Integer, primary_key=True)
+    project_id = Column(Integer)
+
+
+class TestModelQuery(test.BaseTestCase):
+
+    def setUp(self):
+        super(TestModelQuery, self).setUp()
+        mox_fixture = self.useFixture(moxstubout.MoxStubout())
+        self.mox = mox_fixture.mox
+
+        self.mox.StubOutWithMock(db_session, 'get_session')
+        self.session = self.mox.CreateMockAnything()
+
+        self.user_context = self.mox.CreateMockAnything()
+        self.user_context.is_admin = False
+        self.user_context.read_deleted = 'yes'
+        self.user_context.user_id = 42
+        self.user_context.project_id = 43
+
+        self.admin_context = self.mox.CreateMockAnything()
+        self.admin_context.is_admin = True
+        self.admin_context.read_deleted = 'yes'
+
+        self.model = None
+        self.base = declarative_base()
+        self.base_model = None
+
+    def test_model_query_with_session(self):
+        self.session.query(MyModel).AndReturn(None)
+        self.mox.ReplayAll()
+        utils.model_query(self.user_context, session=self.session,
+                          model=MyModel)
+
+    def test_model_query_no_session(self):
+        db_session.get_session(slave_session=False).AndReturn(self.session)
+        self.session.query(MyModel).AndReturn(self.session)
+        self.mox.ReplayAll()
+        utils.model_query(self.user_context, model=MyModel)
+
+    def test_model_query_read_deleted_only(self):
+        self.session.query(MyModel).AndReturn(self.session)
+        self.session.filter(mox.IgnoreArg()).AndReturn(None)
+        self.mox.ReplayAll()
+        utils.model_query(self.user_context, session=self.session,
+                          model=MyModel, read_deleted='only')
+
+    def test_model_query_read_deleted_unrecognized(self):
+        self.session.query(MyModel).AndReturn(None)
+        self.mox.ReplayAll()
+        error = self.assertRaises(
+            Exception, utils.model_query, self.user_context,
+            MyModel, session=self.session, read_deleted='ololo')
+        self.assertIn('Unrecognized read_deleted value', error.message)
+
+    def test_model_query_issubclass_false_base_model(self):
+        wrong_type_model = None
+        db_session.get_session(slave_session=False).AndReturn(self.session)
+        self.session.query(wrong_type_model).AndReturn(None)
+        self.mox.ReplayAll()
+        utils.model_query(self.user_context, model=wrong_type_model,
+                          base_model=MyModel)
+
+    def test_model_query_issubclass_false_base_model_false(self):
+        self.mox.ReplayAll()
+        err = self.assertRaises(
+            Exception, utils.model_query, self.user_context,
+            session=self.session, model='FakeModel', base_model='FlakeModel2')
+        self.assertIn('should be subclass of ModelBase', err.message)
+
+    def test_model_query_project_only_true(self):
+        db_session.get_session(slave_session=False).AndReturn(self.session)
+        self.session.query(MyModel).AndReturn(self.session)
+        self.session.filter_by(project_id=43).AndReturn(None)
+        self.mox.ReplayAll()
+        utils.model_query(self.user_context, model=MyModel, project_only=True)
+
+    def test_model_query_project_only_allow_none(self):
+        self.session.query(MyModel).AndReturn(self.session)
+        self.mox.StubOutWithMock(utils, 'or_')
+        utils.or_(mox.IgnoreArg(), mox.IgnoreArg()).AndReturn('or_state')
+        self.session.filter('or_state').AndReturn(None)
+        self.mox.ReplayAll()
+        utils.model_query(self.user_context, model=MyModel,
+                          session=self.session, project_only='allow_none')
+
+    def test_model_query_is_user_context_false(self):
+        self.session.query(MyModel).AndReturn(self.session)
+        self.mox.ReplayAll()
+        utils.model_query(self.admin_context, model=MyModel,
+                          session=self.session, project_only='allow_none')
