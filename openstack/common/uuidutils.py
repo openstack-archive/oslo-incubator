@@ -22,10 +22,6 @@ UUID related utilities and helper functions.
 import uuid
 
 
-def generate_uuid():
-    return str(uuid.uuid4())
-
-
 def is_uuid_like(val):
     """Returns validation of a value as a UUID.
 
