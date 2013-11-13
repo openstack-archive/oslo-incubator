@@ -17,14 +17,13 @@
 
 """Middleware that attaches a correlation id to WSGI request"""
 
-import uuid
-
 from openstack.common.middleware import base
+from openstack.common import uuidutils
 
 
 class CorrelationIdMiddleware(base.Middleware):
 
     def process_request(self, req):
         correlation_id = (req.headers.get("X_CORRELATION_ID") or
-                          str(uuid.uuid4()))
+                          uuidutils.generate_uuid())
         req.headers['X_CORRELATION_ID'] = correlation_id

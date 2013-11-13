@@ -23,6 +23,13 @@ from openstack.common import uuidutils
 
 class UUIDUtilsTest(test.BaseTestCase):
 
+    def test_generate_uuid(self):
+        uuid_string = uuidutils.generate_uuid()
+        self.assertTrue(isinstance(uuid_string, str))
+        self.assertEqual(len(uuid_string), 36)
+        # make sure there are 4 dashes
+        self.assertEqual(len(uuid_string.replace('-', '')), 32)
+
     def test_is_uuid_like(self):
         self.assertTrue(uuidutils.is_uuid_like(str(uuid.uuid4())))
 
