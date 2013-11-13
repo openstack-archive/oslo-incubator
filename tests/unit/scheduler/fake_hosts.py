@@ -45,5 +45,6 @@ class FakeHostManager(object):
 
 class FakeHostState(object):
     def __init__(self, host, attribute_dict):
+        self.host = host
         for (key, val) in attribute_dict.iteritems():
             setattr(self, key, val)
