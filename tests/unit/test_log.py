@@ -546,6 +546,14 @@ class MaskPasswordTestCase(test.BaseTestCase):
         payload = """{ 'admin_pass' : 'mypassword' }"""
         expected = """{ 'admin_pass' : '***' }"""
         self.assertEqual(expected, log.mask_password(payload))
+        # Test 'admin_password' w/o spaces
+        payload = """{'admin_password':'mypassword'}"""
+        expected = """{'admin_password':'***'}"""
+        self.assertEqual(expected, log.mask_password(payload))
+        # Test 'admin_password' with spaces
+        payload = """{ 'admin_password' : 'mypassword' }"""
+        expected = """{ 'admin_password' : '***' }"""
+        self.assertEqual(expected, log.mask_password(payload))
         # Test 'password' w/o spaces
         payload = """{'password':'mypassword'}"""
         expected = """{'password':'***'}"""
@@ -575,6 +583,16 @@ class MaskPasswordTestCase(test.BaseTestCase):
                         mypassword
                      </admin_pass>"""
         expected = """<admin_pass>***</admin_pass>"""
+        self.assertEqual(expected, log.mask_password(payload))
+        # Test 'admin_password' w/o spaces
+        payload = """<admin_password>mypassword</admin_password>"""
+        expected = """<admin_password>***</admin_password>"""
+        self.assertEqual(expected, log.mask_password(payload))
+        # Test 'admin_password' with spaces
+        payload = """<admin_password>
+                        mypassword
+                     </admin_password>"""
+        expected = """<admin_password>***</admin_password>"""
         self.assertEqual(expected, log.mask_password(payload))
         # Test 'password' w/o spaces
         payload = """<password>mypassword</password>"""
@@ -612,6 +630,18 @@ class MaskPasswordTestCase(test.BaseTestCase):
         payload = """admin_pass = "mypassword\""""
         expected = """admin_pass = "***\""""
         self.assertEqual(expected, log.mask_password(payload))
+        # Test 'admin_password' w/o spaces
+        payload = """admin_password='mypassword'"""
+        expected = """admin_password='***'"""
+        self.assertEqual(expected, log.mask_password(payload))
+        # Test 'admin_password' with spaces
+        payload = """admin_password = 'mypassword'"""
+        expected = """admin_password = '***'"""
+        self.assertEqual(expected, log.mask_password(payload))
+        # Test 'admin_password' with double quotes
+        payload = """admin_password = "mypassword\""""
+        expected = """admin_password = "***\""""
+        self.assertEqual(expected, log.mask_password(payload))
         # Test 'password' w/o spaces
         payload = """password='mypassword'"""
         expected = """password='***'"""
@@ -631,6 +661,9 @@ class MaskPasswordTestCase(test.BaseTestCase):
         self.assertEqual(expected, log.mask_password(payload))
         payload = """body: {"rescue": {"admin_pass": "1234567"}}"""
         expected = """body: {"rescue": {"admin_pass": "***"}}"""
+        self.assertEqual(expected, log.mask_password(payload))
+        payload = """body: {"rescue": {"admin_password": "1234567"}}"""
+        expected = """body: {"rescue": {"admin_password": "***"}}"""
         self.assertEqual(expected, log.mask_password(payload))
         payload = """body: {"rescue": {"password": "1234567"}}"""
         expected = """body: {"rescue": {"password": "***"}}"""
@@ -668,6 +701,13 @@ class MaskPasswordTestCase(test.BaseTestCase):
         expected = """<?xml version="1.0" encoding="UTF-8"?>
 <rescue xmlns="http://docs.openstack.org/compute/api/v1.1"
     admin_pass="***"/>"""
+        self.assertEqual(expected, log.mask_password(payload))
+        payload = """<?xml version="1.0" encoding="UTF-8"?>
+<rescue xmlns="http://docs.openstack.org/compute/api/v1.1"
+    admin_password="MySecretPass"/>"""
+        expected = """<?xml version="1.0" encoding="UTF-8"?>
+<rescue xmlns="http://docs.openstack.org/compute/api/v1.1"
+    admin_password="***"/>"""
         self.assertEqual(expected, log.mask_password(payload))
         payload = """<?xml version="1.0" encoding="UTF-8"?>
 <rescue xmlns="http://docs.openstack.org/compute/api/v1.1"
