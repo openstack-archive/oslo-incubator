@@ -546,6 +546,14 @@ class MaskPasswordTestCase(test.BaseTestCase):
         payload = """{ 'admin_pass' : 'mypassword' }"""
         expected = """{ 'admin_pass' : '***' }"""
         self.assertEqual(expected, log.mask_password(payload))
+        # Test 'admin_password' w/o spaces
+        payload = """{'admin_password':'mypassword'}"""
+        expected = """{'admin_password':'***'}"""
+        self.assertEqual(expected, log.mask_password(payload))
+        # Test 'admin_password' with spaces
+        payload = """{ 'admin_password' : 'mypassword' }"""
+        expected = """{ 'admin_password' : '***' }"""
+        self.assertEqual(expected, log.mask_password(payload))
         # Test 'password' w/o spaces
         payload = """{'password':'mypassword'}"""
         expected = """{'password':'***'}"""
@@ -575,6 +583,16 @@ class MaskPasswordTestCase(test.BaseTestCase):
                         mypassword
                      </admin_pass>"""
         expected = """<admin_pass>***</admin_pass>"""
+        self.assertEqual(expected, log.mask_password(payload))
+        # Test 'admin_password' w/o spaces
+        payload = """<admin_password>mypassword</admin_password>"""
+        expected = """<admin_password>***</admin_password>"""
+        self.assertEqual(expected, log.mask_password(payload))
+        # Test 'admin_password' with spaces
+        payload = """<admin_password>
+                        mypassword
+                     </admin_password>"""
+        expected = """<admin_password>***</admin_password>"""
         self.assertEqual(expected, log.mask_password(payload))
         # Test 'password' w/o spaces
         payload = """<password>mypassword</password>"""
