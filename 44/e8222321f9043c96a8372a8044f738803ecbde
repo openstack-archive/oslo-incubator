@@ -1,0 +1,10 @@
+Change-Id: I44e8222321f9043c96a8372a8044f738803ecbde
+Verified+2: Jenkins
+Approved+1: Doug Hellmann <doug.hellmann@dreamhost.com>
+Code-Review+2: Doug Hellmann <doug.hellmann@dreamhost.com>
+Code-Review+2: Ben Nemec <openstack@nemebean.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 13 Nov 2013 22:17:36 +0000
+Reviewed-on: https://review.openstack.org/56286
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
