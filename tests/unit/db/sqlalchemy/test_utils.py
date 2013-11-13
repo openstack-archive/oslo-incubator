@@ -16,6 +16,7 @@
 import warnings
 
 from migrate.changeset import UniqueConstraint
+import mock
 from six import moves
 import sqlalchemy
 from sqlalchemy.dialects import mysql
@@ -23,10 +24,13 @@ from sqlalchemy import Boolean, Index, Integer, DateTime, String
 from sqlalchemy import MetaData, Table, Column, ForeignKey
 from sqlalchemy.engine import reflection
 from sqlalchemy.exc import SAWarning
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType, NullType
 
 from openstack.common.db.sqlalchemy import migration
+from openstack.common.db.sqlalchemy import models
+from openstack.common.db.sqlalchemy import session as db_session
 from openstack.common.db.sqlalchemy import test_migrations
 from openstack.common.db.sqlalchemy import utils
 from openstack.common.fixture import moxstubout
@@ -548,3 +552,89 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
         self.assertEqual(f_key['referred_table'], 'table0')
         self.assertEqual(f_key['referred_columns'], ['id'])
         self.assertEqual(f_key['constrained_columns'], ['bar'])
+
+
+class MyModel(declarative_base(), models.ModelBase, models.SoftDeleteMixin):
+    __tablename__ = 'model_for_test'
+    id = Column(Integer, primary_key=True)
+    project_id = Column(Integer)
+
+
+class TestModelQuery(test.BaseTestCase):
+
+    def setUp(self):
+        super(TestModelQuery, self).setUp()
+
+        self.session = mock.MagicMock()
+        self.session.query.return_value = self.session.query
+        self.session.query.filter.return_value = self.session.query
+
+        db_session.get_session = mock.MagicMock(return_value=self.session)
+
+        self.user_context = mock.MagicMock(is_admin=False, read_deleted='yes',
+                                           user_id=42, project_id=43)
+        self.admin_context = mock.MagicMock(is_admin=True, read_deleted='yes')
+
+    def test_model_query_with_session(self):
+        utils.model_query(self.user_context, session=self.session,
+                          model=MyModel)
+
+        self.session.query.assert_called_with(MyModel)
+
+    def test_model_query_no_session(self):
+        utils.model_query(self.user_context, model=MyModel)
+
+        self.session.query.assert_called_with(MyModel)
+        db_session.get_session.assert_called_with(slave_session=False)
+
+    def test_model_query_read_deleted_only(self):
+        sqlalchemy.sql.expression._BinaryExpression = mock.MagicMock()
+        utils.model_query(self.user_context, session=self.session,
+                          model=MyModel, read_deleted='only')
+
+        self.session.query.filter.assert_called_with(
+            sqlalchemy.sql.expression._BinaryExpression()
+        )
+        self.session.query.assert_called_with(MyModel)
+
+    def test_model_query_read_deleted_unrecognized(self):
+        error = self.assertRaises(
+            Exception, utils.model_query, self.user_context,
+            MyModel, session=self.session, read_deleted='ololo')
+
+        self.assertIn('Unrecognized read_deleted value', error.message)
+        self.session.query.assert_called_with(MyModel)
+
+    def test_model_query_issubclass_false_base_model(self):
+        wrong_type_model = None
+        utils.model_query(self.user_context, model=wrong_type_model,
+                          base_model=MyModel)
+
+        db_session.get_session.assert_called_with(slave_session=False)
+        self.session.query.assert_called_with(wrong_type_model)
+
+    def test_model_query_issubclass_false_base_model_false(self):
+        err = self.assertRaises(
+            Exception, utils.model_query, self.user_context,
+            session=self.session, model='FakeModel', base_model='FlakeModel2')
+        self.assertIn('should be subclass of ModelBase', err.message)
+
+    def test_model_query_project_only_true(self):
+        utils.model_query(self.user_context, model=MyModel, project_only=True)
+        db_session.get_session.assert_called_with(slave_session=False)
+        self.session.query.assert_called_with(MyModel)
+        self.session.query.filter_by.assert_called_with(project_id=43)
+
+    def test_model_query_project_only_allow_none(self):
+        utils.or_ = mock.MagicMock(return_value='or_state')
+        utils.model_query(self.user_context, model=MyModel,
+                          session=self.session, project_only='allow_none')
+
+        self.session.query.assert_called_with(MyModel)
+        self.session.query.filter.assert_called_with('or_state')
+
+    def test_model_query_is_user_context_false(self):
+        utils.model_query(self.admin_context, model=MyModel,
+                          session=self.session, project_only='allow_none')
+
+        self.session.query.assert_called_with(MyModel)
