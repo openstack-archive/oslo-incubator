@@ -28,7 +28,7 @@ class CapabilitiesFilter(filters.BaseHostFilter):
 
     def _satisfies_extra_specs(self, capabilities, resource_type):
         """Check that the capabilities provided by the services satisfy
-        the extra specs associated with the instance type.
+        the extra specs associated with the resource type.
         """
         extra_specs = resource_type.get('extra_specs', [])
         if not extra_specs:
@@ -57,14 +57,14 @@ class CapabilitiesFilter(filters.BaseHostFilter):
         return True
 
     def host_passes(self, host_state, filter_properties):
-        """Return a list of hosts that can create instance_type."""
+        """Return a list of hosts that can create resource_type."""
         # Note(zhiteng) Currently only Cinder and Nova are using
         # this filter, so the resource type is either instance or
         # volume.
         resource_type = filter_properties.get('resource_type')
         if not self._satisfies_extra_specs(host_state.capabilities,
                                            resource_type):
-            LOG.debug(_("%(host_state)s fails instance_type extra_specs "
+            LOG.debug(_("%(host_state)s fails resource_type extra_specs "
                       "requirements"), {'host_state': host_state})
             return False
         return True
