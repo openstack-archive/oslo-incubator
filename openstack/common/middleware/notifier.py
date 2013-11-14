@@ -118,7 +118,7 @@ class RequestNotifier(base.Middleware):
             try:
                 response = req.get_response(self.application)
             except Exception:
-                type, value, traceback = sys.exc_info()
+                exc_type, value, traceback = sys.exc_info()
                 self.process_response(req, None, value, traceback)
                 raise
             else:
