@@ -79,12 +79,14 @@ def generate(srcfiles):
     # The options list is a list of (module, options) tuples
     opts_by_group = {'DEFAULT': []}
 
-    for module_name in os.getenv(
-            "OSLO_CONFIG_GENERATOR_EXTRA_MODULES", "").split(','):
-        module = _import_module(module_name)
-        if module:
-            for group, opts in _list_opts(module):
-                opts_by_group.setdefault(group, []).append((module_name, opts))
+    extra_modules = os.getenv("OSLO_CONFIG_GENERATOR_EXTRA_MODULES", "")
+    if extra_modules:
+        for module_name in extra_modules.split(','):
+            module = _import_module(module_name)
+            if module:
+                for group, opts in _list_opts(module):
+                    opts_by_group.setdefault(group, []).append((module_name,
+                                                                opts))
 
     for pkg_name in pkg_names:
         mods = mods_by_pkg.get(pkg_name)
@@ -113,9 +115,10 @@ def _import_module(mod_str):
         else:
             return importutils.import_module(mod_str)
     except ImportError as ie:
-        sys.stderr.write("%s\n" % str(ie))
+        sys.stderr.write("Error importing module %s: %s\n" % (mod_str, str(ie)))
         return None
-    except Exception:
+    except Exception as e:
+        sys.stderr.write("Error importing module %s: %s\n" % (mod_str, str(e)))
         return None
 
 
