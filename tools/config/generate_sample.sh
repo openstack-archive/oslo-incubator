@@ -93,6 +93,7 @@ OUTPUTFILE=$OUTPUTDIR/$PACKAGENAME.conf.sample
 python -m $MODULEPATH $FILES > $OUTPUTFILE
 
 # Hook to allow projects to append custom config file snippets
-for CONCAT_FILE in $BASEDIR/tools/config/*.conf.sample; do
+CONCAT_FILES=$(ls $BASEDIR/tools/config/*.conf.sample)
+for CONCAT_FILE in $CONCAT_FILES; do
     cat $CONCAT_FILE >> $OUTPUTFILE
 done
