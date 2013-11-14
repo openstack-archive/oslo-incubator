@@ -59,6 +59,7 @@ rpc_opts = [
                 default=['nova.exception',
                          'cinder.exception',
                          'exceptions',
+                         'oslo.common.exception',
                          ],
                 help='Modules of exceptions that are permitted to be recreated'
                      ' upon receiving exception data from an rpc call.'),
