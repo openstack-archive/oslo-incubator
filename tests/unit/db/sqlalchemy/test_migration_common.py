@@ -49,6 +49,8 @@ class TestMigrationCommon(base.DbTestCase):
         self.mock_api_db_version = self.mock_api_db.start()
         self.mock_api_db_version.return_value = self.test_version
 
+        self.addCleanup(db_session.cleanup)
+
     def tearDown(self):
         os.rmdir(self.path)
         self.mock_api_db.stop()
