@@ -40,6 +40,13 @@ class MyException(Exception):
 
 
 class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
+
+    def setUp(self):
+        super(BaseRpcAMQPTestCase, self).setUp()
+
+    def tearDown(self):
+        super(BaseRpcAMQPTestCase, self).tearDown()
+
     """Base test class for all AMQP-based RPC tests."""
     def test_proxycallback_handles_exceptions(self):
         """Make sure exceptions unpacking messages don't cause hangs."""

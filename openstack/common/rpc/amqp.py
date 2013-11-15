@@ -4,6 +4,7 @@
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
 # Copyright 2011 - 2012, Red Hat, Inc.
+# Copyright 2013 NTT corp.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -52,6 +53,21 @@ amqp_opts = [
     cfg.BoolOpt('amqp_auto_delete',
                 default=False,
                 help='Auto-delete queues in amqp.'),
+    cfg.BoolOpt('concurrency_control_enabled',
+                default=False,
+                help='If enabled, messaging drivers that support concurrency '
+                     'control will rate limit the specified control actions.'),
+    cfg.ListOpt('concurrency_control_actions',
+                default=[],
+                help='List of concurrency control actions. If concurrency '
+                     'control is enabled, any actions defined here will be '
+                     'limited to a maximum concurrency as defined by the '
+                     'concurrency control limit.'),
+    cfg.IntOpt('concurrency_control_limit',
+               default=1,
+               help='This defines the maximum instances of a particular '
+                    'action, as defined in the concurrency control actions, '
+                    'that may be executed concurrently'),
 ]
 
 cfg.CONF.register_opts(amqp_opts)
@@ -413,6 +429,8 @@ class ProxyCallback(_ThreadPoolWithWait):
         )
         self.proxy = proxy
         self.msg_id_cache = _MsgIdCache()
+        cc_limit = conf.concurrency_control_limit
+        self.concurrency_control_semaphore = semaphore.Semaphore(cc_limit)
 
     def __call__(self, message_data):
         """Consumer callback to call a method on a proxy object.
@@ -443,8 +461,23 @@ class ProxyCallback(_ThreadPoolWithWait):
             ctxt.reply(_('No method for message: %s') % message_data,
                        connection_pool=self.connection_pool)
             return
-        self.pool.spawn_n(self._process_data, ctxt, version, method,
-                          namespace, args)
+
+        cc_actions = self.conf.concurrency_control_actions
+        if method in cc_actions and self.conf.concurrency_control_enabled:
+            f = self._cc_process_data
+        else:
+            f = self._process_data
+
+        self.pool.spawn_n(f, ctxt, version, method, namespace, args)
+
+    def _cc_process_data(self, ctxt, version, method, namespace, args):
+        LOG.debug(_("Attempting to grab cc semaphore for action '%s'") %
+                  (method))
+        with self.concurrency_control_semaphore:
+            LOG.debug(_("Got semaphore: %s"))
+            self._process_data(ctxt, version, method, namespace, args)
+
+        LOG.debug(_("Releasing cc semaphore for action '%s'") % (method))
 
     def _process_data(self, ctxt, version, method, namespace, args):
         """Process a message in a new thread.

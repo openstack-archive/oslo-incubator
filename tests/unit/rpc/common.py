@@ -58,6 +58,9 @@ class BaseRpcTestCase(test.BaseTestCase):
             self.conn = self._create_consumer(receiver, self.topic)
             self.addCleanup(self.conn.close)
 
+    def tearDown(self):
+        super(BaseRpcTestCase, self).tearDown()
+
     def _create_consumer(self, proxy, topic, fanout=False):
         dispatcher = rpc_dispatcher.RpcDispatcher([proxy])
         conn = self.rpc.create_connection(self.FLAGS, True)
@@ -119,6 +122,21 @@ class BaseRpcTestCase(test.BaseTestCase):
             self.assertEqual(x, None)
         # i should have been 0, 1, and finally 2:
         self.assertEqual(i, 2)
+
+    def test_multicall_with_cc_semaphore(self):
+        if not self.rpc:
+            raise self.SkipTest('rpc driver not available.')
+
+        self.FLAGS.concurrency_control_enabled = True
+        self.FLAGS.concurrency_control_actions = 'echo_three_times_yield'
+        value = 42
+        result = self.rpc.multicall(self.FLAGS, self.context,
+                                    self.topic,
+                                    {"method": "echo_three_times_yield",
+                                     "args": {"value": value}})
+
+        for i, x in enumerate(result):
+            self.assertEqual(value + i, x)
 
     def test_multicall_succeed_three_times_yield(self):
         if not self.rpc:
