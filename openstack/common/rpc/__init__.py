@@ -4,6 +4,7 @@
 # Administrator of the National Aeronautics and Space Administration.
 # All Rights Reserved.
 # Copyright 2011 Red Hat, Inc.
+# Copyright 2013 NTT corp.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -68,6 +69,21 @@ rpc_opts = [
     cfg.StrOpt('control_exchange',
                default='openstack',
                help='AMQP exchange to connect to if using RabbitMQ or Qpid'),
+    cfg.BoolOpt('concurrency_control_enabled',
+                default=False,
+                help='If enabled, messaging drivers that support concurrency '
+                     'control will rate limit the specified control actions.'),
+    cfg.ListOpt('concurrency_control_actions',
+                default=[],
+                help='List of concurrency control actions. If concurrency '
+                     'control is enabled, any actions defined here will be '
+                     'limited to a maximum concurrency as defined by the '
+                     'concurrency control limit.'),
+    cfg.IntOpt('concurrency_control_limit',
+               default=1,
+               help='This defines the maximum instances of a particular '
+                    'action, as defined in the concurrency control actions, '
+                    'that may be executed concurrently'),
 ]
 
 CONF = cfg.CONF
