@@ -43,7 +43,7 @@ class TestSqliteUniqueConstraints(test_base.DbTestCase):
 
         self.helper = sqlite.SQLiteHelper()
 
-        sa.Table(
+        test_table = sa.Table(
             'test_table',
             sa.schema.MetaData(bind=session.get_engine()),
             sa.Column('a', sa.Integer),
@@ -51,8 +51,8 @@ class TestSqliteUniqueConstraints(test_base.DbTestCase):
             sa.Column('c', sa.Integer),
             sa.UniqueConstraint('a', 'b', name='unique_a_b'),
             sa.UniqueConstraint('b', 'c', name='unique_b_c')
-        ).create()
-
+        )
+        test_table.create()
         # NOTE(rpodolyaka): it's important to use the reflected table here
         #                   rather than original one because this is what
         #                   we actually do in db migrations code
@@ -61,6 +61,8 @@ class TestSqliteUniqueConstraints(test_base.DbTestCase):
             sa.schema.MetaData(bind=session.get_engine()),
             autoload=True
         )
+
+        self.addCleanup(test_table.drop)
 
     def test_get_unique_constraints(self):
         table = self.reflected_table

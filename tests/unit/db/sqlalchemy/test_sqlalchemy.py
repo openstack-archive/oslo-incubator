@@ -138,6 +138,8 @@ class SessionErrorWrapperTestCase(test_base.DbTestCase):
                            UniqueConstraint('foo', name='uniq_foo'))
         test_table.create()
 
+        self.addCleanup(test_table.drop)
+
     def test_flush_wrapper(self):
         tbl = TmpTable()
         tbl.update({'foo': 10})
@@ -183,6 +185,8 @@ class RegexpFilterTestCase(test_base.DbTestCase):
                            Column('bar', String(255)))
         test_table.create()
 
+        self.addCleanup(test_table.drop)
+
     def _test_regexp_filter(self, regexp, expected):
         _session = session.get_session()
         with _session.begin():
@@ -209,6 +213,8 @@ class RegexpFilterTestCase(test_base.DbTestCase):
 
 
 class SlaveBackendTestCase(test.BaseTestCase):
+    def setUp(self):
+        super(SlaveBackendTestCase, self).setUp()
 
     def test_slave_engine_nomatch(self):
         default = session.CONF.database.connection
