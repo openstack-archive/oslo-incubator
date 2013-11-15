@@ -115,8 +115,169 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         self.FLAGS = configfixture.conf
         self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
         self.useFixture(KombuStubs(self))
-
+        self.called = []
+        self._saved_flags = {}
+        self.save_flags_state()
         super(RpcKombuTestCase, self).setUp()
+
+    def tearDown(self):
+        self.restore_flags_state()
+        self.stubs.UnsetAll()
+        super(RpcKombuTestCase, self).tearDown()
+
+    def save_flags_state(self):
+        """Any flags modified should be saved here."""
+        self._saved_flags['concurrency_control_enabled'] = \
+            self.FLAGS.concurrency_control_enabled
+        self._saved_flags['concurrency_control_actions'] = \
+            self.FLAGS.concurrency_control_actions
+        self._saved_flags['concurrency_control_limit'] = \
+            self.FLAGS.concurrency_control_limit
+
+    def restore_flags_state(self):
+        """Any flags modified should be restored here."""
+        self.FLAGS.concurrency_control_enabled = \
+            self._saved_flags['concurrency_control_enabled']
+        self.FLAGS.concurrency_control_actions = \
+            self._saved_flags['concurrency_control_actions']
+        self.FLAGS.concurrency_control_limit = \
+            self._saved_flags['concurrency_control_limit']
+
+    def _mock_process_data(self, ctxt, version, method, namespace, args):
+        self.called.append('mock_process_data')
+
+    def _mock_cc_process_data(self, ctxt, version, method, namespace, args):
+        self.called.append('mock_cc_process_data')
+
+    def _mock_spawn_n(self, f, *args, **kwargs):
+        f(*args, **kwargs)
+
+    def test_proxycallback_cc(self):
+        if not self.rpc:
+            self.skipTest('rpc driver not available.')
+
+        self.FLAGS.concurrency_control_enabled = True
+        callback = rpc_amqp.ProxyCallback(self.FLAGS, None, self.conn.pool)
+
+        self.stubs.Set(callback.pool, 'spawn_n', self._mock_spawn_n)
+        self.stubs.Set(callback, '_process_data', self._mock_process_data)
+        self.stubs.Set(callback, '_cc_process_data',
+                       self._mock_cc_process_data)
+
+        methods = 'methodA, methodB'
+        message = {'args': {'value': 1234}}
+
+        self.FLAGS.concurrency_control_enabled = True
+        self.FLAGS.concurrency_control_actions = methods
+        message['method'] = 'methodA'
+        callback(message)
+
+        self.FLAGS.concurrency_control_enabled = True
+        self.FLAGS.concurrency_control_actions = methods
+        message['method'] = 'methodB'
+        callback(message)
+
+        self.assertEquals(['mock_cc_process_data', 'mock_cc_process_data'],
+                          self.called)
+
+    def test_proxycallback_no_cc(self):
+        if not self.rpc:
+            self.skipTest('rpc driver not available.')
+
+        callback = rpc_amqp.ProxyCallback(self.FLAGS, None, self.conn.pool)
+
+        self.stubs.Set(callback.pool, 'spawn_n', self._mock_spawn_n)
+        self.stubs.Set(callback, '_process_data', self._mock_process_data)
+        self.stubs.Set(callback, '_cc_process_data',
+                       self._mock_cc_process_data)
+
+        message = {'args': {'value': 1234}}
+
+        self.FLAGS.concurrency_control_enabled = True
+        message['method'] = 'methodA'
+        callback(message)
+
+        self.FLAGS.concurrency_control_enabled = False
+        message['method'] = 'methodB'
+        callback(message)
+
+        self.assertEquals(['mock_process_data', 'mock_process_data'],
+                          self.called,)
+
+    def test_proxycallback_cc_semaphore(self):
+        if not self.rpc:
+            self.skipTest('rpc driver not available.')
+
+        limit = 3
+        counter = [0]
+        sema_state = []
+        callback = None
+
+        def mock_process_data(inst, ctxt, version, method, namespace, args):
+            # We expect the semaphore to have been acquired by this point
+            if inst.concurrency_control_semaphore.locked():
+                sema_state.append('inner-blocking')
+
+            if counter[0] <= limit:
+                message['method'] = 'methodB'
+                callback(message)
+
+            self.called.append('mock_process_data')
+
+        self.stubs.Set(rpc_amqp.ProxyCallback, '_process_data',
+                       mock_process_data)
+
+        orig_cc_process_data = rpc_amqp.ProxyCallback._cc_process_data
+
+        def mock_cc_process_data(inst, *args, **kwargs):
+            if counter[0] < limit:
+                # We expect the semaphore to be free at this point
+                if not inst.concurrency_control_semaphore.locked():
+                    sema_state.append('non-blocking')
+            else:
+                # We expect the semaphore to be taken at this point
+                if inst.concurrency_control_semaphore.locked():
+                    sema_state.append('blocking')
+
+            self.called.append('mock_cc_process_data')
+            if counter[0] < limit:
+                print counter
+                counter[0] += 1
+                orig_cc_process_data(inst, *args, **kwargs)
+
+        self.stubs.Set(rpc_amqp.ProxyCallback, '_cc_process_data',
+                       mock_cc_process_data)
+
+        methods = 'methodA, methodB'
+        message = {'args': {'value': 1234}}
+
+        self.FLAGS.concurrency_control_enabled = True
+        self.FLAGS.concurrency_control_actions = methods
+        self.FLAGS.concurrency_control_limit = limit
+        message['method'] = 'methodA'
+        callback = rpc_amqp.ProxyCallback(self.FLAGS, None, self.conn.pool)
+
+        # For some reason spawn_n ignores these mocks so we have to mock it out
+        # and ensure we don't acquire the semaphore more than once.
+        self.stubs.Set(callback.pool, 'spawn_n', self._mock_spawn_n)
+
+        callback(message)
+        expected_sema_state = []
+        for i in xrange(0, limit):
+            expected_sema_state.append('non-blocking')
+
+        expected_sema_state += ['inner-blocking', 'blocking']
+
+        self.assertEquals(sema_state, expected_sema_state)
+
+        expected_called = []
+        for i in xrange(0, limit + 1):
+            expected_called.append('mock_cc_process_data')
+
+        for i in xrange(0, limit):
+            expected_called.append('mock_process_data')
+
+        self.assertEquals(self.called, expected_called)
 
     def test_reusing_connection(self):
         """Test that reusing a connection returns same one."""
