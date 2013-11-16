@@ -38,14 +38,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
 
-import distutils.version as dist_version
 import os
 import re
 
-import migrate
 from migrate.changeset import ansisql
 from migrate.changeset.databases import sqlite
-from migrate.versioning import util as migrate_util
+from migrate import exceptions as versioning_exceptions
+from migrate.versioning import api as versioning_api
+from migrate.versioning.repository import Repository
 import sqlalchemy
 from sqlalchemy.schema import UniqueConstraint
 
@@ -53,33 +53,6 @@ from openstack.common.db import exception
 from openstack.common.db.sqlalchemy import session as db_session
 from openstack.common.gettextutils import _  # noqa
 
-
-@migrate_util.decorator
-def patched_with_engine(f, *a, **kw):
-    url = a[0]
-    engine = migrate_util.construct_engine(url, **kw)
-
-    try:
-        kw['engine'] = engine
-        return f(*a, **kw)
-    finally:
-        if isinstance(engine, migrate_util.Engine) and engine is not url:
-            migrate_util.log.debug('Disposing SQLAlchemy engine %s', engine)
-            engine.dispose()
-
-
-# TODO(jkoelker) When migrate 0.7.3 is released and nova depends
-#                on that version or higher, this can be removed
-MIN_PKG_VERSION = dist_version.StrictVersion('0.7.3')
-if (not hasattr(migrate, '__version__') or
-        dist_version.StrictVersion(migrate.__version__) < MIN_PKG_VERSION):
-    migrate_util.with_engine = patched_with_engine
-
-
-# NOTE(jkoelker) Delay importing migrate until we are patched
-from migrate import exceptions as versioning_exceptions
-from migrate.versioning import api as versioning_api
-from migrate.versioning.repository import Repository
 
 _REPOSITORY = None
 
