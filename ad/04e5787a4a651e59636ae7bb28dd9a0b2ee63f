@@ -1,0 +1,13 @@
+Verified+2: Jenkins
+Approved+1: Russell Bryant <rbryant@redhat.com>
+Code-Review+2: Russell Bryant <rbryant@redhat.com>
+Code-Review+1: Julien Danjou <julien@danjou.info>
+Code-Review+2: Alan Pevec <apevec@gmail.com>
+Code-Review+1: Eric Harney <eharney@redhat.com>
+Code-Review+1: ChangBo Guo <guochbo@cn.ibm.com>
+Code-Review+1: Ben Nemec <openstack@nemebean.com>
+Submitted-by: Jenkins
+Submitted-at: Mon, 18 Nov 2013 16:17:07 +0000
+Reviewed-on: https://review.openstack.org/47574
+Project: openstack/oslo-incubator
+Branch: refs/heads/stable/grizzly
