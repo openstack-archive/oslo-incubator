@@ -41,23 +41,23 @@ class ProcessExecutionErrorTest(test.BaseTestCase):
 
     def test_defaults(self):
         err = processutils.ProcessExecutionError()
-        self.assertTrue('None\n' in unicode(err))
-        self.assertTrue('code: -\n' in unicode(err))
+        self.assertTrue('None\n' in six.text_type(err))
+        self.assertTrue('code: -\n' in six.text_type(err))
 
     def test_with_description(self):
         description = 'The Narwhal Bacons at Midnight'
         err = processutils.ProcessExecutionError(description=description)
-        self.assertTrue(description in unicode(err))
+        self.assertTrue(description in six.text_type(err))
 
     def test_with_exit_code(self):
         exit_code = 0
         err = processutils.ProcessExecutionError(exit_code=exit_code)
-        self.assertTrue(str(exit_code) in unicode(err))
+        self.assertTrue(str(exit_code) in six.text_type(err))
 
     def test_with_cmd(self):
         cmd = 'telinit'
         err = processutils.ProcessExecutionError(cmd=cmd)
-        self.assertTrue(cmd in unicode(err))
+        self.assertTrue(cmd in six.text_type(err))
 
     def test_with_stdout(self):
         stdout = """
@@ -80,13 +80,13 @@ class ProcessExecutionErrorTest(test.BaseTestCase):
         the Wielder of Wonder, with world's renown.
         """.strip()
         err = processutils.ProcessExecutionError(stdout=stdout)
-        print(unicode(err))
-        self.assertTrue('people-kings' in unicode(err))
+        print(six.text_type(err))
+        self.assertTrue('people-kings' in six.text_type(err))
 
     def test_with_stderr(self):
         stderr = 'Cottonian library'
         err = processutils.ProcessExecutionError(stderr=stderr)
-        self.assertTrue(stderr in unicode(err))
+        self.assertTrue(stderr in six.text_type(err))
 
     def test_retry_on_failure(self):
         fd, tmpfilename = tempfile.mkstemp()

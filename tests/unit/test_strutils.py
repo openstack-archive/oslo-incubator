@@ -75,7 +75,7 @@ class StrUtilsTest(test.BaseTestCase):
         expected_msg = (u"Unrecognized value '使用', acceptable values are:"
                         u" '0', '1', 'f', 'false', 'n', 'no', 'off', 'on',"
                         u" 't', 'true', 'y', 'yes'")
-        self.assertEqual(expected_msg, unicode(exc))
+        self.assertEqual(expected_msg, six.text_type(exc))
 
     def test_other_bool_from_string(self):
         self.assertFalse(strutils.bool_from_string(None))

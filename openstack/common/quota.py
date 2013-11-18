@@ -82,7 +82,7 @@ class QuotaException(Exception):
         super(QuotaException, self).__init__(message)
 
     def format_message(self):
-        return unicode(self)
+        return six.text_type(self)
 
 
 class QuotaError(QuotaException):

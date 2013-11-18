@@ -731,6 +731,6 @@ class MaskPasswordTestCase(test.BaseTestCase):
         self.assertEqual(expected, log.mask_password(payload))
 
         payload = """{'adminPass':'mypassword'}"""
-        payload = unicode(payload)
+        payload = six.text_type(payload)
         expected = """{'adminPass':'***'}"""
         self.assertEqual(expected, log.mask_password(payload))
