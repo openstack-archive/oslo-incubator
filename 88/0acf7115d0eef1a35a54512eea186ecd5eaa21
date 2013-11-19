@@ -1,0 +1,12 @@
+Verified+2: Jenkins
+Approved+1: Zhongyue Luo <zhongyue.luo@gmail.com>
+Code-Review+2: Zhongyue Luo <zhongyue.luo@gmail.com>
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+1: ChangBo Guo <guochbo@cn.ibm.com>
+Code-Review+1: Jay Lau <liugya@cn.ibm.com>
+Code-Review+1: Luis A. Garcia <luis@linux.vnet.ibm.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 19 Nov 2013 04:26:44 +0000
+Reviewed-on: https://review.openstack.org/56394
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
