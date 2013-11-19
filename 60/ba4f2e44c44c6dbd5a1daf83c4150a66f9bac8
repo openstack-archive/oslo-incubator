@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Code-Review+2: Mark McLoughlin <markmc@redhat.com>
+Code-Review+2: Michael Still <mikal@stillhq.com>
+Code-Review+1: ChangBo Guo <guochbo@cn.ibm.com>
+Approved+1: Ben Nemec <openstack@nemebean.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 19 Nov 2013 01:52:04 +0000
+Reviewed-on: https://review.openstack.org/53898
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
