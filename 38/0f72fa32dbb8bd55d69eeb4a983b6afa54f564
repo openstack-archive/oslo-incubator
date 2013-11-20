@@ -1,0 +1,15 @@
+Verified+2: Jenkins
+Approved+1: Doug Hellmann <doug.hellmann@dreamhost.com>
+Code-Review+2: Doug Hellmann <doug.hellmann@dreamhost.com>
+Code-Review+1: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+2: Flavio Percoco <fpercoco@redhat.com>
+Code-Review+1: Zhi Yan Liu <lzy.dev@gmail.com>
+Code-Review+1: ChangBo Guo <guochbo@cn.ibm.com>
+Code-Review+1: Ben Nemec <openstack@nemebean.com>
+Code-Review+1: Victor Sergeyev <vsergeyev@mirantis.com>
+Code-Review+1: Qin Zhao <chaochin@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 20 Nov 2013 23:49:28 +0000
+Reviewed-on: https://review.openstack.org/54021
+Project: openstack/oslo-incubator
+Branch: refs/heads/stable/havana
