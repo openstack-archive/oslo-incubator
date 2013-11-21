@@ -10,12 +10,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import logging
 import os
 
 from openstack.common.db.sqlalchemy import migration
 from openstack.common.db.sqlalchemy.migration_cli import ext_base
 from openstack.common.gettextutils import _  # noqa
-from openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)
