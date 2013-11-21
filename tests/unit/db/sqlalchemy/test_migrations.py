@@ -17,11 +17,7 @@
 import mock
 
 from openstack.common.db.sqlalchemy import test_migrations as migrate
-from openstack.common import log as logging
 from openstack.common import test
-
-
-LOG = logging.getLogger(__name__)
 
 
 class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
