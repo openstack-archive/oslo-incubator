@@ -16,6 +16,7 @@
 
 import ConfigParser
 import functools
+import logging
 import os
 import urlparse
 
@@ -24,7 +25,6 @@ import sqlalchemy
 import sqlalchemy.exc
 
 from openstack.common.gettextutils import _
-from openstack.common import log as logging
 from openstack.common import processutils
 from openstack.common import test
 
