@@ -271,6 +271,7 @@ Efficient use of soft deletes:
 """
 
 import functools
+import logging
 import os.path
 import re
 import time
@@ -285,7 +286,6 @@ from sqlalchemy.sql.expression import literal_column
 
 from openstack.common.db import exception
 from openstack.common.gettextutils import _
-from openstack.common import log as logging
 from openstack.common import timeutils
 
 sqlite_db_opts = [
