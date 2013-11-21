@@ -15,6 +15,7 @@
 #    under the License.
 
 import functools
+import logging
 import os
 import subprocess
 
@@ -24,7 +25,6 @@ import sqlalchemy
 import sqlalchemy.exc
 
 from openstack.common.gettextutils import _
-from openstack.common import log as logging
 from openstack.common.py3kcompat import urlutils
 from openstack.common import test
 
