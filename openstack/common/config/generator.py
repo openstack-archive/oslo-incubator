@@ -115,10 +115,8 @@ def _import_module(mod_str):
             return sys.modules[mod_str[4:]]
         else:
             return importutils.import_module(mod_str)
-    except ImportError as ie:
-        sys.stderr.write("%s\n" % str(ie))
-        return None
-    except Exception:
+    except Exception as e:
+        sys.stderr.write("Error importing module %s: %s\n" % (mod_str, str(e)))
         return None
 
 
