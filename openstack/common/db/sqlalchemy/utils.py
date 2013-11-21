@@ -18,6 +18,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import logging
 import re
 
 from migrate.changeset import UniqueConstraint
@@ -39,8 +40,6 @@ from sqlalchemy import Table
 from sqlalchemy.types import NullType
 
 from openstack.common.gettextutils import _  # noqa
-
-from openstack.common import log as logging
 from openstack.common import timeutils
 
 
