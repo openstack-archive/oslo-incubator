@@ -269,7 +269,6 @@ class HostFiltersTestCase(test.BaseTestCase):
         # Double check at least a couple of known filters exist
         self.assertTrue('JsonFilter' in self.class_map)
         self.assertTrue('CapabilitiesFilter' in self.class_map)
-        self.assertTrue('AvailabilityZoneFilter' in self.class_map)
 
     def _do_test_type_filter_extra_specs(self, ecaps, especs, passes):
         filt_cls = self.class_map['CapabilitiesFilter']()
@@ -640,39 +639,3 @@ class HostFiltersTestCase(test.BaseTestCase):
             },
         }
         self.assertTrue(filt_cls.host_passes(host, filter_properties))
-
-    @staticmethod
-    def _make_zone_request(zone, is_admin=False):
-        ctxt = context.RequestContext('fake', 'fake', is_admin=is_admin)
-        return {
-            'context': ctxt,
-            'request_spec': {
-                'resource_properties': {
-                    'availability_zone': zone
-                }
-            }
-        }
-
-    def test_availability_zone_filter_same(self):
-        filt_cls = self.class_map['AvailabilityZoneFilter']()
-        service = {'availability_zone': 'nova'}
-        request = self._make_zone_request('nova')
-        host = fakes.FakeHostState('host1',
-                                   {'service': service})
-        self.assertTrue(filt_cls.host_passes(host, request))
-
-    def test_availability_zone_filter_different(self):
-        filt_cls = self.class_map['AvailabilityZoneFilter']()
-        service = {'availability_zone': 'nova'}
-        request = self._make_zone_request('bad')
-        host = fakes.FakeHostState('host1',
-                                   {'service': service})
-        self.assertFalse(filt_cls.host_passes(host, request))
-
-    def test_availability_zone_filter_empty(self):
-        filt_cls = self.class_map['AvailabilityZoneFilter']()
-        service = {'availability_zone': 'nova'}
-        request = {}
-        host = fakes.FakeHostState('host1',
-                                   {'service': service})
-        self.assertTrue(filt_cls.host_passes(host, request))
