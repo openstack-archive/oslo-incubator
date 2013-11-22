@@ -16,11 +16,11 @@
 #    under the License.
 
 import mock
+import uuid
 
 from openstack.common.fixture import moxstubout
 from openstack.common.middleware import correlation_id
 from openstack.common import test
-from openstack.common import uuidutils
 
 
 class CorrelationIdMiddlewareTest(test.BaseTestCase):
@@ -34,9 +34,9 @@ class CorrelationIdMiddlewareTest(test.BaseTestCase):
         req = mock.Mock()
         req.headers = {}
 
-        mock_generate_uuid = mock.Mock()
-        mock_generate_uuid.return_value = "fake_uuid"
-        self.stubs.Set(uuidutils, 'generate_uuid', mock_generate_uuid)
+        mock_uuid4 = mock.Mock()
+        mock_uuid4.return_value = "fake_uuid"
+        self.stubs.Set(uuid, 'uuid4', mock_uuid4)
 
         middleware = correlation_id.CorrelationIdMiddleware(app)
         middleware(req)
