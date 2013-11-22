@@ -17,6 +17,7 @@
 #    under the License.
 
 import ConfigParser
+import fixtures
 import functools
 import os
 import urlparse
@@ -150,6 +151,7 @@ class BaseMigrationTestCase(test.BaseTestCase):
             self.engines[key] = sqlalchemy.create_engine(value)
 
         # We start each test case with a completely blank slate.
+        self.temp_dir = self.useFixture(fixtures.TempDir())
         self._reset_databases()
 
     def tearDown(self):
@@ -166,27 +168,31 @@ class BaseMigrationTestCase(test.BaseTestCase):
         self.assertEqual('', err,
                          "Failed to run: %s\n%s" % (cmd, output))
 
-    @_set_db_lock('pgadmin', 'tests-')
     def _reset_pg(self, conn_pieces):
-        (user, password, database, host) = get_db_connection_info(conn_pieces)
-        os.environ['PGPASSWORD'] = password
-        os.environ['PGUSER'] = user
-        # note(boris-42): We must create and drop database, we can't
-        # drop database which we have connected to, so for such
-        # operations there is a special database template1.
-        sqlcmd = ("psql -w -U %(user)s -h %(host)s -c"
-                  " '%(sql)s' -d template1")
+        @_set_db_lock(self.temp_dir.path, 'pgadmin-tests-')
+        def _reset_pg_inner():
+            (user, password, database, host) = get_db_connection_info(
+                                                            conn_pieces)
+            os.environ['PGPASSWORD'] = password
+            os.environ['PGUSER'] = user
+            # note(boris-42): We must create and drop database, we can't
+            # drop database which we have connected to, so for such
+            # operations there is a special database template1.
+            sqlcmd = ("psql -w -U %(user)s -h %(host)s -c"
+                      " '%(sql)s' -d template1")
 
-        sql = ("drop database if exists %s;") % database
-        droptable = sqlcmd % {'user': user, 'host': host, 'sql': sql}
-        self.execute_cmd(droptable)
+            sql = ("drop database if exists %s;") % database
+            droptable = sqlcmd % {'user': user, 'host': host, 'sql': sql}
+            self.execute_cmd(droptable)
 
-        sql = ("create database %s;") % database
-        createtable = sqlcmd % {'user': user, 'host': host, 'sql': sql}
-        self.execute_cmd(createtable)
+            sql = ("create database %s;") % database
+            createtable = sqlcmd % {'user': user, 'host': host, 'sql': sql}
+            self.execute_cmd(createtable)
 
-        os.unsetenv('PGPASSWORD')
-        os.unsetenv('PGUSER')
+            os.unsetenv('PGPASSWORD')
+            os.unsetenv('PGUSER')
+
+        _reset_pg_inner()
 
     def _reset_databases(self):
         for key, engine in self.engines.items():
