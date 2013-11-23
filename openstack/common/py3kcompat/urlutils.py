@@ -36,6 +36,7 @@ if six.PY3:
     urlparse = urllib.parse.urlparse
     urlsplit = urllib.parse.urlsplit
     urlunsplit = urllib.parse.urlunsplit
+    SplitResult = urllib.parse.SplitResult
 
     urlopen = urllib.request.urlopen
     URLError = urllib.error.URLError
@@ -56,6 +57,7 @@ else:
     urlparse = parse.urlparse
     urlsplit = parse.urlsplit
     urlunsplit = parse.urlunsplit
+    SplitResult = parse.SplitResult
 
     urlopen = urllib2.urlopen
     URLError = urllib2.URLError
