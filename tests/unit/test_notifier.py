@@ -284,3 +284,78 @@ class MultiNotifierTestCase(test.BaseTestCase):
                          'foobar.' + socket.gethostname())
         self.assertEqual(notifier_api.publisher_id('foobar', 'baz'),
                          'foobar.baz')
+
+
+class PublishErrorsTestCase(test.BaseTestCase):
+    """Test case for notifications via publish_errors"""
+    def setUp(self):
+        super(PublishErrorsTestCase, self).setUp()
+        notification_driver=[
+            'openstack.common.notifier.no_op_notifier',
+            'openstack.common.notifier.log_notifier']
+
+        self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
+        self.config = self.useFixture(config.Config()).config
+        self.CONF = self.useFixture(config.Config()).conf
+        self.config(notification_driver=notification_driver)
+        self.stubs.Set(self.CONF, "notification_driver", notification_driver)
+        self.real_log_notify = getattr(log_notifier, 'notify')
+
+        def mock_notify(context, message):
+            self.no_op_flg = True
+
+        def mock_log_notify(context, message):
+            self.real_log_notify(context, message)
+            if (message['publisher_id'] == 'error.publisher'):
+                self.error_flg = True
+            else:
+                self.log_flg = True
+
+        self.stubs.Set(no_op_notifier, 'notify', mock_notify)
+        self.stubs.Set(log_notifier, 'notify', mock_log_notify)
+        self.config(publish_errors=True,
+                    use_stderr=False)
+        log.setup('test_error_notifications')
+
+        self.addCleanup(notifier_api._reset_drivers)
+
+    def test_log_error_notifications(self):
+        '''Test Logging ERROR'''
+        self.no_op_flg = False
+        self.log_flg = False
+        self.error_flg = False
+
+        LOG = log.getLogger('test_error_notifications')
+        LOG.error('foobar')
+
+        self.assertTrue(self.no_op_flg)
+        self.assertFalse(self.log_flg)
+        self.assertTrue(self.error_flg)
+
+    def test_error_notifications(self):
+        '''Test notification with ERROR'''
+        self.no_op_flg = False
+        self.log_flg = False
+        self.error_flg = False
+
+        notifier_api.notify(ctxt, 'test.publisher',
+                            'error_notification', notifier_api.ERROR,
+                            dict(error='foo'))
+
+        self.assertTrue(self.no_op_flg)
+        self.assertTrue(self.log_flg)
+        self.assertTrue(self.error_flg)
+
+    def test_warn_notifications(self):
+        '''Test notification with WARN'''
+        self.no_op_flg = False
+        self.log_flg = False
+        self.error_flg = False
+
+        notifier_api.notify(ctxt, 'test.publisher',
+                            'error_notification', notifier_api.WARN,
+                            dict(error='bar'))
+
+        self.assertTrue(self.no_op_flg)
+        self.assertTrue(self.log_flg)
+        self.assertFalse(self.error_flg)
