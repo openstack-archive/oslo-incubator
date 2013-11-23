@@ -31,7 +31,7 @@ from openstack.common import gettextutils
 from openstack.common import jsonutils
 from openstack.common import log
 from openstack.common import log_handler
-from openstack.common.notifier import api as notifier
+from openstack.common.notifier import no_op_notifier
 from openstack.common import test
 
 
@@ -146,14 +146,14 @@ class PublishErrorsHandlerTestCase(test.BaseTestCase):
 
     def test_emit_cfg_log_notifier_in_notifier_drivers(self):
         self.config(notification_driver=[
-            'openstack.common.notifier.rabbit_notifier',
+            'openstack.common.notifier.no_op_notifier',
             'openstack.common.notifier.log_notifier'])
-        self.stub_flg = True
+        self.stub_flg = False
 
         def fake_notifier(*args, **kwargs):
-            self.stub_flg = False
+            self.stub_flg = True
 
-        self.stubs.Set(notifier, 'notify', fake_notifier)
+        self.stubs.Set(no_op_notifier, 'notify', fake_notifier)
         logrecord = logging.LogRecord('name', 'WARN', '/tmp', 1,
                                       'Message', None, None)
         self.publiserrorshandler.emit(logrecord)

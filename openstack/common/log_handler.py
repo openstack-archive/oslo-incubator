@@ -15,14 +15,9 @@ import logging
 
 from openstack.common import notifier
 
-from oslo.config import cfg
-
 
 class PublishErrorsHandler(logging.Handler):
     def emit(self, record):
-        if ('openstack.common.notifier.log_notifier' in
-                cfg.CONF.notification_driver):
-            return
         notifier.api.notify(None, 'error.publisher',
                             'error_notification',
                             notifier.api.ERROR,

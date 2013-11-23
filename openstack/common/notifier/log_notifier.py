@@ -27,6 +27,10 @@ def notify(_context, message):
 
     Log notifications using OpenStack's default logging system.
     """
+    # Prevent infinite loop with PublishErrors log handler
+    publisher = message.get('publisher_id')
+    if publisher == 'error.publisher':
+        return
 
     priority = message.get('priority',
                            CONF.default_notification_level)
