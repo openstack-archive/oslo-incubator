@@ -32,6 +32,7 @@ from openstack.common import log
 from openstack.common import log_handler
 from openstack.common.notifier import api as notifier
 from openstack.common import test
+from tests.unit import fakes
 
 
 def _fake_context():
@@ -157,6 +158,85 @@ class PublishErrorsHandlerTestCase(test.BaseTestCase):
                                       'Message', None, None)
         self.publiserrorshandler.emit(logrecord)
         self.assertTrue(self.stub_flg)
+
+
+class TranslationHandlerTestCase(test.BaseTestCase):
+
+    def setUp(self):
+        super(TranslationHandlerTestCase, self).setUp()
+
+        self.stream = six.StringIO()
+        self.destination_handler = logging.StreamHandler(self.stream)
+        self.translation_handler = log.TranslationHandler('zh_CN')
+        self.translation_handler.setTarget(self.destination_handler)
+
+        self.logger = logging.getLogger('localehander_logger')
+        self.logger.setLevel(logging.DEBUG)
+        self.logger.addHandler(self.translation_handler)
+
+    def test_set_formatter(self):
+        formatter = 'some formatter'
+        self.translation_handler.setFormatter(formatter)
+        self.assertEquals(formatter, self.translation_handler.target.formatter)
+
+    @mock.patch('gettext.translation')
+    def test_emit_translated_message(self, mock_translation):
+        log_message = 'A message to be logged'
+        log_message_translation = 'A message to be logged in Chinese'
+        translations = {log_message: log_message_translation}
+        translations_map = {'zh_CN': translations}
+        translator = fakes.FakeTranslations.translator(translations_map)
+        mock_translation.side_effect = translator
+
+        msg = gettextutils.Message(log_message)
+
+        self.logger.info(msg)
+        self.assertIn(log_message_translation, self.stream.getvalue())
+
+    @mock.patch('gettext.translation')
+    def test_emit_translated_message_with_args(self, mock_translation):
+        log_message = 'A message to be logged %s'
+        log_message_translation = 'A message to be logged in Chinese %s'
+        log_arg = 'Arg to be logged'
+        log_arg_translation = 'An arg to be logged in Chinese'
+
+        translations = {log_message: log_message_translation,
+                        log_arg: log_arg_translation}
+        translations_map = {'zh_CN': translations}
+        translator = fakes.FakeTranslations.translator(translations_map)
+        mock_translation.side_effect = translator
+
+        msg = gettextutils.Message(log_message)
+        arg = gettextutils.Message(log_arg)
+
+        self.logger.info(msg, arg)
+        self.assertIn(log_message_translation % log_arg_translation,
+                      self.stream.getvalue())
+
+    @mock.patch('gettext.translation')
+    def test_emit_translated_message_with_named_args(self, mock_translation):
+        log_message = 'A message to be logged %(arg1)s $(arg2)s'
+        log_message_translation = 'Chinese msg to be logged %(arg1)s $(arg2)s'
+        log_arg_1 = 'Arg1 to be logged'
+        log_arg_1_translation = 'Arg1 to be logged in Chinese'
+        log_arg_2 = 'Arg2 to be logged'
+        log_arg_2_translation = 'Arg2 to be logged in Chinese'
+
+        translations = {log_message: log_message_translation,
+                        log_arg_1: log_arg_1_translation,
+                        log_arg_2: log_arg_2_translation}
+        translations_map = {'zh_CN': translations}
+        translator = fakes.FakeTranslations.translator(translations_map)
+        mock_translation.side_effect = translator
+
+        msg = gettextutils.Message(log_message)
+        arg_1 = gettextutils.Message(log_arg_1)
+        arg_2 = gettextutils.Message(log_arg_2)
+
+        self.logger.info(msg, {'arg1': arg_1, 'arg2': arg_2})
+        translation = log_message_translation % {'arg1': log_arg_1_translation,
+                                                 'arg2': log_arg_2_translation}
+        self.assertIn(translation, self.stream.getvalue())
 
 
 class LogLevelTestCase(test.BaseTestCase):
