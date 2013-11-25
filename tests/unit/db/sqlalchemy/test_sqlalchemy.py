@@ -259,18 +259,7 @@ class OperationalError(Exception):
 class ProgrammingError(Exception):
     pass
 
-
-class FakeDB2Engine(object):
-
-    class Dialect():
-
-        def is_disconnect(self, e, *args):
-            expected_error = ('SQL30081N: DB2 Server connection is no longer '
-                              'active')
-            return (str(e) == expected_error)
-
-    dialect = Dialect()
-    name = 'ibm_db_sa'
+paramstyle = 'qmark'
 
 
 class TestDBDisconnected(test.BaseTestCase):
@@ -302,16 +291,13 @@ class TestDBDisconnected(test.BaseTestCase):
             self._test_ping_listener(connection)
 
     def test_db2_ping_listener(self):
-        def fake_create_egine(connection, **engine_args):
-            return FakeDB2Engine
-
         def fake_execute(sql):
             raise OperationalError('SQL30081N: DB2 Server '
                                    'connection is no longer active')
         with mock.patch.object(FakeCursor, 'execute',
                                side_effect=fake_execute):
-            with mock.patch.object(sqlalchemy, 'create_engine',
-                                   side_effect=fake_create_egine):
+            with mock.patch('ibm_db_sa.ibm_db.DB2Dialect_ibm_db.dbapi',
+                            TestDBDisconnected.fake_dbapi):
                 connection = ('ibm_db_sa://db2inst1:openstack@fakehost:50000'
                               '/fakedab')
                 self._test_ping_listener(connection)
