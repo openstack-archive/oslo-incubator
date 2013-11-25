@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Approved+1: Julien Danjou <julien@danjou.info>
+Code-Review+2: Julien Danjou <julien@danjou.info>
+Code-Review+2: Zhongyue Luo <zhongyue.luo@gmail.com>
+Code-Review+1: ChangBo Guo <guochbo@cn.ibm.com>
+Submitted-by: Jenkins
+Submitted-at: Mon, 25 Nov 2013 09:43:18 +0000
+Reviewed-on: https://review.openstack.org/51295
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
