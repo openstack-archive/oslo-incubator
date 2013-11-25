@@ -17,7 +17,7 @@
 #    under the License.
 
 import gettext
-import logging.handlers
+import logging
 
 from babel import localedata
 import mock
@@ -506,53 +506,83 @@ class MessageTestCase(test.BaseTestCase):
         self.assertEqual(default_translation, msg.translate('XX'))
 
 
-class LocaleHandlerTestCase(test.BaseTestCase):
+class TranslationHandlerTestCase(test.BaseTestCase):
 
     def setUp(self):
-        super(LocaleHandlerTestCase, self).setUp()
-        self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
+        super(TranslationHandlerTestCase, self).setUp()
 
-        def _message_with_domain(msg):
-            return gettextutils.Message(msg)
+        self.stream = six.StringIO()
+        self.destination_handler = logging.StreamHandler(self.stream)
+        self.translation_handler = gettextutils.TranslationHandler('zh_CN')
+        self.translation_handler.setTarget(self.destination_handler)
 
-        self.buffer_handler = logging.handlers.BufferingHandler(40)
-        self.locale_handler = gettextutils.LocaleHandler(
-            'zh_CN', self.buffer_handler)
         self.logger = logging.getLogger('localehander_logger')
-        self.logger.propogate = False
         self.logger.setLevel(logging.DEBUG)
-        self.logger.addHandler(self.locale_handler)
+        self.logger.addHandler(self.translation_handler)
 
-    def test_emit_message(self):
-        msgid = 'Some logrecord message.'
-        message = gettextutils.Message(msgid)
-        self.emit_called = False
+    def test_set_formatter(self):
+        formatter = 'some formatter'
+        self.translation_handler.setFormatter(formatter)
+        self.assertEquals(formatter, self.translation_handler.target.formatter)
 
-        def emit(record):
-            self.assertEqual(record.msg.translate('zh_CN'), msgid)
-            self.assertTrue(isinstance(record.msg,
-                                       gettextutils.Message))
-            self.emit_called = True
-        self.stubs.Set(self.buffer_handler, 'emit', emit)
+    @mock.patch('gettext.translation')
+    def test_emit_translated_message(self, mock_translation):
+        log_message = 'A message to be logged'
+        log_message_translation = 'A message to be logged in Chinese'
+        translations = {log_message: log_message_translation}
+        translations_map = {'zh_CN': translations}
+        translator = fakes.FakeTranslations.translator(translations_map)
+        mock_translation.side_effect = translator
 
-        self.logger.info(message)
+        msg = gettextutils.Message(log_message)
 
-        self.assertTrue(self.emit_called)
+        self.logger.info(msg)
+        self.assertIn(log_message_translation, self.stream.getvalue())
 
-    def test_emit_nonmessage(self):
-        msgid = 'Some logrecord message.'
-        self.emit_called = False
+    @mock.patch('gettext.translation')
+    def test_emit_translated_message_with_args(self, mock_translation):
+        log_message = 'A message to be logged %s'
+        log_message_translation = 'A message to be logged in Chinese %s'
+        log_arg = 'Arg to be logged'
+        log_arg_translation = 'An arg to be logged in Chinese'
 
-        def emit(record):
-            self.assertEqual(record.msg, msgid)
-            self.assertFalse(isinstance(record.msg,
-                                        gettextutils.Message))
-            self.emit_called = True
-        self.stubs.Set(self.buffer_handler, 'emit', emit)
+        translations = {log_message: log_message_translation,
+                        log_arg: log_arg_translation}
+        translations_map = {'zh_CN': translations}
+        translator = fakes.FakeTranslations.translator(translations_map)
+        mock_translation.side_effect = translator
 
-        self.logger.info(msgid)
+        msg = gettextutils.Message(log_message)
+        arg = gettextutils.Message(log_arg)
 
-        self.assertTrue(self.emit_called)
+        self.logger.info(msg, arg)
+        self.assertIn(log_message_translation % log_arg_translation,
+                      self.stream.getvalue())
+
+    @mock.patch('gettext.translation')
+    def test_emit_translated_message_with_named_args(self, mock_translation):
+        log_message = 'A message to be logged %(arg1)s $(arg2)s'
+        log_message_translation = 'Chinese msg to be logged %(arg1)s $(arg2)s'
+        log_arg_1 = 'Arg1 to be logged'
+        log_arg_1_translation = 'Arg1 to be logged in Chinese'
+        log_arg_2 = 'Arg2 to be logged'
+        log_arg_2_translation = 'Arg2 to be logged in Chinese'
+
+        translations = {log_message: log_message_translation,
+                        log_arg_1: log_arg_1_translation,
+                        log_arg_2: log_arg_2_translation}
+        translations_map = {'zh_CN': translations}
+        translator = fakes.FakeTranslations.translator(translations_map)
+        mock_translation.side_effect = translator
+
+        msg = gettextutils.Message(log_message)
+        arg_1 = gettextutils.Message(log_arg_1)
+        arg_2 = gettextutils.Message(log_arg_2)
+
+        self.logger.info(msg, {'arg1': arg_1, 'arg2': arg_2})
+        translation = log_message_translation % {'arg1': log_arg_1_translation,
+                                                 'arg2': log_arg_2_translation}
+        self.assertIn(translation, self.stream.getvalue())
 
 
 class SomeObject(object):
