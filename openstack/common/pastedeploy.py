@@ -48,7 +48,7 @@ class BasePasteFactory(object):
           key =
               value
 
-        then ConfigParser returns a value with a leading newline, so
+        then configparser returns a value with a leading newline, so
         we strip() the value before using it.
         """
         mod_str, _sep, class_str = local_conf[self.KEY].strip().rpartition(':')

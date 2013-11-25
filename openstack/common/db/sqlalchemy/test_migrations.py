@@ -16,12 +16,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import ConfigParser
 import functools
 import os
 import urlparse
 
 import lockfile
+from six import moves
 import sqlalchemy
 import sqlalchemy.exc
 
@@ -132,13 +132,13 @@ class BaseMigrationTestCase(test.BaseTestCase):
         # once. No need to re-run this on each test...
         LOG.debug('config_path is %s' % self.CONFIG_FILE_PATH)
         if os.path.exists(self.CONFIG_FILE_PATH):
-            cp = ConfigParser.RawConfigParser()
+            cp = moves.configparser.RawConfigParser()
             try:
                 cp.read(self.CONFIG_FILE_PATH)
                 defaults = cp.defaults()
                 for key, value in defaults.items():
                     self.test_databases[key] = value
-            except ConfigParser.ParsingError as e:
+            except moves.configparser.ParsingError as e:
                 self.fail("Failed to read test_migrations.conf config "
                           "file. Got error: %s" % e)
         else:
