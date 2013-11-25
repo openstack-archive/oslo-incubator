@@ -3,6 +3,7 @@ discover
 fixtures>=0.3.14
 flake8==2.0
 hacking>=0.5.6,<0.8
+ibm_db_sa>=0.3.0
 mock>=1.0
 mox>=0.5.3
 MySQL-python
