@@ -504,55 +504,6 @@ class MessageTestCase(test.BaseTestCase):
         self.assertEqual(default_translation, msg.translate('XX'))
 
 
-class LocaleHandlerTestCase(test.BaseTestCase):
-
-    def setUp(self):
-        super(LocaleHandlerTestCase, self).setUp()
-        self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
-
-        def _message_with_domain(msg):
-            return gettextutils.Message(msg)
-
-        self.buffer_handler = logging.handlers.BufferingHandler(40)
-        self.locale_handler = gettextutils.LocaleHandler(
-            'zh_CN', self.buffer_handler)
-        self.logger = logging.getLogger('localehander_logger')
-        self.logger.propogate = False
-        self.logger.setLevel(logging.DEBUG)
-        self.logger.addHandler(self.locale_handler)
-
-    def test_emit_message(self):
-        msgid = 'Some logrecord message.'
-        message = gettextutils.Message(msgid)
-        self.emit_called = False
-
-        def emit(record):
-            self.assertEqual(record.msg.translate('zh_CN'), msgid)
-            self.assertTrue(isinstance(record.msg,
-                                       gettextutils.Message))
-            self.emit_called = True
-        self.stubs.Set(self.buffer_handler, 'emit', emit)
-
-        self.logger.info(message)
-
-        self.assertTrue(self.emit_called)
-
-    def test_emit_nonmessage(self):
-        msgid = 'Some logrecord message.'
-        self.emit_called = False
-
-        def emit(record):
-            self.assertEqual(record.msg, msgid)
-            self.assertFalse(isinstance(record.msg,
-                                        gettextutils.Message))
-            self.emit_called = True
-        self.stubs.Set(self.buffer_handler, 'emit', emit)
-
-        self.logger.info(msgid)
-
-        self.assertTrue(self.emit_called)
-
-
 class SomeObject(object):
 
     def __init__(self, message):
