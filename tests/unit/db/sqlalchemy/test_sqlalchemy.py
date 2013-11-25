@@ -257,21 +257,14 @@ class OperationalError(Exception):
 class ProgrammingError(Exception):
     pass
 
-
-class FakeDB2Engine(object):
-
-    class Dialect():
-
-        def is_disconnect(self, e, *args):
-            expected_error = ('SQL30081N: DB2 Server connection is no longer '
-                              'active')
-            return (str(e) == expected_error)
-
-    dialect = Dialect()
-    name = 'ibm_db_sa'
+paramstyle = 'qmark'
 
 
 class TestDBDisconnected(test.BaseTestCase):
+
+    @classmethod
+    def fake_dbapi(cls):
+        return sys.modules[__name__]
 
     def _test_ping_listener_disconnected(self, connection):
         engine_args = {
@@ -305,13 +298,8 @@ class TestDBDisconnected(test.BaseTestCase):
                                    'connection is no longer active')
         with mock.patch.object(FakeCursor, 'execute',
                                side_effect=fake_execute):
-            # TODO(dperaza): Need a fake engine for db2 since ibm_db_sa is not
-            # in global requirements. Change this code to use real IBM db2
-            # engine as soon as ibm_db_sa is included in global-requirements
-            # under openstack/requirements project.
-            fake_create_engine = lambda *args, **kargs: FakeDB2Engine()
-            with mock.patch.object(sqlalchemy, 'create_engine',
-                                   side_effect=fake_create_engine):
+            with mock.patch('ibm_db_sa.ibm_db.DB2Dialect_ibm_db.dbapi',
+                            TestDBDisconnected.fake_dbapi):
                 connection = ('ibm_db_sa://db2inst1:openstack@fakehost:50000'
                               '/fakedab')
                 self._test_ping_listener_disconnected(connection)
