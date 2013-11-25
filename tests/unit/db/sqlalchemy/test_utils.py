@@ -450,7 +450,7 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
             s = test_table.select().order_by(test_table.c.id)
             rows = engine.execute(s).fetchall()
 
-            for i in xrange(0, len(values)):
+            for i in range(0, len(values)):
                 v = values[i]
                 self.assertEqual((v['id'], v['a'], v['foo']), rows[i])
 
@@ -508,7 +508,7 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
         s = test_table.select().order_by(test_table.c.id)
         rows = engine.execute(s).fetchall()
 
-        for i in xrange(0, len(values)):
+        for i in range(0, len(values)):
             v = values[i]
             self.assertEqual((v['id'], v['a'], v['foo']), rows[i])
 
