@@ -25,7 +25,7 @@ Usual usage in an openstack.common module:
 import copy
 import gettext
 import locale
-import logging
+from logging import handlers
 import os
 import re
 
@@ -85,11 +85,6 @@ def install(domain, lazy=False):
         # messages in OpenStack. We override the standard _() function
         # and % (format string) operation to build Message objects that can
         # later be translated when we have more information.
-        #
-        # Also included below is an example LocaleHandler that translates
-        # Messages to an associated locale, effectively allowing many logs,
-        # each with their own locale.
-
         def _lazy_gettext(msg):
             """Create and return a Message object.
 
@@ -174,19 +169,10 @@ class Message(six.text_type):
             return translated_message
 
         # This Message object may have been formatted with one or more
-        # Message objects as substitution parameters, given either as a single
-        # parameter, part of a tuple, or as one or more values in a dictionary.
+        # Message objects as substitution arguments, given either as a single
+        # argument, part of a tuple, or as one or more values in a dictionary.
         # When translating this Message we need to translate those Messages too
-        if isinstance(self.params, tuple):
-            translated_params = tuple(translate(param, desired_locale)
-                                      for param in self.params)
-        elif isinstance(self.params, dict):
-            translated_params = {}
-            for (param_key, param_value) in six.iteritems(self.params):
-                translated_param = translate(param_value, desired_locale)
-                translated_params[param_key] = translated_param
-        else:
-            translated_params = translate(self.params, desired_locale)
+        translated_params = _translate_args(self.params, desired_locale)
 
         translated_message = translated_message % translated_params
 
@@ -321,28 +307,94 @@ def translate(obj, desired_locale=None):
     return obj
 
 
-class LocaleHandler(logging.Handler):
-    """Handler that can have a locale associated to translate Messages.
+def _translate_args(args, desired_locale=None):
+    """Translates all the translatable elements of the given arguments object.
 
-    A quick example of how to utilize the Message class above.
-    LocaleHandler takes a locale and a target logging.Handler object
-    to forward LogRecord objects to after translating the internal Message.
+    This method is used for translating the translatable values in method
+    arguments which include values of tuples or dictionaries.
+    If the object is not a tuple or a dictionary the object itself is
+    translated if it is translatable.
+
+    If the locale is None the object is translated to the system locale.
+
+    :param args: the args to translate
+    :param desired_locale: the locale to translate the args to, if None the
+                           default system locale will be used
+    :returns: a new args object with the translated contents of the original
+    """
+    if isinstance(args, tuple):
+        return tuple(translate(v, desired_locale) for v in args)
+    if isinstance(args, dict):
+        translated_dict = {}
+        for (k, v) in six.iteritems(args):
+            translated_v = translate(v, desired_locale)
+            translated_dict[k] = translated_v
+        return translated_dict
+    return translate(args, desired_locale)
+
+
+class TranslationHandler(handlers.MemoryHandler):
+    """Handler that translates records before logging them.
+
+    The TranslationHandler takes a locale and a target logging.Handler object
+    to forward LogRecord objects to after translating them. This handler
+    depends on Message objects being logged, instead of regular strings.
+
+    The handler can be configured declaratively in the logging.conf as follows:
+
+        [handlers]
+        keys = translatedlog, translator
+
+        [handler_translatedlog]
+        class = handlers.WatchedFileHandler
+        args = ('/var/log/api-localized.log',)
+        formatter = context
+
+        [handler_translator]
+        class = openstack.common.log.TranslationHandler
+        target = translatedlog
+        args = ('zh_CN',)
+
+    If the specified locale is not available in the system, the handler will
+    log in the default locale.
     """
 
-    def __init__(self, locale, target):
-        """Initialize a LocaleHandler
+    def __init__(self, locale=None, target=None):
+        """Initialize a TranslationHandler
 
         :param locale: locale to use for translating messages
         :param target: logging.Handler object to forward
                        LogRecord objects to after translation
         """
-        logging.Handler.__init__(self)
+        # NOTE(luisg): In order to allow this handler to be a wrapper for
+        # other handlers, such as a FileHandler, and still be able to
+        # configure it using logging.conf, this handler has to extend
+        # MemoryHandler because only the MemoryHandlers' logging.conf
+        # parsing is implemented such that it accepts a target handler.
+        handlers.MemoryHandler.__init__(self, capacity=0, target=target)
         self.locale = locale
-        self.target = target
+
+    def setFormatter(self, fmt):
+        self.target.setFormatter(fmt)
 
     def emit(self, record):
-        if isinstance(record.msg, Message):
-            # set the locale and resolve to a string
-            record.msg.locale = self.locale
+        # We save the message from the original record to restore it
+        # after translation, so other handlers are not affected by this
+        original_msg = record.msg
+        original_args = record.args
+
+        try:
+            self._translate_and_log_record(record)
+        finally:
+            record.msg = original_msg
+            record.args = original_args
+
+    def _translate_and_log_record(self, record):
+        record.msg = translate(record.msg, self.locale)
+
+        # In addition to translating the message, we also need to translate
+        # arguments that were passed to the log method that were not part
+        # of the main message e.g., log.info(_('Some message %s'), this_one))
+        record.args = _translate_args(record.args, self.locale)
 
         self.target.emit(record)
