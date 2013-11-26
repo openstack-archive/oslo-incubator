@@ -48,8 +48,9 @@ INFO = 'INFO'
 ERROR = 'ERROR'
 CRITICAL = 'CRITICAL'
 DEBUG = 'DEBUG'
+SAMPLE = 'SAMPLE'
 
-log_levels = (DEBUG, WARN, INFO, ERROR, CRITICAL)
+log_levels = (DEBUG, WARN, INFO, ERROR, CRITICAL, SAMPLE)
 
 
 class BadPriorityException(Exception):
@@ -98,8 +99,9 @@ def notify(context, publisher_id, event_type, priority, payload):
     :param publisher_id: the source worker_type.host of the message
     :param event_type:   the literal type of event (ex. Instance Creation)
     :param priority:     patterned after the enumeration of Python logging
-                         levels in the set (DEBUG, WARN, INFO, ERROR, CRITICAL)
-    :param payload:       A python dictionary of attributes
+                         levels in the set (DEBUG, WARN, INFO, ERROR, CRITICAL,
+                         SAMPLE)
+    :param payload:      A python dictionary of attributes
 
     Outgoing message format includes the above parameters, and appends the
     following:
