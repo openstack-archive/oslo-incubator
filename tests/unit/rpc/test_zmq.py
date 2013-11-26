@@ -19,12 +19,12 @@ Unit Tests for remote procedure calls using zeromq
 import eventlet
 eventlet.monkey_patch()
 
-import itertools
 import logging
 import os
 import socket
 
 import fixtures
+from six import moves
 
 from openstack.common.fixture import config
 from openstack.common.fixture import moxstubout
@@ -102,8 +102,7 @@ class _RpcZmqBaseTestCase(common.BaseRpcTestCase):
         tmp_topic = self.topic_nested
 
         # All OS path separators
-        badchars = itertools.ifilter(None,
-                                     set((os.sep, os.altsep, '/', '\\')))
+        badchars = moves.filter(None, set((os.sep, os.altsep, '/', '\\')))
         for char in badchars:
             self.topic_nested = char.join(('hello', 'world'))
             try:
