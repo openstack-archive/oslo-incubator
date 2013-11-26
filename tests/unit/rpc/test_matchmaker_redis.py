@@ -15,6 +15,7 @@
 import logging
 
 import eventlet
+from six import moves
 
 from openstack.common.fixture import config
 from openstack.common import importutils
@@ -129,4 +130,4 @@ class MatchMakerRedisTestCase(test.BaseTestCase):
         """Try initializing an object without redis."""
         matchmaker.redis = None
         self.assertRaises(ImportError, matchmaker.MatchMakerRedis)
-        reload(matchmaker)
+        moves.reload_module(matchmaker)

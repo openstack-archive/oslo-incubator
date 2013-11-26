@@ -361,7 +361,7 @@ class TestJinjaView(utils.BaseTestCase):
         super(TestJinjaView, self).setUp()
         self.model = base_model.ReportModel(data={'int': 1, 'string': 'value'})
 
-    @mock.patch('__builtin__.open', new=MM_OPEN)
+    @mock.patch('six.moves.builtins.open', new=MM_OPEN)
     def test_load_from_file(self):
         self.model.attached_view = jv.JinjaView(path='a/b/c/d.jinja.txt')
 
