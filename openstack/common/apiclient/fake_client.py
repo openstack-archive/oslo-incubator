@@ -25,11 +25,11 @@ places where actual behavior differs from the spec.
 # pylint: disable=W0102
 
 import json
-import urlparse
 
 import requests
 
 from openstack.common.apiclient import client
+from openstack.common.py3kcompat import urlutils
 
 
 def assert_has_keys(dct, required=[], optional=[]):
@@ -144,7 +144,7 @@ class FakeHTTPClient(client.HTTPClient):
                                  "text": fixture[1]})
 
         # Call the method
-        args = urlparse.parse_qsl(urlparse.urlparse(url)[4])
+        args = urlutils.parse_qsl(urlutils.urlparse(url)[4])
         kwargs.update(args)
         munged_url = url.rsplit('?', 1)[0]
         munged_url = munged_url.strip('/').replace('/', '_').replace('.', '_')
