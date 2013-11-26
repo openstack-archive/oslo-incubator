@@ -17,6 +17,8 @@
 import ConfigParser
 import functools
 import os
+import subprocess
+import urlparse
 
 import lockfile
 import sqlalchemy
@@ -24,8 +26,6 @@ import sqlalchemy.exc
 
 from openstack.common.gettextutils import _
 from openstack.common import log as logging
-from openstack.common import processutils
-from openstack.common.py3kcompat import urlutils
 from openstack.common import test
 
 LOG = logging.getLogger(__name__)
@@ -158,10 +158,11 @@ class BaseMigrationTestCase(test.BaseTestCase):
         super(BaseMigrationTestCase, self).tearDown()
 
     def execute_cmd(self, cmd=None):
-        out, err = processutils.trycmd(cmd, shell=True, discard_warnings=True)
-        output = out or err
+        process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT)
+        output = process.communicate()[0]
         LOG.debug(output)
-        self.assertEqual('', err,
+        self.assertEqual(0, process.returncode,
                          "Failed to run: %s\n%s" % (cmd, output))
 
     @_set_db_lock('pgadmin', 'tests-')
