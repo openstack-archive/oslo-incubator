@@ -17,6 +17,7 @@
 import ConfigParser
 import functools
 import os
+import subprocess
 import urlparse
 
 import lockfile
@@ -25,7 +26,6 @@ import sqlalchemy.exc
 
 from openstack.common.gettextutils import _
 from openstack.common import log as logging
-from openstack.common import processutils
 from openstack.common import test
 
 LOG = logging.getLogger(__name__)
@@ -158,7 +158,9 @@ class BaseMigrationTestCase(test.BaseTestCase):
         super(BaseMigrationTestCase, self).tearDown()
 
     def execute_cmd(self, cmd=None):
-        out, err = processutils.trycmd(cmd, shell=True, discard_warnings=True)
+        process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+        out, err = process.communicate()
         output = out or err
         LOG.debug(output)
         self.assertEqual('', err,
