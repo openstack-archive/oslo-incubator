@@ -16,6 +16,7 @@
 import warnings
 
 from migrate.changeset import UniqueConstraint
+from six import moves
 import sqlalchemy
 from sqlalchemy.dialects import mysql
 from sqlalchemy import Boolean, Index, Integer, DateTime, String
@@ -448,7 +449,7 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
             s = test_table.select().order_by(test_table.c.id)
             rows = engine.execute(s).fetchall()
 
-            for i in xrange(0, len(values)):
+            for i in moves.range(0, len(values)):
                 v = values[i]
                 self.assertEqual((v['id'], v['a'], v['foo']), rows[i])
 
@@ -506,7 +507,7 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
         s = test_table.select().order_by(test_table.c.id)
         rows = engine.execute(s).fetchall()
 
-        for i in xrange(0, len(values)):
+        for i in moves.range(0, len(values)):
             v = values[i]
             self.assertEqual((v['id'], v['a'], v['foo']), rows[i])
 
