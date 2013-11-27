@@ -61,6 +61,8 @@ class TestResponse(requests.Response):
             else:
                 self._content = text
                 default_headers = {}
+            if isinstance(self._content, str):
+                self._content = self._content.encode('utf-8')
             self.headers = data.get('headers') or default_headers
         else:
             self.status_code = data

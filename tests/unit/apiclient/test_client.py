@@ -20,6 +20,7 @@ import requests
 from openstack.common.apiclient import auth
 from openstack.common.apiclient import client
 from openstack.common.apiclient import exceptions
+from openstack.common.apiclient import fake_client
 from openstack.common import test
 
 
@@ -102,6 +103,23 @@ class ClientTest(test.BaseTestCase):
             http_client.client_request(
                 test_client, "GET", "/resource"),
             "GET /endpoint-1/resource")
+
+
+class FakeClientTest(test.BaseTestCase):
+    def test_fake_client_request(self):
+        fixtures = {
+            '/endpoint/resource': {
+                'GET': (
+                    {},
+                    {'foo': 'bar'}
+                )
+            }
+        }
+
+        fake_http_client = fake_client.FakeHTTPClient(fixtures=fixtures)
+        test_client = TestClient(fake_http_client)
+        resp = test_client.get('/endpoint/resource')
+        self.assertEqual(resp.status_code, 200)
 
 
 class FakeClient1(object):
