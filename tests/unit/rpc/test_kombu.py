@@ -292,9 +292,9 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         def _callback2(message):
             self.received_message_2 = message
 
-        conn.declare_topic_consumer('a_topic', _callback1, queue_name='queue1',
+        conn.declare_topic_consumer('a_topic', _callback1, queue_name='queue1m',
                                     exchange_name="abc")
-        conn.declare_topic_consumer('a_topic', _callback2, queue_name='queue2',
+        conn.declare_topic_consumer('a_topic', _callback2, queue_name='queue2m',
                                     exchange_name="abc")
         conn.topic_send('a_topic', rpc_common.serialize_msg(message))
         conn.consume(limit=2)
@@ -321,9 +321,9 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
         def _callback2(message):
             self.received_message_2 = message
 
-        conn.declare_topic_consumer('a_topic', _callback1, queue_name='queue1',
+        conn.declare_topic_consumer('a_topic', _callback1, queue_name='queue1b',
                                     exchange_name="abc")
-        conn.declare_topic_consumer('a_topic', _callback2, queue_name='queue2',
+        conn.declare_topic_consumer('a_topic', _callback2, queue_name='queue2b',
                                     exchange_name="def")
         conn.topic_send('a_topic', rpc_common.serialize_msg(message))
         conn.consume(limit=2)
