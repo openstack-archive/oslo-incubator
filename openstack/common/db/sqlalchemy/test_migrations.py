@@ -166,7 +166,6 @@ class BaseMigrationTestCase(test.BaseTestCase):
         self.assertEqual('', err,
                          "Failed to run: %s\n%s" % (cmd, output))
 
-    @_set_db_lock('pgadmin', 'tests-')
     def _reset_pg(self, conn_pieces):
         (user, password, database, host) = get_db_connection_info(conn_pieces)
         os.environ['PGPASSWORD'] = password
@@ -188,6 +187,7 @@ class BaseMigrationTestCase(test.BaseTestCase):
         os.unsetenv('PGPASSWORD')
         os.unsetenv('PGUSER')
 
+    @_set_db_lock(lock_prefix='migration_tests-')
     def _reset_databases(self):
         for key, engine in self.engines.items():
             conn_string = self.test_databases[key]
