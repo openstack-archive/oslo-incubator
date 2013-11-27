@@ -59,12 +59,6 @@ M: Gordon Chung <chungg@ca.ibm.com>
 S: Maintained
 F: middleware/audit.py
 
-== authutils ==
-
-M:
-S: Orphan
-F: authutils.py
-
 == cfg ==
 
 M: Mark McLoughlin <markmc@redhat.com>
