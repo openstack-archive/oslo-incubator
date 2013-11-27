@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+#
 # Copyright 2012 OpenStack Foundation
 # All Rights Reserved.
 #
@@ -20,6 +22,7 @@ import requests
 from openstack.common.apiclient import auth
 from openstack.common.apiclient import client
 from openstack.common.apiclient import exceptions
+from openstack.common.apiclient import fake_client
 from openstack.common import test
 
 
@@ -102,6 +105,37 @@ class ClientTest(test.BaseTestCase):
             http_client.client_request(
                 test_client, "GET", "/resource"),
             "GET /endpoint-1/resource")
+
+
+class FakeClientTest(test.BaseTestCase):
+
+    def setUp(self):
+        super(FakeClientTest, self).setUp()
+        fixtures = {
+            '/endpoint/resource': {
+                'GET': (
+                    {},
+                    {'foo': u'bär'}
+                )
+            }
+        }
+        fake_http_client = fake_client.FakeHTTPClient(fixtures=fixtures)
+        self.test_client = TestClient(fake_http_client)
+
+    def test_fake_client_request(self):
+        resp = self.test_client.get('/endpoint/resource')
+        self.assertEqual(resp.status_code, 200)
+        resp_data = resp.json()
+        self.assertEqual(u'bär', resp_data['foo'])
+
+    def test_fake_client_encode(self):
+        def guess_json_utf(data):
+            self.assertIsInstance(data, bytes)
+            return 'utf-8'
+
+        with mock.patch("requests.utils.guess_json_utf", guess_json_utf):
+            resp = self.test_client.get('/endpoint/resource')
+            self.assertEqual(resp.status_code, 200)
 
 
 class FakeClient1(object):
