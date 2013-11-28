@@ -16,6 +16,7 @@
 import warnings
 
 from migrate.changeset import UniqueConstraint
+import six
 from six import moves
 import sqlalchemy
 from sqlalchemy.dialects import mysql
@@ -281,7 +282,7 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
             }
 
             index_instances = [Index(name, *columns)
-                               for name, columns in indexes.iteritems()]
+                               for name, columns in six.iteritems(indexes)]
 
             table = Table(table_name, meta,
                           Column('id', Integer, primary_key=True),

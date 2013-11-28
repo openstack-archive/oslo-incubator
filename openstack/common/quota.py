@@ -73,7 +73,7 @@ class QuotaException(Exception):
                 # kwargs doesn't match a variable in the message
                 # log the issue and the kwargs
                 LOG.exception(_('Exception in string format operation'))
-                for name, value in kwargs.iteritems():
+                for name, value in six.iteritems(kwargs):
                     LOG.error("%s: %s" % (name, value))
                 # at least get the core message out if something happened
                 message = self.msg_fmt
@@ -306,7 +306,7 @@ class DbQuotaDriver(object):
             context, project_id, user_id)
         # Use the project quota for default user quota.
         proj_quotas = self.db.quota_get_all_by_project(context, project_id)
-        for key, value in proj_quotas.iteritems():
+        for key, value in six.iteritems(proj_quotas):
             if key not in user_quotas:
                 user_quotas[key] = value
         user_usages = None

@@ -16,6 +16,8 @@
 Fakes For filters tests.
 """
 
+import six
+
 
 class FakeHostManager(object):
     """Defines fake hosts.
@@ -45,5 +47,5 @@ class FakeHostManager(object):
 
 class FakeHostState(object):
     def __init__(self, host, attribute_dict):
-        for (key, val) in attribute_dict.iteritems():
+        for (key, val) in six.iteritems(attribute_dict):
             setattr(self, key, val)
