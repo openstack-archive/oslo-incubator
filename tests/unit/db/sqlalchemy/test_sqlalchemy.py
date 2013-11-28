@@ -227,3 +227,24 @@ class SlaveBackendTestCase(test.BaseTestCase):
     def test_slave_backend_nomatch(self):
         session.CONF.database.slave_connection = "mysql:///localhost"
         self.assertRaises(AssertionError, session._assert_matching_drivers)
+
+
+class ExtraKeysModel(BASE, models.ModelBase):
+    __tablename__ = 'test_model'
+    __extra_keys__ = ['name']
+    id = Column(Integer, primary_key=True)
+    smth = Column(String(255))
+
+    @property
+    def name(self):
+        return 'NAME'
+
+
+class TestModelWithExtraKeys(test_base.DbTestCase):
+
+    def test_model_with_extra_keys(self):
+        item = ExtraKeysModel()
+        data = dict(item)
+        self.assertEqual(data, {'smth': None,
+                                'id': None,
+                                'name': 'NAME'})

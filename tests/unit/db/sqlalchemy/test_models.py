@@ -70,6 +70,28 @@ class ModelBaseTest(test.BaseTestCase):
 
         self.assertEqual(min_items, found_items)
 
+    def test_extra_keys_empty(self):
+        """Test verifies that when extra_keys not defined
+        empty list will be returned
+        """
+        mb = models.ModelBase()
+        self.assertEqual(mb._extra_keys, [])
+
+    def test_extra_keys_defined(self):
+        """Test verifies that extra_keys works nicely with properties
+        """
+        mde = ModelDefinedExtra()
+        self.assertEqual(mde._extra_keys, ['test'])
+
+
+class ModelDefinedExtra(models.ModelBase):
+
+    __extra_keys__ = ['test']
+
+    @property
+    def test(self):
+        return 'tested'
+
 
 class TimestampMixinTest(test.BaseTestCase):
 

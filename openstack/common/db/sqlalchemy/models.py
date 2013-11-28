@@ -34,6 +34,8 @@ class ModelBase(object):
     """Base class for models."""
     __table_initialized__ = False
 
+    __extra_keys__ = []
+
     def save(self, session=None):
         """Save this object."""
         if not session:
@@ -59,15 +61,16 @@ class ModelBase(object):
     def get(self, key, default=None):
         return getattr(self, key, default)
 
-    def _get_extra_keys(self):
-        return []
+    @property
+    def _extra_keys(self):
+        return self.__extra_keys__
 
     def __iter__(self):
         columns = dict(object_mapper(self).columns).keys()
         # NOTE(russellb): Allow models to specify other keys that can be looked
         # up, beyond the actual db columns.  An example would be the 'name'
         # property for an Instance.
-        columns.extend(self._get_extra_keys())
+        columns.extend(self._extra_keys)
         self._i = iter(columns)
         return self
 
