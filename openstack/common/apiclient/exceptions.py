@@ -60,6 +60,11 @@ class AuthorizationFailure(ClientException):
     pass
 
 
+class ConnectionRefused(ClientException):
+    """ Cannot connect to API service. """
+    pass
+
+
 class AuthPluginOptionsMissing(AuthorizationFailure):
     """Auth plugin misses some options."""
     def __init__(self, opt_names):
