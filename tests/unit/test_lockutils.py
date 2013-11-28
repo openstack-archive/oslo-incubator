@@ -25,6 +25,7 @@ from eventlet import greenpool
 from eventlet import greenthread
 from eventlet import semaphore
 from oslo.config import cfg
+from six import moves
 
 from openstack.common.fixture import config
 from openstack.common.fixture import lockutils as fixtures
@@ -332,7 +333,7 @@ class LockutilsModuleTestCase(test.BaseTestCase):
 
     def _lock_path_conf_test(self, lock_dir):
         cfg.CONF.unregister_opts(lockutils.util_opts)
-        lockutils_ = reload(lockutils)
+        lockutils_ = moves.reload_module(lockutils)
         with lockutils_.lock('test-lock', external=True):
             if not os.path.exists(lock_dir):
                 os._exit(2)

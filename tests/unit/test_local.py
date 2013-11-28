@@ -15,6 +15,8 @@
 
 import threading
 
+from six import moves
+
 from openstack.common import local
 from openstack.common import test
 
@@ -36,7 +38,7 @@ class LocalStoreTestCase(test.BaseTestCase):
         # testing in (eventlet vs normal python threading) so
         # we test the correct type of local store for the current
         # threading model
-        reload(local)
+        moves.reload_module(local)
 
     def test_thread_unique_storage(self):
         """Make sure local store holds thread specific values."""
