@@ -59,7 +59,12 @@ class ModelBase(object):
     def get(self, key, default=None):
         return getattr(self, key, default)
 
-    def _get_extra_keys(self):
+    @property
+    def _extra_keys(self):
+        """Should be used to add custom fields to object dict-like
+        representation
+        For reference check tests/db/sqlalchemy/test_models.py
+        """
         return []
 
     def __iter__(self):
@@ -67,7 +72,7 @@ class ModelBase(object):
         # NOTE(russellb): Allow models to specify other keys that can be looked
         # up, beyond the actual db columns.  An example would be the 'name'
         # property for an Instance.
-        columns.extend(self._get_extra_keys())
+        columns.extend(self._extra_keys)
         self._i = iter(columns)
         return self
 

@@ -13,11 +13,19 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from sqlalchemy import Column
+from sqlalchemy import Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+
 from openstack.common.db.sqlalchemy import models
 from openstack.common import test
+from tests.unit.db.sqlalchemy import base as test_base
 
 
-class ModelBaseTest(test.BaseTestCase):
+BASE = declarative_base()
+
+
+class ModelBaseTest(test_base.DbTestCase):
 
     def test_modelbase_has_dict_methods(self):
         dict_methods = ('__getitem__',
@@ -69,6 +77,38 @@ class ModelBaseTest(test.BaseTestCase):
             found_items += 1
 
         self.assertEqual(min_items, found_items)
+
+    def test_extra_keys_empty(self):
+        """Test verifies that by default extra_keys return empty list"""
+        mb = models.ModelBase()
+        self.assertEqual(mb._extra_keys, [])
+
+    def test_extra_keys_defined(self):
+        """Property _extra_keys will return list with attributes names"""
+        ekm = ExtraKeysModel()
+        self.assertEqual(ekm._extra_keys, ['name'])
+
+    def test_model_with_extra_keys(self):
+        item = ExtraKeysModel()
+        data = dict(item)
+        self.assertEqual(data, {'smth': None,
+                                'id': None,
+                                'name': 'NAME'})
+
+
+class ExtraKeysModel(BASE, models.ModelBase):
+    __tablename__ = 'test_model'
+
+    id = Column(Integer, primary_key=True)
+    smth = Column(String(255))
+
+    @property
+    def name(self):
+        return 'NAME'
+
+    @property
+    def _extra_keys(self):
+        return ['name']
 
 
 class TimestampMixinTest(test.BaseTestCase):
