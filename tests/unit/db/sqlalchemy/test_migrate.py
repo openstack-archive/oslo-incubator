@@ -13,7 +13,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-
 from migrate.changeset.constraint import UniqueConstraint
 from migrate.changeset.databases import sqlite
 import sqlalchemy as sa
