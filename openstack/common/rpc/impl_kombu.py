@@ -26,6 +26,7 @@ import kombu.connection
 import kombu.entity
 import kombu.messaging
 from oslo.config import cfg
+import six
 
 from openstack.common import excutils
 from openstack.common.gettextutils import _  # noqa
@@ -444,7 +445,7 @@ class Connection(object):
                 'virtual_host': self.conf.rabbit_virtual_host,
             }
 
-            for sp_key, value in server_params.iteritems():
+            for sp_key, value in six.iteritems(server_params):
                 p_key = server_params_to_kombu_params.get(sp_key, sp_key)
                 params[p_key] = value
 

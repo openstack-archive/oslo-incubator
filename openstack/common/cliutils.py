@@ -173,7 +173,7 @@ def print_dict(dct, dict_property="Property", wrap=0):
     """
     pt = prettytable.PrettyTable([dict_property, 'Value'], caching=False)
     pt.align = 'l'
-    for k, v in dct.iteritems():
+    for k, v in six.iteritems(dct):
         # convert dict to str to check length
         if isinstance(v, dict):
             v = str(v)
