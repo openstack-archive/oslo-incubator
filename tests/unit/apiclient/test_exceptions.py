@@ -13,6 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import six
+
 from openstack.common.apiclient import exceptions
 from openstack.common import test
 
@@ -21,7 +23,7 @@ class FakeResponse(object):
     json_data = {}
 
     def __init__(self, **kwargs):
-        for key, value in kwargs.iteritems():
+        for key, value in six.iteritems(kwargs):
             setattr(self, key, value)
 
     def json(self):
