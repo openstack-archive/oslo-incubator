@@ -89,7 +89,7 @@ def load_plugin_from_args(args):
         plugin.sufficient_options()
         return plugin
 
-    for plugin_auth_system in sorted(_discovered_plugins.iterkeys()):
+    for plugin_auth_system in sorted(six.iterkeys(_discovered_plugins)):
         plugin_class = _discovered_plugins[plugin_auth_system]
         plugin = plugin_class()
         plugin.parse_opts(args)

@@ -26,6 +26,7 @@ import kombu.connection
 import kombu.entity
 import kombu.messaging
 from oslo.config import cfg
+import six
 
 from openstack.common import excutils
 from openstack.common.gettextutils import _  # noqa
@@ -623,7 +624,7 @@ class Connection(object):
 
         def _declare_consumer():
             consumer = consumer_cls(self.conf, self.channel, topic, callback,
-                                    self.consumer_num.next())
+                                    six.next(self.consumer_num))
             self.consumers.append(consumer)
             return consumer
 
@@ -730,7 +731,7 @@ class Connection(object):
         it = self.iterconsume(limit=limit)
         while True:
             try:
-                it.next()
+                six.next(it)
             except StopIteration:
                 return
 

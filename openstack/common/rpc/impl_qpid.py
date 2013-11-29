@@ -21,6 +21,7 @@ import uuid
 import eventlet
 import greenlet
 from oslo.config import cfg
+import six
 
 from openstack.common import excutils
 from openstack.common.gettextutils import _  # noqa
@@ -537,7 +538,7 @@ class Connection(object):
             consumers = self.consumers
             self.consumers = {}
 
-            for consumer in consumers.itervalues():
+            for consumer in six.itervalues(consumers):
                 consumer.reconnect(self.session)
                 self._register_consumer(consumer)
 
@@ -695,7 +696,7 @@ class Connection(object):
         it = self.iterconsume(limit=limit)
         while True:
             try:
-                it.next()
+                six.next(it)
             except StopIteration:
                 return
 
