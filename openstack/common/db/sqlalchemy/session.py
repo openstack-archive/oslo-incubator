@@ -481,7 +481,11 @@ def _raise_if_duplicate_entry_error(integrity_error, engine_name):
     # SQLAlchemy can differ when using unicode() and accessing .message.
     # An audit across all three supported engines will be necessary to
     # ensure there are no regressions.
-    m = _DUP_KEY_RE_DB[engine_name].match(integrity_error.message)
+    if hasattr(integrity_error, 'message'):
+        message = integrity_error.message
+    else:
+        message = six.text_type(integrity_error)
+    m = _DUP_KEY_RE_DB[engine_name].match(message)
     if not m:
         return
     columns = m.group(1)
@@ -518,7 +522,11 @@ def _raise_if_deadlock_error(operational_error, engine_name):
     # SQLAlchemy can differ when using unicode() and accessing .message.
     # An audit across all three supported engines will be necessary to
     # ensure there are no regressions.
-    m = re.match(operational_error.message)
+    if hasattr(operational_error, 'message'):
+        message = operational_error.message
+    else:
+        message = six.text_type(operational_error)
+    m = re.match(message)
     if not m:
         return
     raise exception.DBDeadlock(operational_error)
