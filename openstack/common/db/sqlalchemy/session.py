@@ -611,7 +611,7 @@ def _ping_listener(dbapi_conn, connection_rec, connection_proxy):
         dbapi_conn.cursor().execute('select 1')
     except dbapi_conn.OperationalError as ex:
         if ex.args[0] in (2006, 2013, 2014, 2045, 2055):
-            LOG.warn(_('Got mysql server has gone away: %s'), ex)
+            LOG.warning(_('Got mysql server has gone away: %s'), ex)
             raise sqla_exc.DisconnectionError("Database server went away")
         else:
             raise
@@ -693,7 +693,7 @@ def create_engine(sql_connection, sqlite_fk=False):
             remaining = 'infinite'
         while True:
             msg = _('SQL connection failed. %s attempts left.')
-            LOG.warn(msg % remaining)
+            LOG.warning(msg % remaining)
             if remaining != 'infinite':
                 remaining -= 1
             time.sleep(CONF.database.retry_interval)
