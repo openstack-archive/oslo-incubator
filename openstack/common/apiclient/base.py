@@ -24,11 +24,11 @@ Base utilities to build API operation managers and objects on top of.
 # pylint: disable=E1102
 
 import abc
-import urllib
 
 import six
 
 from openstack.common.apiclient import exceptions
+from openstack.common.py3kcompat import urlutils
 from openstack.common import strutils
 
 
@@ -327,7 +327,7 @@ class CrudManager(BaseManager):
         return self._list(
             '%(base_url)s%(query)s' % {
                 'base_url': self.build_url(base_url=base_url, **kwargs),
-                'query': '?%s' % urllib.urlencode(kwargs) if kwargs else '',
+                'query': '?%s' % urlutils.urlencode(kwargs) if kwargs else '',
             },
             self.collection_key)
 
@@ -366,7 +366,7 @@ class CrudManager(BaseManager):
         rl = self._list(
             '%(base_url)s%(query)s' % {
                 'base_url': self.build_url(base_url=base_url, **kwargs),
-                'query': '?%s' % urllib.urlencode(kwargs) if kwargs else '',
+                'query': '?%s' % urlutils.urlencode(kwargs) if kwargs else '',
             },
             self.collection_key)
         num = len(rl)

@@ -15,7 +15,6 @@
 
 import os
 import socket
-import urllib2
 
 import mock
 import routes
@@ -24,6 +23,7 @@ import webob
 
 from openstack.common.deprecated import wsgi
 from openstack.common.fixture import config
+from openstack.common.py3kcompat import urlutils
 from openstack.common import test
 
 TEST_VAR_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__),
@@ -519,7 +519,7 @@ class WSGIServerTest(test.BaseTestCase):
         server = wsgi.Service(hello_world, 0)
         server.start()
 
-        response = urllib2.urlopen('http://127.0.0.1:%d/' % server.port)
+        response = urlutils.urlopen('http://127.0.0.1:%d/' % server.port)
         self.assertEqual(greetings, response.read())
 
         server.stop()
@@ -537,7 +537,7 @@ class WSGIServerTest(test.BaseTestCase):
         server = wsgi.Service(router, 0)
         server.start()
 
-        response = urllib2.urlopen('http://127.0.0.1:%d/v1.0/' % server.port)
+        response = urlutils.urlopen('http://127.0.0.1:%d/v1.0/' % server.port)
         self.assertEqual(greetings, response.read())
 
         server.stop()
@@ -595,7 +595,7 @@ class WSGIServerWithSSLTest(test.BaseTestCase):
         server = wsgi.Service(router, 0, host="127.0.0.1")
         server.start()
 
-        response = urllib2.urlopen('https://127.0.0.1:%d/v1.0/' % server.port)
+        response = urlutils.urlopen('https://127.0.0.1:%d/v1.0/' % server.port)
         self.assertEqual(greetings, response.read())
 
         server.stop()
@@ -618,7 +618,7 @@ class WSGIServerWithSSLTest(test.BaseTestCase):
         server = wsgi.Service(router, 0, host="::1")
         server.start()
 
-        response = urllib2.urlopen('https://[::1]:%d/v1.0/' % server.port)
+        response = urlutils.urlopen('https://[::1]:%d/v1.0/' % server.port)
         self.assertEqual(greetings, response.read())
 
         server.stop()

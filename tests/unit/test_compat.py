@@ -43,6 +43,11 @@ class CompatTestCase(test.BaseTestCase):
         result = urlutils.unquote(fake)
         self.assertEqual(result, '/~connolly/')
 
+    def test_unquote_plus(self):
+        fake = "%7e/abc+def"
+        result = urlutils.unquote_plus(fake)
+        self.assertEqual(result, '~/abc def')
+
     def test_urlparse(self):
         url = 'http://www.yahoo.com'
         result = urlutils.urlparse(url)

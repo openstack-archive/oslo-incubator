@@ -32,6 +32,7 @@ if six.PY3:
     quote = urllib.parse.quote
     parse_qsl = urllib.parse.parse_qsl
     unquote = urllib.parse.unquote
+    unquote_plus = urllib.parse.unquote_plus
     urlparse = urllib.parse.urlparse
     urlsplit = urllib.parse.urlsplit
     urlunsplit = urllib.parse.urlunsplit
@@ -49,6 +50,7 @@ else:
     urlencode = urllib.urlencode
     quote = urllib.quote
     unquote = urllib.unquote
+    unquote_plus = urllib.unquote_plus
 
     parse = urlparse
     parse_qsl = parse.parse_qsl
