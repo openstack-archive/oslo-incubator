@@ -568,13 +568,18 @@ class TestConnectionUtils(test.BaseTestCase):
                                'user': 'wrong',
                                'passwd': 'wrong'}
 
-        self.connect_string = 'mysql+mysqldb://dude:pass@localhost/test'
+        self.connect_string = 'mysql://dude:pass@localhost/test'
 
         self.addCleanup(self.mox.UnsetStubs)
 
     def test_connect_string(self):
         connect_string = utils.get_connect_string(**self.full_credentials)
         self.assertEqual(connect_string, self.connect_string)
+
+    def test_connect_string_sqlite(self):
+        sqlite_credentials = {'backend': 'sqlite', 'database': 'test.db'}
+        connect_string = utils.get_connect_string(**sqlite_credentials)
+        self.assertEqual(connect_string, 'sqlite:///test.db')
 
     def test_is_backend_avail(self):
         self.mox.StubOutWithMock(sqlalchemy.engine.base.Engine, 'connect')
