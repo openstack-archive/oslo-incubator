@@ -210,7 +210,7 @@ F: network_utils.py
 == notifier ==
 
 M: Julien Danjou <julien@danjou.info>
-S: Maintained
+S: Obsolete
 F: notifier/
 F: middleware/notifier.py
 
@@ -255,7 +255,7 @@ F: rootwrap/
 
 M: Mark McLoughlin <markmc@redhat.com>
 M: Russell Bryant <rbryant@redhat.com>
-S: Maintained
+S: Obsolete
 F: rpc/
 
 == scheduler ==
@@ -315,7 +315,7 @@ F: xmlutils.py
 == zmq ==
 
 M: Eric Windisch <eric@cloudscaling.com>
-S: Maintained
+S: Obsolete
 F: rpc/impl_zmq.py
 F: rpc/matchmaker*.py
 F: rpc/zmq_receiver.py
