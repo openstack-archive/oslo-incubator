@@ -31,27 +31,25 @@ from openstack.common import test
 LOG = logging.getLogger(__name__)
 
 
-def _get_connect_string(backend, user, passwd, database):
-    """Get database connection
+def _get_connect_string(backend, database, user=None, passwd=None):
+    """Get database connection string."""
 
-    Try to get a connection with a very specific set of values, if we get
-    these then we'll run the tests, otherwise they are skipped
-    """
-    if backend == "postgres":
-        backend = "postgresql+psycopg2"
-    elif backend == "mysql":
-        backend = "mysql+mysqldb"
+    if backend == 'sqlite':
+        template = '%(backend)s:///%(database)s'
+        args = {'backend': backend, 'database': database}
     else:
-        raise Exception("Unrecognized backend: '%s'" % backend)
-
-    return ("%(backend)s://%(user)s:%(passwd)s@localhost/%(database)s"
-            % {'backend': backend, 'user': user, 'passwd': passwd,
-               'database': database})
+        template = "%(backend)s://%(user)s:%(passwd)s@localhost/%(database)s"
+        args = {'backend': backend,
+                'user': user,
+                'passwd': passwd,
+                'database': database}
+    return template % args
 
 
 def _is_backend_avail(backend, user, passwd, database):
     try:
-        connect_uri = _get_connect_string(backend, user, passwd, database)
+        connect_uri = _get_connect_string(backend=backend, user=user,
+                                          passwd=passwd, database=database)
         engine = sqlalchemy.create_engine(connect_uri)
         connection = engine.connect()
     except Exception:
