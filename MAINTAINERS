@@ -242,7 +242,7 @@ F: quota.py
 == rootwrap ==
 
 M: Thierry Carrez <thierry@openstack.org>
-S: Maintained
+S: Graduating
 F: rootwrap/
 
 == rpc ==
