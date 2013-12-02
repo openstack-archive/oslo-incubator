@@ -32,21 +32,10 @@ LOG = logging.getLogger(__name__)
 
 
 def _get_connect_string(backend, user, passwd, database):
-    """Get database connection
+    """Get database connection string."""
 
-    Try to get a connection with a very specific set of values, if we get
-    these then we'll run the tests, otherwise they are skipped
-    """
-    if backend == "postgres":
-        backend = "postgresql+psycopg2"
-    elif backend == "mysql":
-        backend = "mysql+mysqldb"
-    else:
-        raise Exception("Unrecognized backend: '%s'" % backend)
-
-    return ("%(backend)s://%(user)s:%(passwd)s@localhost/%(database)s"
-            % {'backend': backend, 'user': user, 'passwd': passwd,
-               'database': database})
+    template = "%(backend)s://%(user)s:%(passwd)s@localhost/%(database)s"
+    return template % locals()
 
 
 def _is_backend_avail(backend, user, passwd, database):
