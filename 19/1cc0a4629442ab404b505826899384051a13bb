@@ -1,0 +1,11 @@
+Verified+2: Jenkins
+Code-Review+2: Russell Bryant <rbryant@redhat.com>
+Approved+1: Flavio Percoco <fpercoco@redhat.com>
+Code-Review+2: Flavio Percoco <fpercoco@redhat.com>
+Code-Review+1: Sergey Lukjanov <slukjanov@mirantis.com>
+Code-Review+1: Victor Sergeyev <vsergeyev@mirantis.com>
+Submitted-by: Jenkins
+Submitted-at: Mon, 02 Dec 2013 14:17:00 +0000
+Reviewed-on: https://review.openstack.org/59373
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
