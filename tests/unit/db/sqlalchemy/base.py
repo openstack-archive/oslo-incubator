@@ -125,13 +125,13 @@ class OpportunisticTestCase(DbTestCase):
     FIXTURE = abc.abstractproperty(lambda: None)
 
     def setUp(self):
-        credentials = (
-            self.FIXTURE.DRIVER,
-            self.FIXTURE.USERNAME,
-            self.FIXTURE.PASSWORD,
-            self.FIXTURE.DBNAME)
+        credentials = {
+            'backend': self.FIXTURE.DRIVER,
+            'user': self.FIXTURE.USERNAME,
+            'passwd': self.FIXTURE.PASSWORD,
+            'database': self.FIXTURE.DBNAME}
 
-        if self.FIXTURE.DRIVER and not utils.is_backend_avail(*credentials):
+        if self.FIXTURE.DRIVER and not utils.is_backend_avail(**credentials):
             msg = '%s backend is not available.' % self.FIXTURE.DRIVER
             return self.skip(msg)
 
