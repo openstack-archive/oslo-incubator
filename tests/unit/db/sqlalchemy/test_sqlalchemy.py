@@ -22,6 +22,7 @@ import mock
 import sqlalchemy
 from sqlalchemy import Column, MetaData, Table, UniqueConstraint
 from sqlalchemy import DateTime, Integer, String
+from sqlalchemy import exc as sqla_exc
 from sqlalchemy.ext.declarative import declarative_base
 
 from openstack.common.db import exception as db_exc
@@ -163,6 +164,23 @@ class SessionErrorWrapperTestCase(test_base.DbTestCase):
                 update
             self.assertRaises(db_exc.DBDuplicateEntry,
                               method, {'foo': 20})
+
+    def test_operational_error(self):
+        f = session._raise_if_deadlock_error
+
+        exc = sqla_exc.OperationalError("SELECT *", {}, "(1213, 'Deadlock.")
+        self.assertRaises(db_exc.DBDeadlock, f, exc, "mysql")
+        self.assertIsNone(f(exc, None))
+
+        exc = sqla_exc.OperationalError("SELECT *", {}, "Deadlock.")
+        self.assertIsNone(f(exc, "mysql"))
+
+    def test_integrity_error(self):
+        f = session._raise_if_duplicate_entry_error
+
+        exc = sqla_exc.IntegrityError("SELECT *", {}, "column is not unique")
+        self.assertRaises(db_exc.DBDuplicateEntry, f, exc, "sqlite")
+        self.assertIsNone(f(exc, "mysql"))
 
 
 _REGEXP_TABLE_NAME = _TABLE_NAME + "regexp"
