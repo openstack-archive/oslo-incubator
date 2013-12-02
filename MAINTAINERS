@@ -203,7 +203,7 @@ F: network_utils.py
 == notifier ==
 
 M: Julien Danjou <julien@danjou.info>
-S: Maintained
+S: Obsolete
 F: notifier/
 F: middleware/notifier.py
 
@@ -247,8 +247,7 @@ F: rootwrap/
 == rpc ==
 
 M: Mark McLoughlin <markmc@redhat.com>
-M: Russell Bryant <rbryant@redhat.com>
-S: Maintained
+S: Obsolete
 F: rpc/
 
 == scheduler ==
