@@ -141,9 +141,9 @@ def print_list(objs, fields, formatters=None, sortby_index=0,
     formatters = formatters or {}
     mixed_case_fields = mixed_case_fields or []
     if sortby_index is None:
-        sortby = None
+        kwargs = {}
     else:
-        sortby = fields[sortby_index]
+        kwargs = {'sortby': fields[sortby_index]}
     pt = prettytable.PrettyTable(fields, caching=False)
     pt.align = 'l'
 
@@ -161,7 +161,7 @@ def print_list(objs, fields, formatters=None, sortby_index=0,
                 row.append(data)
         pt.add_row(row)
 
-    print(strutils.safe_encode(pt.get_string(sortby=sortby)))
+    print(strutils.safe_encode(pt.get_string(**kwargs)))
 
 
 def print_dict(dct, dict_property="Property", wrap=0):

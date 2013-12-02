@@ -484,7 +484,7 @@ class PrintResultTestCase(test.BaseTestCase):
                          [mock.call(["k1", 1]),
                           mock.call(["k3", 3]),
                           mock.call(["k2", 2])])
-        self.mock_get_string.assert_called_with(sortby=None)
+        self.mock_get_string.assert_called_with()
 
     def test_print_dict(self):
         cliutils.print_dict({"K": "k", "Key": "Value"})
