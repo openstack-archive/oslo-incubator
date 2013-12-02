@@ -24,7 +24,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from openstack.common.db import exception as db_exc
 from openstack.common.db.sqlalchemy import models
 from openstack.common.db.sqlalchemy import session
-from openstack.common import fileutils
 from openstack.common.fixture import config
 from openstack.common import test
 from tests.unit.db.sqlalchemy import base as test_base
@@ -46,10 +45,9 @@ class SessionParametersTestCase(test_base.DbTestCase):
         super(SessionParametersTestCase, self).setUp()
         config_fixture = self.useFixture(config.Config())
         self.conf = config_fixture.conf
-        self.write_to_tempfile = fileutils.write_to_tempfile
 
     def test_deprecated_session_parameters(self):
-        path = self.write_to_tempfile("""[DEFAULT]
+        path = self.create_tempfiles([["tmp", """[DEFAULT]
 sql_connection=x://y.z
 sql_min_pool_size=10
 sql_max_pool_size=20
@@ -58,7 +56,7 @@ sql_retry_interval=40
 sql_max_overflow=50
 sql_connection_debug=60
 sql_connection_trace=True
-""")
+"""]])[0]
         self.conf(['--config-file', path])
         self.assertEqual(self.conf.database.connection, 'x://y.z')
         self.assertEqual(self.conf.database.min_pool_size, 10)
@@ -70,7 +68,7 @@ sql_connection_trace=True
         self.assertEqual(self.conf.database.connection_trace, True)
 
     def test_session_parameters(self):
-        path = self.write_to_tempfile("""[database]
+        path = self.create_tempfiles([["tmp", """[database]
 connection=x://y.z
 min_pool_size=10
 max_pool_size=20
@@ -80,7 +78,7 @@ max_overflow=50
 connection_debug=60
 connection_trace=True
 pool_timeout=7
-""")
+"""]])[0]
         self.conf(['--config-file', path])
         self.assertEqual(self.conf.database.connection, 'x://y.z')
         self.assertEqual(self.conf.database.min_pool_size, 10)
@@ -93,7 +91,7 @@ pool_timeout=7
         self.assertEqual(self.conf.database.pool_timeout, 7)
 
     def test_dbapi_database_deprecated_parameters(self):
-        path = self.write_to_tempfile('[DATABASE]\n'
+        path = self.create_tempfiles([['tmp', '[DATABASE]\n'
                                       'sql_connection=fake_connection\n'
                                       'sql_idle_timeout=100\n'
                                       'sql_min_pool_size=99\n'
@@ -102,7 +100,7 @@ pool_timeout=7
                                       'reconnect_interval=17\n'
                                       'sqlalchemy_max_overflow=101\n'
                                       'sqlalchemy_pool_timeout=5\n'
-                                      )
+                                       ]])[0]
         self.conf(['--config-file', path])
         self.assertEqual(self.conf.database.connection, 'fake_connection')
         self.assertEqual(self.conf.database.idle_timeout, 100)
@@ -114,9 +112,9 @@ pool_timeout=7
         self.assertEqual(self.conf.database.pool_timeout, 5)
 
     def test_dbapi_database_deprecated_parameters_sql_connection(self):
-        path = self.write_to_tempfile('[sql]\n'
+        path = self.create_tempfiles([['tmp', '[sql]\n'
                                       'connection=test_sql_connection\n'
-                                      )
+                                       ]])[0]
         self.conf(['--config-file', path])
         self.assertEqual(self.conf.database.connection, 'test_sql_connection')
 

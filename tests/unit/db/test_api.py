@@ -18,10 +18,9 @@
 from eventlet import tpool
 
 from openstack.common.db import api
-from openstack.common import fileutils
 from openstack.common.fixture import config
 from openstack.common.fixture import moxstubout
-from openstack.common import test
+from tests import utils as test_utils
 
 
 def get_backend():
@@ -33,7 +32,7 @@ class DBAPI(object):
         return args, kwargs
 
 
-class DBAPITestCase(test.BaseTestCase):
+class DBAPITestCase(test_utils.BaseTestCase):
 
     def setUp(self):
         super(DBAPITestCase, self).setUp()
@@ -42,24 +41,23 @@ class DBAPITestCase(test.BaseTestCase):
         self.config = config_fixture.config
 
         mox_fixture = self.useFixture(moxstubout.MoxStubout())
-        self.write_to_tempfile = fileutils.write_to_tempfile
         self.stubs = mox_fixture.stubs
 
     def test_deprecated_dbapi_parameters(self):
-        path = self.write_to_tempfile('[DEFAULT]\n'
+        path = self.create_tempfiles([['tmp', '[DEFAULT]\n'
                                       'db_backend=test_123\n'
                                       'dbapi_use_tpool=True\n'
-                                      )
+                                       ]])[0]
 
         self.conf(['--config-file', path])
         self.assertEqual(self.conf.database.backend, 'test_123')
         self.assertEqual(self.conf.database.use_tpool, True)
 
     def test_dbapi_parameters(self):
-        path = self.write_to_tempfile('[database]\n'
+        path = self.create_tempfiles([['tmp', '[database]\n'
                                       'backend=test_123\n'
                                       'use_tpool=True\n'
-                                      )
+                                       ]])[0]
 
         self.conf(['--config-file', path])
         self.assertEqual(self.conf.database.backend, 'test_123')
