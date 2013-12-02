@@ -549,3 +549,22 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
         self.assertEqual(f_key['referred_table'], 'table0')
         self.assertEqual(f_key['referred_columns'], ['id'])
         self.assertEqual(f_key['constrained_columns'], ['bar'])
+
+
+class TestUtils(test.BaseTestCase):
+
+    def test_connect_string(self):
+        connect_string = utils._get_connect_string(
+            backend='mysql',
+            database='test',
+            user='dude',
+            passwd='pass'
+        )
+        self.assertEqual(connect_string, 'mysql://dude:pass@localhost/test')
+
+    def test_connect_string_sqlite(self):
+        connect_string = utils._get_connect_string(
+            backend='sqlite',
+            database='test.db'
+        )
+        self.assertEqual(connect_string, 'sqlite:///test.db')
