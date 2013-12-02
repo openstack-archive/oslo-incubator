@@ -82,14 +82,14 @@ def periodic_task(*args, **kwargs):
         return f
 
     # NOTE(sirp): The `if` is necessary to allow the decorator to be used with
-    # and without parens.
+    # and without parents.
     #
-    # In the 'with-parens' case (with kwargs present), this function needs to
+    # In the 'with-parents' case (with kwargs present), this function needs to
     # return a decorator function since the interpreter will invoke it like:
     #
     #   periodic_task(*args, **kwargs)(f)
     #
-    # In the 'without-parens' case, the original function will be passed
+    # In the 'without-parents' case, the original function will be passed
     # in as the first argument, like:
     #
     #   periodic_task(f)
