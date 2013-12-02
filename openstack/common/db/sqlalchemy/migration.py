@@ -213,7 +213,7 @@ def db_version(abs_path, init_version):
         engine = get_engine()
         meta.reflect(bind=engine)
         tables = meta.tables
-        if len(tables) == 0:
+        if len(tables) == 0 or 'alembic_version' in tables:
             db_version_control(abs_path, init_version)
             return versioning_api.db_version(get_engine(), repository)
         else:
