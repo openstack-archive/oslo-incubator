@@ -1,0 +1,26 @@
+This module could be used either for:
+1. Smooth transition from migrate tool to alembic
+2. As standalone alembic tool
+
+The following options are used by app internally:
+
+_db_opts = [
+    cfg.StrOpt('alembic_ini_path',
+               default='',
+               help=('Full path to alembic.ini file.')),
+    cfg.StrOpt('migrate_repo_path',
+               default='',
+               help=('Full path to migrate_repo')),
+    cfg.IntOpt('init_version',
+               default=0,
+               help='Initial database version.')
+]
+
+If you don't want to use migrate plugin with some project
+just leave 'migrate_repo_path' set to an empty string.
+
+Core points:
+1. Upgrade/downgrade database with usage of alembic/migrate migrations
+or both
+2. Compatibility with oslo.config
+3. The way to autogenerate new revisions or stamps
