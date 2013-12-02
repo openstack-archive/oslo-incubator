@@ -44,6 +44,7 @@ Each API has an entry with the following keys:
  S: Status, one of the following:
       Maintained:  Has an active maintainer
       Orphan:      No current maintainer, feel free to step up!
+      Graduating:  Currently being moved out of the incubator to a standalone project.
       Obsolete:    Replaced by newer code, or a dead end, or out-dated
  F: Wildcard patterns, relative to openstack/common/
 
