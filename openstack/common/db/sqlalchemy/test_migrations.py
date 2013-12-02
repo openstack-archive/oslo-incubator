@@ -37,11 +37,8 @@ def _get_connect_string(backend, user, passwd, database):
     Try to get a connection with a very specific set of values, if we get
     these then we'll run the tests, otherwise they are skipped
     """
-    if backend == "postgres":
-        backend = "postgresql+psycopg2"
-    elif backend == "mysql":
-        backend = "mysql+mysqldb"
-    else:
+
+    if backend not in ['postgresql', 'mysql']:
         raise Exception("Unrecognized backend: '%s'" % backend)
 
     return ("%(backend)s://%(user)s:%(passwd)s@localhost/%(database)s"
