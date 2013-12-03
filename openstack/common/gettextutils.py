@@ -126,9 +126,13 @@ class Message(six.text_type):
         for the msgid and the base unicode text to be different by passing
         the msgtext parameter.
         """
-        # We want to initialize the parent unicode with the actual
-        # object that would have been plain unicode otherwise
-        msgtext = msgtext or msgid
+        # If the base msgtext is not given, we use the default translation
+        # of the msgid (which is in English) just in case the system locale is
+        # not English, so that the base text will be in that locale by default.
+        if not msgtext:
+            msgtext = Message._translate_msgid(msgid, domain)
+        # We want to initialize the parent unicode with the actual object that
+        # would have been plain unicode if 'Message' was not enabled.
         msg = super(Message, cls).__new__(cls, msgtext)
         msg.msgid = msgid
         msg.domain = domain
@@ -144,26 +148,10 @@ class Message(six.text_type):
 
         :returns: the translated message in unicode
         """
-        if not desired_locale:
-            system_locale = locale.getdefaultlocale()
-            # If the system locale is not available to the runtime use English
-            if not system_locale[0]:
-                desired_locale = 'en_US'
-            else:
-                desired_locale = system_locale[0]
 
-        locale_dir = os.environ.get(self.domain.upper() + '_LOCALEDIR')
-        lang = gettext.translation(self.domain,
-                                   localedir=locale_dir,
-                                   languages=[desired_locale],
-                                   fallback=True)
-        if six.PY3:
-            translator = lang.gettext
-        else:
-            translator = lang.ugettext
-
-        translated_message = translator(self.msgid)
-
+        translated_message = Message._translate_msgid(self.msgid,
+                                                      self.domain,
+                                                      desired_locale)
         if self.params is None:
             # No need for more translation
             return translated_message
@@ -176,6 +164,29 @@ class Message(six.text_type):
 
         translated_message = translated_message % translated_params
 
+        return translated_message
+
+    @staticmethod
+    def _translate_msgid(msgid, domain, desired_locale=None):
+        if not desired_locale:
+            system_locale = locale.getdefaultlocale()
+            # If the system locale is not available to the runtime use English
+            if not system_locale[0]:
+                desired_locale = 'en_US'
+            else:
+                desired_locale = system_locale[0]
+
+        locale_dir = os.environ.get(domain.upper() + '_LOCALEDIR')
+        lang = gettext.translation(domain,
+                                   localedir=locale_dir,
+                                   languages=[desired_locale],
+                                   fallback=True)
+        if six.PY3:
+            translator = lang.gettext
+        else:
+            translator = lang.ugettext
+
+        translated_message = translator(msgid)
         return translated_message
 
     def __mod__(self, other):
