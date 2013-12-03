@@ -272,7 +272,7 @@ class ContextFormatterTestCase(test.BaseTestCase):
         # tests that problem does not occur.
         ctxt = _fake_context()
         ctxt.request_id = six.text_type('99')
-        message = gettextutils.Message('test ' + unichr(128), 'test')
+        message = gettextutils.Message('test ' + unichr(128), domain='test')
         self.log.info(message, context=ctxt)
         expected = "HAS CONTEXT [%s]: %s\n" % (ctxt.request_id,
                                                six.text_type(message))
