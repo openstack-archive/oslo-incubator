@@ -89,7 +89,6 @@ F: py3kcompat
 M:
 S: Obsolete
 F: context.py
-F: middleware/context.py
 
 == config ==
 M: Julien Danjou <julien@danjou.info>
