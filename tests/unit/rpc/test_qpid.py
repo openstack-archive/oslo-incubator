@@ -162,7 +162,8 @@ class RpcQpidTestCase(tests.utils.BaseTestCase):
                 expected_address = (
                     'amq.topic/topic/openstack/impl_qpid_test ; {"link": '
                     '{"x-declare": {"auto-delete": false, '
-                    '"durable": false}}}')
+                    '"exclusive": false, "durable": false}, '
+                    '"name": "impl_qpid_test"}}')
         self.mock_session.receiver(expected_address).AndReturn(
             self.mock_receiver)
         self.mock_receiver.capacity = 1
@@ -209,7 +210,8 @@ class RpcQpidTestCase(tests.utils.BaseTestCase):
             expected_address = (
                 'amq.topic/topic/openstack/impl_qpid_test ; '
                 '{"link": {"x-declare": '
-                '{"auto-delete": false, "durable": false}}}')
+                '{"auto-delete": false, "exclusive": false, '
+                '"durable": false}, "name": "impl.qpid.test.workers"}}')
         self.mock_session.receiver(expected_address).AndReturn(
             self.mock_receiver)
         self.mock_receiver.capacity = 1
@@ -251,7 +253,8 @@ class RpcQpidTestCase(tests.utils.BaseTestCase):
             expected_address = (
                 'amq.topic/topic/exchange-name/impl_qpid_test ; '
                 '{"link": {"x-declare": '
-                '{"auto-delete": false, "durable": false}}}')
+                '{"auto-delete": false, "exclusive": false, '
+                '"durable": false}, "name": "impl.qpid.test.consumer.pool"}}')
         self.mock_session.receiver(expected_address).AndReturn(
             self.mock_receiver)
         self.mock_receiver.capacity = 1
@@ -296,7 +299,8 @@ class RpcQpidTestCase(tests.utils.BaseTestCase):
             expected_address = (
                 'amq.topic/topic/foobar/impl_qpid_test ; '
                 '{"link": {"x-declare":'
-                ' {"auto-delete": false, "durable": false}}}')
+                ' {"auto-delete": false, "exclusive": false, '
+                '"durable": false}, "name": "impl.qpid.test.workers"}}')
         self.mock_session.receiver(expected_address).AndReturn(
             self.mock_receiver)
         self.mock_receiver.capacity = 1
