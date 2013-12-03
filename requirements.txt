@@ -12,7 +12,7 @@ kombu>=2.4.8
 lockfile>=0.8
 argparse
 stevedore>=0.10
-sqlalchemy-migrate>=0.7.2
+sqlalchemy-migrate>=0.8.2
 SQLAlchemy>=0.7.8,<=0.7.99
 qpid-python
 six>=1.4.1
