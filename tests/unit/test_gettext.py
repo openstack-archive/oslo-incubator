@@ -579,7 +579,7 @@ class MessageTestCase(test.BaseTestCase):
         self.assertEqual(m2, msgid % {'test1': 'foo2', 'test2': 'bar2'})
 
     def test_comparator_operators(self):
-        """Verify Message comparison is equivalent to string comparision."""
+        """Verify Message comparison is equivalent to string comparison."""
         m1 = self._get_full_test_message()
         m2 = copy.deepcopy(m1)
         m3 = "1" + m1
@@ -644,7 +644,7 @@ class LocaleHandlerTestCase(test.BaseTestCase):
         self.locale_handler = gettextutils.LocaleHandler(
             'zh_CN', self.buffer_handler)
         self.logger = logging.getLogger('localehander_logger')
-        self.logger.propogate = False
+        self.logger.propagate = False
         self.logger.setLevel(logging.DEBUG)
         self.logger.addHandler(self.locale_handler)
 
