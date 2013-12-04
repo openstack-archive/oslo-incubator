@@ -270,6 +270,7 @@ class HostFiltersTestCase(test.BaseTestCase):
         self.assertTrue('JsonFilter' in self.class_map)
         self.assertTrue('CapabilitiesFilter' in self.class_map)
         self.assertTrue('AvailabilityZoneFilter' in self.class_map)
+        self.assertTrue('IgnoreAttemptedHostsFilter' in self.class_map)
 
     def _do_test_type_filter_extra_specs(self, ecaps, especs, passes):
         filt_cls = self.class_map['CapabilitiesFilter']()
@@ -676,3 +677,26 @@ class HostFiltersTestCase(test.BaseTestCase):
         host = fakes.FakeHostState('host1',
                                    {'service': service})
         self.assertTrue(filt_cls.host_passes(host, request))
+
+    def test_ignore_attempted_hosts_filter_disabled(self):
+        # Test case where re-scheduling is disabled.
+        filt_cls = self.class_map['IgnoreAttemptedHostsFilter']()
+        host = fakes.FakeHostState('host1', {})
+        filter_properties = {}
+        self.assertTrue(filt_cls.host_passes(host, filter_properties))
+
+    def test_ignore_attempted_hosts_filter_pass(self):
+        # Node not previously tried.
+        filt_cls = self.class_map['IgnoreAttemptedHostsFilter']()
+        host = fakes.FakeHostState('host1', {})
+        attempted = dict(num_attempts=2, hosts=['host2'])
+        filter_properties = dict(attempted=attempted)
+        self.assertTrue(filt_cls.host_passes(host, filter_properties))
+
+    def test_ignore_attempted_hosts_filter_fail(self):
+        # Node was already tried.
+        filt_cls = self.class_map['IgnoreAttemptedHostsFilter']()
+        host = fakes.FakeHostState('host1', {})
+        attempted = dict(num_attempts=2, hosts=['host1'])
+        filter_properties = dict(attempted=attempted)
+        self.assertFalse(filt_cls.host_passes(host, filter_properties))
