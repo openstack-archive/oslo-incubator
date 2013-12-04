@@ -582,6 +582,150 @@ class SyncModelsWithMigrations(BaseMigrationTestCase, WalkVersionsMixin):
                                                    db_attr))
                     self.errors.append(msg)
 
+    def _check_indexes(self, table_model, table_db, excluded_indexes):
+        """Base checking of index constraint.
+        This test checks name and columns in index.
+        For mysql column's order also will be checked.
+
+        :param table_model: 	model's representation of checked table
+        :type table_model: sqlalchemy.schema.Table
+        :param table_db: database's representation of checked table
+        :type table_db: sqlalchemy.schema.Table
+        """
+
+        db_indexes = dict((index.name, index) for index in
+                          table_db.indexes)
+        table_name = table_model.name
+        model_indexes = dict([(index.name, index) for index in
+                             table_model.indexes])
+        indexes = self._check_intersection(db_indexes.keys(),
+                                           model_indexes.keys(),
+                                           "Indexes",
+                                           table_name,
+                                           exclude=excluded_indexes)
+        check_order = self._check_order()
+        for index_name in indexes:
+            db_index_c = db_indexes[index_name].columns.keys()
+            model_index_c = model_indexes[index_name].columns.keys()
+            self._check_intersection(db_index_c,
+                                     model_index_c,
+                                     "Indexes",
+                                     table_name,
+                                     index_name,
+                                     check_order=check_order)
+
+    def _check_order(self):
+        """Return boolean value for checking of order columns in index.
+        In mysql case True will be returned.
+        Since before 0.8.2 version columns in indexes have a wrong
+        order for postgres False will be returned in this case.
+
+        :rtype: bool
+        """
+        if self.DIALECT == 'mysql':
+            return True
+        version = map(int, sqlalchemy.__version__.split('.'))
+        return self.DIALECT == 'postgresql' and version >= [0, 8, 2]
+
+    def _check_fkeys(self, table_model, table_db):
+        """Checking of equality of foreign keys declared in models
+        and existed in database.
+        The name for ForeignKey in models is skipped by default.
+        We can see it in this kind of creation:
+        Column(Integer, ForeignKey('table.column')).
+        So, we can only check it by column name.
+        Also for each ForeignKey index in table will be created.
+        All checked indexes will be returned for excluding them from index
+        checking.
+
+        :param table_model: 	model's representation of checked table
+        :type table_model: sqlalchemy.schema.Table
+        :param table_db: database's representation of checked table
+        :type table_db: sqlalchemy.schema.Table
+        :rtype:	set
+        """
+        table_name = table_model.name
+        db_fkeys = dict((c.parent.name, c.column.name)
+                        for c in table_db.foreign_keys)
+        model_fkeys = dict((c.parent.name, c.column.name)
+                           for c in table_model.foreign_keys)
+        fkeys = self._check_intersection(db_fkeys.keys(),
+                                         model_fkeys.keys(),
+                                         "ForeignKeys",
+                                         table_name)
+        for k in fkeys:
+            self._check_intersection([db_fkeys[k]],
+                                     [model_fkeys[k]],
+                                     "ForeignKeys",
+                                     table_name, k)
+        db_fkeys_names = [c.name for c in table_db.foreign_keys
+                          if c.parent.name in fkeys]
+        db_fkeys_names.extend(fkeys)
+        return set(db_fkeys_names)
+
+    def _check_uniques(self, table_model, table_db):
+        """We can check UC only from list of indexes in actual version
+        of sqlalchemy.
+        If there is a UniqueConstraint in database that skipped
+        in models we will get an error from indexes check.
+        In missing index case for UC that presented only in database
+        mysql check will not give an error, but postgres check will do.
+        All checked indexes will be returned for excluding them from index
+        checking.
+
+        :param table_model: 	model's representation of checked table
+        :type table_model: sqlalchemy.schema.Table
+        :param table_db: database's representation of checked table
+        :type table_db: sqlalchemy.schema.Table
+        :rtype:	set
+        """
+        table_name = table_model.name
+        constraint_class = sqlalchemy.schema.UniqueConstraint
+        db_indexes = dict((index.name, index) for index in
+                          table_db.indexes)
+        checked_uniques = []
+        check_order = self._check_order()
+        for constraint in table_model.constraints:
+            if not isinstance(constraint, constraint_class):
+                continue
+
+            # We have a naming convention for UniqueConstraint (UC).
+            # (uniq_tablename0columnA0columnB...).
+            # But when we use unique=True attribute it can not work
+            # because column name will be taken as UC name.
+            uniq_fields = ['uniq_' + table_name]
+            uniq_fields.extend(constraint.columns.keys())
+            check = "0".join(uniq_fields)
+            constraint_name = constraint.name
+            if constraint_name is None:
+                if len(constraint.columns.keys()) > 1:
+                    constraint_name = check
+                else:
+                    constraint_name = constraint.columns.keys()[0]
+            if constraint_name not in db_indexes:
+                msg = ("%s `%s.%s` declared in models is skipped "
+                       "in migrations." % ("UniqueConstraint",
+                                           table_name,
+                                           constraint_name))
+                self.errors.append(msg)
+                continue
+            checked_uniques.append(constraint_name)
+            db_index = db_indexes[constraint_name]
+            if not db_index.unique:
+                self.errors.append("Index in database `%s.%s` "
+                                   "should be unique as it declared "
+                                   "in models." % (table_name,
+                                                   constraint_name))
+            # Checking list and order of columns in UniqueConstraint
+            # in models and database at equality.
+            self._check_intersection(db_index.columns.keys(),
+                                     constraint.columns.keys(),
+                                     "UniqueConstraint",
+                                     table_name,
+                                     constraint_name,
+                                     check_order=check_order)
+        return set(checked_uniques)
+
     def _check_intersection(self, db_obj, model_obj, obj_label, table_name,
                             obj_name="", exclude=None, check_order=False):
         """Helper method for checking model object and database object for
