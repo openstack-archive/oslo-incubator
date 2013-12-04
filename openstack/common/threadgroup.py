@@ -111,13 +111,9 @@ class ThreadGroup(object):
                 pass
             except Exception as ex:
                 LOG.exception(ex)
-        current = greenthread.getcurrent()
-        for x in self.threads:
-            if x is current:
-                continue
-            try:
-                x.wait()
-            except eventlet.greenlet.GreenletExit:
-                pass
-            except Exception as ex:
-                LOG.exception(ex)
+        try:
+            self.pool.waitall()
+        except eventlet.greenlet.GreenletExit:
+            pass
+        except Exception as ex:
+            LOG.exception(ex)
