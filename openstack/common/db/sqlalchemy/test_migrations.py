@@ -31,7 +31,10 @@ except ImportError:
 import lockfile
 from oslo.config import cfg
 import sqlalchemy
+import sqlalchemy.dialects.mysql.base as sa_mysql
+import sqlalchemy.dialects.postgresql.base as sa_psql
 import sqlalchemy.exc
+import sqlalchemy.types as sa_types
 
 from openstack.common.gettextutils import _
 from openstack.common import log as logging
@@ -40,6 +43,24 @@ from openstack.common import test
 
 LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
+
+
+# In user defined data type case we can get a situation when
+# dialect.type_descriptor(SomeType()) can return another type, not SomeType,
+# but in database SomeType will be presented. The main reason in sqlalchemy
+# logic and actually in colspecs attribute for each dialect. It is very
+# limited and will return one of presented types.
+# For example, dialect.type_descriptor(DECIMAL()) will return
+# sqlalchemy.dialects.mysql.base.NUMERIC but in database
+# sqlalchemy.dialects.mysql.base.DECIMAL will be presented.
+# This module contains a test comparing expected type with presented in
+# database. So, in this situation (sqlalchemy bug) we will get an error.
+# We can use a sets of pairs with correct types as a decision of this problem.
+DEFAULT_CORRECT_TYPES = set([
+    # (expected type (declared in model), presented in database type)
+    (sa_mysql.NUMERIC, sa_mysql.DECIMAL),
+    (sqlalchemy.types.DateTime, sa_psql.TIMESTAMP),
+])
 
 
 def _get_connect_string(backend, user, passwd, database):
@@ -157,6 +178,7 @@ class BaseMigrationTestCase(test.BaseTestCase):
         self.test_databases = {}
         if self.ALEMBIC_CONFIG is not None and not ALEMBIC_LOADED:
             raise ImportError("alembic")
+        self.correct_types = DEFAULT_CORRECT_TYPES.copy()
 
     def setUp(self):
         super(BaseMigrationTestCase, self).setUp()
@@ -184,6 +206,16 @@ class BaseMigrationTestCase(test.BaseTestCase):
 
         # We start each test case with a completely blank slate.
         self._reset_databases()
+
+    def _get_engine(self):
+        connect_string = _get_connect_string(self.DIALECT,
+                                             self.USER,
+                                             self.PASSWORD,
+                                             self.DATABASE)
+        engine = sqlalchemy.create_engine(connect_string)
+        self.engines[self.DIALECT] = engine
+        self.test_databases[self.DIALECT] = connect_string
+        return engine
 
     def tearDown(self):
         # We destroy the test data store between each test case,
@@ -259,7 +291,7 @@ class WalkVersionsMixin(object):
         """Most of alembic command return data into output.
         We should redefine this setting for getting info.
         """
-        # A lot of pieces of code use oslo session for getting of engine
+        # A lot of pieces of code use oslo session for getting an engine
         # and session. These settings are based on config's options.
         # For sucessful testing in concurrency mode we can redefine these
         # engine and session by mock.
@@ -426,3 +458,177 @@ class WalkVersionsMixin(object):
             LOG.error("Failed to migrate to version %s on engine %s" %
                       (version, engine))
             raise
+
+
+class SyncModelsWithMigrations(BaseMigrationTestCase, WalkVersionsMixin):
+
+    def _check_column_type(self, column_model, column_db, column_name,
+                           table_name, dialect):
+        """Checking of column's type declared in models with column's type
+        existed in database. Also limit of length will be checked.
+
+        :param column_model: checked column represented in model's table
+        :type column_model: sqlalchemy.schema.Column
+        :param column_db: checked column represented in database's table
+        :type column_db: sqlalchemy.schema.Column
+        :param column_name: name of checked column
+        :param table_name: name of checked table
+        :param dialect: tested backend
+        :type dialect:
+                  sqlalchemy.dialects.mysql.mysqldb.MySQLDialect_mysqldb or
+                  sqlalchemy.dialects.postgresql.psycopg2.PGDialect_psycopg2
+        """
+        _msg = ("Wrong type for column `%(name)s` in `%(table)s`: `%(model)s` "
+                "in models, expected `%(db)s`.")
+        params = {'name': column_name,
+                  'table': table_name,
+                  'model': type(column_model.type).__name__,
+                  'db': type(column_db.type).__name__}
+        msg = _msg % params
+        model_column_type_len = getattr(column_model.type, 'length', None)
+        model_type = column_model.type
+        model_type_cls = type(model_type)
+        db_type = column_db.type
+        db_type_cls = type(db_type)
+        if isinstance(model_type, sa_types.Boolean):
+            if not isinstance(db_type, (sa_types.Integer, model_type_cls)):
+                self.errors.append(msg)
+        elif isinstance(model_type, sa_types.TypeDecorator):
+            # This is a special check for redefined types like IPAddress, CIDR,
+            # MediumText...
+            # For each redefined type we have sqlalchemy.types.Variant
+            # instance. But only simple types are present in database model.
+            # So we should get one of the base types from each redefined type
+            # and compare it with database implementation.
+            model_type = model_type.load_dialect_impl(dialect)
+            while isinstance(model_type, sa_types.Variant):
+                model_type = model_type.load_dialect_impl(dialect)
+            model_type_cls = type(model_type)
+            if not (issubclass(db_type_cls, model_type_cls) or
+                    (model_type_cls, db_type_cls) in self.correct_types):
+                params['model'] += ':' + model_type_cls.__name__
+                self.errors.append(_msg % params)
+            model_column_type_len = getattr(model_type, 'length', None)
+        else:
+            if not isinstance(db_type, model_type_cls):
+                self.errors.append(msg)
+        db_column_type_len = getattr(db_type, 'length', None)
+
+        if model_column_type_len != db_column_type_len:
+            msg = ("Wrong length for column `%s` in "
+                   "`%s` (model: %s, db: %s)" % (column_name,
+                                                 table_name,
+                                                 model_column_type_len,
+                                                 db_column_type_len))
+            self.errors.append(msg)
+
+    def _check_columns(self, table_model, table_db, dialect):
+        """Checking of equality of columns in table declared in modelas with
+        table existed in database.
+        Attribute for check:
+        - nullable,
+        - unique,
+        - index,
+        - default,
+        - primary key.
+
+        :param table_model: 	model's representation of checked table
+        :type table_model: sqlalchemy.schema.Table
+        :param table_db: database's representation of checked table
+        :type table_db: sqlalchemy.schema.Table
+        :param dialect: tested backend
+        :type dialect:
+                  sqlalchemy.dialects.mysql.mysqldb.MySQLDialect_mysqldb or
+                  sqlalchemy.dialects.postgresql.psycopg2.PGDialect_psycopg2
+        """
+        table_name = table_model.name
+        check_attrs = [
+            'nullable',
+            'unique',
+            'primary_key',
+            'index',
+        ]
+        columns = self._check_intersection(table_db.c.keys(),
+                                           table_model.c.keys(),
+                                           "Columns",
+                                           table_name)
+        for column_name in columns:
+            column_model = table_model.c[column_name]
+            column_db = table_db.c[column_name]
+            self._check_column_type(column_model,
+                                    column_db,
+                                    column_name,
+                                    table_name,
+                                    dialect)
+            # We can not check default attribute like others in `check_attrs`
+            # because there are a lot of columns in models with predefined
+            # values which skipped in db (created_at, deleted columns).
+            # It is not a bug, but without migration that can fix this
+            # situation (add default values for this columns in db)
+            # we can not check it like other params from `check_attrs`.
+            if column_db.default is not None:
+                if column_db.default != column_model.default:
+                    msg = ("Wrong default value in models for "
+                           "`%s.%s`" % (table_name, column_name,))
+                    self.errors.append(msg)
+            for attr in check_attrs:
+                model_attr = getattr(column_model, attr)
+                db_attr = getattr(column_db, attr)
+                if model_attr != db_attr:
+                    msg = ("Wrong value for `%s` attribute in `%s.%s` "
+                           "(models:%s, db:%s)" % (attr,
+                                                   table_name,
+                                                   column_name,
+                                                   model_attr,
+                                                   db_attr))
+                    self.errors.append(msg)
+
+    def _check_intersection(self, db_obj, model_obj, obj_label, table_name,
+                            obj_name="", exclude=None, check_order=False):
+        """Helper method for checking model object and database object for
+        equality. Right order in these objects also will be checked.
+
+        :param db_obj: list of object's names (column's names, table's names)
+                      represented in database
+        :type db_obj: list
+        :param model_obj: list of object's names represented in model
+        :type model_obj: list
+        :param obj_label: name of checked object ('table', 'column', 'index'),
+                         will use in message in error case.
+        :type obj_label: str
+        :param table_name: name of checked table
+        :type table_name: str
+        :param obj_name: name of checked object (table's name, index's name...)
+        :type obj_name: str
+        :param exclude: list of objects that should be skipped in this check
+                       (shadow tables, dump tables...)
+        :type exclude: None or list
+        :param check_order: flag for order's check (needs for indexes)
+        :type check_order: bool
+        :rtype: set
+        """
+        obj_diff = set(db_obj) ^ set(model_obj)
+        full_obj = set(db_obj) & set(model_obj)
+        if exclude is not None:
+            obj_diff -= exclude
+            full_obj -= exclude
+        if obj_diff:
+            diff_model = obj_diff & set(model_obj)
+            diff_db = obj_diff & set(db_obj)
+            msg = ("%s have a difference in %s %s: (%s). "
+                   "Models: (%s). Database: (%s)." % (obj_label,
+                                                      table_name,
+                                                      obj_name,
+                                                      ",".join(obj_diff),
+                                                      ",".join(diff_model),
+                                                      ",".join(diff_db)))
+            self.errors.append(msg)
+        if check_order and db_obj != model_obj:
+            msg = ("%s in `%s.%s` have wrong order in models (%s), "
+                   "expected in database (%s)" % (obj_label,
+                                                  table_name,
+                                                  obj_name,
+                                                  ",".join(model_obj),
+                                                  ",".join(db_obj)))
+            self.errors.append(msg)
+        return full_obj
