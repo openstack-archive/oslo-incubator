@@ -333,7 +333,7 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
 
     def test_change_deleted_column_type_to_id_type_custom(self):
         table_name = 'abc'
-        engine = self.engines['sqlite']
+        engine = self._get_engine()
         meta = MetaData()
         meta.bind = engine
         table = Table(table_name, meta,
@@ -399,7 +399,7 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
 
     def test_change_deleted_column_type_to_boolean_type_custom(self):
         table_name = 'abc'
-        engine = self.engines['sqlite']
+        engine = self._get_engine()
         meta = MetaData()
         meta.bind = engine
         table = Table(table_name, meta,
@@ -474,7 +474,7 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
             {'id': 3, 'a': 1, 'foo': 30}
         ]
 
-        engine = self.engines['sqlite']
+        engine = self._get_engine()
         meta = MetaData(bind=engine)
 
         test_table = Table(
@@ -522,7 +522,7 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
         test_table.drop()
 
     def test_drop_unique_constraint_in_sqlite_fk_recreate(self):
-        engine = self.engines['sqlite']
+        engine = self._get_engine()
         meta = MetaData()
         meta.bind = engine
         parent_table = Table(
