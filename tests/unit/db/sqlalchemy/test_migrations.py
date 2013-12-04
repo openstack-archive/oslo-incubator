@@ -17,6 +17,7 @@
 import itertools
 
 import mock
+import sqlalchemy as sa
 import testtools.matchers as matchers
 
 from openstack.common.db.sqlalchemy import test_migrations as migrate
@@ -302,3 +303,32 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
                       alembic=False) for v in versions
         ]
         self.assertEqual(upgraded, self._migrate_up.call_args_list)
+
+
+class TestSyncMySQL(migrate.SyncModelsWithMigrations):
+    DIALECT = 'mysql'
+    CHECK_TYPE = sa.dialects.mysql.base.NUMERIC
+
+    def _create_fake_table(self, cheked_type, engine):
+        metadata = sa.MetaData(bind=engine)
+        sa.Table('fake_ref_table', metadata,
+                 sa.Column('id', sa.Integer, primary_key=True),
+                 sa.Column('check_column', cheked_type))
+        metadata.create_all()
+
+    def test_correct_types(self):
+        """We should check correct pair of types due to different
+        representations of these type in model and database.
+        """
+        engine = self._get_engine()
+        self._create_fake_table(self.CHECK_TYPE, engine)
+        metadata = sa.MetaData(bind=engine)
+        metadata.reflect()
+        table = metadata.tables['fake_ref_table']
+        database_type = type(table.columns.check_column.type)
+        self.assertIn((self.CHECK_TYPE, database_type), self.correct_types)
+
+
+class TestSyncPostrges(TestSyncMySQL):
+    DIALECT = 'postgres'
+    CHECK_TYPE = sa.types.DateTime
