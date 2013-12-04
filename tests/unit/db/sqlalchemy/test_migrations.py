@@ -309,6 +309,12 @@ class TestSyncMySQL(migrate.SyncModelsWithMigrations):
     DIALECT = 'mysql'
     CHECK_TYPE = sa.dialects.mysql.base.NUMERIC
 
+    def test_walk_versions(self):
+        pass
+
+    def test_sync_models(self):
+        pass
+
     def _create_fake_table(self, cheked_type, engine):
         metadata = sa.MetaData(bind=engine)
         sa.Table('fake_ref_table', metadata,
