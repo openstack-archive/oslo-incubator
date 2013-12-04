@@ -166,6 +166,13 @@ class BaseMigrationTestCase(test.BaseTestCase):
     # it should be declared for alembic repo here.
     ALEMBIC_CONFIG = None
 
+    # Base model for project
+    # Each component of OpenStack has a models based on
+    # sqlalchemy.ext.declarative. Here inheriting classes should specify
+    # this base class.
+    MODEL_BASE = None
+    DIALECT = None
+
     def __init__(self, *args, **kwargs):
         super(BaseMigrationTestCase, self).__init__(*args, **kwargs)
 
@@ -337,6 +344,18 @@ class WalkVersionsMixin(object):
 
         LOG.debug(_('latest version is %s') % self.REPOSITORY.latest)
 
+    def _migrate_dbsync(self, engine, version_control=True):
+        if self.MIGRATION_API is not None and self.REPOSITORY is not None:
+            if version_control:
+                self.MIGRATION_API.version_control(engine, self.REPOSITORY,
+                                                   self.INIT_VERSION)
+            self.MIGRATION_API.upgrade(engine, self.REPOSITORY)
+
+    def _alembic_dbsync(self, engine):
+        if self.ALEMBIC_CONFIG is not None:
+            self._alembic_command('upgrade', engine, self.ALEMBIC_CONFIG,
+                                  "head")
+
     def _up_and_down_versions(self, alembic, engine):
         """Since alembic version has a random algoritm of generation
         (SA-migrate has an ordered autoincrement naming) we should store
@@ -460,6 +479,76 @@ class WalkVersionsMixin(object):
 
 
 class SyncModelsWithMigrations(BaseMigrationTestCase, WalkVersionsMixin):
+    # List of tables that can be presented only in one of places
+    # (in models or db). When such is the deliberate creation.
+    # Example: backup tables, shadow_tables...
+    EXCLUDE_TABLES = []
+
+    def check_dialect(func):
+        @functools.wraps(func)
+        def _inner(self):
+            if self.MODEL_BASE is None:
+                self.skipTest("Base model is not declared")
+            if self.DIALECT == 'mysql':
+                check_backend = _have_mysql
+            elif self.DIALECT == 'postgres':
+                check_backend = _have_postgresql
+            if not check_backend(self.USER, self.PASSWORD, self.DATABASE):
+                self.skipTest("%s not available" % self.DIALECT)
+            func(self)
+        return _inner
+
+    @_set_db_lock('syncmodels', 'tests-')
+    @check_dialect
+    def test_walk_versions(self):
+        """Helper method that implements testing of each migration in all ways
+        (from up to down and in backward mode). It will work with both types
+        of repo.
+        """
+        engine = self._get_engine()
+        if self.MIGRATION_API is not None and self.REPOSITORY is not None:
+            self._walk_versions(engine, snake_walk=True, downgrade=True,
+                                alembic=False)
+        if self.ALEMBIC_CONFIG is not None:
+            self._migrate_dbsync(engine, version_control=False)
+            self._walk_versions(engine, snake_walk=True, downgrade=True,
+                                alembic=True)
+
+    @_set_db_lock('syncmodels', 'tests-')
+    @check_dialect
+    def test_sync_models(self):
+        """Helper method that implements testing of equality models with
+        migrations. All differences will be presented as a list of needed
+        changes.
+        """
+        engine = self._get_engine()
+        self._migrate_dbsync(engine)
+        self._alembic_dbsync(engine)
+        metadata = sqlalchemy.MetaData(bind=engine)
+        metadata.reflect()
+        db_tables = metadata.tables
+        self.errors = []
+        models_tables = self.MODEL_BASE.metadata.tables
+        self.EXCLUDE_TABLES.extend(['migrate_version', 'alembic_version'])
+        tables = self._check_intersection(db_tables.keys(),
+                                          models_tables.keys(),
+                                          "Tables",
+                                          "models",
+                                          exclude=set(self.EXCLUDE_TABLES))
+        for table_name in tables:
+            table = models_tables[table_name]
+            self._check_columns(table, db_tables[table_name],
+                                engine.dialect)
+            # All checked UniqueConstraints should be excluded from indexes.
+            uc = self._check_uniques(table, db_tables[table_name])
+            # All checked ForeignKeys should be excluded from indexes.
+            fc = self._check_fkeys(table, db_tables[table_name])
+            excluded_indexes = uc | fc
+            self._check_indexes(table,
+                                db_tables[table_name],
+                                excluded_indexes)
+        self.assertEqual(self.errors, [],
+                         message="\n".join(self.errors))
 
     def _check_column_type(self, column_model, column_db, column_name,
                            table_name, dialect):
