@@ -41,7 +41,7 @@ util_opts = [
     cfg.BoolOpt('disable_process_locking', default=False,
                 help='Whether to disable inter-process locks'),
     cfg.StrOpt('lock_path',
-               default=os.environ.get("OSLO_LOCK_PATH"),
+               default=os.environ.get("OSLO_LOCK_PATH", "/tmp"),
                help=('Directory to use for lock files.'))
 ]
 
@@ -77,7 +77,7 @@ class _InterProcessLock(object):
         self.fname = name
 
     def __enter__(self):
-        self.lockfile = open(self.fname, 'w')
+        self.lockfile = open(self.fname, 'a')
 
         while True:
             try:
@@ -179,6 +179,11 @@ def lock(name, lock_file_prefix=None, external=False, lock_path=None):
 
                 # We need a copy of lock_path because it is non-local
                 local_lock_path = lock_path or CONF.lock_path
+                if local_lock_path == '/tmp':
+                    LOG.error(_(
+                        'Unsafe default lock_path "%s" set, please '
+                        'update your configuration.') % local_lock_path)
+
                 if not local_lock_path:
                     raise cfg.RequiredOptError('lock_path')
 
