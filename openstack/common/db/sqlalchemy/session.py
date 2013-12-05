@@ -66,8 +66,11 @@ Recommended ways to use sessions within this framework:
   handler will take care of calling flush() and commit() for you.
   If using this approach, you should not explicitly call flush() or commit().
   Any error within the context of the session will cause the session to emit
-  a ROLLBACK. If the connection is dropped before this is possible, the
-  database will implicitly rollback the transaction.
+  a ROLLBACK. Error like sqlalchemy.exc.IntegrityError will be raised in
+  session's __exit__ handler, and any try/except in within the context managed
+  by session may not trigger the ROLLBACK, need catch the error out of the
+  context. If the connection is dropped before this is possible, the database
+  will implicitly rollback the transaction.
 
      Note: statements in the session scope will not be automatically retried.
 
@@ -76,11 +79,15 @@ Recommended ways to use sessions within this framework:
 
     def create_many_foo(context, foos):
         session = get_session()
-        with session.begin():
-            for foo in foos:
-                foo_ref = models.Foo()
-                foo_ref.update(foo)
-                session.add(foo_ref)
+        try:
+            with session.begin():
+                for foo in foos:
+                    foo_ref = models.Foo()
+                    foo_ref.update(foo)
+                    session.add(foo_ref)
+        except sqlalchemy.exc.IntegrityError:
+            pass
+
 
     def update_bar(context, foo_id, newbar):
         session = get_session()
