@@ -15,6 +15,8 @@
 
 import socket
 
+import mock
+
 from openstack.common import context
 from openstack.common.fixture import config
 from openstack.common.fixture import moxstubout
@@ -22,6 +24,7 @@ from openstack.common import log
 from openstack.common.notifier import api as notifier_api
 from openstack.common.notifier import log_notifier
 from openstack.common.notifier import no_op_notifier
+from openstack.common.notifier import proxy
 from openstack.common import rpc
 from openstack.common import test
 
@@ -284,3 +287,42 @@ class MultiNotifierTestCase(test.BaseTestCase):
                          'foobar.' + socket.gethostname())
         self.assertEqual(notifier_api.publisher_id('foobar', 'baz'),
                          'foobar.baz')
+
+
+class NotifierProxyTestCase(test.BaseTestCase):
+    def setUp(self):
+        super(NotifierProxyTestCase, self).setUp()
+        self.notifier = mock.MagicMock()
+        self.proxy = proxy.NotifierProxy(self.notifier, "my_publisher")
+
+    def _call(self, priority):
+        return mock.call({}, "my_publisher", "event", "payload", priority)
+
+    def test_audit(self):
+        self.proxy.audit({}, "event", "payload")
+        self.assertEqual(self.notifier.notify.call_args, self._call("INFO"))
+
+    def test_debug(self):
+        self.proxy.debug({}, "event", "payload")
+        self.assertEqual(self.notifier.notify.call_args, self._call("DEBUG"))
+
+    def test_info(self):
+        self.proxy.info({}, "event", "payload")
+        self.assertEqual(self.notifier.notify.call_args, self._call("INFO"))
+
+    def test_warn(self):
+        self.proxy.warn({}, "event", "payload")
+        self.assertEqual(self.notifier.notify.call_args, self._call("WARN"))
+
+    def test_warning(self):
+        self.proxy.warning({}, "event", "payload")
+        self.assertEqual(self.notifier.notify.call_args, self._call("WARN"))
+
+    def test_critical(self):
+        self.proxy.critical({}, "event", "payload")
+        self.assertEqual(self.notifier.notify.call_args,
+                         self._call("CRITICAL"))
+
+    def test_error(self):
+        self.proxy.error({}, "event", "payload")
+        self.assertEqual(self.notifier.notify.call_args, self._call("ERROR"))
