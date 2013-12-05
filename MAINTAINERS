@@ -201,6 +201,12 @@ S: Obsolete
 F: notifier/
 F: middleware/notifier.py
 
+== objects ==
+
+M: Clayton Coleman <ccoleman@redhat.com>
+S: Maintained
+F: objects/
+
 == pastedeploy ==
 
 M: Mark McLoughlin <markmc@redhat.com>
