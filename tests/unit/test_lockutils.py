@@ -29,6 +29,7 @@ from six import moves
 
 from openstack.common.fixture import config
 from openstack.common.fixture import lockutils as fixtures
+from openstack.common.fixture import moxstubout
 from openstack.common import lockutils
 from openstack.common import test
 
@@ -74,6 +75,7 @@ class LockTestCase(test.BaseTestCase):
     def setUp(self):
         super(LockTestCase, self).setUp()
         self.config = self.useFixture(config.Config()).config
+        self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
 
     def test_synchronized_wrapped_function_metadata(self):
         @lockutils.synchronized('whatever', 'test-')
@@ -147,7 +149,7 @@ class LockTestCase(test.BaseTestCase):
                 handles = []
                 for n in range(50):
                     path = os.path.join(handles_dir, ('file-%s' % n))
-                    handles.append(open(path, 'w'))
+                    handles.append(open(path, 'a'))
 
                 # Loop over all the handles and try locking the file
                 # without blocking, keep a count of how many files we
@@ -208,6 +210,52 @@ class LockTestCase(test.BaseTestCase):
         finally:
             if os.path.exists(lock_dir):
                 shutil.rmtree(lock_dir, ignore_errors=True)
+
+    def test_lock_externally_default_path_non_destructive(self):
+        lock_dir = tempfile.gettempdir()
+        lock_name = "oslo-default"
+        lock_file = os.path.join(lock_dir, lock_name)
+        lock_file2 = os.path.join(lock_dir, lock_name + "-2")
+        token = "this is my lock"
+
+        self.registered_error = False
+        self.config(lock_path=lock_dir)
+
+        self.addCleanup(os.unlink, lock_file)
+        self.addCleanup(os.unlink, lock_file2)
+
+        @lockutils.synchronized(lock_name, external=True)
+        def lockme():
+            check_contents()
+
+        # to make it easy to look for the log message
+        def log_error(message):
+            if "Unsafe default lock_path" in message:
+                self.registered_error = True
+
+        self.stubs.Set(lockutils.LOG, "error", log_error)
+
+        # the file contents of the lock file should not be disturbed
+        def check_contents():
+            with open(lock_file, 'r') as f:
+                self.assertEqual(token, f.read())
+
+        with open(lock_file, "w") as f:
+            f.write(token)
+
+        lockme()
+        check_contents()
+
+        # then also make sure this works if we are hitting it with a symlink
+        os.unlink(lock_file)
+        with open(lock_file2, "w") as f:
+            f.write(token)
+        os.symlink(lock_file2, lock_file)
+        lockme()
+        check_contents()
+
+        self.assertTrue(self.registered_error,
+                        "We should have seen an a log error")
 
     def test_synchronized_with_prefix(self):
         lock_name = 'mylock'
