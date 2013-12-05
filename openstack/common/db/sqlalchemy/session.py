@@ -66,8 +66,13 @@ Recommended ways to use sessions within this framework:
   handler will take care of calling flush() and commit() for you.
   If using this approach, you should not explicitly call flush() or commit().
   Any error within the context of the session will cause the session to emit
-  a ROLLBACK. If the connection is dropped before this is possible, the
-  database will implicitly rollback the transaction.
+  a ROLLBACK. Database Errors like IntegrityError will be raised in
+  session's __exit__ handler, and any try/except within the context managed
+  by session will not be triggered. And catching other non-database errors in
+  the session will not trigger the ROLLBACK, so exception handlers should
+  always be outside the session, except developer want to commit parts of
+  stuff on purpose. If the connection is dropped before this is possible,
+  the database will implicitly roll back the transaction.
 
      Note: statements in the session scope will not be automatically retried.
 
@@ -113,6 +118,23 @@ Recommended ways to use sessions within this framework:
 
     UPDATE bar SET bar = ${newbar}
         WHERE id=(SELECT bar_id FROM foo WHERE id = ${foo_id} LIMIT 1);
+
+  Note: create_duplicate_foo is a trivially simple example of catching
+  exception while using "with session.begin". Here create two duplicate
+  instances with same primary key, need catch the exception out of context
+  managed by a single session:
+
+    def create_duplicate_foo(context):
+        foo1 = models.Foo()
+        foo2 = models.Foo()
+        foo1.id = foo2.id = 1
+        session = get_session()
+        try:
+            with session.begin():
+                session.add(foo1)
+                session.add(foo2)
+        except exception.DBDuplicateEntry as e:
+            handle_error(e)
 
 * Passing an active session between methods. Sessions should only be passed
   to private methods. The private method must use a subtransaction; otherwise
