@@ -39,8 +39,10 @@ import json
 try:
     import xmlrpclib
 except ImportError:
-    # NOTE(jd): xmlrpclib is not shipped with Python 3
-    xmlrpclib = None
+    # NOTE(jaypipes): xmlrpclib was renamed to xmlrpc.client in Python3
+    #                 however the function and object call signatures
+    #                 remained the same.
+    import xmlrpc.client as xmlrpclib
 
 import six
 
@@ -129,7 +131,7 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
         # It's not clear why xmlrpclib created their own DateTime type, but
         # for our purposes, make it a datetime type which is explicitly
         # handled
-        if xmlrpclib and isinstance(value, xmlrpclib.DateTime):
+        if isinstance(value, xmlrpclib.DateTime):
             value = datetime.datetime(*tuple(value.timetuple())[:6])
 
         if convert_datetime and isinstance(value, datetime.datetime):
