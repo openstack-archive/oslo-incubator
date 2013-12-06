@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Approved+1: Zhongyue Luo <zhongyue.luo@gmail.com>
+Code-Review+2: Zhongyue Luo <zhongyue.luo@gmail.com>
+Code-Review+2: Ben Nemec <openstack@nemebean.com>
+Code-Review+1: Noorul Islam K M <noorul@noorul.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 06 Dec 2013 01:54:25 +0000
+Reviewed-on: https://review.openstack.org/58978
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
