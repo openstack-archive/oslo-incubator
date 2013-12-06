@@ -23,6 +23,7 @@ import testtools.matchers as matchers
 from openstack.common.db.sqlalchemy import test_migrations as migrate
 from openstack.common import log as logging
 from openstack.common import test
+from tests.unit.db.sqlalchemy import fake
 
 
 LOG = logging.getLogger(__name__)
@@ -306,7 +307,6 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
 
 
 class CommonSync(object):
-
     def _create_fake_table(self, checked_type, engine):
         metadata = sa.MetaData(bind=engine)
         sa.Table('fake_ref_table', metadata,
@@ -317,6 +317,27 @@ class CommonSync(object):
 class TestSyncMySQL(migrate.SyncModelsWithMigrations, CommonSync):
     DIALECT = 'mysql'
     CHECK_TYPE = sa.dialects.mysql.base.NUMERIC
+    # API for SA-migrate repo.
+    MIGRATION_API = mock.MagicMock()
+    # Path to SA-migrate repo in python style
+    REPOSITORY = mock.MagicMock()
+    # Declarative based (sqlalchemy) class on that all classes in models
+    # will be based
+    MODEL_BASE = fake.BASE
+
+    def test_walk_versions(self):
+        # In TestWalkVersions we have tests for checking walk_versions
+        # functionality. So, we can turn off this checking here.
+        pass
+
+    def test_sync_models(self):
+        # We have a lot of specific tests here for different situations
+        # that check models with database state. Also for each test we
+        # should prepare database without using of repos due to save time.
+        pass
+
+    def _test_sync_models(self):
+        super(TestSyncMySQL, self).test_sync_models()
 
     def test_correct_types(self):
         """We should check correct pair of types due to different
@@ -330,7 +351,115 @@ class TestSyncMySQL(migrate.SyncModelsWithMigrations, CommonSync):
         database_type = type(table.columns.check_column.type)
         self.assertIn((self.CHECK_TYPE, database_type), self.correct_types)
 
+    def _migrate_dbsync(self, engine):
+        """All tested tables should be created from given model based on
+        sqlalchemy declarative_base declared in fake module.
+        """
+        self.base.metadata.create_all(engine)
+
+    def _test_sync_models_with_db(self, base, errors=None, exclude=[]):
+        """Helper method that checks specific model with database state
+        and compares results with expected errors. It can used exclude_tables
+        as a list of tables missing in models or in database if it is a normal
+        behavior (some dumps or shadow tables).
+        """
+        self.EXCLUDE_TABLES = exclude
+        self.base = base
+        if errors is not None:
+            self.assertRaises(matchers.MismatchError,
+                              self._test_sync_models)
+            self.assertEqual(errors, self.errors)
+        else:
+            self._test_sync_models()
+
+    def test_sync_success(self):
+        self._test_sync_models_with_db(fake.BASE)
+
+    def test_sync_extra_tables_with_exclude(self):
+        errors = ['Tables has a difference in models : (fake_table). '
+                  'Models: (fake_table). Database: ().']
+        self._test_sync_models_with_db(fake.BASE_EXTRA_TABLES,
+                                       errors, exclude=['extra_table'])
+
+    def test_sync_indexes_difference(self):
+        errors = ['Indexes has a difference in fake_table : '
+                  '(col_cidr_idx,col_str_idx). Models: (col_cidr_idx). '
+                  'Database: (col_str_idx).']
+        self._test_sync_models_with_db(fake.BASE_INDEXES_DIFF,
+                                       errors)
+
+    def test_sync_uniq_difference(self):
+        errors = ['UniqueConstraint `fake_table.uniq_fake_table0col_fk0id` '
+                  'declared in models is skipped in migrations.',
+                  'Indexes has a difference in fake_table : (UNIQ_col_fk0id).'
+                  ' Models: (). Database: (UNIQ_col_fk0id).']
+        self._test_sync_models_with_db(fake.BASE_UNIQ_DIFF,
+                                       errors)
+
+    def test_sync_fk_difference(self):
+        errors = ['Columns has a difference in fake_table : (col_fk2). '
+                  'Models: (). Database: (col_fk2).',
+                  'ForeignKeys has a difference in fake_table : '
+                  '(col_fk2,col_fk). Models: (col_fk). Database: (col_fk2).',
+                  'Indexes has a difference in fake_table : (col_fk2). '
+                  'Models: (). Database: (col_fk2).']
+        self._test_sync_models_with_db(fake.BASE_FK_DIFF,
+                                       errors)
+
+    def test_sync_extra_column(self):
+        errors = ['Columns has a difference in fake_table : (col_fk3). '
+                  'Models: (). Database: (col_fk3).']
+        self._test_sync_models_with_db(fake.BASE_EXTRA_COLUMN,
+                                       errors)
+
+    def test_sync_wrong_column_type(self):
+        errors = ['Wrong type for column `col_cidr` in `fake_table`: '
+                  '`CIDR:String` in models, expected `INTEGER`.',
+                  'Wrong length for column `col_cidr` in `fake_table` '
+                  '(model: 43, db: None)']
+        self._test_sync_models_with_db(fake.BASE_WRONG_TYPE,
+                                       errors)
+
+    def test_sync_wrong_index_order(self):
+        errors = ['Indexes in `fake_table.col_cidr_idx` has wrong order in '
+                  'model (col_cidr,col_fk), expected in database '
+                  '(col_fk,col_cidr)']
+        self._test_sync_models_with_db(fake.BASE_WRONG_INDEX_ORDER,
+                                       errors)
+
+    def test_sync_extra_nullable(self):
+        errors = ['Wrong value for `nullable` attribute in '
+                  '`fake_table.col_str` (models:False, db:True)']
+        self._test_sync_models_with_db(fake.BASE_EXTRA_NULLABLE,
+                                       errors)
+
+    def test_sync_wrong_uniq_index(self):
+        errors = ['Index in database `fake_table.uniq_fake_table0col_fk0id` '
+                  'should be unique as it declared in models.']
+        self._test_sync_models_with_db(fake.BASE_WRONG_UNIQ_INDEX,
+                                       errors)
+
 
 class TestSyncPostrges(TestSyncMySQL, CommonSync):
     DIALECT = 'postgres'
     CHECK_TYPE = sa.types.DateTime
+
+    def test_sync_wrong_index_order(self):
+        # There is no opportunity for checking columns order in index
+        # for postgres in sqlalchemy < 0.8.2
+        self._test_sync_models_with_db(fake.BASE_WRONG_INDEX_ORDER)
+
+    def test_sync_wrong_column_type(self):
+        # Another type of column declared in models for postgres.
+        errors = ['Wrong type for column `col_cidr` in `fake_table`: '
+                  '`CIDR:INET` in models, expected `INTEGER`.']
+        self._test_sync_models_with_db(fake.BASE_WRONG_TYPE,
+                                       errors)
+
+    def test_sync_fk_difference(self):
+        errors = ['Columns has a difference in fake_table : (col_fk2). '
+                  'Models: (). Database: (col_fk2).',
+                  'ForeignKeys has a difference in fake_table : '
+                  '(col_fk2,col_fk). Models: (col_fk). Database: (col_fk2).']
+        self._test_sync_models_with_db(fake.BASE_FK_DIFF,
+                                       errors)
