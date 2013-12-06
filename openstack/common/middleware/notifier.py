@@ -19,6 +19,7 @@ import os.path
 import sys
 import traceback as tb
 
+import six
 import webob.dec
 
 from openstack.common import context
@@ -65,7 +66,7 @@ class RequestNotifier(base.Middleware):
         include them.
 
         """
-        return dict((k, v) for k, v in environ.iteritems()
+        return dict((k, v) for k, v in six.iteritems(environ)
                     if k.isupper())
 
     @log_and_ignore_error

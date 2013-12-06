@@ -89,7 +89,7 @@ class ModelBase(object):
         joined = dict([(k, v) for k, v in six.iteritems(self.__dict__)
                       if not k[0] == '_'])
         local.update(joined)
-        return local.iteritems()
+        return six.iteritems(local)
 
 
 class TimestampMixin(object):
