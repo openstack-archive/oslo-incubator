@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Approved+1: Eoghan Glynn <eglynn@redhat.com>
+Code-Review+2: Eoghan Glynn <eglynn@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 06 Dec 2013 09:08:46 +0000
+Reviewed-on: https://review.openstack.org/60385
+Project: openstack/oslo-incubator
+Branch: refs/heads/stable/havana
