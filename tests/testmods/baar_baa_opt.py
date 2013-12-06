@@ -16,4 +16,6 @@ from oslo.config import cfg
 
 CONF = cfg.CONF
 
-CONF.register_opt(cfg.StrOpt('baa'), group='baar')
+opt = cfg.StrOpt('baa')
+
+CONF.register_opt(opt, group='baar')

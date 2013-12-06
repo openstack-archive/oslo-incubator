@@ -16,4 +16,6 @@ from oslo.config import cfg
 
 CONF = cfg.CONF
 
-CONF.register_opt(cfg.StrOpt('fblaa'))
+opt = cfg.StrOpt('fblaa', default="fblaa")
+
+CONF.register_opt(opt)
