@@ -271,9 +271,6 @@ def _find_migrate_repo(abs_path):
 
     :param abs_path: Absolute path to migrate repository
     """
-    global _REPOSITORY
     if not os.path.exists(abs_path):
         raise exception.DbMigrationError("Path %s not found" % abs_path)
-    if _REPOSITORY is None:
-        _REPOSITORY = Repository(abs_path)
-    return _REPOSITORY
+    return Repository(abs_path)

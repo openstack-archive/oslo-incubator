@@ -62,21 +62,10 @@ class TestMigrationCommon(base.DbTestCase):
         )
         self.assertIsNone(migration._REPOSITORY)
 
-    def test_find_migrate_repo_called_once(self):
+    def test_find_migrate_repo(self):
         my_repository = migration._find_migrate_repo(self.path)
-
         self.repository.assert_called_once_with(self.path)
-        self.assertEqual(migration._REPOSITORY, self.return_value)
         self.assertEqual(my_repository, self.return_value)
-
-    def test_find_migrate_repo_called_few_times(self):
-        repository1 = migration._find_migrate_repo(self.path)
-        repository2 = migration._find_migrate_repo(self.path)
-
-        self.repository.assert_called_once_with(self.path)
-        self.assertEqual(migration._REPOSITORY, self.return_value)
-        self.assertEqual(repository1, self.return_value)
-        self.assertEqual(repository2, self.return_value)
 
     def test_db_version_control(self):
         with contextlib.nested(
