@@ -265,7 +265,7 @@ class RequestHeadersDeserializerTest(test.BaseTestCase):
     def test_default(self):
         deserializer = wsgi.RequestHeadersDeserializer()
         req = wsgi.Request.blank('/')
-        self.assertEqual(deserializer.deserialize(req, 'nonExistant'), {})
+        self.assertEqual(deserializer.deserialize(req, 'nonExistent'), {})
 
     def test_custom(self):
         class Deserializer(wsgi.RequestHeadersDeserializer):
