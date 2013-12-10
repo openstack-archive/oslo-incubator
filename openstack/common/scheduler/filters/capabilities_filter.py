@@ -15,7 +15,7 @@
 
 import six
 
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _  # noqa
 from openstack.common import log as logging
 from openstack.common.scheduler import filters
 from openstack.common.scheduler.filters import extra_specs_ops
