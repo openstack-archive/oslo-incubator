@@ -43,7 +43,7 @@ class CapabilitiesFilter(filters.BaseHostFilter):
                 del scope[0]
 
             cap = capabilities
-            for index in range(0, len(scope)):
+            for index in range(len(scope)):
                 try:
                     cap = cap.get(scope[index], None)
                 except AttributeError:
