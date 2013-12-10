@@ -270,7 +270,7 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
             for value in soft_deleted_values:
                 self.assertTrue(value['id'] in deleted_rows_ids)
 
-    def test_change_deleted_column_type_doesnt_drop_index(self):
+    def test_change_deleted_column_type_does_not_drop_index(self):
         table_name = 'abc'
         for key, engine in self.engines.items():
             meta = MetaData(bind=engine)
