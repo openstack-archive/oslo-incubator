@@ -17,12 +17,12 @@
 from oslo.config import cfg
 
 from openstack.common.fixture import config
-from tests.utils import BaseTestCase
+from tests import utils
 
 conf = cfg.CONF
 
 
-class ConfigTestCase(BaseTestCase):
+class ConfigTestCase(utils.BaseTestCase):
     def setUp(self):
         super(ConfigTestCase, self).setUp()
         self.config = self.useFixture(config.Config(conf)).config

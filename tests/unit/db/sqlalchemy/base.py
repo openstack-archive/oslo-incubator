@@ -14,7 +14,7 @@
 # under the License.
 
 import abc
-from functools import wraps
+import functools
 import os
 
 import fixtures
@@ -78,7 +78,7 @@ def backend_specific(*dialects):
     ::dialects: list of dialects names under which the test will be launched.
     """
     def wrap(f):
-        @wraps(f)
+        @functools.wraps(f)
         def ins_wrap(self):
             if not set(dialects).issubset(ALLOWED_DIALECTS):
                 raise ValueError(
