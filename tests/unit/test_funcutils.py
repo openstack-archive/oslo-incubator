@@ -124,7 +124,7 @@ class FuncutilsTestCase(test.BaseTestCase):
         old_wrapped = wrapped
 
         # Wrap it many times and ensure that its still the right one.
-        for _i in range(0, 10):
+        for _i in range(10):
             wrapped = self._wrapper(wrapped)
             func = funcutils.get_wrapped_function(wrapped)
             func_code = func.func_code

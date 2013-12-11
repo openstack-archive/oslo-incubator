@@ -169,7 +169,7 @@ class CryptoUtilsTestCase(test.BaseTestCase):
         key = skc.new_key(16)
         msg = skc.new_key(cb * 2)
 
-        for i in range(0, cb * 2):
+        for i in range(cb * 2):
             cipher = skc.encrypt(key, msg[0:i], b64encode=False)
             plain = skc.decrypt(key, cipher, b64decode=False)
             self.assertEqual(msg[0:i], plain)
