@@ -1,0 +1,15 @@
+Verified+2: Jenkins
+Approved+1: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+1: Zhi Yan Liu <lzy.dev@gmail.com>
+Code-Review+1: ChangBo Guo <guochbo@cn.ibm.com>
+Code-Review+1: Roman Podoliaka <rpodolyaka@mirantis.com>
+Code-Review+2: Ben Nemec <openstack@nemebean.com>
+Code-Review+1: Victor Sergeyev <vsergeyev@mirantis.com>
+Code-Review+1: Ilya Pekelny <ipekelny@mirantis.com>
+Code-Review+1: Jun Jie Nan <nanjj@cn.ibm.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 11 Dec 2013 20:45:17 +0000
+Reviewed-on: https://review.openstack.org/48733
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
