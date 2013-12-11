@@ -111,12 +111,14 @@ pool_timeout=7
         self.assertEqual(self.conf.database.max_overflow, 101)
         self.assertEqual(self.conf.database.pool_timeout, 5)
 
-    def test_dbapi_database_deprecated_parameters_sql_connection(self):
+    def test_dbapi_database_deprecated_parameters_sql(self):
         path = self.create_tempfiles([['tmp', '[sql]\n'
                                       'connection=test_sql_connection\n'
+                                      'idle_timeout=99\n'
                                        ]])[0]
         self.conf(['--config-file', path])
         self.assertEqual(self.conf.database.connection, 'test_sql_connection')
+        self.assertEqual(self.conf.database.idle_timeout, 99)
 
 
 class SessionErrorWrapperTestCase(test_base.DbTestCase):
