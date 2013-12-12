@@ -40,7 +40,7 @@ class QemuImgInfo(object):
         self.cluster_size = details.get('cluster_size')
         self.disk_size = details.get('disk_size')
         self.snapshots = details.get('snapshot_list', [])
-        self.encryption = details.get('encryption')
+        self.encrypted = details.get('encrypted')
 
     def __str__(self):
         lines = [
@@ -53,6 +53,8 @@ class QemuImgInfo(object):
         ]
         if self.snapshots:
             lines.append("snapshots: %s" % self.snapshots)
+        if self.encrypted:
+            lines.append("encrypted: %s" % self.encrypted)
         return "\n".join(lines)
 
     def _canonicalize(self, field):

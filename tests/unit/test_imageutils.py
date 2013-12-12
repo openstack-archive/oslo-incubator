@@ -116,3 +116,36 @@ ID        TAG                 VM SIZE                DATE       VM CLOCK
         self.assertEqual(67108864, image_info.virtual_size)
         self.assertEqual(98304, image_info.disk_size)
         self.assertEqual(3, len(image_info.snapshots))
+
+    def test_qemu_info_encrypted(self):
+        path = 'disk.config'
+        template_output = """image: %(path)s
+file format: qcow2
+virtual size: 2K (2048 bytes)
+cluster_size: 65536
+disk size: 96K
+encrypted: yes
+"""
+        example_output = template_output % ({
+            'path': path,
+        })
+
+        image_info = imageutils.QemuImgInfo(example_output)
+        self.assertEqual('yes', image_info.encrypted,
+                         "encrypted status must be 'yes'")
+
+    def test_qemu_info_unencrypted(self):
+        path = 'disk.config'
+        template_output = """image: %(path)s
+file format: qcow2
+virtual size: 2K (2048 bytes)
+cluster_size: 65536
+disk size: 96K
+"""
+        example_output = template_output % ({
+            'path': path,
+        })
+
+        image_info = imageutils.QemuImgInfo(example_output)
+        self.assertEqual(None, image_info.encrypted,
+                         "encrypted status must be None")
