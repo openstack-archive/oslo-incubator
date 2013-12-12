@@ -22,7 +22,7 @@ from oslo.config import cfg
 import six
 
 from openstack.common.db.sqlalchemy import session
-from openstack.common.db.sqlalchemy import test_migrations as tm
+from openstack.common.db.sqlalchemy import utils
 from tests import utils as test_utils
 
 
@@ -108,10 +108,10 @@ class OpportunisticFixture(DbFixture):
     DBNAME = PASSWORD = USERNAME = 'openstack_citest'
 
     def _get_uri(self):
-        return tm._get_connect_string(backend=self.DRIVER,
-                                      user=self.USERNAME,
-                                      passwd=self.PASSWORD,
-                                      database=self.DBNAME)
+        return utils.get_connect_string(backend=self.DRIVER,
+                                        user=self.USERNAME,
+                                        passwd=self.PASSWORD,
+                                        database=self.DBNAME)
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -125,13 +125,13 @@ class OpportunisticTestCase(DbTestCase):
     FIXTURE = abc.abstractproperty(lambda: None)
 
     def setUp(self):
-        credentials = (
-            self.FIXTURE.DRIVER,
-            self.FIXTURE.USERNAME,
-            self.FIXTURE.PASSWORD,
-            self.FIXTURE.DBNAME)
+        credentials = {
+            'backend': self.FIXTURE.DRIVER,
+            'user': self.FIXTURE.USERNAME,
+            'passwd': self.FIXTURE.PASSWORD,
+            'database': self.FIXTURE.DBNAME}
 
-        if self.FIXTURE.DRIVER and not tm._is_backend_avail(*credentials):
+        if self.FIXTURE.DRIVER and not utils.is_backend_avail(**credentials):
             msg = '%s backend is not available.' % self.FIXTURE.DRIVER
             return self.skip(msg)
 
