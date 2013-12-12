@@ -497,3 +497,50 @@ def _change_deleted_column_type_to_id_type_sqlite(migrate_engine, table_name,
         where(new_table.c.deleted == deleted).\
         values(deleted=default_deleted_value).\
         execute()
+
+
+def get_connect_string(backend, user, passwd, database):
+    """Get database connection
+
+    Try to get a connection with a very specific set of values, if we get
+    these then we'll run the tests, otherwise they are skipped
+    """
+    if backend == "postgres":
+        backend = "postgresql+psycopg2"
+    elif backend == "mysql":
+        backend = "mysql+mysqldb"
+    else:
+        raise Exception("Unrecognized backend: '%s'" % backend)
+
+    return ("%(backend)s://%(user)s:%(passwd)s@localhost/%(database)s"
+            % {'backend': backend, 'user': user, 'passwd': passwd,
+               'database': database})
+
+
+def is_backend_avail(backend, user, passwd, database):
+    try:
+        connect_uri = get_connect_string(backend, user, passwd, database)
+        engine = sqlalchemy.create_engine(connect_uri)
+        connection = engine.connect()
+    except Exception:
+        # intentionally catch all to handle exceptions even if we don't
+        # have any backend code loaded.
+        return False
+    else:
+        connection.close()
+        engine.dispose()
+        return True
+
+
+def get_db_connection_info(conn_pieces):
+    database = conn_pieces.path.strip('/')
+    loc_pieces = conn_pieces.netloc.split('@')
+    host = loc_pieces[1]
+
+    auth_pieces = loc_pieces[0].split(':')
+    user = auth_pieces[0]
+    password = ""
+    if len(auth_pieces) > 1:
+        password = auth_pieces[1].strip()
+
+    return (user, password, database, host)
