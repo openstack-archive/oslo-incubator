@@ -18,17 +18,14 @@
 import os
 import tempfile
 
-import fixtures
 from oslo.config import cfg
 import six
-import testtools
 
 from openstack.common.fixture import moxstubout
+from openstack.common import test
 
-_TRUE_VALUES = ('True', 'true', '1', 'yes')
 
-
-class BaseTestCase(testtools.TestCase):
+class BaseTestCase(test.BaseTestCase):
 
     def setUp(self, conf=cfg.CONF):
         super(BaseTestCase, self).setUp()
@@ -37,24 +34,6 @@ class BaseTestCase(testtools.TestCase):
         self.stubs = moxfixture.stubs
         self.conf = conf
         self.addCleanup(self.conf.reset)
-        self.useFixture(fixtures.FakeLogger('openstack.common'))
-
-        test_timeout = os.environ.get('OS_TEST_TIMEOUT', 0)
-        try:
-            test_timeout = int(test_timeout)
-        except ValueError:
-            # If timeout value is invalid do not set a timeout.
-            test_timeout = 0
-        if test_timeout > 0:
-            self.useFixture(fixtures.Timeout(test_timeout, gentle=True))
-        if os.environ.get('OS_STDOUT_CAPTURE') in _TRUE_VALUES:
-            stdout = self.useFixture(fixtures.StringStream('stdout')).stream
-            self.useFixture(fixtures.MonkeyPatch('sys.stdout', stdout))
-        if os.environ.get('OS_STDERR_CAPTURE') in _TRUE_VALUES:
-            stderr = self.useFixture(fixtures.StringStream('stderr')).stream
-            self.useFixture(fixtures.MonkeyPatch('sys.stderr', stderr))
-
-        self.useFixture(fixtures.NestedTempfile())
         self.tempdirs = []
 
     def tearDown(self):
