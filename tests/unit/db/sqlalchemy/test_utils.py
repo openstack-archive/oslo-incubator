@@ -26,6 +26,7 @@ from sqlalchemy.engine import reflection
 from sqlalchemy.exc import SAWarning
 from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType, NullType
+from openstack.common.py3kcompat import urlutils
 
 from openstack.common.db.sqlalchemy import migration
 from openstack.common.db.sqlalchemy import test_migrations
@@ -549,3 +550,35 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
         self.assertEqual(f_key['referred_table'], 'table0')
         self.assertEqual(f_key['referred_columns'], ['id'])
         self.assertEqual(f_key['constrained_columns'], ['bar'])
+
+
+class TestConnectionUtils(test.BaseTestCase):
+
+    def setUp(self):
+        super(TestConnectionUtils, self).setUp()
+        mox_fixture = self.useFixture(moxstubout.MoxStubout())
+        self.mox = mox_fixture.mox
+
+        self.full_credentials = {'backend': 'mysql',
+                                 'database': 'test',
+                                 'user': 'dude',
+                                 'passwd': 'pass'}
+        self.connect_string = 'mysql+mysqldb://dude:pass@localhost/test'
+
+    def test_connect_string(self):
+        connect_string = utils.get_connect_string(**self.full_credentials)
+        self.assertEqual(connect_string, self.connect_string)
+
+    def test_is_backend_avail(self):
+        self.mox.StubOutWithMock(sqlalchemy.engine.base.Engine, 'connect')
+        fake_connection = self.mox.CreateMockAnything()
+        fake_connection.close()
+        sqlalchemy.engine.base.Engine.connect().AndReturn(fake_connection)
+        self.mox.ReplayAll()
+
+        self.assertTrue(utils.is_backend_avail(**self.full_credentials))
+
+    def test_get_db_connection_info(self):
+        conn_pieces = urlutils.urlparse(self.connect_string)
+        self.assertEqual(utils.get_db_connection_info(conn_pieces),
+                         ('dude', 'pass', 'test', 'localhost'))
