@@ -33,7 +33,7 @@ from openstack.common.fixture import moxstubout
 from openstack.common import jsonutils
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
-import tests.utils
+from openstack.common import test
 
 try:
     import qpid
@@ -44,7 +44,7 @@ except ImportError:
     impl_qpid = None
 
 
-class RpcQpidTestCase(tests.utils.BaseTestCase):
+class RpcQpidTestCase(test.BaseTestCase):
     """Exercise the public API of impl_qpid utilizing mox.
 
     This set of tests utilizes mox to replace the Qpid objects and ensures
