@@ -606,14 +606,16 @@ def get_engine(sqlite_fk=False, slave_engine=False,
     engine = _ENGINE
     db_uri = CONF.database.connection
 
-    if slave_engine:
+    use_slave = slave_engine and CONF.database.slave_connection
+
+    if use_slave:
         engine = _SLAVE_ENGINE
         db_uri = CONF.database.slave_connection
 
     if engine is None:
         engine = create_engine(db_uri, sqlite_fk=sqlite_fk,
                                mysql_traditional_mode=mysql_traditional_mode)
-    if slave_engine:
+    if use_slave:
         _SLAVE_ENGINE = engine
     else:
         _ENGINE = engine
