@@ -16,22 +16,40 @@
 """Common utilities used in testing"""
 
 import os
+import tempfile
 
 import fixtures
+from oslo.config import cfg
+import six
 import testtools
+
+from openstack.common.fixture import moxstubout
 
 _TRUE_VALUES = ('True', 'true', '1', 'yes')
 
 
 class BaseTestCase(testtools.TestCase):
 
-    def setUp(self):
+    def setUp(self, conf=cfg.CONF):
         super(BaseTestCase, self).setUp()
+        moxfixture = self.useFixture(moxstubout.MoxStubout())
         self._set_timeout()
         self._fake_output()
         self.useFixture(fixtures.FakeLogger('openstack.common'))
         self.useFixture(fixtures.NestedTempfile())
         self.useFixture(fixtures.TempHomeDir())
+        self.mox = moxfixture.mox
+        self.stubs = moxfixture.stubs
+        self.conf = conf
+        self.addCleanup(self.conf.reset)
+        self.useFixture(fixtures.FakeLogger('openstack.common'))
+        self.tempdirs = []
+
+    def tearDown(self):
+        super(BaseTestCase, self).tearDown()
+        self.conf.reset()
+        self.stubs.UnsetAll()
+        self.stubs.SmartUnsetAll()
 
     def _set_timeout(self):
         test_timeout = os.environ.get('OS_TEST_TIMEOUT', 0)
@@ -50,3 +68,34 @@ class BaseTestCase(testtools.TestCase):
         if os.environ.get('OS_STDERR_CAPTURE') in _TRUE_VALUES:
             stderr = self.useFixture(fixtures.StringStream('stderr')).stream
             self.useFixture(fixtures.MonkeyPatch('sys.stderr', stderr))
+
+    def create_tempfiles(self, files, ext='.conf'):
+        tempfiles = []
+        for (basename, contents) in files:
+            if not os.path.isabs(basename):
+                (fd, path) = tempfile.mkstemp(prefix=basename, suffix=ext)
+            else:
+                path = basename + ext
+                fd = os.open(path, os.O_CREAT | os.O_WRONLY)
+            tempfiles.append(path)
+            try:
+                os.write(fd, contents)
+            finally:
+                os.close(fd)
+        return tempfiles
+
+    def config(self, **kw):
+        """Override some configuration values.
+
+        The keyword arguments are the names of configuration options to
+        override and their values.
+
+        If a group argument is supplied, the overrides are applied to
+        the specified configuration option group.
+
+        All overrides are automatically cleared at the end of the current
+        test by the tearDown() method.
+        """
+        group = kw.pop('group', None)
+        for k, v in six.iteritems(kw):
+            self.conf.set_override(k, v, group)

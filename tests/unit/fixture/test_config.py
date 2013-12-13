@@ -17,12 +17,12 @@
 from oslo.config import cfg
 
 from openstack.common.fixture import config
-from tests import utils
+from tests.unit.db.sqlalchemy import base
 
 conf = cfg.CONF
 
 
-class ConfigTestCase(utils.BaseTestCase):
+class ConfigTestCase(base.DbTestCase):
     def setUp(self):
         super(ConfigTestCase, self).setUp()
         self.config = self.useFixture(config.Config(conf)).config
