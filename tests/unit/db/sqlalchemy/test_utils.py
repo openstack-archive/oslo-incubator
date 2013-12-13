@@ -16,6 +16,7 @@
 import warnings
 
 from migrate.changeset import UniqueConstraint
+import mock
 import six
 from six import moves
 import sqlalchemy
@@ -24,10 +25,13 @@ from sqlalchemy import Boolean, Index, Integer, DateTime, String
 from sqlalchemy import MetaData, Table, Column, ForeignKey
 from sqlalchemy.engine import reflection
 from sqlalchemy.exc import SAWarning
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType, NullType
 
 from openstack.common.db.sqlalchemy import migration
+from openstack.common.db.sqlalchemy import models
+from openstack.common.db.sqlalchemy import session as db_session
 from openstack.common.db.sqlalchemy import test_migrations
 from openstack.common.db.sqlalchemy import utils
 from openstack.common.fixture import moxstubout
@@ -548,3 +552,114 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
         self.assertEqual(f_key['referred_table'], 'table0')
         self.assertEqual(f_key['referred_columns'], ['id'])
         self.assertEqual(f_key['constrained_columns'], ['bar'])
+
+
+class MyModelSoftDeleded(declarative_base(), models.ModelBase,
+                         models.SoftDeleteMixin):
+    __tablename__ = 'model_for_test'
+    id = Column(Integer, primary_key=True)
+    project_id = Column(Integer)
+
+
+class MyModel(declarative_base(), models.ModelBase):
+    __tablename__ = 'model_for_test'
+    id = Column(Integer, primary_key=True)
+
+
+class TestModelQuery(test.BaseTestCase):
+
+    def setUp(self):
+        super(TestModelQuery, self).setUp()
+
+        self.session = mock.MagicMock()
+        self.session.query.return_value = self.session.query
+        self.session.query.filter.return_value = self.session.query
+        self.user_context = mock.MagicMock(is_admin=False, read_deleted='yes',
+                                           user_id=42, project_id=43)
+
+    def test_model_query_with_session(self):
+        utils.model_query(self.user_context, MyModelSoftDeleded,
+                          session=self.session)
+
+        self.session.query.assert_called_with(MyModelSoftDeleded)
+
+    @mock.patch.object(db_session, 'get_session')
+    def test_model_query_no_session(self, get_session_mock):
+        utils.model_query(self.user_context, MyModelSoftDeleded)
+
+        get_session_mock.assert_called_with(slave_session=False)
+
+    def test_model_query_wrong_model(self):
+        self.assertRaises(TypeError, utils.model_query, self.user_context,
+                          FakeModel, session=self.session)
+
+    def test_model_query_no_soft_deleted(self):
+        self.assertRaises(ValueError, utils.model_query, self.user_context,
+                          MyModel, session=self.session)
+
+    def test_model_query_read_deleted_only(self):
+        mock_query = utils.model_query(
+            self.user_context, MyModelSoftDeleded,
+            session=self.session, read_deleted='only')
+
+        self.assertEqual(str(mock_query.filter.call_args[0][0]),
+                         'model_for_test.deleted != :deleted_1')
+
+    def test_model_query_read_deleted_no(self):
+        mock_query = utils.model_query(
+            self.user_context, MyModelSoftDeleded,
+            session=self.session, read_deleted='no')
+
+        self.assertEqual(str(mock_query.filter.call_args[0][0]),
+                         'model_for_test.deleted = :deleted_1')
+
+    def test_model_query_read_deleted_yes(self):
+        mock_query = utils.model_query(
+            self.user_context, MyModelSoftDeleded,
+            session=self.session, read_deleted='yes')
+
+        self.assertEqual(mock_query.filter.call_count, 0)
+
+    def test_model_query_wrong_read_deleted(self):
+        self.assertRaises(ValueError, utils.model_query, self.user_context,
+                          MyModel, session=self.session, read_deleted='ololo')
+
+    def test_model_query_project_only_true(self):
+        mock_query = utils.model_query(
+            self.user_context, MyModelSoftDeleded,
+            session=self.session, project_only=True)
+
+        self.assertEqual(
+            str(mock_query.filter.call_args[0][0]),
+            'model_for_test.project_id = :project_id_1'
+        )
+
+    def test_model_query_read_deleted_allow_none(self):
+        mock_query = utils.model_query(
+            self.user_context, MyModelSoftDeleded,
+            session=self.session, project_only='allow_none')
+
+        self.assertEqual(
+            str(mock_query.filter.call_args[0][0]),
+            'model_for_test.project_id = :project_id_1 OR'
+            ' model_for_test.project_id IS NULL'
+        )
+
+    def test_model_query_wrong_project_id(self):
+        self.assertRaises(ValueError, utils.model_query, self.user_context,
+                          MyModel, session=self.session,
+                          project_only=True)
+
+    @mock.patch.object(utils, "_read_deleted_filter")
+    @mock.patch.object(utils, "_project_filter")
+    def test_model_query_common(self, _project_filter, _read_deleted_filter):
+        _read_deleted_filter.return_value = self.session.query
+        _project_filter.return_value = self.session.query
+        utils.model_query(self.user_context, MyModel,
+                          args=(MyModel.id,), session=self.session)
+
+        self.session.query.assert_called_with(MyModel.id)
+        _read_deleted_filter.assert_called_with(
+            self.session.query, MyModel, self.user_context.read_deleted)
+        _project_filter.assert_called_with(
+            self.session.query, MyModel, self.user_context, False)
