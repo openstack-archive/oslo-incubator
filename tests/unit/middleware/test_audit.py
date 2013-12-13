@@ -21,9 +21,10 @@ import pycadf
 from pycadf.audit import api as cadf_api
 import webob
 
+from openstack.common.fixture import moxstubout
 from openstack.common.middleware import audit
 from openstack.common.notifier import api
-from tests import utils
+from tests.unit.db.sqlalchemy import base
 
 CONF = cfg.CONF
 
@@ -43,7 +44,7 @@ class FakeFailingApp(object):
         raise Exception("It happens!")
 
 
-class AuditMiddlewareTest(utils.BaseTestCase):
+class AuditMiddlewareTest(base.DbTestCase):
     ENV_HEADERS = {'HTTP_X_SERVICE_CATALOG':
                    '''[{"endpoints_links": [],
                         "endpoints": [{"adminURL":
@@ -64,6 +65,7 @@ class AuditMiddlewareTest(utils.BaseTestCase):
 
     def setUp(self):
         super(AuditMiddlewareTest, self).setUp()
+        self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
         CONF(args=['--config-dir', os.path.abspath(os.path.join(
             os.path.dirname(pycadf.__file__), '..', 'etc'))])
 

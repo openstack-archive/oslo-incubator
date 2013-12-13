@@ -14,10 +14,10 @@
 #    under the License.
 
 from openstack.common import imageutils
-from tests import utils as utils_test
+from tests.unit.db.sqlalchemy import base
 
 
-class ImageUtilsTestCase(utils_test.BaseTestCase):
+class ImageUtilsTestCase(base.DbTestCase):
     def test_qemu_img_info_blank(self):
         example_output = """image: None
 file_format: None

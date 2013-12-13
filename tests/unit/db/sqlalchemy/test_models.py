@@ -19,13 +19,13 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from openstack.common.db.sqlalchemy import models
 from openstack.common import test
-from tests.unit.db.sqlalchemy import base as test_base
+from tests.unit.db.sqlalchemy import base
 
 
 BASE = declarative_base()
 
 
-class ModelBaseTest(test_base.DbTestCase):
+class ModelBaseTest(base.DbTestCase):
 
     def test_modelbase_has_dict_methods(self):
         dict_methods = ('__getitem__',

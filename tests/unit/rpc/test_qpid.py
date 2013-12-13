@@ -33,7 +33,7 @@ from openstack.common.fixture import moxstubout
 from openstack.common import jsonutils
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
-import tests.utils
+from tests.unit.db.sqlalchemy import base
 
 try:
     import qpid
@@ -44,7 +44,7 @@ except ImportError:
     impl_qpid = None
 
 
-class RpcQpidTestCase(tests.utils.BaseTestCase):
+class RpcQpidTestCase(base.DbTestCase):
     """Exercise the public API of impl_qpid utilizing mox.
 
     This set of tests utilizes mox to replace the Qpid objects and ensures
@@ -94,6 +94,7 @@ class RpcQpidTestCase(tests.utils.BaseTestCase):
             fixtures.MonkeyPatch('uuid.uuid4', self.mock_uuid4))
 
         configfixture = self.useFixture(config.Config())
+        self.conf = configfixture.conf
         self.config = configfixture.config
         self.FLAGS = configfixture.conf
 

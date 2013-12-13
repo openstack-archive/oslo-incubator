@@ -23,7 +23,7 @@ import six
 
 from openstack.common.db.sqlalchemy import session
 from openstack.common.db.sqlalchemy import test_migrations as tm
-from tests import utils as test_utils
+from openstack.common import test
 
 
 class DbFixture(fixtures.Fixture):
@@ -52,7 +52,7 @@ class DbFixture(fixtures.Fixture):
         self.addCleanup(self.conf.reset)
 
 
-class DbTestCase(test_utils.BaseTestCase):
+class DbTestCase(test.BaseTestCase):
     """Base class for testing of DB code.
 
     Using `DbFixture`. Intended to be the main database test case to use all

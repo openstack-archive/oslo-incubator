@@ -16,9 +16,10 @@
 import mock
 import webob
 
+from openstack.common.fixture import moxstubout
 from openstack.common.middleware import notifier
 from openstack.common.notifier import api
-from tests import utils
+from tests.unit.db.sqlalchemy import base
 
 
 class FakeApp(object):
@@ -36,7 +37,11 @@ class FakeFailingApp(object):
         raise Exception("It happens!")
 
 
-class NotifierMiddlewareTest(utils.BaseTestCase):
+class NotifierMiddlewareTest(base.DbTestCase):
+
+    def setUp(self):
+        super(NotifierMiddlewareTest, self).setUp()
+        self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
 
     def test_notification(self):
         middleware = notifier.RequestNotifier(FakeApp())
