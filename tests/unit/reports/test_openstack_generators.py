@@ -22,10 +22,10 @@ from openstack.common.report.generators import conf as os_cgen
 from openstack.common.report.generators import threading as os_tgen
 from openstack.common.report.generators import version as os_pgen
 from openstack.common.report.models import threading as os_tmod
-from tests import utils
+from openstack.common import test
 
 
-class TestOpenstackGenerators(utils.BaseTestCase):
+class TestOpenstackGenerators(test.DbTestCase):
     def test_thread_generator(self):
         model = os_tgen.ThreadReportGenerator()()
         # self.assertGreaterEqual(len(model.keys()), 1)

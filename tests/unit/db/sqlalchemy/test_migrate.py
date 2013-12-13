@@ -20,7 +20,7 @@ import sqlalchemy as sa
 
 from openstack.common.db.sqlalchemy import migration
 from openstack.common.db.sqlalchemy import session
-from tests.unit.db.sqlalchemy import base as test_base
+from openstack.common import test
 
 
 def uniques(*constraints):
@@ -35,7 +35,7 @@ def uniques(*constraints):
     return set((uc.name, tuple(uc.columns.keys())) for uc in constraints)
 
 
-class TestSqliteUniqueConstraints(test_base.DbTestCase):
+class TestSqliteUniqueConstraints(test.DbTestCase):
     def setUp(self):
         super(TestSqliteUniqueConstraints, self).setUp()
 
@@ -63,7 +63,7 @@ class TestSqliteUniqueConstraints(test_base.DbTestCase):
             autoload=True
         )
 
-    @test_base.backend_specific('sqlite')
+    @test.backend_specific('sqlite')
     def test_get_unique_constraints(self):
         table = self.reflected_table
 
@@ -74,7 +74,7 @@ class TestSqliteUniqueConstraints(test_base.DbTestCase):
         )
         self.assertEqual(should_be, existing)
 
-    @test_base.backend_specific('sqlite')
+    @test.backend_specific('sqlite')
     def test_add_unique_constraint(self):
         table = self.reflected_table
         UniqueConstraint(table.c.a, table.c.c, name='unique_a_c').create()
@@ -87,7 +87,7 @@ class TestSqliteUniqueConstraints(test_base.DbTestCase):
         )
         self.assertEqual(should_be, existing)
 
-    @test_base.backend_specific('sqlite')
+    @test.backend_specific('sqlite')
     def test_drop_unique_constraint(self):
         table = self.reflected_table
         UniqueConstraint(table.c.a, table.c.b, name='unique_a_b').drop()

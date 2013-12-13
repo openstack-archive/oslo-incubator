@@ -25,7 +25,7 @@ import greenlet
 
 from openstack.common.report import guru_meditation_report as gmr
 from openstack.common.report.models import with_default_views as mwdv
-from tests import utils
+from openstack.common import test
 
 
 class FakeVersionObj(object):
@@ -48,7 +48,7 @@ def skip_body_lines(start_line, report_lines):
     return curr_line
 
 
-class TestGuruMeditationReport(utils.BaseTestCase):
+class TestGuruMeditationReport(test.DbTestCase):
     def setUp(self):
         super(TestGuruMeditationReport, self).setUp()
 

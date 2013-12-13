@@ -18,7 +18,7 @@ import webob
 
 from openstack.common.middleware import notifier
 from openstack.common.notifier import api
-from tests import utils
+from openstack.common import test
 
 
 class FakeApp(object):
@@ -36,7 +36,7 @@ class FakeFailingApp(object):
         raise Exception("It happens!")
 
 
-class NotifierMiddlewareTest(utils.BaseTestCase):
+class NotifierMiddlewareTest(test.DbTestCase):
 
     def test_notification(self):
         middleware = notifier.RequestNotifier(FakeApp())
