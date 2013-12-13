@@ -17,7 +17,7 @@
 
 from openstack.common.db import api
 from openstack.common.fixture import config
-from tests import utils as test_utils
+from openstack.common import test
 
 
 def get_backend():
@@ -29,7 +29,7 @@ class DBAPI(object):
         return args, kwargs
 
 
-class DBAPITestCase(test_utils.BaseTestCase):
+class DBAPITestCase(test.BaseTestCase):
 
     def setUp(self):
         super(DBAPITestCase, self).setUp()

@@ -20,14 +20,14 @@ from openstack.common.report import report
 from openstack.common.report.views import jinja_view as jv
 from openstack.common.report.views.json import generic as json_generic
 from openstack.common.report.views.text import generic as text_generic
-from tests import utils
+from openstack.common import test
 
 
 def mwdv_generator():
     return mwdf.ModelWithDefaultViews(data={'string': 'value', 'int': 1})
 
 
-class TestModelReportType(utils.BaseTestCase):
+class TestModelReportType(test.BaseTestCase):
     def test_model_with_default_views(self):
         model = mwdv_generator()
 
@@ -88,7 +88,7 @@ class TestModelReportType(utils.BaseTestCase):
                          model.to_xml())
 
 
-class TestGenericXMLView(utils.BaseTestCase):
+class TestGenericXMLView(test.BaseTestCase):
     def setUp(self):
         super(TestGenericXMLView, self).setUp()
 
@@ -158,7 +158,7 @@ class TestGenericXMLView(utils.BaseTestCase):
         self.assertEqual(target_str, str(self.model))
 
 
-class TestGenericJSONViews(utils.BaseTestCase):
+class TestGenericJSONViews(test.BaseTestCase):
     def setUp(self):
         super(TestGenericJSONViews, self).setUp()
 
@@ -226,7 +226,7 @@ class TestGenericJSONViews(utils.BaseTestCase):
         self.assertEqual(target_str, str(self.model))
 
 
-class TestGenericTextViews(utils.BaseTestCase):
+class TestGenericTextViews(test.BaseTestCase):
     def setUp(self):
         super(TestGenericTextViews, self).setUp()
 
@@ -352,7 +352,7 @@ def get_open_mocks(rv):
     return (open_mock, file_mock)
 
 
-class TestJinjaView(utils.BaseTestCase):
+class TestJinjaView(test.BaseTestCase):
 
     TEMPL_STR = "int is {{ int }}, string is {{ string }}"
     MM_OPEN, MM_FILE = get_open_mocks(TEMPL_STR)

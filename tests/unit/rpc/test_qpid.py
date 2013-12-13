@@ -26,6 +26,7 @@ import uuid
 
 import fixtures
 import mox
+from oslo.config import cfg
 
 from openstack.common import context
 from openstack.common.fixture import config
@@ -33,7 +34,7 @@ from openstack.common.fixture import moxstubout
 from openstack.common import jsonutils
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
-import tests.utils
+from openstack.common import test
 
 try:
     import qpid
@@ -44,7 +45,7 @@ except ImportError:
     impl_qpid = None
 
 
-class RpcQpidTestCase(tests.utils.BaseTestCase):
+class RpcQpidTestCase(test.BaseTestCase):
     """Exercise the public API of impl_qpid utilizing mox.
 
     This set of tests utilizes mox to replace the Qpid objects and ensures
@@ -75,6 +76,8 @@ class RpcQpidTestCase(tests.utils.BaseTestCase):
         self.orig_session = qpid.messaging.Session
         self.orig_sender = qpid.messaging.Sender
         self.orig_receiver = qpid.messaging.Receiver
+
+        self.conf = cfg.CONF
 
         self.useFixture(
             fixtures.MonkeyPatch('qpid.messaging.Connection',
