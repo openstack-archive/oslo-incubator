@@ -16,6 +16,7 @@
 """Common utilities used in testing"""
 
 import os
+import tempfile
 
 import fixtures
 import testtools
@@ -32,6 +33,7 @@ class BaseTestCase(testtools.TestCase):
         self.useFixture(fixtures.FakeLogger('openstack.common'))
         self.useFixture(fixtures.NestedTempfile())
         self.useFixture(fixtures.TempHomeDir())
+        self.tempdirs = []
 
     def _set_timeout(self):
         test_timeout = os.environ.get('OS_TEST_TIMEOUT', 0)
@@ -50,3 +52,18 @@ class BaseTestCase(testtools.TestCase):
         if os.environ.get('OS_STDERR_CAPTURE') in _TRUE_VALUES:
             stderr = self.useFixture(fixtures.StringStream('stderr')).stream
             self.useFixture(fixtures.MonkeyPatch('sys.stderr', stderr))
+
+    def create_tempfiles(self, files, ext='.conf'):
+        tempfiles = []
+        for (basename, contents) in files:
+            if not os.path.isabs(basename):
+                (fd, path) = tempfile.mkstemp(prefix=basename, suffix=ext)
+            else:
+                path = basename + ext
+                fd = os.open(path, os.O_CREAT | os.O_WRONLY)
+            tempfiles.append(path)
+            try:
+                os.write(fd, contents)
+            finally:
+                os.close(fd)
+        return tempfiles
