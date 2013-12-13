@@ -19,6 +19,7 @@
 import re
 
 from migrate.changeset import UniqueConstraint
+from oslo.config import cfg
 import sqlalchemy
 from sqlalchemy import Boolean
 from sqlalchemy import CheckConstraint
@@ -29,6 +30,7 @@ from sqlalchemy import func
 from sqlalchemy import Index
 from sqlalchemy import Integer
 from sqlalchemy import MetaData
+from sqlalchemy import or_
 from sqlalchemy.sql.expression import literal_column
 from sqlalchemy.sql.expression import UpdateBase
 from sqlalchemy.sql import select
@@ -38,10 +40,14 @@ from sqlalchemy.types import NullType
 
 from openstack.common.gettextutils import _  # noqa
 
+from openstack.common.db import exception as exc
+from openstack.common.db.sqlalchemy import models
+from openstack.common.db.sqlalchemy import session as db_session
 from openstack.common import log as logging
 from openstack.common import timeutils
 
 
+CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 _DBURL_REGEX = re.compile(r"[^:]+://([^:]+):([^@]+)@.+")
@@ -153,6 +159,97 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
 
     if limit is not None:
         query = query.limit(limit)
+
+    return query
+
+
+def is_user_context(context):
+    """Indicates if the request context is a normal user."""
+    if not context:
+        return False
+    if context.is_admin:
+        return False
+    if not context.user_id or not context.project_id:
+        return False
+    return True
+
+
+def _read_deleted_filter(query, db_model, read_deleted):
+    if 'deleted' not in db_model.__table__.columns:
+        # Project don't use soft-deleted feature - nothing to filter
+        return query
+
+    default_deleted_value = db_model.__mapper__.c.deleted.default.arg
+    if read_deleted == 'no':
+        query = query.filter(db_model.deleted == default_deleted_value)
+    elif read_deleted == 'yes':
+        pass  # omit the filter to include deleted and active
+    elif read_deleted == 'only':
+        query = query.filter(db_model.deleted != default_deleted_value)
+    else:
+        raise exc.DBError(_("Unrecognized read_deleted value '%s'")
+                          % read_deleted)
+    return query
+
+
+def _project_filter(query, db_model, context, project_only):
+    if 'project_id' not in db_model.__table__.columns:
+        # There in no `project_id` column in table - nothing to filter
+        return query
+
+    if is_user_context(context) and project_only:
+        if project_only == 'allow_none':
+            is_none = None
+            query = query.\
+                filter(or_(db_model.project_id == context.project_id,
+                           db_model.project_id == is_none))
+        else:
+            query = query.filter_by(project_id=context.project_id)
+
+    return query
+
+
+def model_query(context, model, args=None, project_only=False,
+                read_deleted=None, session=None, use_slave=False):
+    """Query helper that accounts for context's `read_deleted` field.
+
+    :param context:      context to query under
+    :param model:        Model to query. Should be a subclass of ModelBase.
+    :param args:         Arguments to query under. If None - model uses.
+    :param project_only: If present and context is user-type, then restrict
+                         query to match the context's project_id. If set to
+                         'allow_none', restriction includes project_id = None.
+    :param read_deleted: If present, overrides context's read_deleted field.
+    :param session:      If present, the session to use.
+    :param use_slave:    If true, use slave_connection to database.
+
+    Usage:
+        result = utils.model_query(context, models.Instance, session=session)\
+                      .filter_by(uuid=instance_uuid)\
+                      .all()
+
+        query = utils.model_query(
+                    context, Node,
+                    args=(func.count(Node.id), func.sum(Node.ram)),
+                    session=session
+            ).filter_by(project_id=project_id)
+    """
+
+    if not session:
+        session = db_session.get_session(slave_session=use_slave)
+    if not read_deleted:
+        if hasattr(context, 'read_deleted'):
+            # Nova spetial case
+            read_deleted = context.read_deleted
+        else:
+            read_deleted = context.show_deleted
+
+    if not issubclass(model, models.ModelBase):
+        raise exc.DBError(_("db_model should be subclass of ModelBase"))
+
+    query = session.query(model) if not args else session.query(*args)
+    query = _read_deleted_filter(query, model, read_deleted)
+    query = _project_filter(query, model, context, project_only)
 
     return query
 
