@@ -22,8 +22,8 @@ from oslo.config import cfg
 import six
 
 from openstack.common.db.sqlalchemy import session
-from openstack.common.db.sqlalchemy import utils
-from tests import utils as test_utils
+from openstack.common.db.sqlalchemy import test_migrations as tm
+from openstack.common import test
 
 
 class DbFixture(fixtures.Fixture):
@@ -52,7 +52,7 @@ class DbFixture(fixtures.Fixture):
         self.addCleanup(self.conf.reset)
 
 
-class DbTestCase(test_utils.BaseTestCase):
+class DbTestCase(test.BaseTestCase):
     """Base class for testing of DB code.
 
     Using `DbFixture`. Intended to be the main database test case to use all
@@ -108,10 +108,10 @@ class OpportunisticFixture(DbFixture):
     DBNAME = PASSWORD = USERNAME = 'openstack_citest'
 
     def _get_uri(self):
-        return utils.get_connect_string(backend=self.DRIVER,
-                                        user=self.USERNAME,
-                                        passwd=self.PASSWORD,
-                                        database=self.DBNAME)
+        return tm._get_connect_string(backend=self.DRIVER,
+                                      user=self.USERNAME,
+                                      passwd=self.PASSWORD,
+                                      database=self.DBNAME)
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -125,13 +125,13 @@ class OpportunisticTestCase(DbTestCase):
     FIXTURE = abc.abstractproperty(lambda: None)
 
     def setUp(self):
-        credentials = {
-            'backend': self.FIXTURE.DRIVER,
-            'user': self.FIXTURE.USERNAME,
-            'passwd': self.FIXTURE.PASSWORD,
-            'database': self.FIXTURE.DBNAME}
+        credentials = (
+            self.FIXTURE.DRIVER,
+            self.FIXTURE.USERNAME,
+            self.FIXTURE.PASSWORD,
+            self.FIXTURE.DBNAME)
 
-        if self.FIXTURE.DRIVER and not utils.is_backend_avail(**credentials):
+        if self.FIXTURE.DRIVER and not tm._is_backend_avail(*credentials):
             msg = '%s backend is not available.' % self.FIXTURE.DRIVER
             return self.skip(msg)
 
