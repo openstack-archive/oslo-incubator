@@ -437,6 +437,8 @@ def get_session(autocommit=True, expire_on_commit=False,
 #
 # sqlite:
 # 1 column - (IntegrityError) column c1 is not unique
+#            or
+#            (IntegrityError) UNIQUE constraint failed: ...
 # N columns - (IntegrityError) column c1, c2, ..., N are not unique
 #
 # postgres:
@@ -451,9 +453,12 @@ def get_session(autocommit=True, expire_on_commit=False,
 # N columns - (IntegrityError) (1062, "Duplicate entry 'values joined
 #               with -' for key 'name_of_our_constraint'")
 _DUP_KEY_RE_DB = {
-    "sqlite": re.compile(r"^.*columns?([^)]+)(is|are)\s+not\s+unique$"),
-    "postgresql": re.compile(r"^.*duplicate\s+key.*\"([^\"]+)\"\s*\n.*$"),
-    "mysql": re.compile(r"^.*\(1062,.*'([^\']+)'\"\)$")
+    "sqlite": (
+        re.compile(r"^.*columns?([^)]+)(is|are)\s+not\s+unique$"),
+        re.compile(r"^.*UNIQUE constraint failed: ([^ ])+"),
+    ),
+    "postgresql": (re.compile(r"^.*duplicate\s+key.*\"([^\"]+)\"\s*\n.*$"),),
+    "mysql": (re.compile(r"^.*\(1062,.*'([^\']+)'\"\)$"),)
 }
 
 
@@ -483,8 +488,11 @@ def _raise_if_duplicate_entry_error(integrity_error, engine_name):
     # SQLAlchemy can differ when using unicode() and accessing .message.
     # An audit across all three supported engines will be necessary to
     # ensure there are no regressions.
-    m = _DUP_KEY_RE_DB[engine_name].match(integrity_error.message)
-    if not m:
+    for r in _DUP_KEY_RE_DB[engine_name]:
+        m = r.match(integrity_error.message)
+        if m:
+            break
+    else:
         return
     columns = m.group(1)
 
