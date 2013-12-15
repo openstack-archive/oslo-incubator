@@ -201,12 +201,6 @@ S: Obsolete
 F: notifier/
 F: middleware/notifier.py
 
-== pastedeploy ==
-
-M: Mark McLoughlin <markmc@redhat.com>
-S: Obsolete
-F: pastedeploy.py
-
 == periodic_task ==
 
 M: Michael Still <mikal@stillhq.com>
