@@ -28,9 +28,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from openstack.common.db import exception as db_exc
 from openstack.common.db.sqlalchemy import models
 from openstack.common.db.sqlalchemy import session
+from openstack.common.db.sqlalchemy import test_base
 from openstack.common.fixture import config
 from openstack.common import test
-from tests.unit.db.sqlalchemy import base as test_base
 
 
 BASE = declarative_base()
