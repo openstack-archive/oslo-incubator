@@ -21,9 +21,9 @@ import pycadf
 from pycadf.audit import api as cadf_api
 import webob
 
+from openstack.common.db.sqlalchemy import test_base
 from openstack.common.middleware import audit
 from openstack.common.notifier import api
-from tests.unit.db.sqlalchemy import base
 
 CONF = cfg.CONF
 
@@ -43,7 +43,7 @@ class FakeFailingApp(object):
         raise Exception("It happens!")
 
 
-class AuditMiddlewareTest(base.DbTestCase):
+class AuditMiddlewareTest(test_base.DbTestCase):
     ENV_HEADERS = {'HTTP_X_SERVICE_CATALOG':
                    '''[{"endpoints_links": [],
                         "endpoints": [{"adminURL":

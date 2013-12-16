@@ -16,13 +16,13 @@
 #    under the License.
 from oslo.config import cfg
 
+from openstack.common.db.sqlalchemy import test_base
 from openstack.common.fixture import config
-from tests.unit.db.sqlalchemy import base
 
 conf = cfg.CONF
 
 
-class ConfigTestCase(base.DbTestCase):
+class ConfigTestCase(test_base.DbTestCase):
     def setUp(self):
         super(ConfigTestCase, self).setUp()
         self.config = self.useFixture(config.Config(conf)).config
