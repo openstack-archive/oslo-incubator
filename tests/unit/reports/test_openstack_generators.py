@@ -18,14 +18,14 @@ import threading
 import greenlet
 from oslo.config import cfg
 
+from openstack.common.db.sqlalchemy import test_base
 from openstack.common.report.generators import conf as os_cgen
 from openstack.common.report.generators import threading as os_tgen
 from openstack.common.report.generators import version as os_pgen
 from openstack.common.report.models import threading as os_tmod
-from tests.unit.db.sqlalchemy import base
 
 
-class TestOpenstackGenerators(base.DbTestCase):
+class TestOpenstackGenerators(test_base.DbTestCase):
     def test_thread_generator(self):
         model = os_tgen.ThreadReportGenerator()()
         # self.assertGreaterEqual(len(model.keys()), 1)

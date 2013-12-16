@@ -23,9 +23,9 @@ import sys
 # needed to get greenthreads
 import greenlet
 
+from openstack.common.db.sqlalchemy import test_base
 from openstack.common.report import guru_meditation_report as gmr
 from openstack.common.report.models import with_default_views as mwdv
-from tests.unit.db.sqlalchemy import base
 
 
 class FakeVersionObj(object):
@@ -48,7 +48,7 @@ def skip_body_lines(start_line, report_lines):
     return curr_line
 
 
-class TestGuruMeditationReport(base.DbTestCase):
+class TestGuruMeditationReport(test_base.DbTestCase):
     def setUp(self):
         super(TestGuruMeditationReport, self).setUp()
 

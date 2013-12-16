@@ -13,11 +13,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from openstack.common.db.sqlalchemy import test_base
 from openstack.common import imageutils
-from tests.unit.db.sqlalchemy import base
 
 
-class ImageUtilsTestCase(base.DbTestCase):
+class ImageUtilsTestCase(test_base.DbTestCase):
     def test_qemu_img_info_blank(self):
         example_output = """image: None
 file_format: None
