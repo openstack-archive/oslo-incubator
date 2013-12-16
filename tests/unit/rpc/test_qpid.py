@@ -29,12 +29,12 @@ import mox
 from oslo.config import cfg
 
 from openstack.common import context
+from openstack.common.db.sqlalchemy import test_base
 from openstack.common.fixture import config
 from openstack.common.fixture import moxstubout
 from openstack.common import jsonutils
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
-from tests.unit.db.sqlalchemy import base
 
 try:
     import qpid
@@ -45,7 +45,7 @@ except ImportError:
     impl_qpid = None
 
 
-class RpcQpidTestCase(base.DbTestCase):
+class RpcQpidTestCase(test_base.DbTestCase):
     """Exercise the public API of impl_qpid utilizing mox.
 
     This set of tests utilizes mox to replace the Qpid objects and ensures
