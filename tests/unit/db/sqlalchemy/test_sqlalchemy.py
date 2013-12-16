@@ -27,9 +27,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from openstack.common.db import exception as db_exc
 from openstack.common.db.sqlalchemy import models
 from openstack.common.db.sqlalchemy import session
+from openstack.common.db.sqlalchemy import test_base
 from openstack.common.fixture import config
 from openstack.common import test
-from tests.unit.db.sqlalchemy import base
 
 
 BASE = declarative_base()
@@ -42,7 +42,7 @@ class TmpTable(BASE, models.ModelBase):
     foo = Column(Integer)
 
 
-class SessionParametersTestCase(base.DbTestCase):
+class SessionParametersTestCase(test_base.DbTestCase):
 
     def setUp(self):
         super(SessionParametersTestCase, self).setUp()
@@ -124,7 +124,7 @@ pool_timeout=7
         self.assertEqual(self.conf.database.idle_timeout, 99)
 
 
-class SessionErrorWrapperTestCase(base.DbTestCase):
+class SessionErrorWrapperTestCase(test_base.DbTestCase):
     def setUp(self):
         super(SessionErrorWrapperTestCase, self).setUp()
         meta = MetaData()
@@ -174,7 +174,7 @@ class RegexpTable(BASE, models.ModelBase):
     bar = Column(String(255))
 
 
-class RegexpFilterTestCase(base.DbTestCase):
+class RegexpFilterTestCase(test_base.DbTestCase):
 
     def setUp(self):
         super(RegexpFilterTestCase, self).setUp()
