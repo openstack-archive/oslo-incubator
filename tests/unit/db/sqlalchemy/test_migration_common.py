@@ -26,10 +26,10 @@ import sqlalchemy
 from openstack.common.db import exception as db_exception
 from openstack.common.db.sqlalchemy import migration
 from openstack.common.db.sqlalchemy import session as db_session
-from tests.unit.db.sqlalchemy import base
+from openstack.common.db.sqlalchemy import test_base
 
 
-class TestMigrationCommon(base.DbTestCase):
+class TestMigrationCommon(test_base.DbTestCase):
     def setUp(self):
         super(TestMigrationCommon, self).setUp()
 
