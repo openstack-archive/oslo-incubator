@@ -18,9 +18,9 @@
 from eventlet import tpool
 
 from openstack.common.db import api
+from openstack.common.db.sqlalchemy import test_base
 from openstack.common.fixture import config
 from openstack.common.fixture import moxstubout
-from tests.unit.db.sqlalchemy import base
 
 
 def get_backend():
@@ -32,7 +32,7 @@ class DBAPI(object):
         return args, kwargs
 
 
-class DBAPITestCase(base.DbTestCase):
+class DBAPITestCase(test_base.DbTestCase):
 
     def setUp(self):
         super(DBAPITestCase, self).setUp()

@@ -16,9 +16,9 @@
 import mock
 import webob
 
+from openstack.common.db.sqlalchemy import test_base
 from openstack.common.middleware import notifier
 from openstack.common.notifier import api
-from tests.unit.db.sqlalchemy import base
 
 
 class FakeApp(object):
@@ -36,7 +36,7 @@ class FakeFailingApp(object):
         raise Exception("It happens!")
 
 
-class NotifierMiddlewareTest(base.DbTestCase):
+class NotifierMiddlewareTest(test_base.DbTestCase):
 
     def test_notification(self):
         middleware = notifier.RequestNotifier(FakeApp())
