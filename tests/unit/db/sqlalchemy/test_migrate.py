@@ -20,7 +20,7 @@ import sqlalchemy as sa
 
 from openstack.common.db.sqlalchemy import migration
 from openstack.common.db.sqlalchemy import session
-from tests.unit.db.sqlalchemy import base as test_base
+from openstack.common.db.sqlalchemy import test_base
 
 
 def uniques(*constraints):
