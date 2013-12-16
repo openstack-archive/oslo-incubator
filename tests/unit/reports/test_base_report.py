@@ -14,9 +14,9 @@
 
 import re
 
+from openstack.common.db.sqlalchemy import test_base
 from openstack.common.report.models import base as base_model
 from openstack.common.report import report
-from tests.unit.db.sqlalchemy import base
 
 
 class BasicView(object):
@@ -32,7 +32,7 @@ def basic_generator():
     return base_model.ReportModel(data={'string': 'value', 'int': 1})
 
 
-class TestBasicReport(base.DbTestCase):
+class TestBasicReport(test_base.DbTestCase):
     def setUp(self):
         super(TestBasicReport, self).setUp()
 
@@ -61,7 +61,7 @@ class TestBasicReport(base.DbTestCase):
         self.assertEqual(self.report.run(), "int: 1;string: value;")
 
 
-class TestBaseModel(base.DbTestCase):
+class TestBaseModel(test_base.DbTestCase):
     def test_submodel_attached_view(self):
         class TmpView(object):
             def __call__(self, model):
