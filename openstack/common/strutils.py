@@ -151,7 +151,11 @@ def safe_encode(text, incoming=None,
         incoming = (sys.stdin.encoding or
                     sys.getdefaultencoding())
 
-    if isinstance(text, six.text_type):
+    # We don't need to encode strings on Python3 since we already all
+    # utf8 everywehre. We can just return the string.
+    if six.PY3 and isinstance(text, six.text_type) and encoding == 'utf-8':
+        return text
+    elif isinstance(text, six.text_type):
         return text.encode(encoding, errors)
     elif text and encoding != incoming:
         # Decode text before encoding it with `encoding`
