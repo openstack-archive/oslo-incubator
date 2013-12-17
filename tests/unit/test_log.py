@@ -16,6 +16,7 @@
 
 import logging
 import os
+import shutil
 import sys
 import tempfile
 
@@ -484,6 +485,36 @@ class LogConfigOptsTestCase(test.BaseTestCase):
         self.assertEqual(1, len(logger.handlers))
         self.assertIsInstance(logger.handlers[0],
                               logging.handlers.WatchedFileHandler)
+
+    @mock.patch('openstack.common.gettextutils.get_available_languages')
+    def test_secondary_locale_log_option(self, mock_get_locales):
+        log_dir = tempfile.mkdtemp()
+        try:
+            mock_get_locales.return_value = ['en_US', 'es']
+            additional_locale = 'es'
+            self.CONF(['--log-dir', log_dir])
+            self.CONF.set_default('use_stderr', False)
+
+            # Fist test a non-installed locale
+            self.CONF.log_additional_locale = 'fr'
+            self.assertRaises(log.LogConfigError, log._setup_logging_from_conf)
+
+            self.CONF.log_additional_locale = additional_locale
+            log._setup_logging_from_conf()
+            logger = log._loggers[None].logger
+            self.assertEqual(2, len(logger.handlers))
+            self.assertIsInstance(logger.handlers[0],
+                                  logging.handlers.WatchedFileHandler)
+            # If the log_additional_locale property is used, in addition to the
+            # default log file handler, there will be a TranslationHandler and
+            # a new directory for the additional log named after the locale
+            self.assertIsInstance(logger.handlers[1],
+                                  gettextutils.TranslationHandler)
+            self.assertTrue(os.path.exists('%s/%s' % (log_dir,
+                                                      additional_locale)))
+        finally:
+            if os.path.exists(log_dir):
+                shutil.rmtree(log_dir)
 
     def test_logfile_deprecated(self):
         logfile = '/some/other/path/foo-bar.log'
