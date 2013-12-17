@@ -236,10 +236,11 @@ def mask_password(message, secret="***"):
     """Replace password with 'secret' in message.
 
     :param message: The string which includes security information.
-    :param secret: value with which to replace passwords, defaults to "***".
+    :param secret: value with which to replace passwords.
     :returns: The unicode value of message with the password fields masked.
 
     For example:
+
     >>> mask_password("'adminPass' : 'aaaaa'")
     "'adminPass' : '***'"
     >>> mask_password("'admin_pass' : 'aaaaa'")
