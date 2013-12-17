@@ -256,7 +256,6 @@ import time
 from oslo.config import cfg
 import six
 from sqlalchemy import exc as sqla_exc
-import sqlalchemy.interfaces
 from sqlalchemy.interfaces import PoolListener
 import sqlalchemy.orm
 from sqlalchemy.pool import NullPool, StaticPool
