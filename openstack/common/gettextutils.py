@@ -264,7 +264,7 @@ class Message(six.text_type):
         raise UnicodeError(msg)
 
 
-def get_available_languages(domain):
+def get_available_languages(domain='oslo'):
     """Lists the available languages for the given translation domain.
 
     :param domain: the domain to get languages for

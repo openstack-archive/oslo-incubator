@@ -41,6 +41,7 @@ from oslo.config import cfg
 import six
 from six import moves
 
+from openstack.common import gettextutils
 from openstack.common.gettextutils import _
 from openstack.common import importutils
 from openstack.common import jsonutils
@@ -173,6 +174,17 @@ log_opts = [
                default='[instance: %(uuid)s] ',
                help='If an instance UUID is passed with the log message, '
                     'format it like this'),
+    cfg.StrOpt('log_additional_locale',
+               default=None,
+               help='(Optional) In addition to the system\'s default locale '
+               'log, setting this option creates an additional log in the '
+               'specified locale if such locale is installed. '
+               'This option is only enabled if the \'log-file\' option is '
+               'used, and the additional log will be created in the same '
+               'directory as the main log, inside a directory named after the '
+               'locale. The locale is specified in the form "ll_CC.encoding", '
+               'where "ll" is the language code and "CC" is the country code, '
+               'for example: en_US, en_GB, and de_DE.'),
 ]
 
 CONF = cfg.CONF
@@ -472,6 +484,7 @@ def _setup_logging_from_conf():
     if logpath:
         filelog = logging.handlers.WatchedFileHandler(logpath)
         log_root.addHandler(filelog)
+        _setup_locale_log_from_conf(logpath, log_root)
 
     if CONF.use_stderr:
         streamlog = ColorHandler()
@@ -513,6 +526,46 @@ def _setup_logging_from_conf():
         level = logging.getLevelName(level_name)
         logger = logging.getLogger(mod)
         logger.setLevel(level)
+
+
+def _setup_locale_log_from_conf(primary_logpath, log_root):
+    """Sets up secondary locale logging if configured by the user."""
+    if not CONF.log_additional_locale:
+        return
+    extra_locale = CONF.log_additional_locale
+    all_languages = gettextutils.get_available_languages()
+    if extra_locale not in all_languages:
+        all_languages = sorted(all_languages)
+        msg = (_('Locale \'%(locale)s\' is not available. '
+                 'Available locales are: %(locales)s.\n'
+                 'To continue specify an available locale or '
+                 'remove the \'log_additional_locale\' setting.') %
+               {'locale': extra_locale, 'locales': all_languages})
+        log_root.error(msg)
+        raise LogConfigError('log_additional_locale', msg)
+
+    log_file = os.path.basename(primary_logpath)
+    log_dir = os.path.dirname(primary_logpath)
+    localized_log_dir = os.path.join(log_dir, extra_locale)
+    if not os.path.exists(localized_log_dir):
+        try:
+            os.mkdir(localized_log_dir)
+        except (IOError, OSError) as e:
+            # This is unlikely since the system currently already halts
+            # if the user's starting a service and the location of the
+            # logfile is not accessible, but adding for robustness.
+            msg = (_('Could not create directory \'%(property)s\' for '
+                     'secondary locale log due to: %(msg)\n'
+                     'To continue address the issue or '
+                     'remove the \'log_additional_locale\' setting.') %
+                   {'property': localized_log_dir, 'msg': e})
+            log_root.error(msg)
+            raise LogConfigError('log_additional_locale', msg)
+    localized_log_file = os.path.join(localized_log_dir, log_file)
+    extra_log = logging.handlers.WatchedFileHandler(localized_log_file)
+    extra_log = gettextutils.TranslationHandler(extra_locale, extra_log)
+    log_root.addHandler(extra_log)
+
 
 _loggers = {}
 
