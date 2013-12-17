@@ -25,6 +25,7 @@ import string
 import sqlalchemy
 
 from openstack.common.db import exception as exc
+from six import moves
 
 
 SQL_CONNECTION = os.getenv('OS_TEST_DBAPI_ADMIN_CONNECTION', 'sqlite://')
@@ -34,7 +35,7 @@ def _gen_credentials(*names):
     """Generate credentials."""
     auth_dict = {}
     for name in names:
-        val = ''.join(random.choice(string.lowercase) for i in xrange(10))
+        val = ''.join(random.choice(string.lowercase) for i in moves.range(10))
         auth_dict[name] = val
     return auth_dict
 
