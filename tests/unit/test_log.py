@@ -485,6 +485,35 @@ class LogConfigOptsTestCase(test.BaseTestCase):
         self.assertIsInstance(logger.handlers[0],
                               logging.handlers.WatchedFileHandler)
 
+    @mock.patch('openstack.common.gettextutils.get_available_languages')
+    def test_secondary_locale_log_option(self, mock_get_locales):
+        mock_get_locales.return_value = ['en_US', 'es']
+        log_dir = tempfile.mkdtemp()
+        additional_locale = 'es'
+        self.CONF(['--log-dir', log_dir])
+        self.CONF.set_default('use_stderr', False)
+
+        try:
+            # Fist test a non-installed locale
+            self.CONF.log_additional_locale = 'fr'
+            log._setup_logging_from_conf()
+            self.fail('Expected LogConfigError')
+        except log.LogConfigError:
+            pass
+
+        self.CONF.log_additional_locale = additional_locale
+        log._setup_logging_from_conf()
+        logger = log._loggers[None].logger
+        self.assertEqual(2, len(logger.handlers))
+        self.assertIsInstance(logger.handlers[0],
+                              logging.handlers.WatchedFileHandler)
+        # If the log_additional_locale property is used, in addition to the
+        # default log file handler, there will be a TranslationHandler and
+        # a new directory for the additional log with the name of the locale
+        self.assertIsInstance(logger.handlers[1],
+                              gettextutils.TranslationHandler)
+        self.assertTrue(os.path.exists('%s/%s' % (log_dir, additional_locale)))
+
     def test_logfile_deprecated(self):
         logfile = '/some/other/path/foo-bar.log'
         self.CONF(['--logfile', logfile])
