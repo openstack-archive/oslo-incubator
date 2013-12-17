@@ -16,4 +16,6 @@ from oslo.config import cfg
 
 CONF = cfg.CONF
 
-CONF.register_opt(cfg.StrOpt('baz'), group='qux')
+opt = cfg.StrOpt('baz')
+
+CONF.register_opt(opt, group='qux')
