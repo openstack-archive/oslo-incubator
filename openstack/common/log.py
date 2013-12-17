@@ -149,7 +149,6 @@ log_opts = [
                     'amqp=WARN',
                     'amqplib=WARN',
                     'boto=WARN',
-                    'keystone=INFO',
                     'qpid=WARN',
                     'sqlalchemy=WARN',
                     'suds=INFO',
