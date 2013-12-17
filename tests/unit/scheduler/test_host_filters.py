@@ -690,7 +690,7 @@ class HostFiltersTestCase(test.BaseTestCase):
         filt_cls = self.class_map['IgnoreAttemptedHostsFilter']()
         host = fakes.FakeHostState('host1', {})
         attempted = dict(num_attempts=2, hosts=['host2'])
-        filter_properties = dict(attempted=attempted)
+        filter_properties = dict(retry=attempted)
         self.assertTrue(filt_cls.host_passes(host, filter_properties))
 
     def test_ignore_attempted_hosts_filter_fail(self):
@@ -698,5 +698,5 @@ class HostFiltersTestCase(test.BaseTestCase):
         filt_cls = self.class_map['IgnoreAttemptedHostsFilter']()
         host = fakes.FakeHostState('host1', {})
         attempted = dict(num_attempts=2, hosts=['host1'])
-        filter_properties = dict(attempted=attempted)
+        filter_properties = dict(retry=attempted)
         self.assertFalse(filt_cls.host_passes(host, filter_properties))
