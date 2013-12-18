@@ -43,4 +43,4 @@ def _find_objects(t):
     :returns: a list of objects of the given type
     """
 
-    return filter(lambda o: isinstance(o, t), gc.get_objects())
+    return [o for o in gc.get_objects() if isinstance(o, t)]

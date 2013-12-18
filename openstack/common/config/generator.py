@@ -67,9 +67,10 @@ def generate(srcfiles):
                             os.path.basename(filepath).split('.')[0]])
         mods_by_pkg.setdefault(pkg_name, list()).append(mod_str)
     # NOTE(lzyeval): place top level modules before packages
-    pkg_names = filter(lambda x: x.endswith(PY_EXT), mods_by_pkg.keys())
+    pkg_names = [pkg for pkg in mods_by_pkg if pkg.endswith(PY_EXT)]
+
     pkg_names.sort()
-    ext_names = filter(lambda x: x not in pkg_names, mods_by_pkg.keys())
+    ext_names = [pkg for pkg in mods_by_pkg.keys() if pkg not in pkg_names]
     ext_names.sort()
     pkg_names.extend(ext_names)
 
