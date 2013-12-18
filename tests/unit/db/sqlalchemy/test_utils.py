@@ -458,9 +458,9 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
             meta = MetaData()
             meta.bind = engine
             test_table = Table(table_name, meta, autoload=True)
-            constraints = filter(
+            constraints = moves.filter(
                 lambda c: c.name == uc_name, test_table.constraints)
-            self.assertEqual(len(constraints), 0)
+            self.assertEqual(len(list(constraints)), 0)
             self.assertEqual(len(test_table.constraints), 1)
 
             test_table.drop()
@@ -515,9 +515,9 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
         # NOTE(boris-42): Update data about Table from DB.
         meta = MetaData(bind=engine)
         test_table = Table(table_name, meta, autoload=True)
-        constraints = filter(
+        constraints = moves.filter(
             lambda c: c.name == uc_name, test_table.constraints)
-        self.assertEqual(len(constraints), 0)
+        self.assertEqual(len(list(constraints)), 0)
         self.assertEqual(len(test_table.constraints), 1)
         test_table.drop()
 
