@@ -68,8 +68,8 @@ F: cfgfilter.py
 
 == cliutils ==
 
-M:
-S: Orphan
+M: Abhishek Chanda <abhishek@cloudscaling.com>
+S: Maintained
 F: cliutils.py
 
 == compat ==
