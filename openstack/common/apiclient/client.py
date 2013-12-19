@@ -175,9 +175,9 @@ class HTTPClient(object):
                                start_time, time.time()))
         self._http_log_resp(resp)
 
-        if resp.status_code >= 400:
+        if resp.status_code >= 400 or resp.status_code == 300:
             _logger.debug(
-                "Request returned failure status: %s",
+                "Request returned status: %s",
                 resp.status_code)
             raise exceptions.from_response(resp, method, url)
 
