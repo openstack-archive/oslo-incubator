@@ -353,6 +353,7 @@ class RootwrapTestCase(test.BaseTestCase):
             self.assertEqual(c.exec_dirs, [])
 
         self.assertFalse(config.use_syslog)
+        self.assertFalse(config.use_syslog_rfc_format)
         self.assertEqual(config.syslog_log_facility,
                          logging.handlers.SysLogHandler.LOG_SYSLOG)
         self.assertEqual(config.syslog_log_level, logging.ERROR)
@@ -367,6 +368,12 @@ class RootwrapTestCase(test.BaseTestCase):
         raw.set('DEFAULT', 'use_syslog', 'true')
         config = wrapper.RootwrapConfig(raw)
         self.assertTrue(config.use_syslog)
+
+        raw.set('DEFAULT', 'use_syslog_rfc_format', 'oui')
+        self.assertRaises(ValueError, wrapper.RootwrapConfig, raw)
+        raw.set('DEFAULT', 'use_syslog_rfc_format', 'true')
+        config = wrapper.RootwrapConfig(raw)
+        self.assertTrue(config.use_syslog_rfc_format)
 
         raw.set('DEFAULT', 'syslog_log_facility', 'moo')
         self.assertRaises(ValueError, wrapper.RootwrapConfig, raw)
