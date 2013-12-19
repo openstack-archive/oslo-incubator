@@ -115,7 +115,20 @@ logging_cli_opts = [
                     '--log-file paths'),
     cfg.BoolOpt('use-syslog',
                 default=False,
-                help='Use syslog for logging.'),
+                help='Use syslog for logging. '
+                     'To honor RFC5424 the default format '
+                     'will be changed in J'),
+    cfg.BoolOpt('use-syslog-rfc-format',
+                # TODO remove or use True after existing
+                #    syslog format deprecation in J
+                default=False,
+                help='(Optional) Use syslog rfc5424 format for logging. '
+                     'By default changes nothing for syslog logging. '
+                     'If enabled, would add APP-NAME (RFC5424) before '
+                     'MSG part of the syslog message. '
+                     'Will be DEPRECATED in J after existing '
+                     'syslog logging format deprecation as well. '
+                     'Default: %(default)s'),
     cfg.StrOpt('syslog-log-facility',
                default='LOG_USER',
                help='syslog facility to receive log lines')
@@ -457,6 +470,17 @@ def _find_facility_from_conf():
     return facility
 
 
+class RFCSysLogHandler(logging.handlers.SysLogHandler):
+    def __init__(self, *args, **kwargs):
+        self.binary_name = _get_binary_name()
+        super(RFCSysLogHandler, self).__init__(*args, **kwargs)
+
+    def format(self, record):
+        msg = super(RFCSysLogHandler, self).format(record)
+        msg = self.binary_name + ' ' + msg
+        return msg
+
+
 def _setup_logging_from_conf():
     log_root = getLogger(None).logger
     for handler in log_root.handlers:
@@ -464,8 +488,14 @@ def _setup_logging_from_conf():
 
     if CONF.use_syslog:
         facility = _find_facility_from_conf()
-        syslog = logging.handlers.SysLogHandler(address='/dev/log',
-                                                facility=facility)
+        # TODO(bogdando) use the format provided by RFCSysLogHandler
+        #   after existing syslog format deprecation in J
+        if CONF.use_syslog_rfc_format:
+            syslog = RFCSysLogHandler(address='/dev/log',
+                                      facility=facility)
+        else:
+            syslog = logging.handlers.SysLogHandler(address='/dev/log',
+                                                    facility=facility)
         log_root.addHandler(syslog)
 
     logpath = _get_log_file_path()

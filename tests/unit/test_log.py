@@ -469,6 +469,7 @@ class LogConfigOptsTestCase(test.BaseTestCase):
                          log._DEFAULT_LOG_DATE_FORMAT)
 
         self.assertEqual(self.CONF.use_syslog, False)
+        self.assertEqual(self.CONF.use_syslog_rfc_format, False)
 
     def test_log_file(self):
         log_file = '/some/path/foo-bar.log'
