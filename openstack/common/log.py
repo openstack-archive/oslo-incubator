@@ -45,6 +45,7 @@ from openstack.common.gettextutils import _  # noqa
 from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import local
+from logging.handlers import SysLogHandler
 
 
 _DEFAULT_LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
@@ -457,6 +458,18 @@ def _find_facility_from_conf():
     return facility
 
 
+class RFCSysLogHandler(SysLogHandler):
+    def __init__(self, *args, **kwargs):
+        self.binary_name = kwargs.pop('binary_name')
+        super(RFCSysLogHandler, self).__init__(*args, **kwargs)
+
+    def format(self, record):
+        msg = super(RFCSysLogHandler, self).format(record)
+        if self.binary_name:
+            msg = self.binary_name + ' ' + msg
+        return msg
+
+
 def _setup_logging_from_conf():
     log_root = getLogger(None).logger
     for handler in log_root.handlers:
@@ -464,8 +477,9 @@ def _setup_logging_from_conf():
 
     if CONF.use_syslog:
         facility = _find_facility_from_conf()
-        syslog = logging.handlers.SysLogHandler(address='/dev/log',
-                                                facility=facility)
+        syslog = RFCSysLogHandler(address='/dev/log',
+                                  facility=facility,
+                                  binary_name=_get_binary_name())
         log_root.addHandler(syslog)
 
     logpath = _get_log_file_path()
