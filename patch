@@ -1,0 +1,20 @@
+diff --git a/openstack/common/log.py b/openstack/common/log.py
+index 94aea1e..1d8fa2d 100644
+--- a/openstack/common/log.py
++++ b/openstack/common/log.py
+@@ -292,6 +292,7 @@ class ContextAdapter(BaseLoggerAdapter):
+         self.logger = logger
+         self.project = project_name
+         self.version = version_string
++        self.binary_name = _get_binary_name()
+ 
+     @property
+     def handlers(self):
+@@ -338,6 +339,7 @@ class ContextAdapter(BaseLoggerAdapter):
+ 
+         extra['project'] = self.project
+         extra['version'] = self.version
++        extra['binary_name'] = self.binary_name
+         extra['extra'] = extra.copy()
+         return msg, kwargs
+ 
