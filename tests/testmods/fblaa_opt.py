@@ -16,6 +16,10 @@ from oslo.config import cfg
 
 CONF = cfg.CONF
 
-opt = cfg.StrOpt('fblaa', default="fblaa")
+opts = [
+    cfg.StrOpt('fblaa', default="fblaa"),
+    # duplicated option
+    cfg.StrOpt('fblaa', default="fblaa"),
+]
 
-CONF.register_opt(opt)
+CONF.register_opts(opts)
