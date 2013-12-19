@@ -122,6 +122,11 @@ class HttpError(ClientException):
         super(HttpError, self).__init__(formatted_string)
 
 
+class HTTPRedirection(HttpError):
+    """HTTP Redirection"""
+    message = "HTTP Redirection"
+
+
 class HTTPClientError(HttpError):
     """Client-side HTTP error.
 
@@ -137,6 +142,20 @@ class HttpServerError(HttpError):
     erred or is incapable of performing the request.
     """
     message = "HTTP Server Error"
+
+
+class MultipleChoices(HttpError):
+    """Indicates multiple options for the resource that the client may follow.
+
+    It, for instance, could be used to present different format options for
+    video, list files with different extensions, or word sense disambiguation.
+    """
+    http_status = 300
+    message = "Multiple Choices"
+
+    def __init__(self):
+        details = "Requested version of OpenStack Images API is not available."
+        super(MultipleChoices, self).__init__(details=details)
 
 
 class BadRequest(HTTPClientError):
