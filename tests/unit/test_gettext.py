@@ -73,6 +73,7 @@ class GettextTest(test.BaseTestCase):
         gettextutils.enable_lazy()
         result = gettextutils._('blah')
         self.assertIsInstance(result, gettextutils.Message)
+        self.assertEqual('oslo', result.domain)
 
     def test_gettext_does_not_blow_up(self):
         LOG.info(gettextutils._('test'))
@@ -648,6 +649,79 @@ class TranslationHandlerTestCase(test.BaseTestCase):
         translation = log_message_translation % {'arg1': log_arg_1_translation,
                                                  'arg2': log_arg_2_translation}
         self.assertIn(translation, self.stream.getvalue())
+
+
+class LogLevelTranslationsTest(test.BaseTestCase):
+
+    scenarios = [
+        (level, {'level': level})
+        for level in
+        ['debug', 'info', 'warning', 'error', 'critical']
+    ]
+
+    def setUp(self):
+        super(LogLevelTranslationsTest, self).setUp()
+        moxfixture = self.useFixture(moxstubout.MoxStubout())
+        self.stubs = moxfixture.stubs
+        self.mox = moxfixture.mox
+        # remember so we can reset to it later
+        self._USE_LAZY = gettextutils.USE_LAZY
+        # Stub out the appropriate translation logger
+        if six.PY3:
+            self.mox.StubOutWithMock(gettextutils._t_log_levels[self.level],
+                                     'gettext')
+            self.trans_func = gettextutils._t_log_levels[self.level].gettext
+        else:
+            self.mox.StubOutWithMock(gettextutils._t_log_levels[self.level],
+                                     'ugettext')
+            self.trans_func = gettextutils._t_log_levels[self.level].ugettext
+        # Look up the translator function for the log level we are testing
+        translator_name = '_L' + self.level[0].upper()
+        self.translator = getattr(gettextutils, translator_name)
+
+    def tearDown(self):
+        # reset to value before test
+        gettextutils.USE_LAZY = self._USE_LAZY
+        super(LogLevelTranslationsTest, self).tearDown()
+
+    def test_non_lazy(self):
+        # set lazy off
+        gettextutils.USE_LAZY = False
+
+        self.trans_func('blah').AndReturn('translated blah ' + self.level)
+        self.mox.ReplayAll()
+
+        result = self.translator('blah')
+        self.assertEqual('translated blah ' + self.level, result)
+
+    def test_lazy(self):
+        # set lazy on
+        gettextutils.enable_lazy()
+        result = self.translator('blah')
+        self.assertIsInstance(result, gettextutils.Message)
+        self.assertEqual('oslo-log-' + self.level, result.domain)
+
+
+class TestTranslations(gettext.GNUTranslations):
+    """A test GNUTranslations class that takes a map of msg -> translations."""
+
+    def __init__(self, translations):
+        self.translations = translations
+
+    def ugettext(self, msgid):
+        return self.translations.get(msgid, msgid)
+
+    @staticmethod
+    def translator(translation_map, language):
+        """Returns a mock gettext.translation function that uses
+        TestTranslation to translate in the given locale.
+        """
+        def _translation(domain, localedir=None,
+                         languages=None, fallback=None):
+            if languages and language in languages:
+                return TestTranslations(translation_map)
+            return gettext.NullTranslations()
+        return _translation
 
 
 class SomeObject(object):
