@@ -187,7 +187,7 @@ class WriteToTempfileTestCase(test.BaseTestCase):
         self.assertTrue(os.path.exists(res))
 
         (basepath, tmpfile) = os.path.split(res)
-        self.assertTrue(basepath.startswith('/tmp'))
+        self.assertTrue(basepath.startswith(tempfile.gettempdir()))
         self.assertTrue(tmpfile.startswith('tmp'))
 
         self.check_file_content(res)
@@ -209,7 +209,7 @@ class WriteToTempfileTestCase(test.BaseTestCase):
         self.assertTrue(os.path.exists(res))
 
         (basepath, tmpfile) = os.path.split(res)
-        self.assertTrue(basepath.startswith('/tmp'))
+        self.assertTrue(basepath.startswith(tempfile.gettempdir()))
         self.assertTrue(tmpfile.startswith('tmp'))
         self.assertTrue(tmpfile.endswith('.conf'))
 
@@ -238,6 +238,6 @@ class WriteToTempfileTestCase(test.BaseTestCase):
 
         (basepath, tmpfile) = os.path.split(res)
         self.assertTrue(tmpfile.startswith(prefix))
-        self.assertTrue(basepath.startswith('/tmp'))
+        self.assertTrue(basepath.startswith(tempfile.gettempdir()))
 
         self.check_file_content(res)
