@@ -23,7 +23,6 @@ import threading
 import eventlet
 from eventlet import greenpool
 from eventlet import greenthread
-from eventlet import semaphore
 from oslo.config import cfg
 from six import moves
 
@@ -260,8 +259,7 @@ class LockTestCase(test.BaseTestCase):
             # Note(flaper87): Lock is not external, which means
             # a semaphore will be yielded
             with lockutils.lock("test") as sem:
-                semaphores = (semaphore.Semaphore, threading._Semaphore)
-                self.assertTrue(isinstance(sem, semaphores))
+                self.assertTrue(isinstance(sem, threading._Semaphore))
 
                 # NOTE(flaper87): Lock is external so an InterProcessLock
                 # will be yielded.
@@ -286,7 +284,7 @@ class LockTestCase(test.BaseTestCase):
 
         try:
             with lockutils.lock("test") as sem:
-                semaphores = (semaphore.Semaphore, threading._Semaphore)
+                semaphores = threading._Semaphore
                 self.assertTrue(isinstance(sem, semaphores))
 
                 with lockutils.lock("test2", external=True,
