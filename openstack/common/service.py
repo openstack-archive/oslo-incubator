@@ -45,8 +45,11 @@ def _sighup_supported():
     return hasattr(signal, 'SIGHUP')
 
 
-def _is_sighup(signo):
-    return _sighup_supported() and signo == signal.SIGHUP
+def _is_sighup_and_daemon(signo):
+    # NOTE(sdague): future fix should add the detection of whether
+    # or not this is actually a daemon. SIGHUP on a non detacted
+    # process should actually == SIGTERM
+    return _sighup_supported() and signo == signal.SIGHUP and False
 
 
 def _signo_to_signame(signo):
@@ -160,7 +163,7 @@ class ServiceLauncher(Launcher):
         while True:
             self.handle_signal()
             status, signo = self._wait_for_exit_or_signal(ready_callback)
-            if not _is_sighup(signo):
+            if not _is_sighup_and_daemon(signo):
                 return status
             self.restart()
 
@@ -280,7 +283,7 @@ class ProcessLauncher(object):
             while True:
                 self._child_process_handle_signal()
                 status, signo = self._child_wait_for_exit_or_signal(launcher)
-                if not _is_sighup(signo):
+                if not _is_sighup_and_daemon(signo):
                     break
                 launcher.restart()
 
@@ -352,7 +355,7 @@ class ProcessLauncher(object):
             if self.sigcaught:
                 signame = _signo_to_signame(self.sigcaught)
                 LOG.info(_('Caught %s, stopping children'), signame)
-            if not _is_sighup(self.sigcaught):
+            if not _is_sighup_and_daemon(self.sigcaught):
                 break
 
             for pid in self.children:
