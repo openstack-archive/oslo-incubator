@@ -36,13 +36,15 @@ class TestMigrationCommon(base.DbTestCase):
 
         migration._REPOSITORY = None
         self.path = tempfile.mkdtemp('test_migration')
+        self.path1 = tempfile.mkdtemp('test_migration')
         self.return_value = '/home/openstack/migrations'
+        self.return_value1 = '/home/extension/migrations'
         self.init_version = 1
         self.test_version = 123
 
         self.patcher_repo = mock.patch.object(migration, 'Repository')
         self.repository = self.patcher_repo.start()
-        self.repository.return_value = self.return_value
+        self.repository.side_effect = [self.return_value, self.return_value1]
 
         self.mock_api_db = mock.patch.object(versioning_api, 'db_version')
         self.mock_api_db_version = self.mock_api_db.start()
@@ -64,19 +66,13 @@ class TestMigrationCommon(base.DbTestCase):
 
     def test_find_migrate_repo_called_once(self):
         my_repository = migration._find_migrate_repo(self.path)
-
         self.repository.assert_called_once_with(self.path)
-        self.assertEqual(migration._REPOSITORY, self.return_value)
         self.assertEqual(my_repository, self.return_value)
 
     def test_find_migrate_repo_called_few_times(self):
-        repository1 = migration._find_migrate_repo(self.path)
-        repository2 = migration._find_migrate_repo(self.path)
-
-        self.repository.assert_called_once_with(self.path)
-        self.assertEqual(migration._REPOSITORY, self.return_value)
-        self.assertEqual(repository1, self.return_value)
-        self.assertEqual(repository2, self.return_value)
+        repo1 = migration._find_migrate_repo(self.path)
+        repo2 = migration._find_migrate_repo(self.path1)
+        self.assertNotEqual(repo1, repo2)
 
     def test_db_version_control(self):
         with contextlib.nested(

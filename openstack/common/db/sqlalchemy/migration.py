@@ -55,8 +55,6 @@ from openstack.common.db.sqlalchemy import session as db_session
 from openstack.common.gettextutils import _  # noqa
 
 
-_REPOSITORY = None
-
 get_engine = db_session.get_engine
 
 
@@ -244,9 +242,6 @@ def _find_migrate_repo(abs_path):
 
     :param abs_path: Absolute path to migrate repository
     """
-    global _REPOSITORY
     if not os.path.exists(abs_path):
         raise exception.DbMigrationError("Path %s not found" % abs_path)
-    if _REPOSITORY is None:
-        _REPOSITORY = Repository(abs_path)
-    return _REPOSITORY
+    return Repository(abs_path)
