@@ -8,7 +8,7 @@ VENV=.update-venv
 
 . $VENV/bin/activate
 
-# need oslo-config for bootstrapping, be quiet for UX reasons
-pip -q install http://tarballs.openstack.org/oslo-config/oslo-config-2013.1b4.tar.gz
+# need oslo.config for bootstrapping, be quiet for UX reasons
+pip -q install olso.config
 
 python update.py $*
