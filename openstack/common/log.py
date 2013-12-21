@@ -41,7 +41,7 @@ from oslo.config import cfg
 import six
 from six import moves
 
-from openstack.common.gettextutils import _  # noqa
+from openstack.common.gettextutils import _
 from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import local

@@ -24,7 +24,7 @@ import time
 import eventlet
 
 from openstack.common.fixture import config
-from openstack.common.gettextutils import _  # noqa
+from openstack.common.gettextutils import _
 from openstack.common.rpc import common as rpc_common
 from openstack.common.rpc import dispatcher as rpc_dispatcher
 from openstack.common import test

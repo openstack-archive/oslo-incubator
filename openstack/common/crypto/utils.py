@@ -17,7 +17,7 @@ import base64
 from Crypto.Hash import HMAC
 from Crypto import Random
 
-from openstack.common.gettextutils import _  # noqa
+from openstack.common.gettextutils import _
 from openstack.common import importutils
 
 

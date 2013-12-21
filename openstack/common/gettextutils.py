@@ -19,7 +19,7 @@ gettext for openstack-common modules.
 
 Usual usage in an openstack.common module:
 
-    from openstack.common.gettextutils import _  # noqa
+    from openstack.common.gettextutils import _
 """
 
 import copy

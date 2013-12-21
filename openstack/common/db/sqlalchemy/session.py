@@ -284,7 +284,7 @@ from sqlalchemy.pool import NullPool, StaticPool
 from sqlalchemy.sql.expression import literal_column
 
 from openstack.common.db import exception
-from openstack.common.gettextutils import _  # noqa
+from openstack.common.gettextutils import _
 from openstack.common import log as logging
 from openstack.common import timeutils
 

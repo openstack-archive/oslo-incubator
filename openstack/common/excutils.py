@@ -24,7 +24,7 @@ import traceback
 
 import six
 
-from openstack.common.gettextutils import _  # noqa
+from openstack.common.gettextutils import _
 
 
 class save_and_reraise_exception(object):

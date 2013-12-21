@@ -21,7 +21,7 @@ import json
 
 from oslo.config import cfg
 
-from openstack.common.gettextutils import _  # noqa
+from openstack.common.gettextutils import _
 from openstack.common import log as logging
 from openstack.common.rpc import matchmaker as mm
 

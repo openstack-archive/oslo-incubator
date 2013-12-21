@@ -52,7 +52,7 @@ from sqlalchemy.schema import UniqueConstraint
 
 from openstack.common.db import exception
 from openstack.common.db.sqlalchemy import session as db_session
-from openstack.common.gettextutils import _  # noqa
+from openstack.common.gettextutils import _
 
 
 get_engine = db_session.get_engine

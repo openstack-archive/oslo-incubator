@@ -36,7 +36,7 @@ from sqlalchemy import String
 from sqlalchemy import Table
 from sqlalchemy.types import NullType
 
-from openstack.common.gettextutils import _  # noqa
+from openstack.common.gettextutils import _
 
 from openstack.common import log as logging
 from openstack.common import timeutils

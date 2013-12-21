@@ -21,7 +21,7 @@ Helper methods to deal with images.
 
 import re
 
-from openstack.common.gettextutils import _  # noqa
+from openstack.common.gettextutils import _
 from openstack.common import strutils
 
 

@@ -23,7 +23,7 @@ import six
 import webob.dec
 
 from openstack.common import context
-from openstack.common.gettextutils import _  # noqa
+from openstack.common.gettextutils import _
 from openstack.common import log as logging
 from openstack.common.middleware import base
 from openstack.common.notifier import api
