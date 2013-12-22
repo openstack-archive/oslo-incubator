@@ -31,7 +31,6 @@ import six
 
 from openstack.common.apiclient import client
 from openstack.common.py3kcompat import urlutils
-from openstack.common import strutils
 
 
 def assert_has_keys(dct, required=[], optional=[]):
@@ -64,7 +63,7 @@ class TestResponse(requests.Response):
                 self._content = text
                 default_headers = {}
             if six.PY3 and isinstance(self._content, six.string_types):
-                self._content = strutils.safe_encode(self._content)
+                self._content = self._content.encode('utf-8', 'strict')
             self.headers = data.get('headers') or default_headers
         else:
             self.status_code = data
