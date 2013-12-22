@@ -27,9 +27,11 @@ places where actual behavior differs from the spec.
 import json
 
 import requests
+import six
 
 from openstack.common.apiclient import client
 from openstack.common.py3kcompat import urlutils
+from openstack.common import strutils
 
 
 def assert_has_keys(dct, required=[], optional=[]):
@@ -61,6 +63,8 @@ class TestResponse(requests.Response):
             else:
                 self._content = text
                 default_headers = {}
+            if six.PY3 and isinstance(self._content, six.string_types):
+                self._content = strutils.safe_encode(self._content)
             self.headers = data.get('headers') or default_headers
         else:
             self.status_code = data
