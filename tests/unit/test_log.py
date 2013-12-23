@@ -29,6 +29,7 @@ from openstack.common.fixture import config
 from openstack.common.fixture import moxstubout
 from openstack.common import gettextutils
 from openstack.common import jsonutils
+from openstack.common import local
 from openstack.common import log
 from openstack.common import log_handler
 from openstack.common.notifier import api as notifier
@@ -242,7 +243,7 @@ class ContextFormatterTestCase(test.BaseTestCase):
                                                   "%(message)s",
                     logging_default_format_string="NOCTXT: %(message)s",
                     logging_debug_format_suffix="--DBG")
-        self.log = log.getLogger()
+        self.log = log.getLogger('')  # obtain root logger instead of 'unknown'
         self.stream = six.StringIO()
         self.handler = logging.StreamHandler(self.stream)
         self.handler.setFormatter(log.ContextFormatter())
@@ -261,6 +262,46 @@ class ContextFormatterTestCase(test.BaseTestCase):
         self.log.info("bar", context=ctxt)
         expected = "HAS CONTEXT [%s]: bar\n" % ctxt.request_id
         self.assertEqual(expected, self.stream.getvalue())
+
+    def test_context_is_taken_from_tls_variable(self):
+        ctxt = _fake_context()
+        local.store.context = ctxt
+        try:
+            self.log.info("bar")
+            expected = "HAS CONTEXT [%s]: bar\n" % ctxt.request_id
+            self.assertEqual(expected, self.stream.getvalue())
+        finally:
+            del local.store.context
+
+    def test_contextual_information_is_imparted_to_3rd_party_log_records(self):
+        ctxt = _fake_context()
+        local.store.context = ctxt
+        try:
+            sa_log = logging.getLogger('sqlalchemy.engine')
+            sa_log.setLevel(logging.INFO)
+            sa_log.info('emulate logging within sqlalchemy')
+
+            expected = ("HAS CONTEXT [%s]: emulate logging within "
+                        "sqlalchemy\n" % ctxt.request_id)
+            self.assertEqual(expected, self.stream.getvalue())
+        finally:
+            del local.store.context
+
+    def test_message_logging_3rd_party_log_records(self):
+        ctxt = _fake_context()
+        local.store.context = ctxt
+        local.store.context.request_id = six.text_type('99')
+        try:
+            sa_log = logging.getLogger('sqlalchemy.engine')
+            sa_log.setLevel(logging.INFO)
+            message = gettextutils.Message('test ' + six.unichr(128))
+            sa_log.info(message)
+
+            expected = ("HAS CONTEXT [%s]: %s\n" % (ctxt.request_id,
+                                                    six.text_type(message)))
+            self.assertEqual(expected, self.stream.getvalue())
+        finally:
+            del local.store.context
 
     def test_debugging_log(self):
         self.log.debug("baz")
@@ -481,7 +522,7 @@ class LogConfigOptsTestCase(test.BaseTestCase):
         log_dir = tempfile.mkdtemp()
         self.CONF(['--log-dir', log_dir])
         self.CONF.set_default('use_stderr', False)
-        log._setup_logging_from_conf()
+        log._setup_logging_from_conf('test', 'test')
         logger = log._loggers[None].logger
         self.assertEqual(1, len(logger.handlers))
         self.assertIsInstance(logger.handlers[0],
@@ -504,14 +545,14 @@ class LogConfigOptsTestCase(test.BaseTestCase):
 
     def test_log_format_overrides_formatter(self):
         self.CONF(['--log-format', '[Any format]'])
-        log._setup_logging_from_conf()
+        log._setup_logging_from_conf('test', 'test')
         logger = log._loggers[None].logger
         for handler in logger.handlers:
             formatter = handler.formatter
             self.assertTrue(isinstance(formatter, logging.Formatter))
 
     def test_default_formatter(self):
-        log._setup_logging_from_conf()
+        log._setup_logging_from_conf('test', 'test')
         logger = log._loggers[None].logger
         for handler in logger.handlers:
             formatter = handler.formatter
