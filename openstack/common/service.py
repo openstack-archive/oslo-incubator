@@ -172,7 +172,7 @@ class ServiceLauncher(Launcher):
             super(ServiceLauncher, self).wait()
         except SignalExit as exc:
             signame = _signo_to_signame(exc.signo)
-            LOG.info(_('Caught %s, exiting'), signame)
+            LOG.waring(_('Caught %s, exiting'), signame)
             status = exc.code
             signo = exc.signo
         except SystemExit as exc:
@@ -229,7 +229,7 @@ class ProcessLauncher(object):
         # dies unexpectedly
         self.readpipe.read()
 
-        LOG.info(_('Parent process has died unexpectedly, exiting'))
+        LOG.error(_('Parent process has died unexpectedly, exiting'))
 
         sys.exit(1)
 
@@ -260,7 +260,7 @@ class ProcessLauncher(object):
             launcher.wait()
         except SignalExit as exc:
             signame = _signo_to_signame(exc.signo)
-            LOG.info(_('Caught %s, exiting'), signame)
+            LOG.warning(_('Caught %s, exiting'), signame)
             status = exc.code
             signo = exc.signo
         except SystemExit as exc:
@@ -299,7 +299,7 @@ class ProcessLauncher(object):
             # start up quickly but ensure we don't fork off children that
             # die instantly too quickly.
             if time.time() - wrap.forktimes[0] < wrap.workers:
-                LOG.info(_('Forking too fast, sleeping'))
+                LOG.warning(_('Forking too fast, sleeping'))
                 time.sleep(1)
 
             wrap.forktimes.pop(0)
