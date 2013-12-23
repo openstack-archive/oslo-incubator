@@ -18,6 +18,7 @@
 import os
 
 import fixtures
+import six
 import testtools
 
 _TRUE_VALUES = ('True', 'true', '1', 'yes')
@@ -29,7 +30,7 @@ class BaseTestCase(testtools.TestCase):
         super(BaseTestCase, self).setUp()
         self._set_timeout()
         self._fake_output()
-        self.useFixture(fixtures.FakeLogger())
+        self.useFixture(fixtures.FakeLogger('openstack.common'))
         self.useFixture(fixtures.NestedTempfile())
         self.useFixture(fixtures.TempHomeDir())
 
@@ -50,3 +51,45 @@ class BaseTestCase(testtools.TestCase):
         if os.environ.get('OS_STDERR_CAPTURE') in _TRUE_VALUES:
             stderr = self.useFixture(fixtures.StringStream('stderr')).stream
             self.useFixture(fixtures.MonkeyPatch('sys.stderr', stderr))
+
+
+class ModelsObjectComparatorMixin(object):
+
+    def _dict_from_object(self, obj, ignored_keys):
+        if ignored_keys is None:
+            ignored_keys = []
+        result = obj.copy()
+        for ignored_key in ignored_keys:
+            result.pop(ignored_key, None)
+        return result
+
+    def assertEqualObjects(self, obj1, obj2, ignored_keys=None):
+        """Check equal of the two dictionary, possible exception of some
+        keys
+        """
+        obj1 = self._dict_from_object(obj1, ignored_keys)
+        obj2 = self._dict_from_object(obj2, ignored_keys)
+
+        self.assertEqual(len(obj1),
+                         len(obj2),
+                         "Keys mismatch: %s" % str(
+                             set(obj1.keys()) ^ set(obj2.keys())))
+        for key, value in six.iteritems(obj1):
+            self.assertEqual(value, obj2[key])
+
+    def assertEqualListsOfObjects(self, objs1, objs2, ignored_keys=None):
+        """Check equal of the two lists. List's object is dict."""
+        obj_to_dict = lambda o: self._dict_from_object(o, ignored_keys)
+        sort_key = lambda d: [d[k] for k in sorted(d)]
+        conv_and_sort = lambda obj: sorted(map(obj_to_dict, obj), key=sort_key)
+
+        self.assertEqual(conv_and_sort(objs1), conv_and_sort(objs2))
+
+    def assertEqualListsOfPrimitivesAsSets(self, primitives1, primitives2):
+        """Check equal of the two dict, whose values are set."""
+        self.assertEqual(len(primitives1), len(primitives2))
+        for primitive in primitives1:
+            self.assertIn(primitive, primitives2)
+
+        for primitive in primitives2:
+            self.assertIn(primitive, primitives1)
