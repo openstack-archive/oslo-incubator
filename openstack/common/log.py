@@ -418,12 +418,12 @@ def _load_log_config(log_config_append):
         raise LogConfigError(log_config_append, str(exc))
 
 
-def setup(product_name):
+def setup(product_name, version='unknown'):
     """Setup logging."""
     if CONF.log_config_append:
         _load_log_config(CONF.log_config_append)
     else:
-        _setup_logging_from_conf()
+        _setup_logging_from_conf(product_name, version)
     sys.excepthook = _create_logging_excepthook(product_name)
 
 
@@ -457,7 +457,7 @@ def _find_facility_from_conf():
     return facility
 
 
-def _setup_logging_from_conf():
+def _setup_logging_from_conf(project='unknown', version='unknown'):
     log_root = getLogger(None).logger
     for handler in log_root.handlers:
         log_root.removeHandler(handler)
@@ -499,7 +499,9 @@ def _setup_logging_from_conf():
             log_root.info('Deprecated: log_format is now deprecated and will '
                           'be removed in the next release')
         else:
-            handler.setFormatter(ContextFormatter(datefmt=datefmt))
+            handler.setFormatter(ContextFormatter(project=project,
+                                                  version=version,
+                                                  datefmt=datefmt))
 
     if CONF.debug:
         log_root.setLevel(logging.DEBUG)
@@ -559,8 +561,28 @@ class ContextFormatter(logging.Formatter):
 
     """
 
+    def __init__(self, project='unknown', version='unknown', *args, **kwargs):
+        # NOTE(rpodolyaka): in Python versions <= 2.6 logging.Formatter is an
+        # old-style class, so we can't use super() here
+        logging.Formatter.__init__(self, *args, **kwargs)
+
+        self.project = project
+        self.version = version
+
     def format(self, record):
         """Uses contextstring if request_id is set, otherwise default."""
+
+        # store project info
+        record.project = self.project
+        record.version = self.version
+
+        # store request info
+        context = getattr(local.store, 'context', None)
+        if context:
+            d = _dictify_context(context)
+            for k, v in d.items():
+                setattr(record, k, v)
+
         # NOTE(sdague): default the fancier formating params
         # to an empty string so we don't throw an exception if
         # they get used
