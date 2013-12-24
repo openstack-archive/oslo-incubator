@@ -84,6 +84,30 @@ class CommonLoggerTestsMixIn(object):
         logger = logging.getLogger("test_is_debug")
         self.assertEqual(logging.DEBUG, logger.getEffectiveLevel())
 
+    def test_will_be_debug_if_debug_openstack_only_flag_set(self):
+        self.config(debug_openstack_only=True)
+        log.setup("test_is_debug_openstack_only")
+        root_logger = logging.getLogger()
+        self.assertNotEqual(logging.DEBUG, root_logger.getEffectiveLevel())
+        root_logger = log.getLogger(None).logger
+        self.assertNotEqual(logging.DEBUG, root_logger.getEffectiveLevel())
+        external_logger = logging.getLogger("external_logger")
+        self.assertNotEqual(logging.DEBUG, external_logger.getEffectiveLevel())
+        openstack_logger = log.getLogger("openstack_logger").logger
+        self.assertEqual(logging.DEBUG, openstack_logger.getEffectiveLevel())
+
+    def test_will_be_debug_if_debug_and_debug_openstack_only_flag_set(self):
+        self.config(debug=True, debug_openstack_only=True)
+        log.setup("test_is_debug_and_debug_openstack_only")
+        root_logger = logging.getLogger()
+        self.assertEqual(logging.DEBUG, root_logger.getEffectiveLevel())
+        root_logger = log.getLogger(None).logger
+        self.assertEqual(logging.DEBUG, root_logger.getEffectiveLevel())
+        external_logger = logging.getLogger("external_logger")
+        self.assertEqual(logging.DEBUG, external_logger.getEffectiveLevel())
+        openstack_logger = log.getLogger("openstack_logger").logger
+        self.assertEqual(logging.DEBUG, openstack_logger.getEffectiveLevel())
+
     def test_will_not_be_verbose_if_verbose_flag_not_set(self):
         self.config(verbose=False)
         log.setup("test_is_not_verbose")
@@ -447,14 +471,16 @@ class LogConfigOptsTestCase(test.BaseTestCase):
         self.CONF([])
         self.CONF.print_help(file=f)
         self.assertTrue('debug' in f.getvalue())
+        self.assertTrue('debug-openstack-only' in f.getvalue())
         self.assertTrue('verbose' in f.getvalue())
         self.assertTrue('log-config' in f.getvalue())
         self.assertTrue('log-format' in f.getvalue())
 
     def test_debug_verbose(self):
-        self.CONF(['--debug', '--verbose'])
+        self.CONF(['--debug', '--debug-openstack-only', '--verbose'])
 
         self.assertEqual(self.CONF.debug, True)
+        self.assertEqual(self.CONF.debug_openstack_only, True)
         self.assertEqual(self.CONF.verbose, True)
 
     def test_logging_opts(self):

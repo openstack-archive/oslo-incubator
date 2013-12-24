@@ -73,6 +73,10 @@ common_cli_opts = [
                 default=False,
                 help='Print debugging output (set logging level to '
                      'DEBUG instead of default WARNING level).'),
+    cfg.BoolOpt('debug-openstack-only',
+                default=False,
+                help='Print debugging output only for OpenStack components, '
+                     'but not for third party libraries.'),
     cfg.BoolOpt('verbose',
                 short='v',
                 default=False,
@@ -519,9 +523,12 @@ _loggers = {}
 
 def getLogger(name='unknown', version='unknown'):
     if name not in _loggers:
-        _loggers[name] = ContextAdapter(logging.getLogger(name),
-                                        name,
-                                        version)
+        logger = logging.getLogger(name)
+        # In some places root logger is also accessed via this function,
+        # but we should not set debug level on it.
+        if CONF.debug_openstack_only and logger is not logging.getLogger():
+            logger.setLevel(logging.DEBUG)
+        _loggers[name] = ContextAdapter(logger, name, version)
     return _loggers[name]
 
 
