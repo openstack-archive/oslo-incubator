@@ -52,8 +52,10 @@ from sqlalchemy.schema import UniqueConstraint
 
 from openstack.common.db import exception
 from openstack.common.db.sqlalchemy import session as db_session
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _  # noqa
 
+
+_REPOSITORY = None
 
 get_engine = db_session.get_engine
 
@@ -217,10 +219,11 @@ def db_version(abs_path, init_version):
             db_version_control(abs_path, init_version)
             return versioning_api.db_version(get_engine(), repository)
         else:
-            # Some pre-Essex DB's may not be version controlled.
-            # Require them to upgrade using Essex first.
             raise exception.DbMigrationError(
-                message=_("Upgrade DB using Essex release first."))
+                message=_(
+                    "The database is not under version control, but has "
+                    "tables. Please stamp the current version of the schema "
+                    "manually."))
 
 
 def db_version_control(abs_path, version=None):
@@ -242,6 +245,9 @@ def _find_migrate_repo(abs_path):
 
     :param abs_path: Absolute path to migrate repository
     """
+    global _REPOSITORY
     if not os.path.exists(abs_path):
         raise exception.DbMigrationError("Path %s not found" % abs_path)
-    return Repository(abs_path)
+    if _REPOSITORY is None:
+        _REPOSITORY = Repository(abs_path)
+    return _REPOSITORY
