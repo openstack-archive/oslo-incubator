@@ -257,6 +257,12 @@ M: Michael Still <mikal@stillhq.com>
 S: Maintained
 F: service.py
 
+== sshclient ==
+
+M: Sergey Skripnick <sskripnick@mirantis.com>
+S: Maintained
+F: sshclient.py
+
 == sslutils ==
 
 M:
