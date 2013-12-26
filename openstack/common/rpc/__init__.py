@@ -23,13 +23,9 @@ For some wrappers that add message versioning to rpc, see:
     rpc.proxy
 """
 
-import inspect
-
 from oslo.config import cfg
 
-from openstack.common.gettextutils import _
 from openstack.common import importutils
-from openstack.common import local
 from openstack.common import log as logging
 
 
@@ -93,23 +89,6 @@ def create_connection(new=True):
     return _get_impl().create_connection(CONF, new=new)
 
 
-def _check_for_lock():
-    if not CONF.debug:
-        return None
-
-    if ((hasattr(local.strong_store, 'locks_held')
-         and local.strong_store.locks_held)):
-        stack = ' :: '.join([frame[3] for frame in inspect.stack()])
-        LOG.warn(_('A RPC is being made while holding a lock. The locks '
-                   'currently held are %(locks)s. This is probably a bug. '
-                   'Please report it. Include the following: [%(stack)s].'),
-                 {'locks': local.strong_store.locks_held,
-                  'stack': stack})
-        return True
-
-    return False
-
-
 def call(context, topic, msg, timeout=None, check_for_lock=False):
     """Invoke a remote method that returns something.
 
@@ -132,8 +111,6 @@ def call(context, topic, msg, timeout=None, check_for_lock=False):
     :raises: openstack.common.rpc.common.Timeout if a complete response
              is not received before the timeout is reached.
     """
-    if check_for_lock:
-        _check_for_lock()
     return _get_impl().call(CONF, context, topic, msg, timeout)
 
 
@@ -205,8 +182,6 @@ def multicall(context, topic, msg, timeout=None, check_for_lock=False):
     :raises: openstack.common.rpc.common.Timeout if a complete response
              is not received before the timeout is reached.
     """
-    if check_for_lock:
-        _check_for_lock()
     return _get_impl().multicall(CONF, context, topic, msg, timeout)
 
 
