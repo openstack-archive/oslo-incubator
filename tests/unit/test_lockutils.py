@@ -226,8 +226,9 @@ class LockTestCase(test.BaseTestCase):
 
     def test_synchronized_without_prefix(self):
         lock_dir = tempfile.mkdtemp()
+        self.config(lock_path=lock_dir)
 
-        @lockutils.synchronized('lock', external=True, lock_path=lock_dir)
+        @lockutils.synchronized('lock', external=True)
         def test_without_prefix():
             path = os.path.join(lock_dir, "lock")
             self.assertTrue(os.path.exists(path))
@@ -240,8 +241,9 @@ class LockTestCase(test.BaseTestCase):
 
     def test_synchronized_prefix_without_hypen(self):
         lock_dir = tempfile.mkdtemp()
+        self.config(lock_path=lock_dir)
 
-        @lockutils.synchronized('lock', 'hypen', True, lock_dir)
+        @lockutils.synchronized('lock', 'hypen', True)
         def test_without_hypen():
             path = os.path.join(lock_dir, "hypen-lock")
             self.assertTrue(os.path.exists(path))
@@ -254,6 +256,7 @@ class LockTestCase(test.BaseTestCase):
 
     def test_contextlock(self):
         lock_dir = tempfile.mkdtemp()
+        self.config(lock_path=lock_dir)
 
         try:
             # Note(flaper87): Lock is not external, which means
@@ -263,14 +266,12 @@ class LockTestCase(test.BaseTestCase):
 
                 # NOTE(flaper87): Lock is external so an InterProcessLock
                 # will be yielded.
-                with lockutils.lock("test2", external=True,
-                                    lock_path=lock_dir):
+                with lockutils.lock("test2", external=True):
                     path = os.path.join(lock_dir, "test2")
                     self.assertTrue(os.path.exists(path))
 
                 with lockutils.lock("test1",
-                                    external=True,
-                                    lock_path=lock_dir) as lock1:
+                                    external=True) as lock1:
                     self.assertTrue(isinstance(lock1,
                                                lockutils.InterProcessLock))
         finally:
@@ -279,6 +280,7 @@ class LockTestCase(test.BaseTestCase):
 
     def test_contextlock_unlocks(self):
         lock_dir = tempfile.mkdtemp()
+        self.config(lock_path=lock_dir)
 
         sem = None
 
@@ -286,14 +288,12 @@ class LockTestCase(test.BaseTestCase):
             with lockutils.lock("test") as sem:
                 self.assertTrue(isinstance(sem, threading._Semaphore))
 
-                with lockutils.lock("test2", external=True,
-                                    lock_path=lock_dir):
+                with lockutils.lock("test2", external=True):
                     path = os.path.join(lock_dir, "test2")
                     self.assertTrue(os.path.exists(path))
 
                 # NOTE(flaper87): Lock should be free
-                with lockutils.lock("test2", external=True,
-                                    lock_path=lock_dir):
+                with lockutils.lock("test2", external=True):
                     path = os.path.join(lock_dir, "test2")
                     self.assertTrue(os.path.exists(path))
 
