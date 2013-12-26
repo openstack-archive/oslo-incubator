@@ -17,7 +17,7 @@
 System-level utilities and helper functions.
 """
 
-import logging as stdlib_logging
+import logging
 import os
 import random
 import shlex
@@ -27,7 +27,6 @@ from eventlet.green import subprocess
 from eventlet import greenthread
 
 from openstack.common.gettextutils import _
-from openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)
@@ -102,8 +101,8 @@ def execute(*cmd, **kwargs):
                             execute this command. Defaults to false.
     :type shell:            boolean
     :param loglevel:        log level for execute commands.
-    :type loglevel:         int.  (Should be stdlib_logging.DEBUG or
-                            stdlib_logging.INFO)
+    :type loglevel:         int.  (Should be logging.DEBUG or
+                            logging.INFO)
     :returns:               (stdout, stderr) from process execution
     :raises:                :class:`UnknownArgumentError` on
                             receiving unknown arguments
@@ -118,7 +117,7 @@ def execute(*cmd, **kwargs):
     run_as_root = kwargs.pop('run_as_root', False)
     root_helper = kwargs.pop('root_helper', '')
     shell = kwargs.pop('shell', False)
-    loglevel = kwargs.pop('loglevel', stdlib_logging.DEBUG)
+    loglevel = kwargs.pop('loglevel', logging.DEBUG)
 
     if isinstance(check_exit_code, bool):
         ignore_exit_code = not check_exit_code

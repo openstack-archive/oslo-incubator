@@ -16,12 +16,12 @@
 
 import contextlib
 import errno
+import logging
 import os
 import tempfile
 
 from openstack.common import excutils
 from openstack.common.gettextutils import _
-from openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
 
