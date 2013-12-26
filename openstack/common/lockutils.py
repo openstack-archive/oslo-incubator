@@ -137,6 +137,66 @@ _semaphores = weakref.WeakValueDictionary()
 _semaphores_lock = threading.Lock()
 
 
+def external_lock(name, lock_file_prefix=None, lock_path=None):
+    with internal_lock(name):
+        LOG.debug(_('Attempting to grab file lock "%(lock)s"'),
+                  {'lock': name})
+
+        # We need a copy of lock_path because it is non-local
+        local_lock_path = lock_path or CONF.lock_path
+        if not local_lock_path:
+            raise cfg.RequiredOptError('lock_path')
+
+        if not os.path.exists(local_lock_path):
+            fileutils.ensure_tree(local_lock_path)
+            LOG.info(_('Created lock path: %s'), local_lock_path)
+
+        def add_prefix(name, prefix):
+            if not prefix:
+                return name
+            sep = '' if prefix.endswith('-') else '-'
+            return '%s%s%s' % (prefix, sep, name)
+
+        # NOTE(mikal): the lock name cannot contain directory
+        # separators
+        lock_file_name = add_prefix(name.replace(os.sep, '_'),
+                                    lock_file_prefix)
+
+        lock_file_path = os.path.join(local_lock_path, lock_file_name)
+
+        try:
+            lock = InterProcessLock(lock_file_path)
+            with lock as lock:
+                LOG.debug(_('Got file lock "%(lock)s" at %(path)s'),
+                          {'lock': name, 'path': lock_file_path})
+                yield lock
+        finally:
+            LOG.debug(_('Released file lock "%(lock)s" at %(path)s'),
+                      {'lock': name, 'path': lock_file_path})
+
+
+def internal_lock(name):
+    with _semaphores_lock:
+        try:
+            sem = _semaphores[name]
+        except KeyError:
+            sem = threading.Semaphore()
+            _semaphores[name] = sem
+
+    with sem:
+        LOG.debug(_('Got semaphore "%(lock)s"'), {'lock': name})
+
+        # NOTE(mikal): I know this looks odd
+        if not hasattr(local.strong_store, 'locks_held'):
+            local.strong_store.locks_held = []
+        local.strong_store.locks_held.append(name)
+
+        try:
+            yield sem
+        finally:
+            local.strong_store.locks_held.remove(name)
+
+
 @contextlib.contextmanager
 def lock(name, lock_file_prefix=None, external=False, lock_path=None):
     """Context based lock
@@ -157,62 +217,10 @@ def lock(name, lock_file_prefix=None, external=False, lock_path=None):
       special location for external lock files to live. If nothing is set, then
       CONF.lock_path is used as a default.
     """
-    with _semaphores_lock:
-        try:
-            sem = _semaphores[name]
-        except KeyError:
-            sem = threading.Semaphore()
-            _semaphores[name] = sem
-
-    with sem:
-        LOG.debug(_('Got semaphore "%(lock)s"'), {'lock': name})
-
-        # NOTE(mikal): I know this looks odd
-        if not hasattr(local.strong_store, 'locks_held'):
-            local.strong_store.locks_held = []
-        local.strong_store.locks_held.append(name)
-
-        try:
-            if external and not CONF.disable_process_locking:
-                LOG.debug(_('Attempting to grab file lock "%(lock)s"'),
-                          {'lock': name})
-
-                # We need a copy of lock_path because it is non-local
-                local_lock_path = lock_path or CONF.lock_path
-                if not local_lock_path:
-                    raise cfg.RequiredOptError('lock_path')
-
-                if not os.path.exists(local_lock_path):
-                    fileutils.ensure_tree(local_lock_path)
-                    LOG.info(_('Created lock path: %s'), local_lock_path)
-
-                def add_prefix(name, prefix):
-                    if not prefix:
-                        return name
-                    sep = '' if prefix.endswith('-') else '-'
-                    return '%s%s%s' % (prefix, sep, name)
-
-                # NOTE(mikal): the lock name cannot contain directory
-                # separators
-                lock_file_name = add_prefix(name.replace(os.sep, '_'),
-                                            lock_file_prefix)
-
-                lock_file_path = os.path.join(local_lock_path, lock_file_name)
-
-                try:
-                    lock = InterProcessLock(lock_file_path)
-                    with lock as lock:
-                        LOG.debug(_('Got file lock "%(lock)s" at %(path)s'),
-                                  {'lock': name, 'path': lock_file_path})
-                        yield lock
-                finally:
-                    LOG.debug(_('Released file lock "%(lock)s" at %(path)s'),
-                              {'lock': name, 'path': lock_file_path})
-            else:
-                yield sem
-
-        finally:
-            local.strong_store.locks_held.remove(name)
+    if external and not CONF.disable_process_locking:
+        yield external_lock(name, lock_file_prefix, lock_path)
+    else:
+        yield internal_lock(name)
 
 
 def synchronized(name, lock_file_prefix=None, external=False, lock_path=None):
