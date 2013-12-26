@@ -12,11 +12,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import logging
+
 import eventlet
 from eventlet import greenpool
 from eventlet import greenthread
 
-from openstack.common import log as logging
 from openstack.common import loopingcall
 
 

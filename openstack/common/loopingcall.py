@@ -15,13 +15,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import logging
 import sys
 
 from eventlet import event
 from eventlet import greenthread
 
 from openstack.common.gettextutils import _
-from openstack.common import log as logging
 from openstack.common import timeutils
 
 LOG = logging.getLogger(__name__)
