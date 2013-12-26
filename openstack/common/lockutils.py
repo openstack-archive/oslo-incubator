@@ -30,7 +30,6 @@ from oslo.config import cfg
 
 from openstack.common import fileutils
 from openstack.common.gettextutils import _
-from openstack.common import local
 from openstack.common import log as logging
 
 
@@ -185,16 +184,7 @@ def internal_lock(name):
 
     with sem:
         LOG.debug(_('Got semaphore "%(lock)s"'), {'lock': name})
-
-        # NOTE(mikal): I know this looks odd
-        if not hasattr(local.strong_store, 'locks_held'):
-            local.strong_store.locks_held = []
-        local.strong_store.locks_held.append(name)
-
-        try:
-            yield sem
-        finally:
-            local.strong_store.locks_held.remove(name)
+        yield sem
 
 
 @contextlib.contextmanager
