@@ -138,13 +138,13 @@ _semaphores = weakref.WeakValueDictionary()
 _semaphores_lock = threading.Lock()
 
 
-def external_lock(name, lock_file_prefix=None, lock_path=None):
+def external_lock(name, lock_file_prefix=None):
     with internal_lock(name):
-        LOG.debug(_('Attempting to grab file lock "%(lock)s in %(lock_path)"'),
-                  {'lock': name, 'lock_path': lock_path})
+        LOG.debug(_('Attempting to grab external lock "%(lock)s"'),
+                  {'lock': name})
 
         # We need a copy of lock_path because it is non-local
-        local_lock_path = lock_path or CONF.lock_path
+        local_lock_path = CONF.lock_path
         if not local_lock_path:
             raise cfg.RequiredOptError('lock_path')
 
@@ -177,7 +177,7 @@ def internal_lock(name):
 
 
 @contextlib.contextmanager
-def lock(name, lock_file_prefix=None, external=False, lock_path=None):
+def lock(name, lock_file_prefix=None, external=False):
     """Context based lock
 
     This function yields a `threading.Semaphore` instance (if we don't use
@@ -191,20 +191,16 @@ def lock(name, lock_file_prefix=None, external=False, lock_path=None):
       should work across multiple processes. This means that if two different
       workers both run a a method decorated with @synchronized('mylock',
       external=True), only one of them will execute at a time.
-
-    :param lock_path: The lock_path keyword argument is used to specify a
-      special location for external lock files to live. If nothing is set, then
-      CONF.lock_path is used as a default.
     """
     if external and not CONF.disable_process_locking:
-        lock = external_lock(name, lock_file_prefix, lock_path)
+        lock = external_lock(name, lock_file_prefix)
     else:
         lock = internal_lock(name)
     with lock:
         yield lock
 
 
-def synchronized(name, lock_file_prefix=None, external=False, lock_path=None):
+def synchronized(name, lock_file_prefix=None, external=False):
     """Synchronization decorator.
 
     Decorating a method like so::
@@ -232,7 +228,7 @@ def synchronized(name, lock_file_prefix=None, external=False, lock_path=None):
         @functools.wraps(f)
         def inner(*args, **kwargs):
             try:
-                with lock(name, lock_file_prefix, external, lock_path):
+                with lock(name, lock_file_prefix, external):
                     LOG.debug(_('Got semaphore / lock "%(function)s"'),
                               {'function': f.__name__})
                     return f(*args, **kwargs)
