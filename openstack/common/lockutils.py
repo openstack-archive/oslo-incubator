@@ -184,9 +184,8 @@ def internal_lock(name):
             sem = threading.Semaphore()
             _semaphores[name] = sem
 
-    with sem:
-        LOG.debug(_('Got semaphore "%(lock)s"'), {'lock': name})
-        yield sem
+    LOG.debug(_('Got semaphore "%(lock)s"'), {'lock': name})
+    yield sem
 
 
 @contextlib.contextmanager
