@@ -152,18 +152,14 @@ def external_lock(name, lock_file_prefix=None, lock_path=None):
             fileutils.ensure_tree(local_lock_path)
             LOG.info(_('Created lock path: %s'), local_lock_path)
 
-        def add_prefix(name, prefix):
-            if not prefix:
-                return name
-            sep = '' if prefix.endswith('-') else '-'
-            return '%s%s%s' % (prefix, sep, name)
-
         # NOTE(mikal): the lock name cannot contain directory
         # separators
-        lock_file_name = add_prefix(name.replace(os.sep, '_'),
-                                    lock_file_prefix)
+        name = name.replace(os.sep, '_')
+        if lock_file_prefix:
+            sep = '' if lock_file_prefix.endswith('-') else '-'
+            name = '%s%s%s' % (lock_file_prefix, sep, name)
 
-        lock_file_path = os.path.join(local_lock_path, lock_file_name)
+        lock_file_path = os.path.join(local_lock_path, name)
 
         return InterProcessLock(lock_file_path)
 
