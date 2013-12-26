@@ -85,6 +85,7 @@ class _InterProcessLock(object):
                 # Also upon reading the MSDN docs for locking(), it seems
                 # to have a laughable 10 attempts "blocking" mechanism.
                 self.trylock()
+                LOG.debug(_('Got file lock "%s"'), self.fname)
                 return self
             except IOError as e:
                 if e.errno in (errno.EACCES, errno.EAGAIN):
@@ -101,6 +102,7 @@ class _InterProcessLock(object):
         except IOError:
             LOG.exception(_("Could not release the acquired lock `%s`"),
                           self.fname)
+        LOG.debug(_('Released file lock "%s"'), self.fname)
 
     def trylock(self):
         raise NotImplementedError()
@@ -138,8 +140,8 @@ _semaphores_lock = threading.Lock()
 
 def external_lock(name, lock_file_prefix=None, lock_path=None):
     with internal_lock(name):
-        LOG.debug(_('Attempting to grab file lock "%(lock)s"'),
-                  {'lock': name})
+        LOG.debug(_('Attempting to grab file lock "%(lock)s in %(lock_path)"'),
+                  {'lock': name, 'lock_path': lock_path})
 
         # We need a copy of lock_path because it is non-local
         local_lock_path = lock_path or CONF.lock_path
@@ -163,15 +165,7 @@ def external_lock(name, lock_file_prefix=None, lock_path=None):
 
         lock_file_path = os.path.join(local_lock_path, lock_file_name)
 
-        try:
-            lock = InterProcessLock(lock_file_path)
-            with lock as lock:
-                LOG.debug(_('Got file lock "%(lock)s" at %(path)s'),
-                          {'lock': name, 'path': lock_file_path})
-                yield lock
-        finally:
-            LOG.debug(_('Released file lock "%(lock)s" at %(path)s'),
-                      {'lock': name, 'path': lock_file_path})
+        return InterProcessLock(lock_file_path)
 
 
 def internal_lock(name):
@@ -183,7 +177,7 @@ def internal_lock(name):
             _semaphores[name] = sem
 
     LOG.debug(_('Got semaphore "%(lock)s"'), {'lock': name})
-    yield sem
+    return sem
 
 
 @contextlib.contextmanager
@@ -207,9 +201,11 @@ def lock(name, lock_file_prefix=None, external=False, lock_path=None):
       CONF.lock_path is used as a default.
     """
     if external and not CONF.disable_process_locking:
-        yield external_lock(name, lock_file_prefix, lock_path)
+        lock = external_lock(name, lock_file_prefix, lock_path)
     else:
-        yield internal_lock(name)
+        lock = internal_lock(name)
+    with lock:
+        yield lock
 
 
 def synchronized(name, lock_file_prefix=None, external=False, lock_path=None):
