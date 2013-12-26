@@ -69,7 +69,7 @@ class RootwrapConfig(object):
             v = config.get("DEFAULT", "syslog_log_level")
             self.syslog_log_level = logging.getLevelName(v.upper())
             if (self.syslog_log_level == "Level %s" % v.upper()):
-                raise ValueError('Unexepected syslog_log_level: %s' % v)
+                raise ValueError('Unexpected syslog_log_level: %s' % v)
         else:
             self.syslog_log_level = logging.ERROR
 
