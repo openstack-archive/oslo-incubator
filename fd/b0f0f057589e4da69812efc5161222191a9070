@@ -1,0 +1,13 @@
+Verified+2: Jenkins
+Code-Review+1: Michael Basnight <mbasnight@gmail.com>
+Code-Review+1: Craig Vyvial <cp16net@gmail.com>
+Approved+1: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+1: ChangBo Guo <guochbo@cn.ibm.com>
+Code-Review+2: Ben Nemec <openstack@nemebean.com>
+Code-Review+1: Victor Sergeyev <vsergeyev@mirantis.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 27 Dec 2013 16:02:15 +0000
+Reviewed-on: https://review.openstack.org/59042
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
