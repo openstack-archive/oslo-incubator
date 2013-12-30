@@ -161,7 +161,15 @@ def print_list(objs, fields, formatters=None, sortby_index=0,
                 row.append(data)
         pt.add_row(row)
 
-    print(strutils.safe_encode(pt.get_string(**kwargs)))
+    if kwargs is not None:
+        result = strutils.safe_encode(pt.get_string(**kwargs))
+    else:
+        result = strutils.safe_encode(pt.get_string())
+
+    if six.PY3:
+        result = result.decode()
+
+    print(result)
 
 
 def print_dict(dct, dict_property="Property", wrap=0):
