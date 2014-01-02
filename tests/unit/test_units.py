@@ -29,7 +29,7 @@ class UnitTest(test.BaseTestCase):
         self.assertEqual(units.Yi, 1024 ** 8)
 
     def test_decimal_unit(self):
-        self.assertEqual(units.k, 1000)
+        self.assertEqual(units.K, 1000)
         self.assertEqual(units.M, 1000 ** 2)
         self.assertEqual(units.G, 1000 ** 3)
         self.assertEqual(units.T, 1000 ** 4)
