@@ -69,7 +69,7 @@ sql_connection_trace=True
         self.assertEqual(self.conf.database.retry_interval, 40)
         self.assertEqual(self.conf.database.max_overflow, 50)
         self.assertEqual(self.conf.database.connection_debug, 60)
-        self.assertEqual(self.conf.database.connection_trace, True)
+        self.asserTrue(self.conf.database.connection_trace)
 
     def test_session_parameters(self):
         path = self.create_tempfiles([["tmp", """[database]
@@ -91,7 +91,7 @@ pool_timeout=7
         self.assertEqual(self.conf.database.retry_interval, 40)
         self.assertEqual(self.conf.database.max_overflow, 50)
         self.assertEqual(self.conf.database.connection_debug, 60)
-        self.assertEqual(self.conf.database.connection_trace, True)
+        self.assertTrue(self.conf.database.connection_trace)
         self.assertEqual(self.conf.database.pool_timeout, 7)
 
     def test_dbapi_database_deprecated_parameters(self):

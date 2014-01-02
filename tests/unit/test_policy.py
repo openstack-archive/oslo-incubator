@@ -153,7 +153,7 @@ class EnforcerTest(PolicyBaseTestCase):
         self.enforcer.set_rules(rules)
         action = "cloudwatch:PutMetricData"
         creds = {'roles': ''}
-        self.assertEqual(self.enforcer.enforce(action, {}, creds), True)
+        self.assertTrue(self.enforcer.enforce(action, {}, creds))
 
     def test_enforcer_with_default_rule(self):
         rules_json = """{
@@ -166,7 +166,7 @@ class EnforcerTest(PolicyBaseTestCase):
         enforcer.set_rules(rules)
         action = "cloudwatch:PutMetricData"
         creds = {'roles': ''}
-        self.assertEqual(enforcer.enforce(action, {}, creds), True)
+        self.assertTrue(enforcer.enforce(action, {}, creds))
 
     def test_enforcer_force_reload_true(self):
         self.enforcer.set_rules({'test': 'test'})
@@ -230,7 +230,7 @@ class CheckFunctionTestCase(PolicyBaseTestCase):
 
     def test_check_no_rules(self):
         result = self.enforcer.enforce('rule', "target", "creds")
-        self.assertEqual(result, False)
+        self.assertFalse(result)
 
     def test_check_with_rule(self):
         self.enforcer.load_rules()
@@ -262,7 +262,7 @@ class FalseCheckTestCase(test.BaseTestCase):
     def test_call(self):
         check = policy.FalseCheck()
 
-        self.assertEqual(check('target', 'creds', None), False)
+        self.assertFalse(check('target', 'creds', None))
 
 
 class TrueCheckTestCase(test.BaseTestCase):
@@ -274,7 +274,7 @@ class TrueCheckTestCase(test.BaseTestCase):
     def test_call(self):
         check = policy.TrueCheck()
 
-        self.assertEqual(check('target', 'creds', None), True)
+        self.assertTrue(check('target', 'creds', None))
 
 
 class CheckForTest(policy.Check):
@@ -310,14 +310,14 @@ class NotCheckTestCase(test.BaseTestCase):
         rule = mock.Mock(return_value=True)
         check = policy.NotCheck(rule)
 
-        self.assertEqual(check('target', 'cred', None), False)
+        self.assertFalse(check('target', 'cred', None))
         rule.assert_called_once_with('target', 'cred', None)
 
     def test_call_false(self):
         rule = mock.Mock(return_value=False)
         check = policy.NotCheck(rule)
 
-        self.assertEqual(check('target', 'cred', None), True)
+        self.assertTrue(check('target', 'cred', None))
         rule.assert_called_once_with('target', 'cred', None)
 
 
@@ -342,7 +342,7 @@ class AndCheckTestCase(test.BaseTestCase):
         rules = [mock.Mock(return_value=False), mock.Mock(return_value=False)]
         check = policy.AndCheck(rules)
 
-        self.assertEqual(check('target', 'cred', None), False)
+        self.assertFalse(check('target', 'cred', None))
         rules[0].assert_called_once_with('target', 'cred', None)
         self.assertFalse(rules[1].called)
 
@@ -384,7 +384,7 @@ class OrCheckTestCase(test.BaseTestCase):
         rules = [mock.Mock(return_value=False), mock.Mock(return_value=False)]
         check = policy.OrCheck(rules)
 
-        self.assertEqual(check('target', 'cred', None), False)
+        self.assertFalse(check('target', 'cred', None))
         rules[0].assert_called_once_with('target', 'cred', None)
         rules[1].assert_called_once_with('target', 'cred', None)
 
@@ -392,7 +392,7 @@ class OrCheckTestCase(test.BaseTestCase):
         rules = [mock.Mock(return_value=True), mock.Mock(return_value=False)]
         check = policy.OrCheck(rules)
 
-        self.assertEqual(check('target', 'cred', None), True)
+        self.assertTrue(check('target', 'cred', None))
         rules[0].assert_called_once_with('target', 'cred', None)
         self.assertFalse(rules[1].called)
 
@@ -400,7 +400,7 @@ class OrCheckTestCase(test.BaseTestCase):
         rules = [mock.Mock(return_value=False), mock.Mock(return_value=True)]
         check = policy.OrCheck(rules)
 
-        self.assertEqual(check('target', 'cred', None), True)
+        self.assertTrue(check('target', 'cred', None))
         rules[0].assert_called_once_with('target', 'cred', None)
         rules[1].assert_called_once_with('target', 'cred', None)
 
@@ -808,7 +808,7 @@ class RuleCheckTestCase(test.BaseTestCase):
     def test_rule_missing(self):
         check = policy.RuleCheck('rule', 'spam')
 
-        self.assertEqual(check('target', 'creds', ENFORCER), False)
+        self.assertFalse(check('target', 'creds', ENFORCER))
 
     @mock.patch.object(ENFORCER, 'rules',
                        dict(spam=mock.Mock(return_value=False)))
@@ -817,7 +817,7 @@ class RuleCheckTestCase(test.BaseTestCase):
 
         check = policy.RuleCheck('rule', 'spam')
 
-        self.assertEqual(check('target', 'creds', enforcer), False)
+        self.assertFalse(check('target', 'creds', enforcer))
         enforcer.rules['spam'].assert_called_once_with('target', 'creds',
                                                        enforcer)
 
@@ -827,7 +827,7 @@ class RuleCheckTestCase(test.BaseTestCase):
         enforcer = ENFORCER
         check = policy.RuleCheck('rule', 'spam')
 
-        self.assertEqual(check('target', 'creds', enforcer), True)
+        self.assertTrue(check('target', 'creds', enforcer))
         enforcer.rules['spam'].assert_called_once_with('target', 'creds',
                                                        enforcer)
 
@@ -842,7 +842,7 @@ class RoleCheckTestCase(PolicyBaseTestCase):
     def test_reject(self):
         check = policy.RoleCheck('role', 'spam')
 
-        self.assertEqual(check('target', dict(roles=[]), self.enforcer), False)
+        self.assertFalse(check('target', dict(roles=[]), self.enforcer))
 
 
 class HttpCheckTestCase(PolicyBaseTestCase):
@@ -897,7 +897,7 @@ class GenericCheckTestCase(PolicyBaseTestCase):
     def test_no_cred(self):
         check = policy.GenericCheck('name', '%(name)s')
 
-        self.assertEqual(check(dict(name='spam'), {}, self.enforcer), False)
+        self.assertFalse(check(dict(name='spam'), {}, self.enforcer))
 
     def test_cred_mismatch(self):
         check = policy.GenericCheck('name', '%(name)s')

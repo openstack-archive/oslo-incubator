@@ -454,8 +454,8 @@ class LogConfigOptsTestCase(test.BaseTestCase):
     def test_debug_verbose(self):
         self.CONF(['--debug', '--verbose'])
 
-        self.assertEqual(self.CONF.debug, True)
-        self.assertEqual(self.CONF.verbose, True)
+        self.assertTrue(self.CONF.debug)
+        self.assertTrue(self.CONF.verbose)
 
     def test_logging_opts(self):
         self.CONF([])
@@ -468,7 +468,7 @@ class LogConfigOptsTestCase(test.BaseTestCase):
         self.assertEqual(self.CONF.log_date_format,
                          log._DEFAULT_LOG_DATE_FORMAT)
 
-        self.assertEqual(self.CONF.use_syslog, False)
+        self.assertFalse(self.CONF.use_syslog)
 
     def test_log_file(self):
         log_file = '/some/path/foo-bar.log'

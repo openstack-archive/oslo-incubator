@@ -58,7 +58,7 @@ class NotifierTestCase(test.BaseTestCase):
 
         notifier_api.notify(ctxt, 'publisher_id', 'event_type',
                             notifier_api.WARN, dict(a=3))
-        self.assertEqual(self.notify_called, True)
+        self.assertTrue(self.notify_called)
 
     def test_verify_message_format(self):
         """A test to ensure changing the message format is prohibitively
@@ -94,7 +94,7 @@ class NotifierTestCase(test.BaseTestCase):
         notifier_api.notify(ctxt, 'publisher_id', 'event_type',
                             notifier_api.WARN, dict(a=3))
 
-        self.assertEqual(self.mock_notify, True)
+        self.assertTrue(self.mock_notify)
         self.assertEqual(self.envelope, envelope)
 
     def test_rpc_notifier(self):
@@ -161,7 +161,7 @@ class NotifierTestCase(test.BaseTestCase):
                        mock_notify)
 
         self.assertEqual(3, example_api(1, 2))
-        self.assertEqual(self.notify_called, True)
+        self.assertTrue(self.notify_called)
 
     def test_decorator_context(self):
         """Verify that the notify decorator can extract the 'context' arg."""
@@ -191,7 +191,7 @@ class NotifierTestCase(test.BaseTestCase):
 
         # Test positional context
         self.assertEqual(3, example_api(1, 2, ctxt))
-        self.assertEqual(self.notify_called, True)
+        self.assertTrue(self.notify_called)
         self.assertEqual(self.context_arg, ctxt)
 
         self.notify_called = False
@@ -199,12 +199,12 @@ class NotifierTestCase(test.BaseTestCase):
 
         # Test named context
         self.assertEqual(3, example_api2(1, 2, context=ctxt2))
-        self.assertEqual(self.notify_called, True)
+        self.assertTrue(self.notify_called)
         self.assertEqual(self.context_arg, ctxt2)
 
         # Test missing context
         self.assertEqual(3, example_api2(1, 2, bananas="delicious"))
-        self.assertEqual(self.notify_called, True)
+        self.assertTrue(self.notify_called)
         self.assertEqual(self.context_arg, None)
 
 
