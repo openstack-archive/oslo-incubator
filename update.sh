@@ -9,6 +9,6 @@ VENV=.update-venv
 . $VENV/bin/activate
 
 # need oslo.config for bootstrapping, be quiet for UX reasons
-pip -q install olso.config
+pip -q install oslo.config
 
 python update.py $*
