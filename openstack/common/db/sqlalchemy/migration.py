@@ -192,11 +192,25 @@ def db_sync(abs_path, version=None, init_version=0):
 
     current_version = db_version(abs_path, init_version)
     repository = _find_migrate_repo(abs_path)
+    _db_schema_sanity_check()
     if version is None or version > current_version:
         return versioning_api.upgrade(get_engine(), repository, version)
     else:
         return versioning_api.downgrade(get_engine(), repository,
                                         version)
+
+
+def _db_schema_sanity_check():
+    engine = get_engine()
+    if engine.name == 'mysql':
+        onlyutf8_sql = "SELECT COUNT(*) FROM information_schema.TABLES " \
+                       "where TABLE_SCHEMA='%s'" % engine.url.database
+        onlyutf8_sql += " and TABLE_COLLATION NOT LIKE '%%utf8%%'"
+        collation = engine.execute(onlyutf8_sql)
+        count = collation.scalar()
+        if count > 0:
+            raise ValueError(_('%d non utf8 tables found, please make '
+                               'sure all tables are CHARSET=utf8') % count)
 
 
 def db_version(abs_path, init_version):
