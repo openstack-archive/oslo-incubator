@@ -17,11 +17,8 @@
 Unit Tests for thread groups
 """
 
-from openstack.common import log as logging
 from openstack.common import test
 from openstack.common import threadgroup
-
-LOG = logging.getLogger(__name__)
 
 
 class ThreadGroupTestCase(test.BaseTestCase):

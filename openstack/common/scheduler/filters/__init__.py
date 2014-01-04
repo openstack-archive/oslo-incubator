@@ -17,10 +17,7 @@
 Scheduler host filters
 """
 
-from openstack.common import log as logging
 from openstack.common.scheduler import base_filter
-
-LOG = logging.getLogger(__name__)
 
 
 class BaseHostFilter(base_filter.BaseFilter):
