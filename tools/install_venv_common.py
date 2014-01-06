@@ -117,7 +117,11 @@ class InstallVenv(object):
         self.pip_install('setuptools')
         self.pip_install('pbr')
 
-        self.pip_install('-r', self.requirements, '-r', self.test_requirements)
+        self.pip_install(
+            # TODO(hartsocks): use --allow-unverified after pip 1.7
+            '--allow-insecure', 'netaddr',
+            '--allow-external', 'netaddr',
+            '-r', self.requirements, '-r', self.test_requirements)
 
     def parse_args(self, argv):
         """Parses command-line arguments."""
