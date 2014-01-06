@@ -330,6 +330,12 @@ M:
 S: Orphan
 F: versionutils.py
 
+== vmware-api ==
+
+M: Vipin Balachandran <vbala@vmware.com>
+S: Maintained
+F: vmware/
+
 == xmlutils ==
 
 M:
