@@ -27,7 +27,10 @@ import six
 from six import moves
 
 from openstack.common.apiclient import exceptions
+from openstack.common.gettextutils import _
+from openstack.common import importutils
 from openstack.common import strutils
+from openstack.common import uuidutils
 
 
 def validate_args(fn, *args, **kwargs):
@@ -199,7 +202,7 @@ def get_password(max_password_prompts=3):
     if hasattr(sys.stdin, "isatty") and sys.stdin.isatty():
         # Check for Ctrl-D
         try:
-            for _ in moves.range(max_password_prompts):
+            for __ in moves.range(max_password_prompts):
                 pw1 = getpass.getpass("OS Password: ")
                 if verify:
                     pw2 = getpass.getpass("Please verify: ")
@@ -211,3 +214,95 @@ def get_password(max_password_prompts=3):
         except EOFError:
             pass
     return pw
+
+
+def find_resource(manager, name_or_id, **find_args):
+    """Helper for the _find_* methods."""
+    # first try to get entity as integer id
+    try:
+        return manager.get(int(name_or_id))
+    except (TypeError, ValueError, exceptions.NotFound):
+        pass
+
+    # now try to get entity as uuid
+    try:
+        tmp_id = strutils.safe_encode(name_or_id)
+        if six.PY3:
+            tmp_id = tmp_id.decode()
+        if uuidutils.is_uuid_like(tmp_id):
+            return manager.get(tmp_id)
+    except (TypeError, ValueError, exceptions.NotFound):
+        pass
+
+    # for str id which is not uuid
+    if getattr(manager, 'is_alphanum_id_allowed', False):
+        try:
+            return manager.get(name_or_id)
+        except exceptions.NotFound:
+            pass
+
+    try:
+        try:
+            return manager.find(human_id=name_or_id, **find_args)
+        except exceptions.NotFound:
+            pass
+
+        # finally try to find entity by name
+        try:
+            resource = getattr(manager, 'resource_class', None)
+            name_attr = resource.NAME_ATTR if resource else 'name'
+            kwargs = {name_attr: name_or_id}
+            kwargs.update(find_args)
+            return manager.find(**kwargs)
+        except exceptions.NotFound:
+            msg = _("No %(resource_name)s with a name or "
+                    "ID of '%(name_or_id)s' exists.") % \
+                {
+                    "resource_name": manager.resource_class.__name__.lower(),
+                    "name_or_id": name_or_id
+                }
+            raise exceptions.CommandError(msg)
+    except exceptions.NoUniqueMatch:
+        msg = _("Multiple %(resource_name)s matches found for "
+                "'%(name_or_id)s', use an ID to be more specific.") % \
+            {
+                "resource_name": manager.resource_class.__name__.lower(),
+                "name_or_id": name_or_id
+            }
+        raise exceptions.CommandError(msg)
+
+
+def service_type(stype):
+    """Adds 'service_type' attribute to decorated function.
+    Usage:
+        @service_type('volume')
+        def mymethod(f):
+            ...
+    """
+    def inner(f):
+        f.service_type = stype
+        return f
+    return inner
+
+
+def get_service_type(f):
+    """Retrieves service type from function."""
+    return getattr(f, 'service_type', None)
+
+
+def pretty_choice_list(l):
+    return ', '.join("'%s'" % i for i in l)
+
+
+def import_class(import_str):
+    """Returns a class from a string including module and class."""
+    mod_str, _sep, class_str = import_str.rpartition('.')
+    __import__(mod_str)
+    return getattr(sys.modules[mod_str], class_str)
+
+
+def import_versioned_module(version, submodule=None):
+    module = 'oslo.v%s' % version
+    if submodule:
+        module = '.'.join((module, submodule))
+    return importutils.import_module(module)
