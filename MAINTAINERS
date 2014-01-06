@@ -288,6 +288,12 @@ M: Zhongyue Luo <zhongyue.nah@intel.com>
 S: Maintained
 F: uuidutils.py
 
+== vmware-api ==
+
+M: Vipin Balachandran <vbala@vmware.com>
+S: Maintained
+F: vmware/
+
 == xmlutils ==
 
 M:
