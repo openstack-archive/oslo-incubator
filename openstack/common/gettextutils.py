@@ -24,13 +24,10 @@ Usual usage in an openstack.common module:
 
 import copy
 import gettext
+import locale
 import logging
 import os
 import re
-try:
-    import UserString as _userString
-except ImportError:
-    import collections as _userString
 
 from babel import localedata
 import six
@@ -56,7 +53,7 @@ def enable_lazy():
 
 def _(msg):
     if USE_LAZY:
-        return Message(msg, 'oslo')
+        return Message(msg, domain='oslo')
     else:
         if six.PY3:
             return _t.gettext(msg)
@@ -103,7 +100,7 @@ def install(domain, lazy=False):
             Message encapsulates a string so that we can translate
             it later when needed.
             """
-            return Message(msg, domain)
+            return Message(msg, domain=domain)
 
         from six import moves
         moves.builtins.__dict__['_'] = _lazy_gettext
@@ -118,182 +115,156 @@ def install(domain, lazy=False):
                             unicode=True)
 
 
-class Message(_userString.UserString, object):
-    """Class used to encapsulate translatable messages."""
-    def __init__(self, msg, domain):
-        # _msg is the gettext msgid and should never change
-        self._msg = msg
-        self._left_extra_msg = ''
-        self._right_extra_msg = ''
-        self._locale = None
-        self.params = None
-        self.domain = domain
+class Message(six.text_type):
+    """A Message object is a unicode object that can be translated.
 
-    @property
-    def data(self):
-        # NOTE(mrodden): this should always resolve to a unicode string
-        # that best represents the state of the message currently
+    Translation of Message is done explicitly using the translate() method.
+    For all non-translation intents and purposes, a Message is simply unicode,
+    and can be treated as such.
+    """
 
-        localedir = os.environ.get(self.domain.upper() + '_LOCALEDIR')
-        if self.locale:
-            lang = gettext.translation(self.domain,
-                                       localedir=localedir,
-                                       languages=[self.locale],
-                                       fallback=True)
-        else:
-            # use system locale for translations
-            lang = gettext.translation(self.domain,
-                                       localedir=localedir,
-                                       fallback=True)
+    def __new__(cls, msgid, msgtext=None, params=None, domain='oslo', *args):
+        """Create a new Message object.
 
+        In order for translation to work gettext requires a message ID, this
+        msgid will be used as the base unicode text. It is also possible
+        for the msgid and the base unicode text to be different by passing
+        the msgtext parameter.
+        """
+        # We want to initialize the parent unicode with the actual
+        # object that would have been plain unicode otherwise
+        msgtext = msgtext or msgid
+        msg = super(Message, cls).__new__(cls, msgtext)
+        msg.msgid = msgid
+        msg.domain = domain
+        msg.params = params
+        return msg
+
+    def translate(self, desired_locale=None):
+        """Translate this message to the desired locale.
+
+        :param desired_locale: The desired locale to translate the message to,
+                               if no locale is provided the message will be
+                               translated to the system's default locale.
+
+        :returns: the translated message in unicode
+        """
+        if not desired_locale:
+            system_locale = locale.getdefaultlocale()
+            # If the system locale is not available to the runtime use English
+            if not system_locale[0]:
+                desired_locale = 'en_US'
+            else:
+                desired_locale = system_locale[0]
+
+        locale_dir = os.environ.get(self.domain.upper() + '_LOCALEDIR')
+        lang = gettext.translation(self.domain,
+                                   localedir=locale_dir,
+                                   languages=[desired_locale],
+                                   fallback=True)
         if six.PY3:
-            ugettext = lang.gettext
+            translator = lang.gettext
         else:
-            ugettext = lang.ugettext
+            translator = lang.ugettext
 
-        full_msg = (self._left_extra_msg +
-                    ugettext(self._msg) +
-                    self._right_extra_msg)
+        translated_message = translator(self.msgid)
 
-        if self.params is not None:
-            full_msg = full_msg % self.params
+        if self.params is None:
+            # No need for more translation
+            return translated_message
 
-        return six.text_type(full_msg)
-
-    @property
-    def locale(self):
-        return self._locale
-
-    @locale.setter
-    def locale(self, value):
-        self._locale = value
-        if not self.params:
-            return
-
-        # This Message object may have been constructed with one or more
-        # Message objects as substitution parameters, given as a single
-        # Message, or a tuple or Map containing some, so when setting the
-        # locale for this Message we need to set it for those Messages too.
-        if isinstance(self.params, Message):
-            self.params.locale = value
-            return
+        # This Message object may have been formatted with one or more
+        # Message objects as substitution parameters, given either as a single
+        # parameter, part of a tuple, or as one or more values in a dictionary.
+        # When translating this Message we need to translate those Messages too
         if isinstance(self.params, tuple):
-            for param in self.params:
-                if isinstance(param, Message):
-                    param.locale = value
-            return
-        if isinstance(self.params, dict):
-            for param in self.params.values():
-                if isinstance(param, Message):
-                    param.locale = value
+            translated_params = tuple(translate(param, desired_locale)
+                                      for param in self.params)
+        elif isinstance(self.params, dict):
+            translated_params = {}
+            for (param_key, param_value) in six.iteritems(self.params):
+                translated_param = translate(param_value, desired_locale)
+                translated_params[param_key] = translated_param
+        else:
+            translated_params = translate(self.params, desired_locale)
 
-    def _save_dictionary_parameter(self, dict_param):
-        full_msg = self.data
-        # look for %(blah) fields in string;
-        # ignore %% and deal with the
-        # case where % is first character on the line
-        keys = re.findall('(?:[^%]|^)?%\((\w*)\)[a-z]', full_msg)
+        translated_message = translated_message % translated_params
 
-        # if we don't find any %(blah) blocks but have a %s
-        if not keys and re.findall('(?:[^%]|^)%[a-z]', full_msg):
-            # apparently the full dictionary is the parameter
-            params = copy.deepcopy(dict_param)
+        return translated_message
+
+    def __mod__(self, other):
+        # When we mod a Message we want the actual operation to be performed
+        # by the parent class (i.e. unicode()), the only thing  we do here is
+        # save the original msgid and the parameters in case of a translation
+        unicode_mod = super(Message, self).__mod__(other)
+        modded = Message(self.msgid,
+                         msgtext=unicode_mod,
+                         params=self._sanitize_mod_params(other),
+                         domain=self.domain)
+        return modded
+
+    def _sanitize_mod_params(self, other):
+        """Sanitize the object being modded with this Message.
+
+        - Add support for modding 'None' so translation supports it
+        - Trim the modded object, which can be a large dictionary, to only
+        those keys that would actually be used in a translation
+        - Snapshot the object being modded, in case the message is
+        translated, it will be used as it was when the Message was created
+        """
+        if other is None:
+            params = (other,)
+        elif isinstance(other, dict):
+            params = self._trim_dictionary_parameters(other)
+        else:
+            params = self._copy_param(other)
+        return params
+
+    def _trim_dictionary_parameters(self, dict_param):
+        """Return a dict that only has matching entries in the msgid."""
+        # NOTE(luisg): Here we trim down the dictionary passed as parameters
+        # to avoid carrying a lot of unnecessary weight around in the message
+        # object, for example if someone passes in Message() % locals() but
+        # only some params are used, and additionally we prevent errors for
+        # non-deepcopyable objects by unicoding() them.
+
+        # Look for %(param) keys in msgid;
+        # Skip %% and deal with the case where % is first character on the line
+        keys = re.findall('(?:[^%]|^)?%\((\w*)\)[a-z]', self.msgid)
+
+        # If we don't find any %(param) keys but have a %s
+        if not keys and re.findall('(?:[^%]|^)%[a-z]', self.msgid):
+            # Apparently the full dictionary is the parameter
+            params = self._copy_param(dict_param)
         else:
             params = {}
             for key in keys:
-                try:
-                    params[key] = copy.deepcopy(dict_param[key])
-                except TypeError:
-                    # cast uncopyable thing to unicode string
-                    params[key] = six.text_type(dict_param[key])
+                params[key] = self._copy_param(dict_param[key])
 
         return params
 
-    def _save_parameters(self, other):
-        # we check for None later to see if
-        # we actually have parameters to inject,
-        # so encapsulate if our parameter is actually None
-        if other is None:
-            self.params = (other, )
-        elif isinstance(other, dict):
-            self.params = self._save_dictionary_parameter(other)
-        else:
-            # fallback to casting to unicode,
-            # this will handle the problematic python code-like
-            # objects that cannot be deep-copied
-            try:
-                self.params = copy.deepcopy(other)
-            except TypeError:
-                self.params = six.text_type(other)
+    def _copy_param(self, param):
+        try:
+            return copy.deepcopy(param)
+        except TypeError:
+            # Fallback to casting to unicode this will handle the
+            # python code-like objects that can't be deep-copied
+            return six.text_type(param)
 
-        return self
-
-    # overrides to be more string-like
-    def __unicode__(self):
-        return self.data
-
-    def __str__(self):
-        if six.PY3:
-            return self.__unicode__()
-        return self.data.encode('utf-8')
-
-    def __getstate__(self):
-        to_copy = ['_msg', '_right_extra_msg', '_left_extra_msg',
-                   'domain', 'params', '_locale']
-        new_dict = self.__dict__.fromkeys(to_copy)
-        for attr in to_copy:
-            new_dict[attr] = copy.deepcopy(self.__dict__[attr])
-
-        return new_dict
-
-    def __setstate__(self, state):
-        for (k, v) in state.items():
-            setattr(self, k, v)
-
-    # operator overloads
     def __add__(self, other):
-        copied = copy.deepcopy(self)
-        copied._right_extra_msg += other.__str__()
-        return copied
+        msg = _('Message objects do not support addition.')
+        raise TypeError(msg)
 
     def __radd__(self, other):
-        copied = copy.deepcopy(self)
-        copied._left_extra_msg += other.__str__()
-        return copied
+        return self.__add__(other)
 
-    def __mod__(self, other):
-        # do a format string to catch and raise
-        # any possible KeyErrors from missing parameters
-        self.data % other
-        copied = copy.deepcopy(self)
-        return copied._save_parameters(other)
-
-    def __mul__(self, other):
-        return self.data * other
-
-    def __rmul__(self, other):
-        return other * self.data
-
-    def __getitem__(self, key):
-        return self.data[key]
-
-    def __getslice__(self, start, end):
-        return self.data.__getslice__(start, end)
-
-    def __getattribute__(self, name):
-        # NOTE(mrodden): handle lossy operations that we can't deal with yet
-        # These override the UserString implementation, since UserString
-        # uses our __class__ attribute to try and build a new message
-        # after running the inner data string through the operation.
-        # At that point, we have lost the gettext message id and can just
-        # safely resolve to a string instead.
-        ops = ['capitalize', 'center', 'decode', 'encode',
-               'expandtabs', 'ljust', 'lstrip', 'replace', 'rjust', 'rstrip',
-               'strip', 'swapcase', 'title', 'translate', 'upper', 'zfill']
-        if name in ops:
-            return getattr(self.data, name)
-        else:
-            return _userString.UserString.__getattribute__(self, name)
+    def __str__(self):
+        # NOTE(luisg): Logging in python 2.6 tries to str() log records,
+        # and it expects specifically a UnicodeError in order to proceed.
+        msg = _('Message objects do not support str() because they may '
+                'contain non-ascii characters. '
+                'Please use unicode() or translate() instead.')
+        raise UnicodeError(msg)
 
 
 def get_available_languages(domain):
@@ -326,22 +297,28 @@ def get_available_languages(domain):
     return copy.copy(language_list)
 
 
-def get_localized_message(message, user_locale):
-    """Gets a localized version of the given message in the given locale.
+def translate(obj, desired_locale=None):
+    """Gets the translated unicode representation of the given object.
 
-    If the message is not a Message object the message is returned as-is.
-    If the locale is None the message is translated to the default locale.
+    If the object is not translatable it is returned as-is.
+    If the locale is None the object is translated to the system locale.
 
-    :returns: the translated message in unicode, or the original message if
+    :param obj: the object to translate
+    :param desired_locale: the locale to translate the message to, if None the
+                           default system locale will be used
+    :returns: the translated object in unicode, or the original object if
               it could not be translated
     """
-    translated = message
+    message = obj
+    if not isinstance(message, Message):
+        # If the object to translate is not already translatable,
+        # let's first get its unicode representation
+        message = six.text_type(obj)
     if isinstance(message, Message):
-        original_locale = message.locale
-        message.locale = user_locale
-        translated = six.text_type(message)
-        message.locale = original_locale
-    return translated
+        # Even after unicoding() we still need to check if we are
+        # running with translatable unicode before translating
+        return message.translate(desired_locale)
+    return obj
 
 
 class LocaleHandler(logging.Handler):
