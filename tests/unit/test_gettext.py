@@ -106,7 +106,9 @@ class GettextTest(test.BaseTestCase):
     def test_get_available_languages(self):
         # All the available languages for which locale data is available
         def _mock_locale_identifiers():
-            return ['zh', 'es', 'nl', 'fr']
+            # 'zh', 'zh_Hant'. 'zh_Hant_HK', 'fil' all have aliases missing
+            # from babel but we add them in gettextutils, we test that here too
+            return ['zh', 'es', 'nl', 'fr', 'zh_Hant', 'zh_Hant_HK', 'fil']
 
         self.stubs.Set(localedata,
                        'list' if hasattr(localedata, 'list')
@@ -116,10 +118,10 @@ class GettextTest(test.BaseTestCase):
         # Only the languages available for a specific translation domain
         def _mock_gettext_find(domain, localedir=None, languages=[], all=0):
             if domain == 'domain_1':
-                return 'translation-file' if any(x in ['zh', 'es']
+                return 'translation-file' if any(x in ['zh', 'es', 'fil']
                                                  for x in languages) else None
             elif domain == 'domain_2':
-                return 'translation-file' if any(x in ['fr']
+                return 'translation-file' if any(x in ['fr', 'zh_Hant']
                                                  for x in languages) else None
             return None
         self.stubs.Set(gettext, 'find', _mock_gettext_find)
@@ -130,12 +132,18 @@ class GettextTest(test.BaseTestCase):
         domain_2_languages = gettextutils.get_available_languages('domain_2')
         self.assertEqual('en_US', domain_1_languages[0])
         self.assertEqual('en_US', domain_2_languages[0])
-        # Only the domain languages should be included after en_US
-        self.assertEqual(3, len(domain_1_languages))
+        # The domain languages should be included after en_US with
+        # with their respective aliases when it applies
+        self.assertEqual(6, len(domain_1_languages))
         self.assertIn('zh', domain_1_languages)
+        self.assertIn('zh_CN', domain_1_languages)
         self.assertIn('es', domain_1_languages)
-        self.assertEqual(2, len(domain_2_languages))
+        self.assertIn('fil', domain_1_languages)
+        self.assertIn('tl_PH', domain_1_languages)
+        self.assertEqual(4, len(domain_2_languages))
         self.assertIn('fr', domain_2_languages)
+        self.assertIn('zh_Hant', domain_2_languages)
+        self.assertIn('zh_TW', domain_2_languages)
         self.assertEqual(2, len(gettextutils._AVAILABLE_LANGUAGES))
         # Now test an unknown domain, only en_US should be included
         unknown_domain_languages = gettextutils.get_available_languages('huh')
