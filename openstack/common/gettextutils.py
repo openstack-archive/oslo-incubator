@@ -287,6 +287,15 @@ def get_available_languages(domain='oslo'):
     list_identifiers = (getattr(localedata, 'list', None) or
                         getattr(localedata, 'locale_identifiers'))
     locale_identifiers = list_identifiers()
+    if 'zh_CN' not in locale_identifiers:
+        # NOTE(luisg): Babel>=1.0,<1.3 has a bug where 'zh_CN' and 'zh_TW'
+        # aren't supported even though they are perfectly legitimate locales.
+        # See reference below: https://github.com/mitsuhiko/babel/issues/37
+        # In Babel 1.3 they fixed the bug and they support these locales, but
+        # they are sill not explicitly "listed" by locale_identifiers(). That's
+        # why we add the locales if necessary so they are listed as supported.
+        locale_identifiers.append('zh_CN')
+        locale_identifiers.append('zh_TW')
     for i in locale_identifiers:
         if find(i) is not None:
             language_list.append(i)
