@@ -304,7 +304,7 @@ from sqlalchemy.pool import NullPool, StaticPool
 from sqlalchemy.sql.expression import literal_column
 
 from openstack.common.db import exception
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _, _LE, _LW
 from openstack.common import timeutils
 
 sqlite_db_opts = [
@@ -612,7 +612,7 @@ def _wrap_db_error(f):
             _raise_if_duplicate_entry_error(e, get_engine().name)
             raise exception.DBError(e)
         except Exception as e:
-            LOG.exception(_('DB exception wrapped.'))
+            LOG.exception(_LE('DB exception wrapped.'))
             raise exception.DBError(e)
     return _wrap
 
@@ -786,7 +786,7 @@ def create_engine(sql_connection, sqlite_fk=False,
         if remaining == -1:
             remaining = 'infinite'
         while True:
-            msg = _('SQL connection failed. %s attempts left.')
+            msg = _LW('SQL connection failed. %s attempts left.')
             LOG.warning(msg % remaining)
             if remaining != 'infinite':
                 remaining -= 1

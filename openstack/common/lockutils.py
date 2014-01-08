@@ -28,7 +28,7 @@ import weakref
 from oslo.config import cfg
 
 from openstack.common import fileutils
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _, _LE, _LI
 from openstack.common import log as logging
 
 
@@ -79,7 +79,7 @@ class _InterProcessLock(object):
 
         if not os.path.exists(basedir):
             fileutils.ensure_tree(basedir)
-            LOG.info(_('Created lock path: %s'), basedir)
+            LOG.info(_LI('Created lock path: %s'), basedir)
 
         self.lockfile = open(self.fname, 'w')
 
@@ -90,7 +90,7 @@ class _InterProcessLock(object):
                 # Also upon reading the MSDN docs for locking(), it seems
                 # to have a laughable 10 attempts "blocking" mechanism.
                 self.trylock()
-                LOG.debug(_('Got file lock "%s"'), self.fname)
+                LOG.debug('Got file lock "%s"', self.fname)
                 return True
             except IOError as e:
                 if e.errno in (errno.EACCES, errno.EAGAIN):
@@ -114,9 +114,9 @@ class _InterProcessLock(object):
         try:
             self.unlock()
             self.lockfile.close()
-            LOG.debug(_('Released file lock "%s"'), self.fname)
+            LOG.debug('Released file lock "%s"', self.fname)
         except IOError:
-            LOG.exception(_("Could not release the acquired lock `%s`"),
+            LOG.exception(_LE("Could not release the acquired lock `%s`"),
                           self.fname)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -158,7 +158,7 @@ _semaphores_lock = threading.Lock()
 
 def external_lock(name, lock_file_prefix=None):
     with internal_lock(name):
-        LOG.debug(_('Attempting to grab external lock "%(lock)s"'),
+        LOG.debug('Attempting to grab external lock "%(lock)s"',
                   {'lock': name})
 
         # NOTE(mikal): the lock name cannot contain directory
@@ -184,7 +184,7 @@ def internal_lock(name):
             sem = threading.Semaphore()
             _semaphores[name] = sem
 
-    LOG.debug(_('Got semaphore "%(lock)s"'), {'lock': name})
+    LOG.debug('Got semaphore "%(lock)s"', {'lock': name})
     return sem
 
 
@@ -241,11 +241,11 @@ def synchronized(name, lock_file_prefix=None, external=False):
         def inner(*args, **kwargs):
             try:
                 with lock(name, lock_file_prefix, external):
-                    LOG.debug(_('Got semaphore / lock "%(function)s"'),
+                    LOG.debug('Got semaphore / lock "%(function)s"',
                               {'function': f.__name__})
                     return f(*args, **kwargs)
             finally:
-                LOG.debug(_('Semaphore / lock released "%(function)s"'),
+                LOG.debug('Semaphore / lock released "%(function)s"',
                           {'function': f.__name__})
         return inner
     return wrap

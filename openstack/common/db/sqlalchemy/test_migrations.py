@@ -25,7 +25,6 @@ import sqlalchemy
 import sqlalchemy.exc
 
 from openstack.common.db.sqlalchemy import utils
-from openstack.common.gettextutils import _
 from openstack.common.py3kcompat import urlutils
 from openstack.common import test
 
@@ -60,10 +59,10 @@ def _set_db_lock(lock_path=None, lock_prefix=None):
                 path = lock_path or os.environ.get("OSLO_LOCK_PATH")
                 lock = lockfile.FileLock(os.path.join(path, lock_prefix))
                 with lock:
-                    LOG.debug(_('Got lock "%s"') % f.__name__)
+                    LOG.debug('Got lock "%s"' % f.__name__)
                     return f(*args, **kwargs)
             finally:
-                LOG.debug(_('Lock released "%s"') % f.__name__)
+                LOG.debug('Lock released "%s"' % f.__name__)
         return wrapper
     return decorator
 
