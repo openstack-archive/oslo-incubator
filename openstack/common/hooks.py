@@ -46,7 +46,7 @@ import functools
 
 import stevedore
 
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _, _LE
 from openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
@@ -92,7 +92,7 @@ class HookManager(object):
                     else:
                         hook_method(*args, **kwargs)
                 except Exception:
-                    LOG.exception(_('Error during %s-hook') % method_type)
+                    LOG.exception(_LE('Error during %s-hook') % method_type)
 
     def run_pre(self, name, args, kwargs, f=None):
         """Execute optional pre methods of loaded hooks.

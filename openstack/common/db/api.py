@@ -25,7 +25,7 @@ import logging
 import time
 
 from openstack.common.db import exception
-from openstack.common.gettextutils import _  # noqa
+from openstack.common.gettextutils import _LE
 from openstack.common import importutils
 
 
@@ -68,11 +68,11 @@ class wrap_db_retry(object):
                     return f(*args, **kwargs)
                 except exception.DBConnectionError as e:
                     if remaining == 0:
-                        LOG.exception(_('DB exceeded retry limit.'))
+                        LOG.exception(_LE('DB exceeded retry limit.'))
                         raise exception.DBError(e)
                     if remaining != -1:
                         remaining -= 1
-                        LOG.exception(_('DB connection error.'))
+                        LOG.exception(_LE('DB connection error.'))
                     # NOTE(vsergeyev): We are using patched time module, so
                     #                  this effectively yields the execution
                     #                  context to another green thread.

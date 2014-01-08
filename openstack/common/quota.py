@@ -21,7 +21,7 @@ import datetime
 from oslo.config import cfg
 import six
 
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _, _LE
 from openstack.common import importutils
 from openstack.common import log as logging
 from openstack.common import timeutils
@@ -72,9 +72,9 @@ class QuotaException(Exception):
             except Exception:
                 # kwargs doesn't match a variable in the message
                 # log the issue and the kwargs
-                LOG.exception(_('Exception in string format operation'))
+                LOG.exception(_LE('Exception in string format operation'))
                 for name, value in six.iteritems(kwargs):
-                    LOG.error("%s: %s" % (name, value))
+                    LOG.error(_LE("%s: %s") % (name, value))
                 # at least get the core message out if something happened
                 message = self.msg_fmt
         super(QuotaException, self).__init__(message)
@@ -186,11 +186,12 @@ class DbQuotaDriver(object):
             default_quotas = self.db.quota_class_get_default(context)
         for resource in resources.values():
             if resource.name not in default_quotas:
-                LOG.deprecated(_("Default quota for resource: %(res)s is set "
-                                 "by the default quota flag: quota_%(res)s, "
-                                 "it is now deprecated. Please use the "
-                                 "the default quota class for default "
-                                 "quota.") % {'res': resource.name})
+                LOG.deprecated(
+                    "Default quota for resource: %(res)s is set "
+                    "by the default quota flag: quota_%(res)s, "
+                    "it is now deprecated. Please use the "
+                    "the default quota class for default "
+                    "quota." % {'res': resource.name})
             quotas[resource.name] = default_quotas.get(resource.name,
                                                        resource.default)
 
@@ -1065,7 +1066,7 @@ class QuotaEngine(object):
                                             project_id=project_id,
                                             user_id=user_id)
 
-        LOG.debug(_("Created reservations %s"), reservations)
+        LOG.debug("Created reservations %s", reservations)
 
         return reservations
 
@@ -1088,9 +1089,10 @@ class QuotaEngine(object):
             # usage resynchronization and the reservation expiration
             # mechanisms will resolve the issue.  The exception is
             # logged, however, because this is less than optimal.
-            LOG.exception(_("Failed to commit reservations %s"), reservations)
+            LOG.exception(_LE("Failed to commit reservations %s"),
+                          reservations)
             return
-        LOG.debug(_("Committed reservations %s"), reservations)
+        LOG.debug("Committed reservations %s", reservations)
 
     def rollback(self, context, reservations, project_id=None, user_id=None):
         """Roll back reservations.
@@ -1111,10 +1113,10 @@ class QuotaEngine(object):
             # usage resynchronization and the reservation expiration
             # mechanisms will resolve the issue.  The exception is
             # logged, however, because this is less than optimal.
-            LOG.exception(_("Failed to roll back reservations %s"),
+            LOG.exception(_LE("Failed to roll back reservations %s"),
                           reservations)
             return
-        LOG.debug(_("Rolled back reservations %s"), reservations)
+        LOG.debug("Rolled back reservations %s", reservations)
 
     def usage_reset(self, context, resources):
         """Reset the usage records.

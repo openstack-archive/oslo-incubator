@@ -16,7 +16,7 @@ import time
 from oslo.config import cfg
 import six
 
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _, _LE, _LI
 from openstack.common import log as logging
 
 
@@ -122,13 +122,13 @@ class _PeriodicTasksMeta(type):
                 name = task.__name__
 
                 if task._periodic_spacing < 0:
-                    LOG.info(_('Skipping periodic task %(task)s because '
-                               'its interval is negative'),
+                    LOG.info(_LI('Skipping periodic task %(task)s because '
+                                 'its interval is negative'),
                              {'task': name})
                     continue
                 if not task._periodic_enabled:
-                    LOG.info(_('Skipping periodic task %(task)s because '
-                               'it is disabled'),
+                    LOG.info(_LI('Skipping periodic task %(task)s because '
+                                 'it is disabled'),
                              {'task': name})
                     continue
 
@@ -168,7 +168,7 @@ class PeriodicTasks(object):
                         idle_for = min(idle_for, due - now)
                         continue
 
-            LOG.debug(_("Running periodic task %(full_task_name)s"),
+            LOG.debug("Running periodic task %(full_task_name)s",
                       {"full_task_name": full_task_name})
             self._periodic_last_run[task_name] = time.time()
 
@@ -177,7 +177,7 @@ class PeriodicTasks(object):
             except Exception as e:
                 if raise_on_error:
                     raise
-                LOG.exception(_("Error during %(full_task_name)s: %(e)s"),
+                LOG.exception(_LE("Error during %(full_task_name)s: %(e)s"),
                               {"full_task_name": full_task_name, "e": e})
             time.sleep(0)
 

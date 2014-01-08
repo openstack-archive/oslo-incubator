@@ -291,7 +291,7 @@ from sqlalchemy.pool import NullPool, StaticPool
 from sqlalchemy.sql.expression import literal_column
 
 from openstack.common.db import exception
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _, _LE, _LW
 from openstack.common import timeutils
 
 
@@ -442,7 +442,7 @@ def _wrap_db_error(f):
             _raise_if_duplicate_entry_error(e, self.bind.dialect.name)
             raise exception.DBError(e)
         except Exception as e:
-            LOG.exception(_('DB exception wrapped.'))
+            LOG.exception(_LE('DB exception wrapped.'))
             raise exception.DBError(e)
     return _wrap
 
@@ -579,11 +579,11 @@ def create_engine(sql_connection, sqlite_fk=False,
                 sqlalchemy.event.listen(engine, 'checkout',
                                         _set_mode_traditional)
             else:
-                LOG.warning(_("This application has not enabled MySQL "
-                              "traditional mode, which means silent "
-                              "data corruption may occur. "
-                              "Please encourage the application "
-                              "developers to enable this mode."))
+                LOG.warning(_LW("This application has not enabled MySQL "
+                                "traditional mode, which means silent "
+                                "data corruption may occur. "
+                                "Please encourage the application "
+                                "developers to enable this mode."))
     elif 'sqlite' in connection_dict.drivername:
         if not sqlite_synchronous:
             sqlalchemy.event.listen(engine, 'connect',
@@ -603,7 +603,7 @@ def create_engine(sql_connection, sqlite_fk=False,
         if remaining == -1:
             remaining = 'infinite'
         while True:
-            msg = _('SQL connection failed. %s attempts left.')
+            msg = _LW('SQL connection failed. %s attempts left.')
             LOG.warning(msg % remaining)
             if remaining != 'infinite':
                 remaining -= 1
