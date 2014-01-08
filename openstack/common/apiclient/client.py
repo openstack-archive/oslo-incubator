@@ -36,6 +36,7 @@ except ImportError:
 import requests
 
 from openstack.common.apiclient import exceptions
+from openstack.common.gettextutils import _
 from openstack.common import importutils
 
 
@@ -177,7 +178,7 @@ class HTTPClient(object):
 
         if resp.status_code >= 400:
             _logger.debug(
-                "Request returned failure status: %s",
+                _("Request returned failure status: %s"),
                 resp.status_code)
             raise exceptions.from_response(resp, method, url)
 
@@ -228,7 +229,7 @@ class HTTPClient(object):
                     **filter_args)
                 if not (token and endpoint):
                     raise exceptions.AuthorizationFailure(
-                        "Cannot find endpoint or token for request")
+                        _("Cannot find endpoint or token for request"))
 
         old_token_endpoint = (token, endpoint)
         kwargs.setdefault("headers", {})["X-Auth-Token"] = token
@@ -351,8 +352,12 @@ class BaseClient(object):
         try:
             client_path = version_map[str(version)]
         except (KeyError, ValueError):
-            msg = "Invalid %s client version '%s'. must be one of: %s" % (
-                  (api_name, version, ', '.join(version_map.keys())))
+            msg = _("Invalid %(api_name)s client version '%(version)s'. "
+                    "Must be one of: %(version_map)s") % {
+                        'api_name': api_name,
+                        'version': version,
+                        'version_map': ', '.join(version_map.keys())
+                    }
             raise exceptions.UnsupportedVersion(msg)
 
         return importutils.import_class(client_path)
