@@ -15,7 +15,7 @@
 
 import six
 
-from openstack.common.gettextutils import _  # noqa
+from openstack.common.gettextutils import _LD  # noqa
 from openstack.common import log as logging
 from openstack.common.scheduler import filters
 from openstack.common.scheduler.filters import extra_specs_ops
@@ -51,8 +51,9 @@ class CapabilitiesFilter(filters.BaseHostFilter):
                 if cap is None:
                     return False
             if not extra_specs_ops.match(cap, req):
-                LOG.debug(_("extra_spec requirement '%(req)s' does not match "
-                          "'%(cap)s'"), {'req': req, 'cap': cap})
+                LOG.debug(_LD("extra_spec requirement '%(req)s' "
+                              "does not match '%(cap)s'"),
+                          {'req': req, 'cap': cap})
                 return False
         return True
 
@@ -64,7 +65,7 @@ class CapabilitiesFilter(filters.BaseHostFilter):
         resource_type = filter_properties.get('resource_type')
         if not self._satisfies_extra_specs(host_state.capabilities,
                                            resource_type):
-            LOG.debug(_("%(host_state)s fails resource_type extra_specs "
-                      "requirements"), {'host_state': host_state})
+            LOG.debug(_LD("%(host_state)s fails resource_type extra_specs "
+                          "requirements"), {'host_state': host_state})
             return False
         return True

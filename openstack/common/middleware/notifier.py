@@ -23,7 +23,7 @@ import six
 import webob.dec
 
 from openstack.common import context
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _LE  # noqa
 from openstack.common import log as logging
 from openstack.common.middleware import base
 from openstack.common.notifier import api
@@ -36,8 +36,8 @@ def log_and_ignore_error(fn):
         try:
             return fn(*args, **kwargs)
         except Exception as e:
-            LOG.exception(_('An exception occurred processing '
-                            'the API call: %s ') % e)
+            LOG.exception(_LE('An exception occurred processing '
+                              'the API call: %s ') % e)
     return wrapped
 
 

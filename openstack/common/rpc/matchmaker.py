@@ -21,7 +21,7 @@ import contextlib
 import eventlet
 from oslo.config import cfg
 
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _, _LI  # noqa
 from openstack.common import log as logging
 
 
@@ -212,7 +212,7 @@ class HeartbeatMatchMakerBase(MatchMakerBase):
         self.hosts.discard(host)
         self.backend_unregister(key, '.'.join((key, host)))
 
-        LOG.info(_("Matchmaker unregistered: %(key)s, %(host)s"),
+        LOG.info(_LI("Matchmaker unregistered: %(key)s, %(host)s"),
                  {'key': key, 'host': host})
 
     def start_heartbeat(self):

@@ -36,7 +36,7 @@ from sqlalchemy import String
 from sqlalchemy import Table
 from sqlalchemy.types import NullType
 
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _, _LI  # noqa
 
 from openstack.common import log as logging
 from openstack.common import timeutils
@@ -277,8 +277,8 @@ def drop_old_duplicate_entries_from_table(migrate_engine, table_name,
 
         rows_to_delete_select = select([table.c.id]).where(delete_condition)
         for row in migrate_engine.execute(rows_to_delete_select).fetchall():
-            LOG.info(_("Deleting duplicated row with id: %(id)s from table: "
-                       "%(table)s") % dict(id=row[0], table=table_name))
+            LOG.info(_LI("Deleting duplicated row with id: %(id)s from table: "
+                         "%(table)s") % dict(id=row[0], table=table_name))
 
         if use_soft_delete:
             delete_statement = table.update().\

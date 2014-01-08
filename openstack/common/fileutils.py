@@ -20,7 +20,7 @@ import os
 import tempfile
 
 from openstack.common import excutils
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _LD  # noqa
 from openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
@@ -60,7 +60,7 @@ def read_cached_file(filename, force_reload=False):
     cache_info = _FILE_CACHE.setdefault(filename, {})
 
     if not cache_info or mtime > cache_info.get('mtime', 0):
-        LOG.debug(_("Reloading cached file %s") % filename)
+        LOG.debug(_LD("Reloading cached file %s") % filename)
         with open(filename) as fap:
             cache_info['data'] = fap.read()
         cache_info['mtime'] = mtime
