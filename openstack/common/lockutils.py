@@ -29,7 +29,7 @@ import weakref
 from oslo.config import cfg
 
 from openstack.common import fileutils
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _LD, _LE, _LI
 from openstack.common import local
 from openstack.common import log as logging
 
@@ -100,7 +100,7 @@ class _InterProcessLock(object):
             self.unlock()
             self.lockfile.close()
         except IOError:
-            LOG.exception(_("Could not release the acquired lock `%s`"),
+            LOG.exception(_LE("Could not release the acquired lock `%s`"),
                           self.fname)
 
     def trylock(self):
@@ -140,7 +140,7 @@ _semaphores_lock = threading.Lock()
 @contextlib.contextmanager
 def external_lock(name, lock_file_prefix=None, lock_path=None):
     with internal_lock(name):
-        LOG.debug(_('Attempting to grab file lock "%(lock)s"'),
+        LOG.debug(_LD('Attempting to grab file lock "%(lock)s"'),
                   {'lock': name})
 
         # We need a copy of lock_path because it is non-local
@@ -150,7 +150,7 @@ def external_lock(name, lock_file_prefix=None, lock_path=None):
 
         if not os.path.exists(local_lock_path):
             fileutils.ensure_tree(local_lock_path)
-            LOG.info(_('Created lock path: %s'), local_lock_path)
+            LOG.info(_LI('Created lock path: %s'), local_lock_path)
 
         def add_prefix(name, prefix):
             if not prefix:
@@ -168,11 +168,11 @@ def external_lock(name, lock_file_prefix=None, lock_path=None):
         try:
             lock = InterProcessLock(lock_file_path)
             with lock as lock:
-                LOG.debug(_('Got file lock "%(lock)s" at %(path)s'),
+                LOG.debug(_LD('Got file lock "%(lock)s" at %(path)s'),
                           {'lock': name, 'path': lock_file_path})
                 yield lock
         finally:
-            LOG.debug(_('Released file lock "%(lock)s" at %(path)s'),
+            LOG.debug(_LD('Released file lock "%(lock)s" at %(path)s'),
                       {'lock': name, 'path': lock_file_path})
 
 
@@ -186,7 +186,7 @@ def internal_lock(name):
             _semaphores[name] = sem
 
     with sem:
-        LOG.debug(_('Got semaphore "%(lock)s"'), {'lock': name})
+        LOG.debug(_LD('Got semaphore "%(lock)s"'), {'lock': name})
 
         # NOTE(mikal): I know this looks odd
         if not hasattr(local.strong_store, 'locks_held'):
@@ -256,11 +256,11 @@ def synchronized(name, lock_file_prefix=None, external=False, lock_path=None):
         def inner(*args, **kwargs):
             try:
                 with lock(name, lock_file_prefix, external, lock_path):
-                    LOG.debug(_('Got semaphore / lock "%(function)s"'),
+                    LOG.debug(_LD('Got semaphore / lock "%(function)s"'),
                               {'function': f.__name__})
                     return f(*args, **kwargs)
             finally:
-                LOG.debug(_('Semaphore / lock released "%(function)s"'),
+                LOG.debug(_LD('Semaphore / lock released "%(function)s"'),
                           {'function': f.__name__})
         return inner
     return wrap

@@ -13,7 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from openstack.common.gettextutils import _  # noqa
+from openstack.common.gettextutils import _LD
 from openstack.common import log as logging
 from openstack.common.scheduler import filters
 
@@ -40,7 +40,7 @@ class IgnoreAttemptedHostsFilter(filters.BaseHostFilter):
         attempted = filter_properties.get('retry', None)
         if not attempted:
             # Re-scheduling is disabled
-            LOG.debug(_("Re-scheduling is disabled."))
+            LOG.debug(_LD("Re-scheduling is disabled."))
             return True
 
         hosts = attempted.get('hosts', [])
@@ -49,8 +49,8 @@ class IgnoreAttemptedHostsFilter(filters.BaseHostFilter):
         passes = host not in hosts
         pass_msg = "passes" if passes else "fails"
 
-        LOG.debug(_("Host %(host)s %(pass_msg)s.  Previously tried hosts: "
-                    "%(hosts)s") % {'host': host,
-                                    'pass_msg': pass_msg,
-                                    'hosts': hosts})
+        LOG.debug(_LD("Host %(host)s %(pass_msg)s.  Previously tried hosts: "
+                      "%(hosts)s") % {'host': host,
+                                      'pass_msg': pass_msg,
+                                      'hosts': hosts})
         return passes

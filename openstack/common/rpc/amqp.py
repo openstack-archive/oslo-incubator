@@ -37,7 +37,7 @@ import six
 
 
 from openstack.common import excutils
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _, _LD, _LE
 from openstack.common import local
 from openstack.common import log as logging
 from openstack.common.rpc import common as rpc_common
@@ -72,7 +72,7 @@ class Pool(pools.Pool):
 
     # TODO(comstud): Timeout connections not used in a while
     def create(self):
-        LOG.debug(_('Pool creating new connection'))
+        LOG.debug(_LD('Pool creating new connection'))
         return self.connection_cls(self.conf)
 
     def empty(self):
@@ -287,7 +287,7 @@ def unpack_context(conf, msg):
     context_dict['reply_q'] = msg.pop('_reply_q', None)
     context_dict['conf'] = conf
     ctx = RpcContext.from_dict(context_dict)
-    rpc_common._safe_log(LOG.debug, _('unpacked context: %s'), ctx.to_dict())
+    rpc_common._safe_log(LOG.debug, _LD('unpacked context: %s'), ctx.to_dict())
     return ctx
 
 
@@ -339,7 +339,7 @@ def _add_unique_id(msg):
     """Add unique_id for checking duplicate messages."""
     unique_id = uuid.uuid4().hex
     msg.update({UNIQUE_ID: unique_id})
-    LOG.debug(_('UNIQUE_ID is %s.') % (unique_id))
+    LOG.debug(_LD('UNIQUE_ID is %s.') % (unique_id))
 
 
 class _ThreadPoolWithWait(object):
@@ -432,7 +432,7 @@ class ProxyCallback(_ThreadPoolWithWait):
         # the previous context is stored in local.store.context
         if hasattr(local.store, 'context'):
             del local.store.context
-        rpc_common._safe_log(LOG.debug, _('received %s'), message_data)
+        rpc_common._safe_log(LOG.debug, _LD('received %s'), message_data)
         self.msg_id_cache.check_duplicate_message(message_data)
         ctxt = unpack_context(self.conf, message_data)
         method = message_data.get('method')
@@ -469,7 +469,7 @@ class ProxyCallback(_ThreadPoolWithWait):
             # This final None tells multicall that it is done.
             ctxt.reply(ending=True, connection_pool=self.connection_pool)
         except rpc_common.ClientException as e:
-            LOG.debug(_('Expected exception during message handling (%s)') %
+            LOG.debug(_LD('Expected exception during message handling (%s)') %
                       e._exc_info[1])
             ctxt.reply(None, e._exc_info,
                        connection_pool=self.connection_pool,
@@ -477,7 +477,7 @@ class ProxyCallback(_ThreadPoolWithWait):
         except Exception:
             # sys.exc_info() is deleted by LOG.exception().
             exc_info = sys.exc_info()
-            LOG.error(_('Exception during message handling'),
+            LOG.error(_LE('Exception during message handling'),
                       exc_info=exc_info)
             ctxt.reply(None, exc_info, connection_pool=self.connection_pool)
 
@@ -551,10 +551,10 @@ _reply_proxy_create_sem = semaphore.Semaphore()
 
 def multicall(conf, context, topic, msg, timeout, connection_pool):
     """Make a call that returns multiple times."""
-    LOG.debug(_('Making synchronous call on %s ...'), topic)
+    LOG.debug(_LD('Making synchronous call on %s ...'), topic)
     msg_id = uuid.uuid4().hex
     msg.update({'_msg_id': msg_id})
-    LOG.debug(_('MSG_ID is %s') % (msg_id))
+    LOG.debug(_LD('MSG_ID is %s') % (msg_id))
     _add_unique_id(msg)
     pack_context(msg, context)
 
@@ -580,7 +580,7 @@ def call(conf, context, topic, msg, timeout, connection_pool):
 
 def cast(conf, context, topic, msg, connection_pool):
     """Sends a message on a topic without waiting for a response."""
-    LOG.debug(_('Making asynchronous cast on %s...'), topic)
+    LOG.debug(_LD('Making asynchronous cast on %s...'), topic)
     _add_unique_id(msg)
     pack_context(msg, context)
     with ConnectionContext(conf, connection_pool) as conn:
@@ -589,7 +589,7 @@ def cast(conf, context, topic, msg, connection_pool):
 
 def fanout_cast(conf, context, topic, msg, connection_pool):
     """Sends a message on a fanout exchange without waiting for a response."""
-    LOG.debug(_('Making asynchronous fanout cast...'))
+    LOG.debug(_LD('Making asynchronous fanout cast...'))
     _add_unique_id(msg)
     pack_context(msg, context)
     with ConnectionContext(conf, connection_pool) as conn:
@@ -617,7 +617,7 @@ def fanout_cast_to_server(conf, context, server_params, topic, msg,
 
 def notify(conf, context, topic, msg, connection_pool, envelope):
     """Sends a notification event on a topic."""
-    LOG.debug(_('Sending %(event_type)s on %(topic)s'),
+    LOG.debug(_LD('Sending %(event_type)s on %(topic)s'),
               dict(event_type=msg.get('event_type'),
                    topic=topic))
     _add_unique_id(msg)
