@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import mock
 import warnings
 
 from migrate.changeset import UniqueConstraint
@@ -548,3 +549,95 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
         self.assertEqual(f_key['referred_table'], 'table0')
         self.assertEqual(f_key['referred_columns'], ['id'])
         self.assertEqual(f_key['constrained_columns'], ['bar'])
+
+
+class IndexModifyingTestCase(test.BaseTestCase):
+    def setUp(self):
+        super(IndexModifyingTestCase, self).setUp()
+        self.data = {"table_name": (('index2', ('old_column'),
+                                    ('new_column')),)}
+        self.table = Table('table', MetaData(),
+                           Column('one', sqlalchemy.Integer),
+                           Column('two', sqlalchemy.Integer))
+        self.migrate_engine = mock.Mock()
+
+    def test_modify_indexes_checks_index_before_dropping_in_postgresql(self):
+        self.migrate_engine.name = 'postgresql'
+
+        with mock.patch('openstack.common.db.sqlalchemy.utils.reflection'
+                        '.Inspector.from_engine') as inspector:
+            inspector.return_value.get_indexes.return_value = [
+                {'name': "index1"}]
+            with mock.patch('openstack.common.db.sqlalchemy.utils'
+                            '.Index') as index:
+                index.return_value = mock.Mock()
+                utils.modify_indexes(self.migrate_engine, self.data, False)
+
+                self.assertFalse(index.called)
+                self.assertFalse(index.return_value.drop.called)
+
+    def test_modify_indexes_checks_index_before_dropping_in_mysql(self):
+        self.migrate_engine.name = 'mysql'
+
+        with mock.patch('openstack.common.db.sqlalchemy.utils.reflection'
+                        '.Inspector.from_engine') as inspector:
+            inspector.return_value.get_indexes.return_value = [
+                {'name': "index1"}]
+            with mock.patch('openstack.common.db.sqlalchemy.utils'
+                            '.Index') as index:
+                with mock.patch('openstack.common.db.sqlalchemy.utils.Table'):
+                    index.return_value = mock.Mock()
+                    utils.modify_indexes(self.migrate_engine, self.data, False)
+
+                    self.assertFalse(index.return_value.drop.called)
+
+    def test_modify_indexes(self):
+        self.migrate_engine.name = 'mysql'
+
+        with mock.patch('openstack.common.db.sqlalchemy.utils.reflection'
+                        '.Inspector.from_engine') as inspector:
+            inspector.return_value.get_indexes.return_value = [
+                {'name': "index2"}]
+            with mock.patch('openstack.common.db.sqlalchemy.utils'
+                            '.Index') as index:
+                with mock.patch('openstack.common.db.sqlalchemy.utils.Table'):
+                    index.return_value = mock.Mock()
+                    utils.modify_indexes(self.migrate_engine, self.data, True)
+
+                    self.assertTrue(index.return_value.drop.called)
+                    self.assertTrue(index.return_value.create.called)
+
+    def test_add_index(self):
+        with mock.patch('openstack.common.db.sqlalchemy.utils.Index') as index:
+            index.return_value.add = mock.Mock()
+            utils._add_index('fake_engine', self.table, 'index_name', ('one',))
+            index.assert_called_once_with('index_name', self.table.c.one)
+            index.return_value.add.assert_called_once()
+
+    def test_drop_index(self):
+        table = sqlalchemy.Table('table', sqlalchemy.MetaData(),
+                                 sqlalchemy.Column('one', sqlalchemy.Integer),
+                                 sqlalchemy.Column('two', sqlalchemy.Integer),
+                                 sqlalchemy.Index('index_name', 'one'))
+
+        with mock.patch('openstack.common.db.sqlalchemy.utils.reflection'
+                        '.Inspector.from_engine') as inspector:
+            inspector.return_value.get_indexes.return_value = [
+                {'name': "index_name"}]
+            with mock.patch('openstack.common.db.sqlalchemy.utils'
+                            '.Index') as index:
+                index.return_value.drop = mock.Mock()
+                utils._drop_index('fake_engine', table, 'index_name', ('one',))
+                index.assert_called_once_with('index_name', table.c.one)
+                index.return_value.drop.assert_called_once()
+
+    def test_drop_index_without_index(self):
+        with mock.patch('openstack.common.db.sqlalchemy.utils.reflection'
+                        '.Inspector.from_engine') as inspector:
+            inspector.return_value.get_indexes.return_value = [
+                {'name': None}]
+            with mock.patch('openstack.common.db.sqlalchemy.utils'
+                            '.Index') as index:
+                utils._drop_index('fake_engine', self.table, 'index_name',
+                                  ('one',))
+                self.assertFalse(index.called)
