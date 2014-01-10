@@ -108,6 +108,39 @@ def _set_db_lock(lock_path=None, lock_prefix=None):
     return decorator
 
 
+class CommonTestsMixIn(object):
+
+    def test_walk_versions(self):
+        for key, engine in self.engines.items():
+            # We start each walk with a completely blank slate.
+            self._reset_database(key)
+            self._walk_versions(engine, self.snake_walk, self.downgrade)
+
+    def test_mysql_opportunistically(self):
+        self._test_mysql_opportunistically()
+
+    def test_mysql_connect_fail(self):
+        """
+        Test that we can trigger a mysql connection failure and we fail
+        gracefully to ensure we don't break people without mysql
+        """
+        if _is_backend_avail('mysql', "openstack_cifail", self.PASSWD,
+                             self.DATABASE):
+            self.fail("Shouldn't have connected")
+
+    def test_postgresql_opportunistically(self):
+        self._test_postgresql_opportunistically()
+
+    def test_postgresql_connect_fail(self):
+        """
+        Test that we can trigger a postgres connection failure and we fail
+        gracefully to ensure we don't break people without postgres
+        """
+        if _is_backend_avail('postgres', "openstack_cifail", self.PASSWD,
+                             self.DATABASE):
+            self.fail("Shouldn't have connected")
+
+
 class BaseMigrationTestCase(test.BaseTestCase):
     """Base class fort testing of migration utils."""
 
