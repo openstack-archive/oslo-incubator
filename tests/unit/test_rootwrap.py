@@ -71,7 +71,7 @@ class RootwrapTestCase(test.BaseTestCase):
     def test_RegExpFilter_match(self):
         usercmd = ["ls", "/root"]
         filtermatch = wrapper.match_filter(self.filters, usercmd)
-        self.assertFalse(filtermatch is None)
+        self.assertIsNotNone(filtermatch)
         self.assertEqual(filtermatch.get_command(usercmd),
                          ["/bin/ls", "/root"])
 

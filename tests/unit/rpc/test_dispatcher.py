@@ -150,8 +150,8 @@ class RpcDispatcherTestCase(test.BaseTestCase):
 
         self.assertEqual(v1.test_method_ctxt, self.ctxt)
         self.assertEqual(v1.test_method_arg1, 1)
-        self.assertEqual(v4.test_method_ctxt, None)
-        self.assertEqual(v4.test_method_arg1, None)
+        self.assertIsNone(v4.test_method_ctxt)
+        self.assertIsNone(v4.test_method_arg1)
 
     def test_method_with_namespace(self):
         v1 = self.API1()
@@ -160,8 +160,8 @@ class RpcDispatcherTestCase(test.BaseTestCase):
 
         disp.dispatch(self.ctxt, '1.0', 'test_method', 'testapi', arg1=1)
 
-        self.assertEqual(v1.test_method_ctxt, None)
-        self.assertEqual(v1.test_method_arg1, None)
+        self.assertIsNone(v1.test_method_ctxt)
+        self.assertIsNone(v1.test_method_arg1)
         self.assertEqual(v4.test_method_ctxt, self.ctxt)
         self.assertEqual(v4.test_method_arg1, 1)
 

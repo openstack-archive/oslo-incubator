@@ -114,4 +114,4 @@ class ImportUtilsTest(test.BaseTestCase):
 
     def test_try_import_returns_default(self):
         foo = importutils.try_import('foo.bar')
-        self.assertEqual(None, foo)
+        self.assertIsNone(foo)

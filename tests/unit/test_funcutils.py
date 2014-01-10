@@ -79,7 +79,7 @@ class FuncutilsTestCase(test.BaseTestCase):
         self.assertTrue('red' in callargs)
         self.assertEqual(3, callargs['red'])
         self.assertTrue('blue' in callargs)
-        self.assertEqual(None, callargs['blue'])
+        self.assertIsNone(callargs['blue'])
 
     def test_partial_args(self):
         args = ({'uuid': 1}, 3)
@@ -93,7 +93,7 @@ class FuncutilsTestCase(test.BaseTestCase):
         self.assertTrue('red' in callargs)
         self.assertEqual(3, callargs['red'])
         self.assertTrue('blue' in callargs)
-        self.assertEqual(None, callargs['blue'])
+        self.assertIsNone(callargs['blue'])
 
     def test_partial_mixed_args(self):
         args = (3,)
@@ -106,7 +106,7 @@ class FuncutilsTestCase(test.BaseTestCase):
         self.assertTrue('red' in callargs)
         self.assertEqual(3, callargs['red'])
         self.assertTrue('blue' in callargs)
-        self.assertEqual(None, callargs['blue'])
+        self.assertIsNone(callargs['blue'])
 
     def _wrapper(self, function):
 

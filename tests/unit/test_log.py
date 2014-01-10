@@ -126,7 +126,7 @@ class LogHandlerTestCase(test.BaseTestCase):
 
     def test_log_path_none(self):
         self.config(log_dir=None, log_file=None)
-        self.assertTrue(log._get_log_file_path(binary='foo-bar') is None)
+        self.assertIsNone(log._get_log_file_path(binary='foo-bar'))
 
     def test_log_path_logfile_overrides_logdir(self):
         self.config(log_dir='/some/other/path',
@@ -425,7 +425,7 @@ class SetDefaultsTestCase(test.BaseTestCase):
     def test_default_to_none(self):
         log.set_defaults(logging_context_format_string=None)
         self.conf([])
-        self.assertEqual(self.conf.logging_context_format_string, None)
+        self.assertIsNone(self.conf.logging_context_format_string)
 
     def test_change_default(self):
         my_default = '%(asctime)s %(levelname)s %(name)s [%(request_id)s '\
@@ -460,10 +460,10 @@ class LogConfigOptsTestCase(test.BaseTestCase):
     def test_logging_opts(self):
         self.CONF([])
 
-        self.assertTrue(self.CONF.log_config_append is None)
-        self.assertTrue(self.CONF.log_file is None)
-        self.assertTrue(self.CONF.log_dir is None)
-        self.assertTrue(self.CONF.log_format is None)
+        self.assertIsNone(self.CONF.log_config_append)
+        self.assertIsNone(self.CONF.log_file)
+        self.assertIsNone(self.CONF.log_dir)
+        self.assertIsNone(self.CONF.log_format)
 
         self.assertEqual(self.CONF.log_date_format,
                          log._DEFAULT_LOG_DATE_FORMAT)

@@ -147,5 +147,5 @@ disk size: 96K
         })
 
         image_info = imageutils.QemuImgInfo(example_output)
-        self.assertEqual(None, image_info.encrypted,
-                         "encrypted status must be None")
+        self.assertIsNone(image_info.encrypted,
+                          "encrypted status must be None")

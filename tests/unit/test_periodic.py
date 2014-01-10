@@ -95,7 +95,7 @@ class ManagerMetaTestCase(test.BaseTestCase):
 
         m = Manager()
         self.assertThat(m._periodic_tasks, matchers.HasLength(2))
-        self.assertEqual(None, m._periodic_spacing['foo'])
+        self.assertIsNone(m._periodic_spacing['foo'])
         self.assertEqual(4, m._periodic_spacing['bar'])
         self.assertThat(
             m._periodic_spacing, matchers.Not(matchers.Contains('baz')))
@@ -155,11 +155,11 @@ class ManagerTestCase(test.BaseTestCase):
         self.assertEqual(True, task._periodic_enabled)
         self.assertEqual(False, task._periodic_external_ok)
         self.assertEqual(False, task._periodic_immediate)
-        self.assertNotEqual(None, task._periodic_last_run)
+        self.assertIsNotNone(task._periodic_last_run)
 
         # Test the manager's representation of those values
         self.assertEqual(10, m._periodic_spacing[task_name])
-        self.assertNotEqual(None, m._periodic_last_run[task_name])
+        self.assertIsNotNone(m._periodic_last_run[task_name])
 
         timeutils.advance_time_delta(datetime.timedelta(seconds=5))
         m.run_periodic_tasks(None)
@@ -190,11 +190,11 @@ class ManagerTestCase(test.BaseTestCase):
         self.assertEqual(True, task._periodic_enabled)
         self.assertEqual(False, task._periodic_external_ok)
         self.assertEqual(True, task._periodic_immediate)
-        self.assertEqual(None, task._periodic_last_run)
+        self.assertIsNone(task._periodic_last_run)
 
         # Test the manager's representation of those values
         self.assertEqual(10, m._periodic_spacing[task_name])
-        self.assertEqual(None, m._periodic_last_run[task_name])
+        self.assertIsNone(m._periodic_last_run[task_name])
 
         idle = m.run_periodic_tasks(None)
         self.assertEqual(datetime.datetime(3000, 1, 1, 0, 0),
