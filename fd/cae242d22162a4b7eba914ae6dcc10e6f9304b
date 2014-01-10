@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Approved+1: Julien Danjou <julien@danjou.info>
+Code-Review+2: Julien Danjou <julien@danjou.info>
+Code-Review+2: Ben Nemec <openstack@nemebean.com>
+Code-Review+1: Dmitry Shulyak <dshulyak@mirantis.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 10 Jan 2014 19:02:22 +0000
+Reviewed-on: https://review.openstack.org/61151
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
