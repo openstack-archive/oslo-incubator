@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Approved+1: Flavio Percoco <fpercoco@redhat.com>
+Code-Review+2: Flavio Percoco <fpercoco@redhat.com>
+Code-Review+1: ChangBo Guo <guochbo@cn.ibm.com>
+Code-Review+2: Ben Nemec <openstack@nemebean.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 10 Jan 2014 15:57:21 +0000
+Reviewed-on: https://review.openstack.org/51105
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
