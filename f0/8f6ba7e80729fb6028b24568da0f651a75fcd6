@@ -1,0 +1,12 @@
+Verified+2: Jenkins
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+1: Sergey Lukjanov <slukjanov@mirantis.com>
+Approved+1: Ben Nemec <openstack@nemebean.com>
+Code-Review+2: Ben Nemec <openstack@nemebean.com>
+Code-Review+1: Victor Sergeyev <vsergeyev@mirantis.com>
+Code-Review+1: Victor Stinner <victor.stinner@enovance.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 10 Jan 2014 17:35:09 +0000
+Reviewed-on: https://review.openstack.org/63250
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
