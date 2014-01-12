@@ -23,7 +23,6 @@ from eventlet import greenthread
 import mock
 from oslo.config import cfg
 
-from openstack.common import jsonutils
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
 from tests.unit.rpc import common
@@ -82,11 +81,6 @@ class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
 
         def fake_notify_send(_conn, topic, msg):
             self.test_msg = msg
-
-        def remove_unique_id(msg):
-            oslo_msg = jsonutils.loads(msg['oslo.message'])
-            oslo_msg.pop('_unique_id')
-            msg['oslo.message'] = jsonutils.dumps(oslo_msg)
 
         self.stubs.Set(self.rpc.Connection, 'notify_send', fake_notify_send)
 
