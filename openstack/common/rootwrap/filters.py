@@ -102,7 +102,7 @@ class PathFilter(CommandFilter):
         if not userargs or len(userargs) < 2:
             return False
 
-        command, arguments = userargs[0], userargs[1:]
+        arguments = userargs[1:]
 
         equal_args_num = len(self.args) == len(arguments)
         exec_is_valid = super(PathFilter, self).match(userargs)
