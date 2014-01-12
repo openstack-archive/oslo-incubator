@@ -179,7 +179,7 @@ class LockTestCase(test.BaseTestCase):
                     finally:
                         os._exit(0)
 
-            for i, child in enumerate(children):
+            for child in children:
                 (pid, status) = os.waitpid(child, 0)
                 if pid:
                     self.assertEqual(0, status)
