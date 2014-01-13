@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import mock
 import warnings
 
 from migrate.changeset import UniqueConstraint
@@ -548,3 +549,55 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
         self.assertEqual(f_key['referred_table'], 'table0')
         self.assertEqual(f_key['referred_columns'], ['id'])
         self.assertEqual(f_key['constrained_columns'], ['bar'])
+
+
+class IndexModifyingTestCase(test.BaseTestCase):
+    def setUp(self):
+        super(IndexModifyingTestCase, self).setUp()
+        self.table = Table('table', MetaData(),
+                           Column('one', sqlalchemy.Integer),
+                           Column('two', sqlalchemy.Integer))
+
+    @mock.patch('openstack.common.db.sqlalchemy.utils.Index')
+    def test_add_index(self, index):
+        index.return_value.add = mock.Mock()
+        utils.add_index('fake_engine', self.table, 'index_name', ('one',))
+        index.assert_called_once_with('index_name', self.table.c.one)
+        index.return_value.add.assert_called_once()
+
+    @mock.patch('openstack.common.db.sqlalchemy.utils.Index')
+    @mock.patch('openstack.common.db.sqlalchemy.utils.reflection.Inspector'
+                '.from_engine')
+    def test_drop_index(self, inspector, index):
+        table = sqlalchemy.Table('table', sqlalchemy.MetaData(),
+                                 sqlalchemy.Column('one', sqlalchemy.Integer),
+                                 sqlalchemy.Column('two', sqlalchemy.Integer),
+                                 sqlalchemy.Index('index_name', 'one'))
+
+        inspector.return_value.get_indexes.return_value = [
+            {'name': "index_name"}]
+        index.return_value.drop = mock.Mock()
+        utils.drop_index('fake_engine', table, 'index_name', ('one',))
+        index.assert_called_once_with('index_name', table.c.one)
+        index.return_value.drop.assert_called_once()
+
+    @mock.patch('openstack.common.db.sqlalchemy.utils.Index')
+    @mock.patch('openstack.common.db.sqlalchemy.utils.reflection.Inspector'
+                '.from_engine')
+    def test_drop_index_without_index(self, inspector, index):
+        inspector.return_value.get_indexes.return_value = [{'name': None}]
+        try:
+            utils.drop_index('fake_engine', self.table, 'index_name', ('one',))
+        except Exception:
+            pass
+        self.assertFalse(index.called)
+
+    @mock.patch('openstack.common.db.sqlalchemy.utils.drop_index')
+    @mock.patch('openstack.common.db.sqlalchemy.utils.add_index')
+    def test_change_index_columns(self, add_index, drop_index):
+        utils.change_index_columns('fake_engine', self.table, 'index_name',
+                                   ('new_column',), ('old_column',))
+        drop_index.assert_called_once_with('fake_engine', self.table,
+                                           'index_name', ('old_column',))
+        add_index.assert_called_once_with('fake_engine', self.table,
+                                          'index_name', ('new_column',))
