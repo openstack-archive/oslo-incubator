@@ -17,6 +17,7 @@
 import functools
 import os
 import subprocess
+import urlparse
 
 import lockfile
 from six import moves
@@ -106,6 +107,100 @@ def _set_db_lock(lock_path=None, lock_prefix=None):
                 LOG.debug(_('Lock released "%s"') % f.__name__)
         return wrapper
     return decorator
+
+
+class CommonTestsMixIn(object):
+
+    def test_mysql_opportunistically(self):
+        """Test that table creation on mysql only builds InnoDB tables."""
+        self._test_mysql_opportunistically()
+
+    def test_mysql_connect_fail(self):
+        """Test a mysql connection.
+
+        Test that we can trigger a mysql connection failure and we fail
+        gracefully to ensure we don't break people without mysql
+        """
+        if _is_backend_avail('mysql', "openstack_cifail", self.PASSWD,
+                             self.DATABASE):
+            self.fail("Shouldn't have connected")
+
+    def test_postgresql_opportunistically(self):
+        """Test postgresql database migration walk.
+
+        Also add this to the global lists to make reset work with it,
+        it's removed automatically in tearDown so no need to clean it up here.
+        """
+        self._test_postgresql_opportunistically()
+
+    def test_postgresql_connect_fail(self):
+        """Test a postgres connection.
+
+        Test that we can trigger a postgres connection failure and we fail
+        gracefully to ensure we don't break people without postgres
+        """
+        if _is_backend_avail('postgres', "openstack_cifail", self.PASSWD,
+                             self.DATABASE):
+            self.fail("Shouldn't have connected")
+
+    def _test_mysql_opportunistically(self):
+        # Test that table creation on mysql only builds InnoDB tables
+        if not _have_mysql(self.USER, self.PASSWD, self.DATABASE):
+            self.skipTest("mysql not available")
+        # add this to the global lists to make reset work with it, it's removed
+        # automatically in tearDown so no need to clean it up here.
+        connect_string = _get_connect_string("mysql", self.USER, self.PASSWD,
+                                             self.DATABASE)
+        (user, password, database, host) = \
+            get_db_connection_info(urlparse.urlparse(connect_string))
+        engine = sqlalchemy.create_engine(connect_string)
+        self.engines[database] = engine
+        self.test_databases[database] = connect_string
+
+        # build a fully populated mysql database with all the tables
+        self._reset_database(database)
+        self._walk_versions(engine, self.snake_walk, self.downgrade)
+
+        connection = engine.connect()
+        # sanity check
+        total = connection.execute("SELECT count(*) "
+                                   "from information_schema.TABLES "
+                                   "where TABLE_SCHEMA='%(database)s'" %
+                                   {'database': database})
+        self.assertTrue(total.scalar() > 0, "No tables found. Wrong schema?")
+
+        noninnodb = connection.execute("SELECT count(*) "
+                                       "from information_schema.TABLES "
+                                       "where TABLE_SCHEMA='%(database)s' "
+                                       "and ENGINE!='InnoDB' "
+                                       "and TABLE_NAME!='migrate_version'" %
+                                       {'database': database})
+        count = noninnodb.scalar()
+        self.assertEqual(count, 0, "%d non InnoDB tables created" % count)
+        connection.close()
+
+        del(self.engines[database])
+        del(self.test_databases[database])
+
+    def _test_postgresql_opportunistically(self):
+        # Test postgresql database migration walk
+        if not _have_postgresql(self.USER, self.PASSWD, self.DATABASE):
+            self.skipTest("postgresql not available")
+        # add this to the global lists to make reset work with it, it's removed
+        # automatically in tearDown so no need to clean it up here.
+        connect_string = _get_connect_string("postgres", self.USER,
+                                             self.PASSWD, self.DATABASE)
+        engine = sqlalchemy.create_engine(connect_string)
+        (user, password, database, host) = \
+            get_db_connection_info(urlparse.urlparse(connect_string))
+        self.engines[database] = engine
+        self.test_databases[database] = connect_string
+
+        # build a fully populated postgresql database with all the tables
+        self._reset_database(database)
+        self._walk_versions(engine, self.snake_walk, self.downgrade)
+        del(self.engines[database])
+        del(self.test_databases[database])
 
 
 class BaseMigrationTestCase(test.BaseTestCase):
@@ -217,6 +312,20 @@ class BaseMigrationTestCase(test.BaseTestCase):
 
 
 class WalkVersionsMixin(object):
+
+    def test_walk_versions(self):
+        """Checks that the schema itself upgrades successfully.
+
+        Determine latest version script from the repo, then
+        upgrade from 1 through to the latest, with no data
+        in the databases. This just checks that the schema itself
+        upgrades successfully.
+        """
+        for key, engine in self.engines.items():
+            # We start each walk with a completely blank slate.
+            self._reset_database(key)
+            self._walk_versions(engine, self.snake_walk, self.downgrade)
+
     def _walk_versions(self, engine=None, snake_walk=False, downgrade=True):
         # Determine latest version script from the repo, then
         # upgrade from 1 through to the latest, with no data

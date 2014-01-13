@@ -29,6 +29,7 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
         super(TestWalkVersions, self).setUp()
         self.migration_api = mock.MagicMock()
         self.engine = mock.MagicMock()
+        self.engines = mock.MagicMock()
         self.REPOSITORY = mock.MagicMock()
         self.INIT_VERSION = 4
 
