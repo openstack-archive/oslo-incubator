@@ -34,6 +34,7 @@ from openstack.common.db import exception
 from openstack.common.db.sqlalchemy import migration
 from openstack.common.db.sqlalchemy import models
 from openstack.common.db.sqlalchemy import session
+from openstack.common.db.sqlalchemy import test_base
 from openstack.common.db.sqlalchemy import test_migrations
 from openstack.common.db.sqlalchemy import utils
 from openstack.common.fixture import moxstubout
@@ -175,12 +176,16 @@ class TestPaginateQuery(test.BaseTestCase):
                           marker=self.marker, sort_dirs=['asc', 'mixed'])
 
 
-class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
+class TestMigrationUtils(test_base.DbTestCase,
+                         test_migrations.WalkVersionsMixin):
+
     """Class for testing utils that are used in db migrations."""
 
     def setUp(self):
         super(TestMigrationUtils, self).setUp()
         migration.patch_migrate()
+        self.meta = MetaData(bind=self.engine)
+        self.addCleanup(self.meta.drop_all)
 
     def _populate_db_for_drop_duplicate_entries(self, engine, meta,
                                                 table_name):
@@ -213,137 +218,122 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
     def test_drop_old_duplicate_entries_from_table(self):
         table_name = "__test_tmp_table__"
 
-        for engine in self.engines.values():
-            meta = MetaData()
-            meta.bind = engine
-            test_table, values = self._populate_db_for_drop_duplicate_entries(
-                engine, meta, table_name)
-            utils.drop_old_duplicate_entries_from_table(
-                engine, table_name, False, 'b', 'c')
+        test_table, values = self._populate_db_for_drop_duplicate_entries(
+            self.engine, self.meta, table_name)
+        utils.drop_old_duplicate_entries_from_table(
+            self.engine, table_name, False, 'b', 'c')
 
-            uniq_values = set()
-            expected_ids = []
-            for value in sorted(values, key=lambda x: x['id'], reverse=True):
-                uniq_value = (('b', value['b']), ('c', value['c']))
-                if uniq_value in uniq_values:
-                    continue
-                uniq_values.add(uniq_value)
-                expected_ids.append(value['id'])
+        uniq_values = set()
+        expected_ids = []
+        for value in sorted(values, key=lambda x: x['id'], reverse=True):
+            uniq_value = (('b', value['b']), ('c', value['c']))
+            if uniq_value in uniq_values:
+                continue
+            uniq_values.add(uniq_value)
+            expected_ids.append(value['id'])
 
-            real_ids = [row[0] for row in
-                        engine.execute(select([test_table.c.id])).fetchall()]
+        real_ids = [row[0] for row in
+                    self.engine.execute(select([test_table.c.id])).fetchall()]
 
-            self.assertEqual(len(real_ids), len(expected_ids))
-            for id_ in expected_ids:
-                self.assertTrue(id_ in real_ids)
+        self.assertEqual(len(real_ids), len(expected_ids))
+        for id_ in expected_ids:
+            self.assertTrue(id_ in real_ids)
 
     def test_drop_old_duplicate_entries_from_table_soft_delete(self):
         table_name = "__test_tmp_table__"
 
-        for engine in self.engines.values():
-            meta = MetaData()
-            meta.bind = engine
-            table, values = self._populate_db_for_drop_duplicate_entries(
-                engine, meta, table_name)
-            utils.drop_old_duplicate_entries_from_table(engine, table_name,
-                                                        True, 'b', 'c')
-            uniq_values = set()
-            expected_values = []
-            soft_deleted_values = []
+        table, values = self._populate_db_for_drop_duplicate_entries(
+            self.engine, self.meta, table_name)
+        utils.drop_old_duplicate_entries_from_table(self.engine, table_name,
+                                                    True, 'b', 'c')
+        uniq_values = set()
+        expected_values = []
+        soft_deleted_values = []
 
-            for value in sorted(values, key=lambda x: x['id'], reverse=True):
-                uniq_value = (('b', value['b']), ('c', value['c']))
-                if uniq_value in uniq_values:
-                    soft_deleted_values.append(value)
-                    continue
-                uniq_values.add(uniq_value)
-                expected_values.append(value)
+        for value in sorted(values, key=lambda x: x['id'], reverse=True):
+            uniq_value = (('b', value['b']), ('c', value['c']))
+            if uniq_value in uniq_values:
+                soft_deleted_values.append(value)
+                continue
+            uniq_values.add(uniq_value)
+            expected_values.append(value)
 
-            base_select = table.select()
+        base_select = table.select()
 
-            rows_select = base_select.where(table.c.deleted != table.c.id)
-            row_ids = [row['id'] for row in
-                       engine.execute(rows_select).fetchall()]
-            self.assertEqual(len(row_ids), len(expected_values))
-            for value in expected_values:
-                self.assertTrue(value['id'] in row_ids)
+        rows_select = base_select.where(table.c.deleted != table.c.id)
+        row_ids = [row['id'] for row in
+                   self.engine.execute(rows_select).fetchall()]
+        self.assertEqual(len(row_ids), len(expected_values))
+        for value in expected_values:
+            self.assertTrue(value['id'] in row_ids)
 
-            deleted_rows_select = base_select.where(
-                table.c.deleted == table.c.id)
-            deleted_rows_ids = [row['id'] for row in
-                                engine.execute(deleted_rows_select).fetchall()]
-            self.assertEqual(len(deleted_rows_ids),
-                             len(values) - len(row_ids))
-            for value in soft_deleted_values:
-                self.assertTrue(value['id'] in deleted_rows_ids)
+        deleted_rows_select = base_select.where(
+            table.c.deleted == table.c.id)
+        deleted_rows_ids = [row['id'] for row in
+                            self.engine.execute(
+                                deleted_rows_select).fetchall()]
+        self.assertEqual(len(deleted_rows_ids),
+                         len(values) - len(row_ids))
+        for value in soft_deleted_values:
+            self.assertTrue(value['id'] in deleted_rows_ids)
 
     def test_change_deleted_column_type_does_not_drop_index(self):
         table_name = 'abc'
-        for engine in self.engines.values():
-            meta = MetaData(bind=engine)
 
-            indexes = {
-                'idx_a_deleted': ['a', 'deleted'],
-                'idx_b_deleted': ['b', 'deleted'],
-                'idx_a': ['a']
-            }
+        indexes = {
+            'idx_a_deleted': ['a', 'deleted'],
+            'idx_b_deleted': ['b', 'deleted'],
+            'idx_a': ['a']
+        }
 
-            index_instances = [Index(name, *columns)
-                               for name, columns in six.iteritems(indexes)]
+        index_instances = [Index(name, *columns)
+                           for name, columns in six.iteritems(indexes)]
 
-            table = Table(table_name, meta,
-                          Column('id', Integer, primary_key=True),
-                          Column('a', String(255)),
-                          Column('b', String(255)),
-                          Column('deleted', Boolean),
-                          *index_instances)
-            table.create()
-            utils.change_deleted_column_type_to_id_type(engine, table_name)
-            utils.change_deleted_column_type_to_boolean(engine, table_name)
+        table = Table(table_name, self.meta,
+                      Column('id', Integer, primary_key=True),
+                      Column('a', String(255)),
+                      Column('b', String(255)),
+                      Column('deleted', Boolean),
+                      *index_instances)
+        table.create()
+        utils.change_deleted_column_type_to_id_type(self.engine, table_name)
+        utils.change_deleted_column_type_to_boolean(self.engine, table_name)
 
-            insp = reflection.Inspector.from_engine(engine)
-            real_indexes = insp.get_indexes(table_name)
-            self.assertEqual(len(real_indexes), 3)
-            for index in real_indexes:
-                name = index['name']
-                self.assertIn(name, indexes)
-                self.assertEqual(set(index['column_names']),
-                                 set(indexes[name]))
+        insp = reflection.Inspector.from_engine(self.engine)
+        real_indexes = insp.get_indexes(table_name)
+        self.assertEqual(len(real_indexes), 3)
+        for index in real_indexes:
+            name = index['name']
+            self.assertIn(name, indexes)
+            self.assertEqual(set(index['column_names']),
+                             set(indexes[name]))
 
     def test_change_deleted_column_type_to_id_type_integer(self):
         table_name = 'abc'
-        for engine in self.engines.values():
-            meta = MetaData()
-            meta.bind = engine
-            table = Table(table_name, meta,
-                          Column('id', Integer, primary_key=True),
-                          Column('deleted', Boolean))
-            table.create()
-            utils.change_deleted_column_type_to_id_type(engine, table_name)
+        table = Table(table_name, self.meta,
+                      Column('id', Integer, primary_key=True),
+                      Column('deleted', Boolean))
+        table.create()
+        utils.change_deleted_column_type_to_id_type(self.engine, table_name)
 
-            table = utils.get_table(engine, table_name)
-            self.assertTrue(isinstance(table.c.deleted.type, Integer))
+        table = utils.get_table(self.engine, table_name)
+        self.assertTrue(isinstance(table.c.deleted.type, Integer))
 
     def test_change_deleted_column_type_to_id_type_string(self):
         table_name = 'abc'
-        for engine in self.engines.values():
-            meta = MetaData()
-            meta.bind = engine
-            table = Table(table_name, meta,
-                          Column('id', String(255), primary_key=True),
-                          Column('deleted', Boolean))
-            table.create()
-            utils.change_deleted_column_type_to_id_type(engine, table_name)
+        table = Table(table_name, self.meta,
+                      Column('id', String(255), primary_key=True),
+                      Column('deleted', Boolean))
+        table.create()
+        utils.change_deleted_column_type_to_id_type(self.engine, table_name)
 
-            table = utils.get_table(engine, table_name)
-            self.assertTrue(isinstance(table.c.deleted.type, String))
+        table = utils.get_table(self.engine, table_name)
+        self.assertTrue(isinstance(table.c.deleted.type, String))
 
+    @test_base.backend_specific('sqlite')
     def test_change_deleted_column_type_to_id_type_custom(self):
         table_name = 'abc'
-        engine = self.engines['sqlite']
-        meta = MetaData()
-        meta.bind = engine
-        table = Table(table_name, meta,
+        table = Table(table_name, self.meta,
                       Column('id', Integer, primary_key=True),
                       Column('foo', CustomType),
                       Column('deleted', Boolean))
@@ -351,13 +341,13 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
 
         self.assertRaises(utils.ColumnError,
                           utils.change_deleted_column_type_to_id_type,
-                          engine, table_name)
+                          self.engine, table_name)
 
         fooColumn = Column('foo', CustomType())
-        utils.change_deleted_column_type_to_id_type(engine, table_name,
+        utils.change_deleted_column_type_to_id_type(self.engine, table_name,
                                                     foo=fooColumn)
 
-        table = utils.get_table(engine, table_name)
+        table = utils.get_table(self.engine, table_name)
         # NOTE(boris-42): There is no way to check has foo type CustomType.
         #                 but sqlalchemy will set it to NullType.
         self.assertTrue(isinstance(table.c.foo.type, NullType))
@@ -365,51 +355,51 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
 
     def test_change_deleted_column_type_to_boolean(self):
         table_name = 'abc'
-        for key, engine in self.engines.items():
-            meta = MetaData()
-            meta.bind = engine
-            table = Table(table_name, meta,
-                          Column('id', Integer, primary_key=True),
-                          Column('deleted', Integer))
-            table.create()
+        table = Table(table_name, self.meta,
+                      Column('id', Integer, primary_key=True),
+                      Column('deleted', Integer))
+        table.create()
 
-            utils.change_deleted_column_type_to_boolean(engine, table_name)
+        utils.change_deleted_column_type_to_boolean(self.engine, table_name)
 
-            table = utils.get_table(engine, table_name)
-            expected_type = Boolean if key != "mysql" else mysql.TINYINT
-            self.assertTrue(isinstance(table.c.deleted.type, expected_type))
+        table = utils.get_table(self.engine, table_name)
+        if self.engine.name != "mysql":
+            expected_type = Boolean
+        else:
+            expected_type = mysql.TINYINT
+
+        self.assertTrue(isinstance(table.c.deleted.type, expected_type))
 
     def test_change_deleted_column_type_to_boolean_with_fc(self):
         table_name_1 = 'abc'
         table_name_2 = 'bcd'
-        for key, engine in self.engines.items():
-            meta = MetaData()
-            meta.bind = engine
 
-            table_1 = Table(table_name_1, meta,
-                            Column('id', Integer, primary_key=True),
-                            Column('deleted', Integer))
-            table_1.create()
+        table_1 = Table(table_name_1, self.meta,
+                        Column('id', Integer, primary_key=True),
+                        Column('deleted', Integer))
+        table_1.create()
 
-            table_2 = Table(table_name_2, meta,
-                            Column('id', Integer, primary_key=True),
-                            Column('foreign_id', Integer,
-                                   ForeignKey('%s.id' % table_name_1)),
-                            Column('deleted', Integer))
-            table_2.create()
+        table_2 = Table(table_name_2, self.meta,
+                        Column('id', Integer, primary_key=True),
+                        Column('foreign_id', Integer,
+                               ForeignKey('%s.id' % table_name_1)),
+                        Column('deleted', Integer))
+        table_2.create()
 
-            utils.change_deleted_column_type_to_boolean(engine, table_name_2)
+        utils.change_deleted_column_type_to_boolean(self.engine, table_name_2)
 
-            table = utils.get_table(engine, table_name_2)
-            expected_type = Boolean if key != "mysql" else mysql.TINYINT
-            self.assertTrue(isinstance(table.c.deleted.type, expected_type))
+        table = utils.get_table(self.engine, table_name_2)
+        if self.engine.name != "mysql":
+            expected_type = Boolean
+        else:
+            expected_type = mysql.TINYINT
 
+        self.assertTrue(isinstance(table.c.deleted.type, expected_type))
+
+    @test_base.backend_specific('sqlite')
     def test_change_deleted_column_type_to_boolean_type_custom(self):
         table_name = 'abc'
-        engine = self.engines['sqlite']
-        meta = MetaData()
-        meta.bind = engine
-        table = Table(table_name, meta,
+        table = Table(table_name, self.meta,
                       Column('id', Integer, primary_key=True),
                       Column('foo', CustomType),
                       Column('deleted', Integer))
@@ -417,13 +407,13 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
 
         self.assertRaises(utils.ColumnError,
                           utils.change_deleted_column_type_to_boolean,
-                          engine, table_name)
+                          self.engine, table_name)
 
         fooColumn = Column('foo', CustomType())
-        utils.change_deleted_column_type_to_boolean(engine, table_name,
+        utils.change_deleted_column_type_to_boolean(self.engine, table_name,
                                                     foo=fooColumn)
 
-        table = utils.get_table(engine, table_name)
+        table = utils.get_table(self.engine, table_name)
         # NOTE(boris-42): There is no way to check has foo type CustomType.
         #                 but sqlalchemy will set it to NullType.
         self.assertTrue(isinstance(table.c.foo.type, NullType))
@@ -437,41 +427,38 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
             {'id': 2, 'a': 2, 'foo': 20},
             {'id': 3, 'a': 1, 'foo': 30},
         ]
-        for engine in self.engines.values():
-            meta = MetaData()
-            meta.bind = engine
-            test_table = Table(
-                table_name, meta,
-                Column('id', Integer, primary_key=True, nullable=False),
-                Column('a', Integer),
-                Column('foo', Integer),
-                UniqueConstraint('a', name='uniq_a'),
-                UniqueConstraint('foo', name=uc_name),
-            )
-            test_table.create()
+        test_table = Table(
+            table_name, self.meta,
+            Column('id', Integer, primary_key=True, nullable=False),
+            Column('a', Integer),
+            Column('foo', Integer),
+            UniqueConstraint('a', name='uniq_a'),
+            UniqueConstraint('foo', name=uc_name),
+        )
+        test_table.create()
 
-            engine.execute(test_table.insert(), values)
-            # NOTE(boris-42): This method is generic UC dropper.
-            utils.drop_unique_constraint(engine, table_name, uc_name, 'foo')
+        self.engine.execute(test_table.insert(), values)
+        # NOTE(boris-42): This method is generic UC dropper.
+        utils.drop_unique_constraint(self.engine, table_name, uc_name, 'foo')
 
-            s = test_table.select().order_by(test_table.c.id)
-            rows = engine.execute(s).fetchall()
+        s = test_table.select().order_by(test_table.c.id)
+        rows = self.engine.execute(s).fetchall()
 
-            for i in moves.range(len(values)):
-                v = values[i]
-                self.assertEqual((v['id'], v['a'], v['foo']), rows[i])
+        for i in moves.range(len(values)):
+            v = values[i]
+            self.assertEqual((v['id'], v['a'], v['foo']), rows[i])
 
-            # NOTE(boris-42): Update data about Table from DB.
-            meta = MetaData()
-            meta.bind = engine
-            test_table = Table(table_name, meta, autoload=True)
-            constraints = [c for c in test_table.constraints
-                           if c.name == uc_name]
-            self.assertEqual(len(constraints), 0)
-            self.assertEqual(len(test_table.constraints), 1)
+        # NOTE(boris-42): Update data about Table from DB.
+        meta = MetaData(bind=self.engine)
+        test_table = Table(table_name, meta, autoload=True)
+        constraints = [c for c in test_table.constraints
+                       if c.name == uc_name]
+        self.assertEqual(len(constraints), 0)
+        self.assertEqual(len(test_table.constraints), 1)
 
-            test_table.drop()
+        test_table.drop()
 
+    @test_base.backend_specific('sqlite')
     def test_util_drop_unique_constraint_with_not_supported_sqlite_type(self):
         table_name = "__test_tmp_table__"
         uc_name = 'uniq_foo'
@@ -481,11 +468,8 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
             {'id': 3, 'a': 1, 'foo': 30}
         ]
 
-        engine = self.engines['sqlite']
-        meta = MetaData(bind=engine)
-
         test_table = Table(
-            table_name, meta,
+            table_name, self.meta,
             Column('id', Integer, primary_key=True, nullable=False),
             Column('a', Integer),
             Column('foo', CustomType, default=0),
@@ -494,33 +478,34 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
         )
         test_table.create()
 
-        engine.execute(test_table.insert(), values)
+        self.engine.execute(test_table.insert(), values)
         warnings.simplefilter("ignore", SAWarning)
         # NOTE(boris-42): Missing info about column `foo` that has
         #                 unsupported type CustomType.
         self.assertRaises(utils.ColumnError,
                           utils.drop_unique_constraint,
-                          engine, table_name, uc_name, 'foo')
+                          self.engine, table_name, uc_name, 'foo')
 
         # NOTE(boris-42): Wrong type of foo instance. it should be
         #                 instance of sqlalchemy.Column.
         self.assertRaises(utils.ColumnError,
                           utils.drop_unique_constraint,
-                          engine, table_name, uc_name, 'foo', foo=Integer())
+                          self.engine, table_name, uc_name,
+                          'foo', foo=Integer())
 
         foo = Column('foo', CustomType, default=0)
         utils.drop_unique_constraint(
-            engine, table_name, uc_name, 'foo', foo=foo)
+            self.engine, table_name, uc_name, 'foo', foo=foo)
 
         s = test_table.select().order_by(test_table.c.id)
-        rows = engine.execute(s).fetchall()
+        rows = self.engine.execute(s).fetchall()
 
         for i in moves.range(len(values)):
             v = values[i]
             self.assertEqual((v['id'], v['a'], v['foo']), rows[i])
 
         # NOTE(boris-42): Update data about Table from DB.
-        meta = MetaData(bind=engine)
+        meta = MetaData(bind=self.engine)
         test_table = Table(table_name, meta, autoload=True)
         constraints = [c for c in test_table.constraints if c.name == uc_name]
         self.assertEqual(len(constraints), 0)
@@ -528,33 +513,44 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
         test_table.drop()
 
     def test_drop_unique_constraint_in_sqlite_fk_recreate(self):
-        engine = self.engines['sqlite']
-        meta = MetaData()
-        meta.bind = engine
         parent_table = Table(
-            'table0', meta,
+            'table0', self.meta,
             Column('id', Integer, primary_key=True),
             Column('foo', Integer),
         )
         parent_table.create()
         table_name = 'table1'
         table = Table(
-            table_name, meta,
+            table_name, self.meta,
             Column('id', Integer, primary_key=True),
             Column('baz', Integer),
             Column('bar', Integer, ForeignKey("table0.id")),
             UniqueConstraint('baz', name='constr1')
         )
         table.create()
-        utils.drop_unique_constraint(engine, table_name, 'constr1', 'baz')
+        utils.drop_unique_constraint(self.engine, table_name, 'constr1', 'baz')
 
-        insp = reflection.Inspector.from_engine(engine)
+        insp = reflection.Inspector.from_engine(self.engine)
         f_keys = insp.get_foreign_keys(table_name)
         self.assertEqual(len(f_keys), 1)
         f_key = f_keys[0]
         self.assertEqual(f_key['referred_table'], 'table0')
         self.assertEqual(f_key['referred_columns'], ['id'])
         self.assertEqual(f_key['constrained_columns'], ['bar'])
+
+
+class PostgeSQLTestMigrations(TestMigrationUtils,
+                              test_base.PostgreSQLOpportunisticTestCase):
+
+    """Test migrations on PostgreSQL."""
+    pass
+
+
+class MySQLTestMigrations(TestMigrationUtils,
+                          test_base.MySQLOpportunisticTestCase):
+
+    """Test migrations on MySQL."""
+    pass
 
 
 class TestConnectionUtils(test_utils.BaseTestCase):
