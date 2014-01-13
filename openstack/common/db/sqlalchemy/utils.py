@@ -497,3 +497,36 @@ def _change_deleted_column_type_to_id_type_sqlite(migrate_engine, table_name,
         where(new_table.c.deleted == deleted).\
         values(deleted=default_deleted_value).\
         execute()
+
+
+def _index_exists(migrate_engine, table_name, index_name):
+    inspector = reflection.Inspector.from_engine(migrate_engine)
+    indexes = inspector.get_indexes(table_name)
+    index_names = [index['name'] for index in indexes]
+    return index_name in index_names
+
+
+def add_index(migrate_engine, table, index_name, idx_columns):
+    if not _index_exists(migrate_engine, table.name, index_name):
+        index = Index(
+            index_name, *[getattr(table.c, col) for col in idx_columns]
+        )
+        index.create()
+    else:
+        raise ValueError("Index '%s' already exists!" % index_name)
+
+
+def drop_index(migrate_engine, table, index_name, idx_columns):
+    if _index_exists(migrate_engine, table.name, index_name):
+        index = Index(
+            index_name, *[getattr(table.c, col) for col in idx_columns]
+        )
+        index.drop()
+    else:
+        raise ValueError("Index '%s' not found!" % index_name)
+
+
+def change_index_columns(migrate_engine, table, index_name,
+                         new_columns, old_columns):
+    drop_index(migrate_engine, table, index_name, old_columns)
+    add_index(migrate_engine, table, index_name, new_columns)
