@@ -289,7 +289,8 @@ F: xmlutils.py
 
 == zmq ==
 
-M: Eric Windisch <eric@cloudscaling.com>
+M: Mike Wilson <geekinutah@gmail.com>
+M: Paul Mathews <pmathews@bluehost.com>
 S: Obsolete
 F: rpc/impl_zmq.py
 F: rpc/matchmaker*.py
