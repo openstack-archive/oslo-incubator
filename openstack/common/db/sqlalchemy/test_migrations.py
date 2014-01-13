@@ -17,17 +17,11 @@
 import functools
 import logging
 import os
-import subprocess
 
 import lockfile
-from six import moves
-from six.moves.urllib import parse
-import sqlalchemy
-import sqlalchemy.exc
 
 from openstack.common.db.sqlalchemy import utils
 from openstack.common.gettextutils import _LE
-from openstack.common import test
 
 LOG = logging.getLogger(__name__)
 
@@ -68,129 +62,19 @@ def _set_db_lock(lock_path=None, lock_prefix=None):
     return decorator
 
 
-class BaseMigrationTestCase(test.BaseTestCase):
-    """Base class fort testing of migration utils."""
-
-    def __init__(self, *args, **kwargs):
-        super(BaseMigrationTestCase, self).__init__(*args, **kwargs)
-
-        self.DEFAULT_CONFIG_FILE = os.path.join(os.path.dirname(__file__),
-                                                'test_migrations.conf')
-        # Test machines can set the TEST_MIGRATIONS_CONF variable
-        # to override the location of the config file for migration testing
-        self.CONFIG_FILE_PATH = os.environ.get('TEST_MIGRATIONS_CONF',
-                                               self.DEFAULT_CONFIG_FILE)
-        self.test_databases = {}
-        self.migration_api = None
-
-    def setUp(self):
-        super(BaseMigrationTestCase, self).setUp()
-
-        # Load test databases from the config file. Only do this
-        # once. No need to re-run this on each test...
-        LOG.debug('config_path is %s' % self.CONFIG_FILE_PATH)
-        if os.path.exists(self.CONFIG_FILE_PATH):
-            cp = moves.configparser.RawConfigParser()
-            try:
-                cp.read(self.CONFIG_FILE_PATH)
-                defaults = cp.defaults()
-                for key, value in defaults.items():
-                    self.test_databases[key] = value
-            except moves.configparser.ParsingError as e:
-                self.fail("Failed to read test_migrations.conf config "
-                          "file. Got error: %s" % e)
-        else:
-            self.fail("Failed to find test_migrations.conf config "
-                      "file.")
-
-        self.engines = {}
-        for key, value in self.test_databases.items():
-            self.engines[key] = sqlalchemy.create_engine(value)
-
-        # We start each test case with a completely blank slate.
-        self._reset_databases()
-
-    def tearDown(self):
-        # We destroy the test data store between each test case,
-        # and recreate it, which ensures that we have no side-effects
-        # from the tests
-        self._reset_databases()
-        super(BaseMigrationTestCase, self).tearDown()
-
-    def execute_cmd(self, cmd=None):
-        process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
-                                   stderr=subprocess.STDOUT)
-        output = process.communicate()[0]
-        LOG.debug(output)
-        self.assertEqual(0, process.returncode,
-                         "Failed to run: %s\n%s" % (cmd, output))
-
-    def _reset_pg(self, conn_pieces):
-        (user,
-         password,
-         database,
-         host) = utils.get_db_connection_info(conn_pieces)
-        os.environ['PGPASSWORD'] = password
-        os.environ['PGUSER'] = user
-        # note(boris-42): We must create and drop database, we can't
-        # drop database which we have connected to, so for such
-        # operations there is a special database template1.
-        sqlcmd = ("psql -w -U %(user)s -h %(host)s -c"
-                  " '%(sql)s' -d template1")
-
-        sql = ("drop database if exists %s;") % database
-        droptable = sqlcmd % {'user': user, 'host': host, 'sql': sql}
-        self.execute_cmd(droptable)
-
-        sql = ("create database %s;") % database
-        createtable = sqlcmd % {'user': user, 'host': host, 'sql': sql}
-        self.execute_cmd(createtable)
-
-        os.unsetenv('PGPASSWORD')
-        os.unsetenv('PGUSER')
-
-    @_set_db_lock(lock_prefix='migration_tests-')
-    def _reset_databases(self):
-        for key, engine in self.engines.items():
-            conn_string = self.test_databases[key]
-            conn_pieces = parse.urlparse(conn_string)
-            engine.dispose()
-            if conn_string.startswith('sqlite'):
-                # We can just delete the SQLite database, which is
-                # the easiest and cleanest solution
-                db_path = conn_pieces.path.strip('/')
-                if os.path.exists(db_path):
-                    os.unlink(db_path)
-                # No need to recreate the SQLite DB. SQLite will
-                # create it for us if it's not there...
-            elif conn_string.startswith('mysql'):
-                # We can execute the MySQL client to destroy and re-create
-                # the MYSQL database, which is easier and less error-prone
-                # than using SQLAlchemy to do this via MetaData...trust me.
-                (user, password, database, host) = \
-                    utils.get_db_connection_info(conn_pieces)
-                sql = ("drop database if exists %(db)s; "
-                       "create database %(db)s;") % {'db': database}
-                cmd = ("mysql -u \"%(user)s\" -p\"%(password)s\" -h %(host)s "
-                       "-e \"%(sql)s\"") % {'user': user, 'password': password,
-                                            'host': host, 'sql': sql}
-                self.execute_cmd(cmd)
-            elif conn_string.startswith('postgresql'):
-                self._reset_pg(conn_pieces)
-
-
 class WalkVersionsMixin(object):
-    def _walk_versions(self, engine=None, snake_walk=False, downgrade=True):
+
+    def _walk_versions(self, snake_walk=False, downgrade=True):
         # Determine latest version script from the repo, then
         # upgrade from 1 through to the latest, with no data
         # in the databases. This just checks that the schema itself
         # upgrades successfully.
 
         # Place the database under version control
-        self.migration_api.version_control(engine, self.REPOSITORY,
+        self.migration_api.version_control(self.engine, self.REPOSITORY,
                                            self.INIT_VERSION)
         self.assertEqual(self.INIT_VERSION,
-                         self.migration_api.db_version(engine,
+                         self.migration_api.db_version(self.engine,
                                                        self.REPOSITORY))
 
         LOG.debug('latest version is %s' % self.REPOSITORY.latest)
@@ -198,23 +82,23 @@ class WalkVersionsMixin(object):
 
         for version in versions:
             # upgrade -> downgrade -> upgrade
-            self._migrate_up(engine, version, with_data=True)
+            self._migrate_up(self.engine, version, with_data=True)
             if snake_walk:
                 downgraded = self._migrate_down(
-                    engine, version - 1, with_data=True)
+                    self.engine, version - 1, with_data=True)
                 if downgraded:
-                    self._migrate_up(engine, version)
+                    self._migrate_up(self.engine, version)
 
         if downgrade:
             # Now walk it back down to 0 from the latest, testing
             # the downgrade paths.
             for version in reversed(versions):
                 # downgrade -> upgrade -> downgrade
-                downgraded = self._migrate_down(engine, version - 1)
+                downgraded = self._migrate_down(self.engine, version - 1)
 
                 if snake_walk and downgraded:
-                    self._migrate_up(engine, version)
-                    self._migrate_down(engine, version - 1)
+                    self._migrate_up(self.engine, version)
+                    self._migrate_down(self.engine, version - 1)
 
     def _migrate_down(self, engine, version, with_data=False):
         try:
