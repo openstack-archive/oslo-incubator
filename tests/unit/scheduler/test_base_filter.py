@@ -121,3 +121,24 @@ class TestBaseFilterHandler(test.BaseTestCase):
         expected = [FakeFilter1, FakeFilter4]
         result = self.handler.get_all_classes()
         self.assertEqual(expected, result)
+
+    def _get_filtered_objects(self):
+        filter_objs_initial = [1, 2, 3, 4]
+        filter_properties = {'x': 'y'}
+        filter_classes = [FakeFilter1, FakeFilter2, FakeFilter3, FakeFilter4]
+        return self.handler.get_filtered_objects(filter_classes,
+                                                 filter_objs_initial,
+                                                 filter_properties)
+
+    def test_get_filtered_objects_return_none(self):
+        def fake_filter_all(self, list_objs, filter_properties):
+            return
+        self.stubs.Set(FakeFilter3, 'filter_all', fake_filter_all)
+
+        result = self._get_filtered_objects()
+        self.assertIsNone(result)
+
+    def test_get_filtered_objects(self):
+        filter_objs_expected = [1, 2, 3, 4]
+        result = self._get_filtered_objects()
+        self.assertEqual(filter_objs_expected, result)
