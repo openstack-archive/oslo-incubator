@@ -373,7 +373,8 @@ def drop_old_duplicate_entries_from_table(migrate_engine, table_name,
         columns_for_select, group_by=columns_for_group_by,
         having=func.count(table.c.id) > 1)
 
-    for row in migrate_engine.execute(duplicated_rows_select):
+    duplicated_rows = migrate_engine.execute(duplicated_rows_select).fetchall()
+    for row in duplicated_rows:
         # NOTE(boris-42): Do not remove row that has the biggest ID.
         delete_condition = table.c.id != row[0]
         is_none = None  # workaround for pyflakes

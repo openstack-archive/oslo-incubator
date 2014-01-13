@@ -284,6 +284,7 @@ class MySQLModeTestCase(test_base.MySQLOpportunisticTestCase):
 
         self.addCleanup(self.test_table.drop)
         self.addCleanup(self.connection.close)
+        self.addCleanup(self.engine.dispose)
 
     def _test_string_too_long(self, value):
         with self.connection.begin():
