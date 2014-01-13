@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import mock
 import warnings
 
 from migrate.changeset import UniqueConstraint
@@ -31,6 +32,7 @@ from openstack.common.py3kcompat import urlutils
 from openstack.common.db import exception
 from openstack.common.db.sqlalchemy import migration
 from openstack.common.db.sqlalchemy import session
+from openstack.common.db.sqlalchemy import test_base
 from openstack.common.db.sqlalchemy import test_migrations
 from openstack.common.db.sqlalchemy import utils
 from openstack.common.fixture import moxstubout
@@ -639,3 +641,73 @@ class TestRaiseDuplicateEntryError(test.BaseTestCase):
         rv = session._raise_if_duplicate_entry_error('oracle', error)
 
         self.assertIsNone(rv)
+
+
+class TestUtils(test_base.DbTestCase):
+    def setUp(self):
+        super(TestUtils, self).setUp()
+        self.engine = session.get_engine()
+        self.test_table = Table(
+            'test_table',
+            MetaData(bind=self.engine),
+            Column('a', Integer),
+            Column('b', Integer)
+        )
+        self.test_table.create()
+        self.addCleanup(self.test_table.drop)
+
+    def test_index_exists(self):
+        self.assertFalse(utils.index_exists(self.engine, 'test_table',
+                                            'new_index'))
+        Index('new_index', self.test_table.c.a).create(self.engine)
+        self.assertTrue(utils.index_exists(self.engine, 'test_table',
+                                           'new_index'))
+
+    def test_add_index(self):
+        self.assertFalse(utils.index_exists(self.engine, 'test_table',
+                                            'new_index'))
+        utils.add_index(self.engine, 'test_table', 'new_index', ('a',))
+        self.assertTrue(utils.index_exists(self.engine, 'test_table',
+                                           'new_index'))
+
+    def test_add_existing_index(self):
+        Index('new_index', self.test_table.c.a).create(self.engine)
+        self.assertRaises(ValueError, utils.add_index, self.engine,
+                          'test_table', 'new_index', ('a',))
+
+    def test_drop_index(self):
+        Index('new_index', self.test_table.c.a).create(self.engine)
+        utils.drop_index(self.engine, 'test_table', 'new_index', ('a',))
+        self.assertFalse(utils.index_exists(self.engine, 'test_table',
+                         'new_index'))
+
+    def test_drop_unexisting_index(self):
+        self.assertRaises(ValueError, utils.drop_index, self.engine,
+                          'test_table', 'new_index', ('a',))
+
+    @mock.patch('openstack.common.db.sqlalchemy.utils.drop_index')
+    @mock.patch('openstack.common.db.sqlalchemy.utils.add_index')
+    def test_change_index_columns(self, add_index, drop_index):
+        utils.change_index_columns(self.engine, 'test_table', 'a_index',
+                                  ('b',), ('a',))
+        utils.drop_index.assert_called_once_with(self.engine, 'test_table',
+                                                 'a_index', ('a',))
+        utils.add_index.assert_called_once_with(self.engine, 'test_table',
+                                                'a_index', ('b',))
+
+    def test_column_exists(self):
+        for col in ['a', 'b']:
+            self.assertTrue(utils.column_exists(self.engine, 'test_table',
+                                                col))
+        self.assertFalse(utils.column_exists(self.engine, 'test_table',
+                                             'fake_column'))
+
+
+class TestUtilsMysqlOpportunistically(
+        TestUtils, test_base.MySQLOpportunisticTestCase):
+    pass
+
+
+class TestUtilsPostgresqlOpportunistically(
+        TestUtils, test_base.PostgreSQLOpportunisticTestCase):
+    pass
