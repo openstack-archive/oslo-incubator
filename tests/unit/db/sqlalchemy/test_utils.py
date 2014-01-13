@@ -34,6 +34,7 @@ from openstack.common.db import exception
 from openstack.common.db.sqlalchemy import migration
 from openstack.common.db.sqlalchemy import models
 from openstack.common.db.sqlalchemy import session
+from openstack.common.db.sqlalchemy import test_base
 from openstack.common.db.sqlalchemy import test_migrations
 from openstack.common.db.sqlalchemy import utils
 from openstack.common.fixture import moxstubout
@@ -773,3 +774,82 @@ class TestModelQuery(test.BaseTestCase):
             self.session.query, MyModel, self.user_context.read_deleted)
         _project_filter.assert_called_with(
             self.session.query, MyModel, self.user_context, False)
+
+
+class TestUtils(test_base.DbTestCase):
+    connect_string = None
+
+    def setUp(self):
+
+        if not self.connect_string:
+            self.skip('DB uri was not defined')
+
+        super(TestUtils, self).setUp()
+        self.test_table = Table(
+            'test_table',
+            MetaData(bind=sqlalchemy.create_engine(self.connect_string)),
+            Column('a', Integer),
+            Column('b', Integer)
+        )
+        self.test_table.create()
+        self.addCleanup(self.test_table.drop)
+
+    def test_index_exists(self):
+        self.assertFalse(utils.index_exists(self.engine, 'test_table',
+                                            'new_index'))
+        Index('new_index', self.test_table.c.a).create(self.engine)
+        self.assertTrue(utils.index_exists(self.engine, 'test_table',
+                                           'new_index'))
+
+    def test_add_index(self):
+        self.assertFalse(utils.index_exists(self.engine, 'test_table',
+                                            'new_index'))
+        utils.add_index(self.engine, 'test_table', 'new_index', ('a',))
+        self.assertTrue(utils.index_exists(self.engine, 'test_table',
+                                           'new_index'))
+
+    def test_add_existing_index(self):
+        Index('new_index', self.test_table.c.a).create(self.engine)
+        self.assertRaises(ValueError, utils.add_index, self.engine,
+                          'test_table', 'new_index', ('a',))
+
+    def test_drop_index(self):
+        Index('new_index', self.test_table.c.a).create(self.engine)
+        utils.drop_index(self.engine, 'test_table', 'new_index', ('a',))
+        self.assertFalse(utils.index_exists(self.engine, 'test_table',
+                         'new_index'))
+
+    def test_drop_unexisting_index(self):
+        self.assertRaises(ValueError, utils.drop_index, self.engine,
+                          'test_table', 'new_index', ('a',))
+
+    @mock.patch('openstack.common.db.sqlalchemy.utils.drop_index')
+    @mock.patch('openstack.common.db.sqlalchemy.utils.add_index')
+    def test_change_index_columns(self, add_index, drop_index):
+        utils.change_index_columns(self.engine, 'test_table', 'a_index',
+                                  ('b',), ('a',))
+        utils.drop_index.assert_called_once_with(self.engine, 'test_table',
+                                                 'a_index', ('a',))
+        utils.add_index.assert_called_once_with(self.engine, 'test_table',
+                                                'a_index', ('b',))
+
+    def test_column_exists(self):
+        for col in ['a', 'b']:
+            self.assertTrue(utils.column_exists(self.engine, 'test_table',
+                                                col))
+        self.assertFalse(utils.column_exists(self.engine, 'test_table',
+                                             'fake_column'))
+
+
+class TestUtilsMysqlOpportunistically(
+        TestUtils, test_base.MySQLOpportunisticTestCase):
+    connect_string = utils.get_connect_string('mysql', 'openstack_citest',
+                                              user='openstack_citest',
+                                              passwd='openstack_citest')
+
+
+class TestUtilsPostgresqlOpportunistically(
+        TestUtils, test_base.PostgreSQLOpportunisticTestCase):
+    connect_string = utils.get_connect_string('postgresql', 'openstack_citest',
+                                              user='openstack_citest',
+                                              passwd='openstack_citest')
