@@ -338,7 +338,7 @@ class ContextAdapter(BaseLoggerAdapter):
 
         extra['project'] = self.project
         extra['version'] = self.version
-        extra['extra'] = extra.copy()
+        kwargs['extra'] = extra.copy()
         return msg, kwargs
 
 
