@@ -17,6 +17,8 @@
 
 import functools
 
+import six
+
 from openstack.common import funcutils
 from openstack.common import test
 
@@ -127,7 +129,7 @@ class FuncutilsTestCase(test.BaseTestCase):
         for _i in range(10):
             wrapped = self._wrapper(wrapped)
             func = funcutils.get_wrapped_function(wrapped)
-            func_code = func.func_code
+            func_code = six.get_function_code(func)
             self.assertEqual(4, len(func_code.co_varnames))
             self.assertTrue('self' in func_code.co_varnames)
             self.assertTrue('instance' in func_code.co_varnames)
