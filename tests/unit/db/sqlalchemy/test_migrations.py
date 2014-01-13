@@ -25,6 +25,7 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
         super(TestWalkVersions, self).setUp()
         self.migration_api = mock.MagicMock()
         self.engine = mock.MagicMock()
+        self.engines = mock.MagicMock()
         self.REPOSITORY = mock.MagicMock()
         self.INIT_VERSION = 4
 
@@ -78,15 +79,17 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
         self._walk_versions()
 
         self.migration_api.version_control.assert_called_with(
-            None, self.REPOSITORY, self.INIT_VERSION)
+            self.engine, self.REPOSITORY, self.INIT_VERSION)
         self.migration_api.db_version.assert_called_with(
-            None, self.REPOSITORY)
+            self.engine, self.REPOSITORY)
 
         versions = range(self.INIT_VERSION + 1, self.REPOSITORY.latest + 1)
-        upgraded = [mock.call(None, v, with_data=True) for v in versions]
+        upgraded = [mock.call(self.engine, v, with_data=True)
+                    for v in versions]
         self.assertEqual(self._migrate_up.call_args_list, upgraded)
 
-        downgraded = [mock.call(None, v - 1) for v in reversed(versions)]
+        downgraded = [mock.call(self.engine, v - 1)
+                      for v in reversed(versions)]
         self.assertEqual(self._migrate_down.call_args_list, downgraded)
 
     @mock.patch.object(migrate.WalkVersionsMixin, '_migrate_up')
@@ -95,7 +98,7 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
         self.REPOSITORY.latest = 20
         self.migration_api.db_version.return_value = self.INIT_VERSION
 
-        self._walk_versions(self.engine, snake_walk=True, downgrade=True)
+        self._walk_versions(snake_walk=True, downgrade=True)
 
         versions = range(self.INIT_VERSION + 1, self.REPOSITORY.latest + 1)
         upgraded = []
@@ -123,7 +126,7 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
         self.REPOSITORY.latest = 20
         self.migration_api.db_version.return_value = self.INIT_VERSION
 
-        self._walk_versions(self.engine, snake_walk=True, downgrade=False)
+        self._walk_versions(snake_walk=True, downgrade=False)
 
         versions = range(self.INIT_VERSION + 1, self.REPOSITORY.latest + 1)
 
@@ -144,7 +147,7 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
         self.REPOSITORY.latest = 20
         self.migration_api.db_version.return_value = self.INIT_VERSION
 
-        self._walk_versions(self.engine, snake_walk=False, downgrade=False)
+        self._walk_versions(snake_walk=False, downgrade=False)
 
         versions = range(self.INIT_VERSION + 1, self.REPOSITORY.latest + 1)
 
