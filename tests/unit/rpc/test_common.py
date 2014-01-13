@@ -367,6 +367,17 @@ class RpcCommonTestCase(test.BaseTestCase):
                          'dest_cell_name': 'cell!0001'}}
         rpc_common._safe_log(logger_method, 'foo', data)
 
+    def test_safe_log_sanitizes_any_password_in_list_of_dicts(self):
+        def logger_method(msg, data):
+            self.assertEqual('<SANITIZED>', data['users'][0]['_password'])
+            self.assertEqual('<SANITIZED>', data['users'][1]['_password'])
+
+        users = [{'_host': '%', '_password': 'passw0rd', '_name': 'mydb'},
+                 {'_host': '%', '_password': 'secret', '_name': 'newdb'}]
+        data = {'_context_request_id': 'req-44adf4ac-12bb-44c5-be3d-da2cc73b2e05',
+                'users': users}
+        rpc_common._safe_log(logger_method, 'foo', data)
+
     def test_version_is_compatible_same(self):
         self.assertTrue(rpc_common.version_is_compatible('1.23', '1.23'))
 
