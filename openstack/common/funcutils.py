@@ -17,18 +17,25 @@
 
 import inspect
 
+import six
+
 
 def get_wrapped_function(function):
     """Get the method at the bottom of a stack of decorators."""
 
-    if not hasattr(function, 'func_closure') or not function.func_closure:
+    if not hasattr(function, six._func_closure) or \
+       not six.get_function_closure(function):
         return function
 
     def _get_wrapped_function(function):
-        if not hasattr(function, 'func_closure') or not function.func_closure:
+        if not hasattr(function, six._func_closure):
             return None
 
-        for closure in function.func_closure:
+        func_closure = six.get_function_closure(function)
+        if not func_closure:
+            return None
+
+        for closure in func_closure:
             func = closure.cell_contents
 
             deeper_func = _get_wrapped_function(func)
