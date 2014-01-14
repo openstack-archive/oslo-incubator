@@ -1,0 +1,12 @@
+Verified+2: Jenkins
+Code-Review+2: Julien Danjou <julien@danjou.info>
+Code-Review+1: Aaron Rosen <aaronorosen@gmail.com>
+Approved+1: Flavio Percoco <fpercoco@redhat.com>
+Code-Review+2: Flavio Percoco <fpercoco@redhat.com>
+Code-Review+1: ChangBo Guo <guochbo@cn.ibm.com>
+Code-Review+1: Jay Lau <jay.lau.513@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 14 Jan 2014 14:09:28 +0000
+Reviewed-on: https://review.openstack.org/66271
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
