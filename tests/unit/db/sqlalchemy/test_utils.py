@@ -206,7 +206,7 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
     def test_drop_old_duplicate_entries_from_table(self):
         table_name = "__test_tmp_table__"
 
-        for key, engine in self.engines.items():
+        for engine in self.engines.values():
             meta = MetaData()
             meta.bind = engine
             test_table, values = self._populate_db_for_drop_duplicate_entries(
@@ -233,7 +233,7 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
     def test_drop_old_duplicate_entries_from_table_soft_delete(self):
         table_name = "__test_tmp_table__"
 
-        for key, engine in self.engines.items():
+        for engine in self.engines.values():
             meta = MetaData()
             meta.bind = engine
             table, values = self._populate_db_for_drop_duplicate_entries(
@@ -272,7 +272,7 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
 
     def test_change_deleted_column_type_does_not_drop_index(self):
         table_name = 'abc'
-        for key, engine in self.engines.items():
+        for engine in self.engines.values():
             meta = MetaData(bind=engine)
 
             indexes = {
@@ -305,7 +305,7 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
 
     def test_change_deleted_column_type_to_id_type_integer(self):
         table_name = 'abc'
-        for key, engine in self.engines.items():
+        for engine in self.engines.values():
             meta = MetaData()
             meta.bind = engine
             table = Table(table_name, meta,
@@ -319,7 +319,7 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
 
     def test_change_deleted_column_type_to_id_type_string(self):
         table_name = 'abc'
-        for key, engine in self.engines.items():
+        for engine in self.engines.values():
             meta = MetaData()
             meta.bind = engine
             table = Table(table_name, meta,
@@ -430,7 +430,7 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
             {'id': 2, 'a': 2, 'foo': 20},
             {'id': 3, 'a': 1, 'foo': 30},
         ]
-        for key, engine in self.engines.items():
+        for engine in self.engines.values():
             meta = MetaData()
             meta.bind = engine
             test_table = Table(
