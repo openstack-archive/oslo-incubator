@@ -28,6 +28,10 @@ class StrUtilsTest(test.BaseTestCase):
         self.assertTrue(strutils.bool_from_string(True))
         self.assertFalse(strutils.bool_from_string(False))
 
+    def test_bool_bool_from_string_default(self):
+        self.assertTrue(strutils.bool_from_string('', default=True))
+        self.assertFalse(strutils.bool_from_string('wibble', default=False))
+
     def _test_bool_from_string(self, c):
         self.assertTrue(strutils.bool_from_string(c('true')))
         self.assertTrue(strutils.bool_from_string(c('TRUE')))
