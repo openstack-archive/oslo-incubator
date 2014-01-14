@@ -147,3 +147,19 @@ class TestMigrationCommon(base.DbTestCase):
 
             mock_downgrade.assert_called_once_with(
                 db_session.get_engine(), self.return_value, self.test_version)
+
+    def test_migrate_repo_path(self):
+        dir_obj = type('DirObj',
+                       (object,),
+                       {'__file__': 'dir_obj/__init__.pyc'})
+        with mock.patch('os.path.isdir') as mock_isdir:
+            mock_isdir.return_value = True
+            path = os.path.abspath(os.path.join('dir_obj', 'migrate_repo'))
+            self.assertEqual(
+                migration.compute_abs_migrate_repo_path(dir_obj), path)
+
+    def test_migrate_repo_path_not_found(self):
+        dir_obj = type('DirObj',
+                       (object,),
+                       {'__file__': 'dir_obj/__init__.pyc'})
+        migration.compute_abs_migrate_repo_path(dir_obj)
