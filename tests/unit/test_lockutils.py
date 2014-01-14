@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import errno
 import fcntl
 import multiprocessing
 import os
@@ -30,6 +31,20 @@ from openstack.common.fixture import config
 from openstack.common.fixture import lockutils as fixtures
 from openstack.common import lockutils
 from openstack.common import test
+
+
+class BrokenLock(lockutils.InterProcessLock):
+    def __init__(self, name, errno_code):
+        super(BrokenLock, self).__init__(name)
+        self.errno_code = errno_code
+
+    def unlock(self):
+        pass
+
+    def trylock(self):
+        err = IOError()
+        err.errno = self.errno_code
+        raise err
 
 
 class TestFileLocks(test.BaseTestCase):
@@ -84,6 +99,19 @@ class LockTestCase(test.BaseTestCase):
                                              "got lost")
         self.assertEqual(foo.__name__, 'foo', "Wrapped function's name "
                                               "got mangled")
+
+    def test_bad_acquire(self):
+        lock_dir = tempfile.mkdtemp()
+        lock_file = os.path.join(lock_dir, 'lock')
+        lock = BrokenLock(lock_file, errno.EBUSY)
+
+        try:
+            self.assertRaises(threading.ThreadError, lock.acquire)
+        finally:
+            try:
+                shutil.rmtree(lock_dir)
+            except IOError:
+                pass
 
     def test_lock_acquire_release(self):
         lock_dir = tempfile.mkdtemp()
