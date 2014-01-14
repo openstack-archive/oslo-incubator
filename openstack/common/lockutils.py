@@ -93,7 +93,8 @@ class _InterProcessLock(object):
                     # updates - give it some time to prevent busy spinning
                     time.sleep(0.01)
                 else:
-                    raise
+                    raise threading.ThreadError("Unable to acquire lock on"
+                                                " %s: %s" % (self.fname, e))
 
     def __enter__(self):
         self.acquire()
