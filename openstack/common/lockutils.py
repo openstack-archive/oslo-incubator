@@ -76,7 +76,7 @@ class _InterProcessLock(object):
         self.lockfile = None
         self.fname = name
 
-    def __enter__(self):
+    def acquire(self):
         self.lockfile = open(self.fname, 'w')
 
         while True:
@@ -86,7 +86,7 @@ class _InterProcessLock(object):
                 # Also upon reading the MSDN docs for locking(), it seems
                 # to have a laughable 10 attempts "blocking" mechanism.
                 self.trylock()
-                return self
+                return True
             except IOError as e:
                 if e.errno in (errno.EACCES, errno.EAGAIN):
                     # external locks synchronise things like iptables
@@ -95,13 +95,22 @@ class _InterProcessLock(object):
                 else:
                     raise
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __enter__(self):
+        self.acquire()
+        return self
+
+    def release(self):
+        if self.lockfile is None:
+            return
         try:
             self.unlock()
             self.lockfile.close()
         except IOError:
             LOG.exception(_("Could not release the acquired lock `%s`"),
                           self.fname)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.release()
 
     def trylock(self):
         raise NotImplementedError()
