@@ -246,3 +246,11 @@ def _find_migrate_repo(abs_path):
     if not os.path.exists(abs_path):
         raise exception.DbMigrationError("Path %s not found" % abs_path)
     return Repository(abs_path)
+
+
+def compute_abs_migrate_repo_path(dir_obj):
+    path = os.path.abspath(os.path.join(
+        os.path.dirname(dir_obj.__file__),
+        'migrate_repo'))
+
+    return path if os.path.isdir(path) else None
