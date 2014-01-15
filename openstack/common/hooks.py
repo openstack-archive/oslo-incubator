@@ -32,13 +32,20 @@ class MyHook(object):
     def post(self, rv, *args, **kwargs):
         # do stuff after wrapped callable runs
 
+    def downgrade(self, *args, **kwargs):
+        # do stuff to downgrade actions of this hook
+
 Example Hook object with function parameters:
 
 class MyHookWithFunction(object):
     def pre(self, f, *args, **kwargs):
         # do stuff with wrapped function info
+
     def post(self, f, *args, **kwards):
         # do stuff with wrapped function info
+
+    def downgrade(self, *args, **kwargs):
+        # do stuff to downgrade actions of this hook
 
 """
 
@@ -51,8 +58,24 @@ from openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
 NS = 'openstack.common.hooks'
+RB = None
 
 _HOOKS = {}  # hook name => hook manager
+
+
+class HookMethodException(Exception):
+    """Hook method raise Exception."""
+
+    def __init__(self, *args, **kwargs):
+        super(HookMethodException, self).__init__(args, kwargs)
+        self.caught_exception = kwargs.get('exc')
+        self.failed_extension = kwargs.get('extension')
+        self.failed_method = kwargs.get('method_type')
+        self.message = _('%(exc)s was caught while running '
+                         '%(type)s-hook of %(name)s') % \
+            {'exc': self.caught_exception,
+             'type': self.failed_method,
+             'name': self.failed_extension}
 
 
 class HookManager(object):
@@ -61,17 +84,42 @@ class HookManager(object):
     Coordinate execution of multiple extensions using a common name.
     """
 
-    def __init__(self, name):
+    _ALLOWED_ROLLBACK_TYPES = ('ignore', 'full', 'local', 'raise')
+
+    def __init__(self, name, rollback=RB):
         """Invoke_on_load creates an instance of the Hook class
 
         :param name: The name of the hooks to load.
         :type name: str
+        :param rollback: This flag is responsible for rollback method.
+            Can take values only from self._ALLOWED_ROLLBACK_TYPES.
+            Raising AttributeError if the value does not match any element
+            from self._ALLOWED_ROLLBACK_TYPES.
+        :type rollback: str
         """
         self.api = stevedore.hook.HookManager(NS, name, invoke_on_load=True)
+
+        if rollback not in self._ALLOWED_ROLLBACK_TYPES:
+            msg = _('Wrong rollback type. Allowed types: %s') % \
+                self._ALLOWED_ROLLBACK_TYPES
+            raise AttributeError(msg)
+        self.rollback = rollback
 
     @property
     def extensions(self):
         return self.api.extensions
+
+    def downgrade(self, failed_extension, *args, **kwargs):
+        failed_position = self.extensions.index(failed_extension) + 1
+        extensions = self.extensions[:failed_position]
+        extensions.reverse()
+        for extension in extensions:
+            obj = extension.obj
+            downgrade_method = getattr(obj, 'downgrade', None)
+            if downgrade_method:
+                downgrade_method(*args, **kwargs)
+            else:
+                LOG.debug(_("%s doesn't have downgrade method.") % obj)
 
     def _run(self, name, method_type, args, kwargs, func):
         if method_type not in ('pre', 'post'):
@@ -95,6 +143,26 @@ class HookManager(object):
                     msg = _('%(e)s error was caught during %(type)s-hook') % {
                         'e': exc, 'type': method_type}
                     LOG.debug(msg)
+                    if self.rollback == 'full':
+                        LOG.debug(_('Try to downgrade all executed hooks.'))
+
+                        self.downgrade(extension, *args, **kwargs)
+                        raise HookMethodException(extension=extension,
+                                                  exc=exc,
+                                                  method_type=method_type)
+                    elif self.rollback == 'local':
+                        LOG.debug(_('Try to rollback failed hook.'))
+
+                        downgrade_method = getattr(obj, 'downgrade', None)
+                        if downgrade_method:
+                            downgrade_method(*args, **kwargs)
+                        else:
+                            LOG.debug(
+                                _("%s doesn't have downgrade method.") % obj)
+                    elif self.rollback == 'raise':
+                        raise exc
+                    else:
+                        pass
 
     def run_pre(self, name, args, kwargs, f=None):
         """Execute optional pre methods of loaded hooks.
