@@ -27,7 +27,9 @@ from sqlalchemy.exc import SAWarning
 from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType, NullType
 
+from openstack.common.db import exception
 from openstack.common.db.sqlalchemy import migration
+from openstack.common.db.sqlalchemy import session
 from openstack.common.db.sqlalchemy import test_migrations
 from openstack.common.db.sqlalchemy import utils
 from openstack.common.fixture import moxstubout
@@ -548,3 +550,47 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
         self.assertEqual(f_key['referred_table'], 'table0')
         self.assertEqual(f_key['referred_columns'], ['id'])
         self.assertEqual(f_key['constrained_columns'], ['bar'])
+
+
+class TestRaiseDuplicateEntryError(test.BaseTestCase):
+    def _test_impl(self, engine_name, error_msg):
+        try:
+            error = sqlalchemy.exc.IntegrityError('test', 'test', error_msg)
+            session._raise_if_duplicate_entry_error(error, engine_name)
+        except exception.DBDuplicateEntry as e:
+            self.assertEqual(e.columns, ['a', 'b'])
+        else:
+            self.fail('DBDuplicateEntry was not raised')
+
+    def test_sqlite(self):
+        self._test_impl(
+            'sqlite',
+            '(IntegrityError) column a, b are not unique'
+        )
+
+    def test_sqlite_3_7_16_or_3_8_2_and_higher(self):
+        self._test_impl(
+            'sqlite',
+            '(IntegrityError) UNIQUE constraint failed: tbl.a, tbl.b'
+        )
+
+    def test_mysql(self):
+        self._test_impl(
+            'mysql',
+            '(IntegrityError) (1062, "Duplicate entry '
+            '\'2-3\' for key \'uniq_tbl0a0b\'")'
+        )
+
+    def test_postgresql(self):
+        self._test_impl(
+            'postgresql',
+            '(IntegrityError) duplicate key value violates unique constraint'
+            '"uniq_tbl0a0b"'
+            '\nDETAIL:  Key (a, b)=(2, 3) already exists.\n'
+        )
+
+    def test_unsupported_backend_returns_none(self):
+        error = sqlalchemy.exc.IntegrityError('test', 'test', 'test')
+        rv = session._raise_if_duplicate_entry_error('oracle', error)
+
+        self.assertIsNone(rv)

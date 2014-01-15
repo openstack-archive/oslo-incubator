@@ -473,9 +473,9 @@ def get_session(autocommit=True, expire_on_commit=False, sqlite_fk=False,
 # N columns - (IntegrityError) column c1, c2, ..., N are not unique
 #
 # sqlite since 3.7.16:
-# 1 column - (IntegrityError) UNIQUE constraint failed: k1
+# 1 column - (IntegrityError) UNIQUE constraint failed: tbl.k1
 #
-# N columns - (IntegrityError) UNIQUE constraint failed: k1, k2
+# N columns - (IntegrityError) UNIQUE constraint failed: tbl.k1, tbl.k2
 #
 # postgres:
 # 1 column - (IntegrityError) duplicate key value violates unique
@@ -532,7 +532,7 @@ def _raise_if_duplicate_entry_error(integrity_error, engine_name):
     columns = match.group(1)
 
     if engine_name == "sqlite":
-        columns = columns.strip().split(", ")
+        columns = [c.split('.')[-1] for c in columns.strip().split(", ")]
     else:
         columns = get_columns_from_uniq_cons_or_name(columns)
     raise exception.DBDuplicateEntry(columns, integrity_error)
