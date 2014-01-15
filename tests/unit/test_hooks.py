@@ -50,16 +50,6 @@ class SampleHookC(SampleHookA):
         self._add_called("post" + f.__name__, kwargs)
 
 
-class SampleHookD(SampleHookA):
-    name = "d"
-
-    def pre(self, f, *args, **kwargs):
-        raise Exception('Unexpected error in pre-method...')
-
-    def post(self, f, rv, *args, **kwargs):
-        raise Exception('Unexpected error in post-method...')
-
-
 class MockEntryPoint(object):
 
     def __init__(self, cls):
@@ -75,13 +65,18 @@ class HookTestCase(utils.BaseTestCase):
 
     def setUp(self):
         super(HookTestCase, self).setUp()
-        mgr = hooks.get_hook(self.hook_name)
-        mgr.api = stevedore.HookManager.make_test_instance(
-            self.extensions, hooks.NS)
+        self.mgr = self._create_mgr(self.hook_name, self.extensions)
 
     def tearDown(self):
         super(HookTestCase, self).tearDown()
+        self.mgr = None
         hooks.reset()
+
+    def _create_mgr(self, hook_name, extensions):
+        mgr = hooks.get_hook(hook_name)
+        mgr.api = stevedore.HookManager.make_test_instance(
+            extensions, hooks.NS)
+        return mgr
 
 
 class HookTestCaseWithoutFunction(HookTestCase):
@@ -102,10 +97,9 @@ class HookTestCaseWithoutFunction(HookTestCase):
     def test_basic(self):
         self.assertEqual(42, self._hooked(1))
 
-        mgr = hooks.get_hook('test_hook_without_function')
-        self.assertEqual(2, len(mgr.extensions))
-        self.assertEqual(SampleHookA, mgr.extensions[0].plugin)
-        self.assertEqual(SampleHookB, mgr.extensions[1].plugin)
+        self.assertEqual(2, len(self.mgr.extensions))
+        self.assertEqual(SampleHookA, self.mgr.extensions[0].plugin)
+        self.assertEqual(SampleHookB, self.mgr.extensions[1].plugin)
 
     def test_order_of_execution(self):
         called_order = []
@@ -127,10 +121,8 @@ class HookTestCaseWithFunction(HookTestCase):
 
     def test_basic(self):
         self.assertEqual(42, self._hooked(1))
-        mgr = hooks.get_hook('test_hook_with_function')
-
-        self.assertEqual(1, len(mgr.extensions))
-        self.assertEqual(SampleHookC, mgr.extensions[0].plugin)
+        self.assertEqual(1, len(self.mgr.extensions))
+        self.assertEqual(SampleHookC, self.mgr.extensions[0].plugin)
 
     def test_order_of_execution(self):
         called_order = []
@@ -138,12 +130,45 @@ class HookTestCaseWithFunction(HookTestCase):
         self.assertEqual(['pre_hookedc', 'post_hookedc'], called_order)
 
 
+class FailedHook(SampleHookA):
+
+    def downgrade(self, *args, **kwargs):
+        self._add_called("downgrade", kwargs)
+
+
+class FailedHookA(FailedHook):
+    name = "failed_a"
+
+    def pre(self, f, *args, **kwargs):
+        self._add_called("pre", kwargs)
+
+    def post(self, f, rv, *args, **kwargs):
+        self._add_called("post", kwargs)
+        raise AttributeError('Unexpected error in post-method...')
+
+
+class FailedHookB(FailedHook):
+    name = "failed_b"
+
+    def pre(self, f, *args, **kwargs):
+        self._add_called("pre", kwargs)
+        raise ValueError('Unexpected error in pre-method...')
+
+    def post(self, f, rv, *args, **kwargs):
+        self._add_called("post", kwargs)
+        raise KeyError('Unexpected error in post-method...')
+
+
 class HookTestCaseWithFailedHook(HookTestCase):
     hook_name = 'failed_hook'
 
-    extensions = [stevedore.extension.Extension(
-        'failed_hook',
-        MockEntryPoint(SampleHookD), SampleHookD, SampleHookD()),
+    extensions = [
+        stevedore.extension.Extension(
+            'failed_hook',
+            MockEntryPoint(FailedHookA), FailedHookA, FailedHookA()),
+        stevedore.extension.Extension(
+            'failed_hook',
+            MockEntryPoint(FailedHookB), FailedHookB, FailedHookB()),
     ]
 
     @hooks.add_hook('failed_hook', pass_function=True)
@@ -152,7 +177,32 @@ class HookTestCaseWithFailedHook(HookTestCase):
 
     def test_basic(self):
         self.assertEqual(42, self._hooked(1))
-        mgr = hooks.get_hook('failed_hook')
+        self.assertEqual(2, len(self.mgr.extensions))
+        self.assertEqual(FailedHookA, self.mgr.extensions[0].plugin)
+        self.assertEqual(FailedHookB, self.mgr.extensions[1].plugin)
 
-        self.assertEqual(1, len(mgr.extensions))
-        self.assertEqual(SampleHookD, mgr.extensions[0].plugin)
+    def test_raising(self):
+        mgr = hooks.get_hook(self.hook_name)
+        mgr.rollback = 'raise'
+        called_order = []
+        self.assertRaises(ValueError, self._hooked, 1, called=called_order)
+        self.assertEqual(['prefailed_a', 'prefailed_b'], called_order)
+
+    def test_local(self):
+        mgr = hooks.get_hook(self.hook_name)
+        mgr.rollback = 'local'
+        called_order = []
+        self._hooked(1, called=called_order)
+        self.assertEqual(['prefailed_a', 'prefailed_b', 'downgradefailed_b',
+                          'postfailed_a', 'downgradefailed_a',
+                          'postfailed_b', 'downgradefailed_b'], called_order)
+
+    def test_full(self):
+        mgr = hooks.get_hook(self.hook_name)
+        mgr.rollback = 'full'
+
+        called_order = []
+        self.assertRaises(hooks.HookMethodException, self._hooked,
+                          1, called=called_order)
+        self.assertEqual(['prefailed_a', 'prefailed_b', 'downgradefailed_b',
+                          'downgradefailed_a'], called_order)
