@@ -1,0 +1,11 @@
+Verified+2: Jenkins
+Code-Review+2: Julien Danjou <julien@danjou.info>
+Approved+1: Doug Hellmann <doug.hellmann@dreamhost.com>
+Code-Review+2: Doug Hellmann <doug.hellmann@dreamhost.com>
+Code-Review+1: Michael H Wilson <geekinutah@gmail.com>
+Code-Review+1: Paul Mathews <pmathews@bluehost.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 15 Jan 2014 18:24:15 +0000
+Reviewed-on: https://review.openstack.org/66637
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
