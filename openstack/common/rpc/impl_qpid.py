@@ -450,6 +450,9 @@ class Connection(object):
         self.proxy_callbacks = []
         self.conf = conf
 
+        # for initial connect, start from the very first broker
+        self.next_broker_index = 0
+
         if server_params and 'hostname' in server_params:
             # NOTE(russellb) This enables support for cast_to_server.
             server_params['qpid_hosts'] = [
@@ -494,8 +497,14 @@ class Connection(object):
 
     def reconnect(self):
         """Handles reconnecting and re-establishing sessions and queues."""
-        attempt = 0
         delay = 1
+        brokers_count = len(self.brokers)
+
+        next_indices = itertools.cycle(
+            (x % brokers_count
+                for x in range(self.next_broker_index,
+                               self.next_broker_index + brokers_count)))
+
         while True:
             # Close the session if necessary
             if self.connection.opened():
@@ -504,13 +513,14 @@ class Connection(object):
                 except qpid_exceptions.ConnectionError:
                     pass
 
-            broker = self.brokers[attempt % len(self.brokers)]
-            attempt += 1
+            broker = self.brokers[next(next_indices)]
 
             try:
                 self.connection_create(broker)
                 self.connection.open()
             except qpid_exceptions.ConnectionError as e:
+                self.next_broker_index = next(next_indices)
+
                 msg_dict = dict(e=e, delay=delay)
                 msg = _("Unable to connect to AMQP server: %(e)s. "
                         "Sleeping %(delay)s seconds") % msg_dict
