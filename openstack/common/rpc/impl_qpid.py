@@ -450,6 +450,9 @@ class Connection(object):
         self.proxy_callbacks = []
         self.conf = conf
 
+        # for initial connect, start from the very first broker
+        self.next_broker_index = 0
+
         if server_params and 'hostname' in server_params:
             # NOTE(russellb) This enables support for cast_to_server.
             server_params['qpid_hosts'] = [
@@ -494,8 +497,8 @@ class Connection(object):
 
     def reconnect(self):
         """Handles reconnecting and re-establishing sessions and queues."""
-        attempt = 0
         delay = 1
+        nbrokers = len(self.brokers)
         while True:
             # Close the session if necessary
             if self.connection.opened():
@@ -504,8 +507,11 @@ class Connection(object):
                 except qpid_exceptions.ConnectionError:
                     pass
 
-            broker = self.brokers[attempt % len(self.brokers)]
-            attempt += 1
+            broker = self.brokers[self.next_broker_index]
+
+            # wrap up
+            self.next_broker_index += 1
+            self.next_broker_index %= nbrokers
 
             try:
                 self.connection_create(broker)
