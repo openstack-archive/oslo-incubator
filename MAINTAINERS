@@ -60,6 +60,13 @@ M: Gordon Chung <chungg@ca.ibm.com>
 S: Maintained
 F: middleware/audit.py
 
+== cache ==
+
+M: Flavio Percoco <flavio@redhat.com>
+M: Morgan Fainberg <m@metacloud.com>
+S: Maintained
+F: cache/
+
 == cfg ==
 
 M: Mark McLoughlin <markmc@redhat.com>
