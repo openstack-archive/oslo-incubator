@@ -147,3 +147,24 @@ class TestMigrationCommon(base.DbTestCase):
 
             mock_downgrade.assert_called_once_with(
                 db_session.get_engine(), self.return_value, self.test_version)
+
+    def test_db_sync_sanity_called(self):
+        with contextlib.nested(
+            mock.patch.object(migration, '_find_migrate_repo'),
+            mock.patch.object(migration, '_db_schema_sanity_check'),
+            mock.patch.object(versioning_api, 'downgrade')
+        ) as (mock_find_repo, mock_sanity, mock_downgrade):
+
+            mock_find_repo.return_value = self.return_value
+            migration.db_sync(self.path, self.test_version)
+
+            mock_sanity.assert_called_once()
+
+    def test_db_sanity_table_not_utf8(self):
+        with mock.patch.object(migration, 'get_engine') as mock_get_eng:
+            mock_eng = mock_get_eng.return_value
+            type(mock_eng).name = mock.PropertyMock(return_value='mysql')
+            mock_eng.execute.return_value = [['table_A', 'latin1'],
+                                             ['table_B', 'latin1']]
+
+            self.assertRaises(ValueError, migration._db_schema_sanity_check)
