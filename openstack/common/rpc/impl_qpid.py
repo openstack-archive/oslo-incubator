@@ -449,6 +449,7 @@ class Connection(object):
         self.consumer_thread = None
         self.proxy_callbacks = []
         self.conf = conf
+        self.current_broker = None
 
         if server_params and 'hostname' in server_params:
             # NOTE(russellb) This enables support for cast_to_server.
@@ -494,7 +495,13 @@ class Connection(object):
 
     def reconnect(self):
         """Handles reconnecting and re-establishing sessions and queues."""
-        attempt = 0
+        if self.current_broker:
+            # When reconnecting, skip to the next broker in the list.
+            attempt = self.brokers.index(self.current_broker) + 1
+        else:
+            # On initial connect, start from the first broker in the list.
+            attempt = 0
+
         delay = 1
         while True:
             # Close the session if necessary
@@ -519,6 +526,7 @@ class Connection(object):
                 delay = min(2 * delay, 60)
             else:
                 LOG.info(_('Connected to AMQP server on %s'), broker)
+                self.current_broker = broker
                 break
 
         self.session = self.connection.session()
