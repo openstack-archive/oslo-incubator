@@ -774,6 +774,51 @@ class RpcQpidTestCase(tests.utils.BaseTestCase):
         connection.reconnect()
         connection.close()
 
+    def test_reconnect_failover(self):
+        brokers = ('host1', 'host2', 'host3')
+        self.config(qpid_hosts=brokers)
+
+        self.mock_connection = self.mox.CreateMock(self.orig_connection)
+        self.mock_session = self.mox.CreateMock(self.orig_session)
+
+        # There are 7 (seven) attempts to (re)connect below
+        for i in range(7):
+            self.mock_connection.opened().AndReturn(False)
+            self.mock_connection.open()
+            self.mock_connection.session().AndReturn(self.mock_session)
+        self.mock_connection.close()
+
+        self.mox.ReplayAll()
+
+        connection = impl_qpid.create_connection(self.FLAGS)
+        self.assertEqual(connection.current_broker, brokers[0])
+
+        # no failover, so retrying for the first (current) broker
+        connection.reconnect()
+        self.assertEqual(connection.current_broker, brokers[0])
+
+        # failover is requested, so switch to the broker after the
+        # current one
+        connection.reconnect(failover=True)
+        self.assertEqual(connection.current_broker, brokers[1])
+
+        # reconnect attempt with no failover always starts from the
+        # first broker in the list
+        connection.reconnect()
+        self.assertEqual(connection.current_broker, brokers[0])
+
+        # now request two failovers, and check that we've switched to
+        # the last broker in the list
+        connection.reconnect(failover=True)
+        connection.reconnect(failover=True)
+        self.assertEqual(connection.current_broker, brokers[2])
+
+        # yet another failover should wrap up the list, selecting the
+        # first broker again
+        connection.reconnect(failover=True)
+        self.assertEqual(connection.current_broker, brokers[0])
+
+        connection.close()
 
 #
 #from nova.tests.rpc import common

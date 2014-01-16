@@ -486,15 +486,26 @@ class Connection(object):
         self.connection.transport = self.conf.qpid_protocol
         self.connection.tcp_nodelay = self.conf.qpid_tcp_nodelay
 
+        # remember current broker for later failover
+        self.current_broker = broker
+
     def _register_consumer(self, consumer):
         self.consumers[str(consumer.get_receiver())] = consumer
 
     def _lookup_consumer(self, receiver):
         return self.consumers[str(receiver)]
 
-    def reconnect(self):
+    def reconnect(self, failover=False):
         """Handles reconnecting and re-establishing sessions and queues."""
-        attempt = 0
+        if failover:
+            # When failing over after previous unsuccessful connection attempt,
+            # skip to the broker which is placed after the failed one in the
+            # list of broker candidates.
+            attempt = self.brokers.index(self.current_broker) + 1
+        else:
+            # Otherwise, start from the very first broker in the list.
+            attempt = 0
+
         delay = 1
         while True:
             # Close the session if necessary
@@ -541,7 +552,7 @@ class Connection(object):
                     qpid_exceptions.ConnectionError) as e:
                 if error_callback:
                     error_callback(e)
-                self.reconnect()
+                self.reconnect(failover=True)
 
     def close(self):
         """Close/release this connection."""
