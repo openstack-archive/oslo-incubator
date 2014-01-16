@@ -365,6 +365,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
                       'password': self.FLAGS.rabbit_password,
                       'port': self.FLAGS.rabbit_port,
                       'virtual_host': self.FLAGS.rabbit_virtual_host,
+                      'login_method': self.FLAGS.rabbit_login_method,
                       'transport': 'memory'}])
 
             def topic_send(_context, topic, msg):
@@ -385,7 +386,8 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
                          'password': 'fake_password',
                          'hostname': 'fake_hostname',
                          'port': 31337,
-                         'virtual_host': 'fake_virtual_host'}
+                         'virtual_host': 'fake_virtual_host',
+                         'login_method': 'fake_login_method'}
 
         class MyConnection(impl_kombu.Connection):
             def __init__(myself, *args, **kwargs):
@@ -397,6 +399,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
                       'password': server_params['password'],
                       'port': server_params['port'],
                       'virtual_host': server_params['virtual_host'],
+                      'login_method': server_params['login_method'],
                       'transport': 'memory'}])
 
             def topic_send(_context, topic, msg):
@@ -769,24 +772,28 @@ class RpcKombuHATestCase(test_base.BaseTestCase):
                 'password': self.FLAGS.rabbit_password,
                 'port': 1234,
                 'virtual_host': self.FLAGS.rabbit_virtual_host,
+                'login_method': self.FLAGS.rabbit_login_method,
                 'transport': 'memory'},
                {'hostname': 'host2',
                 'userid': self.FLAGS.rabbit_userid,
                 'password': self.FLAGS.rabbit_password,
                 'port': 5678,
                 'virtual_host': self.FLAGS.rabbit_virtual_host,
+                'login_method': self.FLAGS.rabbit_login_method,
                 'transport': 'memory'},
                {'hostname': '::1',
                 'userid': self.FLAGS.rabbit_userid,
                 'password': self.FLAGS.rabbit_password,
                 'port': 2345,
                 'virtual_host': self.FLAGS.rabbit_virtual_host,
+                'login_method': self.FLAGS.rabbit_login_method,
                 'transport': 'memory'},
                {'hostname': '2001:0db8:85a3:0042:0000:8a2e:0370:7334',
                 'userid': self.FLAGS.rabbit_userid,
                 'password': self.FLAGS.rabbit_password,
                 'port': 5672,
                 'virtual_host': self.FLAGS.rabbit_virtual_host,
+                'login_method': self.FLAGS.rabbit_login_method,
                 'transport': 'memory'},
             ]
         }

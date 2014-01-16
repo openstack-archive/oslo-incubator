@@ -64,6 +64,9 @@ kombu_opts = [
     cfg.BoolOpt('rabbit_use_ssl',
                 default=False,
                 help='connect over SSL for RabbitMQ'),
+    cfg.StrOpt('rabbit_login_method',
+               default='AMQPLAIN',
+               help='Login method to use'),
     cfg.StrOpt('rabbit_userid',
                default='guest',
                help='the RabbitMQ userid'),
@@ -443,6 +446,7 @@ class Connection(object):
                 'userid': self.conf.rabbit_userid,
                 'password': self.conf.rabbit_password,
                 'virtual_host': self.conf.rabbit_virtual_host,
+                'login_method': self.conf.rabbit_login_method,
             }
 
             for sp_key, value in six.iteritems(server_params):
