@@ -76,6 +76,12 @@ class _InterProcessLock(object):
         self.fname = name
 
     def __enter__(self):
+        basedir = os.path.dirname(self.fname)
+
+        if not os.path.exists(basedir):
+            fileutils.ensure_tree(basedir)
+            LOG.info(_('Created lock path: %s'), basedir)
+
         self.lockfile = open(self.fname, 'w')
 
         while True:
@@ -143,15 +149,6 @@ def external_lock(name, lock_file_prefix=None):
         LOG.debug(_('Attempting to grab external lock "%(lock)s"'),
                   {'lock': name})
 
-        # We need a copy of lock_path because it is non-local
-        local_lock_path = CONF.lock_path
-        if not local_lock_path:
-            raise cfg.RequiredOptError('lock_path')
-
-        if not os.path.exists(local_lock_path):
-            fileutils.ensure_tree(local_lock_path)
-            LOG.info(_('Created lock path: %s'), local_lock_path)
-
         # NOTE(mikal): the lock name cannot contain directory
         # separators
         name = name.replace(os.sep, '_')
@@ -159,7 +156,10 @@ def external_lock(name, lock_file_prefix=None):
             sep = '' if lock_file_prefix.endswith('-') else '-'
             name = '%s%s%s' % (lock_file_prefix, sep, name)
 
-        lock_file_path = os.path.join(local_lock_path, name)
+        if not CONF.lock_path:
+            raise cfg.RequiredOptError('lock_path')
+
+        lock_file_path = os.path.join(CONF.lock_path, name)
 
         return InterProcessLock(lock_file_path)
 
