@@ -836,3 +836,20 @@ class RpcKombuHATestCase(test_base.BaseTestCase):
         with contextlib.closing(
                 self.rpc.create_connection(self.FLAGS)) as conn:
             conn.declare_topic_consumer('a_topic', lambda *args: None)
+
+    def test_reconnect_order(self):
+        brokers = ['host1', 'host2', 'host3', 'host4', 'host5']
+        self.config(rabbit_hosts=brokers)
+
+        # starting from the first broker in the list
+        connection = self.rpc.create_connection(self.FLAGS)
+        self.assertEqual(connection.next_broker_index, 1)
+
+        # reconnect will advance to the next broker, one broker per attempt,
+        # and finally wrap back to the start of the list once its end is
+        # reached
+        for i in range(2, 5) + [0]:
+            connection.reconnect()
+            self.assertEqual(connection.next_broker_index, i)
+
+        connection.close()
