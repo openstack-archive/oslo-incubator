@@ -803,7 +803,8 @@ class RpcKombuHATestCase(test_base.BaseTestCase):
 
             def connect(myself):
                 if info['attempt'] < 5:
-                    # the word timeout is important (see impl_kombu.py:486)
+                    # the word timeout is important;
+                    # see impl_kombu.py:reconnect()
                     raise Exception('connection timeout')
                 super(kombu.connection.BrokerConnection, myself).connect()
 
@@ -838,3 +839,35 @@ class RpcKombuHATestCase(test_base.BaseTestCase):
         with contextlib.closing(
                 self.rpc.create_connection(self.FLAGS)) as conn:
             conn.declare_topic_consumer('a_topic', lambda *args: None)
+
+    def test_reconnect_order(self):
+        brokers = ['host1', 'host2', 'host3', 'host4', 'host5']
+        brokers_count = len(brokers)
+
+        info = {'attempt': 0}
+
+        class MyConnection(kombu.connection.BrokerConnection):
+            def __init__(myself, *args, **params):
+                super(MyConnection, myself).__init__(*args, **params)
+                self.assertEqual(params['hostname'],
+                                 brokers[info['attempt'] % brokers_count])
+                try:
+                    if info['attempt']:
+                        raise Exception('connection timeout')
+                finally:
+                    info['attempt'] += 1
+
+        self.stubs.Set(kombu.connection, 'BrokerConnection', MyConnection)
+
+        self.config(rabbit_hosts=brokers, rabbit_max_retries=1)
+
+        # starting from the first broker in the list
+        connection = self.rpc.create_connection(self.FLAGS)
+
+        # reconnect will advance to the next broker, one broker per attempt,
+        # and finally wrap back to the start of the list once its end is
+        # reached
+        for i in range(1, brokers_count) + [0]:
+            self.assertRaises(rpc_common.RPCException, connection.reconnect)
+
+        connection.close()
