@@ -220,6 +220,52 @@ class MessageTestCase(test.BaseTestCase):
         self.assertEqual(result, expected)
         self.assertEqual(result.translate(), expected)
 
+    def test_multiple_mod_with_named_parameter(self):
+        msgid = ("%(description)s\nCommand: %(cmd)s\n"
+                 "Exit code: %(exit_code)s\nStdout: %(stdout)r\n"
+                 "Stderr: %(stderr)r %%(something)s")
+        params = {'description': 'test1',
+                  'cmd': 'test2',
+                  'exit_code': 'test3',
+                  'stdout': 'test4',
+                  'stderr': 'test5',
+                  'something': 'trimmed'}
+
+        # Run string interpolation the first time to make a new Message
+        first = self.message(msgid) % params
+
+        # Run string interpolation on the new Message, to replicate
+        # one of the error paths with some Exception classes we've
+        # implemented in OpenStack. We should receive a second Message
+        # object, but the translation results should be the same.
+        #
+        # The production code that triggers this problem does something
+        # like:
+        #
+        #    msg = _('there was a problem %(name)s') % {'name': 'some value'}
+        #    LOG.error(msg)
+        #    raise BadExceptionClass(msg)
+        #
+        # where BadExceptionClass does something like:
+        #
+        #    class BadExceptionClass(Exception):
+        #      def __init__(self, msg, **kwds):
+        #         super(BadExceptionClass, self).__init__(msg % kwds)
+        #
+        expected = first % {}
+
+        # Base message id should be the same
+        self.assertEqual(first.msgid, expected.msgid)
+
+        # Preserved arguments should be the same
+        self.assertEqual(first.params, expected.params)
+
+        # Should have different objects
+        self.assertFalse(expected is first)
+
+        # Final translations should be the same
+        self.assertEqual(expected.translate(), first.translate())
+
     def test_mod_with_named_parameters_no_space(self):
         msgid = ("Request: %(method)s http://%(server)s:"
                  "%(port)s%(url)s with headers %(headers)s")
