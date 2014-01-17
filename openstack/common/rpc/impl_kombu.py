@@ -426,6 +426,9 @@ class Connection(object):
         self.interval_max = 30
         self.memory_transport = False
 
+        # for initial connect, start from the very first broker
+        self.current_broker = -1
+
         if server_params is None:
             server_params = {}
         # Keys to translate from server_params to kombu params
@@ -525,10 +528,15 @@ class Connection(object):
         seconds, backing off self.interval_stepping number of seconds
         each attempt.
         """
-
         attempt = 0
         while True:
-            params = self.params_list[attempt % len(self.params_list)]
+            # advance to the next broker in the list, or wrap back to the first
+            # broker, if the end of the list is reached
+            self.current_broker += 1
+            if self.current_broker >= len(self.params_list):
+                self.current_broker = 0
+
+            params = self.params_list[self.current_broker]
             attempt += 1
             try:
                 self._connect(params)
