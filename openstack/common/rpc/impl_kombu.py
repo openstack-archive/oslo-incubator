@@ -425,6 +425,7 @@ class Connection(object):
         # max retry-interval = 30 seconds
         self.interval_max = 30
         self.memory_transport = False
+        self.current_params = None
 
         if server_params is None:
             server_params = {}
@@ -525,13 +526,19 @@ class Connection(object):
         seconds, backing off self.interval_stepping number of seconds
         each attempt.
         """
+        if self.current_params:
+            # When reconnecting, skip to the next broker in the list.
+            attempt = self.params_list.index(self.current_params) + 1
+        else:
+            # On initial connect, start from the first broker in the list.
+            attempt = 0
 
-        attempt = 0
         while True:
-            params = self.params_list[attempt % len(self.params_list)]
+            idx = attempt % len(self.params_list)
+            self.current_params = self.params_list[idx]
             attempt += 1
             try:
-                self._connect(params)
+                self._connect(self.current_params)
                 return
             except (IOError, self.connection_errors) as e:
                 pass
@@ -548,7 +555,7 @@ class Connection(object):
             log_info = {}
             log_info['err_str'] = str(e)
             log_info['max_retries'] = self.max_retries
-            log_info.update(params)
+            log_info.update(self.current_params)
 
             if self.max_retries and attempt == self.max_retries:
                 msg = _('Unable to connect to AMQP server on '
