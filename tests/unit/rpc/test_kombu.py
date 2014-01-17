@@ -836,3 +836,37 @@ class RpcKombuHATestCase(test_base.BaseTestCase):
         with contextlib.closing(
                 self.rpc.create_connection(self.FLAGS)) as conn:
             conn.declare_topic_consumer('a_topic', lambda *args: None)
+
+    def test_reconnect_failover(self):
+        brokers = ['host1', 'host2', 'host3']
+        self.config(rabbit_hosts=brokers)
+
+        connection = self.rpc.create_connection(self.FLAGS)
+        self.assertEqual(connection.current_params['hostname'], brokers[0])
+
+        # no failover, so retrying for the first (current) broker
+        connection.reconnect()
+        self.assertEqual(connection.current_params['hostname'], brokers[0])
+
+        # failover is requested, so switch to the broker after the
+        # current one
+        connection.reconnect(failover=True)
+        self.assertEqual(connection.current_params['hostname'], brokers[1])
+
+        # reconnect attempt with no failover always starts from the
+        # first broker in the list
+        connection.reconnect()
+        self.assertEqual(connection.current_params['hostname'], brokers[0])
+
+        # now request two failovers, and check that we've switched to
+        # the last broker in the list
+        connection.reconnect(failover=True)
+        connection.reconnect(failover=True)
+        self.assertEqual(connection.current_params['hostname'], brokers[2])
+
+        # yet another failover should wrap up the list, selecting the
+        # first broker again
+        connection.reconnect(failover=True)
+        self.assertEqual(connection.current_params['hostname'], brokers[0])
+
+        connection.close()

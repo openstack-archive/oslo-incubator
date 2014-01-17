@@ -501,8 +501,11 @@ class Connection(object):
             # Setting this in case the next statement fails, though
             # it shouldn't be doing any network operations, yet.
             self.connection = None
+            self.current_params = {}
         self.connection = kombu.connection.BrokerConnection(**params)
         self.connection_errors = self.connection.connection_errors
+        # remember current broker params for later failover
+        self.current_params = params
         if self.memory_transport:
             # Kludge to speed up tests.
             self.connection.transport.polling_interval = 0.0
@@ -517,7 +520,7 @@ class Connection(object):
         LOG.info(_('Connected to AMQP server on %(hostname)s:%(port)d') %
                  params)
 
-    def reconnect(self):
+    def reconnect(self, failover=False):
         """Handles reconnecting and re-establishing queues.
         Will retry up to self.max_retries number of times.
         self.max_retries = 0 means to retry forever.
@@ -526,7 +529,15 @@ class Connection(object):
         each attempt.
         """
 
-        attempt = 0
+        if failover:
+            # When failing over after previous unsuccessful connection attempt,
+            # skip to the broker which is placed after the failed one in the
+            # list of broker candidates.
+            attempt = self.params_list.index(self.current_params) + 1
+        else:
+            # Otherwise, start from the very first broker in the list.
+            attempt = 0
+
         while True:
             params = self.params_list[attempt % len(self.params_list)]
             attempt += 1
@@ -588,7 +599,7 @@ class Connection(object):
                     raise
                 if error_callback:
                     error_callback(e)
-            self.reconnect()
+            self.reconnect(failover=True)
 
     def get_channel(self):
         """Convenience call for bin/clear_rabbit_queues."""
