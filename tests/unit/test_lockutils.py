@@ -12,7 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import errno
 import fcntl
 import multiprocessing
 import os
@@ -31,20 +30,6 @@ from openstack.common.fixture import config
 from openstack.common.fixture import lockutils as fixtures
 from openstack.common import lockutils
 from openstack.common import test
-
-
-class BrokenLock(lockutils.InterProcessLock):
-    def __init__(self, name, errno_code):
-        super(BrokenLock, self).__init__(name)
-        self.errno_code = errno_code
-
-    def unlock(self):
-        pass
-
-    def trylock(self):
-        err = IOError()
-        err.errno = self.errno_code
-        raise err
 
 
 class TestFileLocks(test.BaseTestCase):
@@ -100,33 +85,17 @@ class LockTestCase(test.BaseTestCase):
         self.assertEqual(foo.__name__, 'foo', "Wrapped function's name "
                                               "got mangled")
 
-    def test_bad_acquire(self):
-        lock_dir = tempfile.mkdtemp()
-        lock_file = os.path.join(lock_dir, 'lock')
-        lock = BrokenLock(lock_file, errno.EBUSY)
-
-        try:
-            self.assertRaises(threading.ThreadError, lock.acquire)
-        finally:
-            try:
-                shutil.rmtree(lock_dir)
-            except IOError:
-                pass
-
     def test_lock_acquire_release(self):
-        lock_dir = tempfile.mkdtemp()
-        lock_file = os.path.join(lock_dir, 'lock')
-        lock = lockutils.InterProcessLock(lock_file)
+        lock_name = 'a unique lock 123'
+        lock = lockutils.InterProcessLock(lock_name)
 
         def try_lock():
-            lock.release()  # child co-owns it before fork
             try:
-                my_lock = lockutils.InterProcessLock(lock_file)
-                my_lock.lockfile = open(lock_file, 'w')
-                my_lock.trylock()
-                my_lock.unlock()
+                my_lock = lockutils.InterProcessLock(lock_name)
+                my_lock.acquire(0)
+                my_lock.release()
                 os._exit(1)
-            except IOError:
+            except Exception:
                 os._exit(0)
 
         def attempt_acquire(count):
@@ -148,14 +117,8 @@ class LockTestCase(test.BaseTestCase):
         finally:
             lock.release()
 
-        try:
-            acquired_children = attempt_acquire(5)
-            self.assertNotEqual(0, acquired_children)
-        finally:
-            try:
-                shutil.rmtree(lock_dir)
-            except IOError:
-                pass
+        acquired_children = attempt_acquire(5)
+        self.assertNotEqual(0, acquired_children)
 
     def test_lock_internally(self):
         """We can lock across multiple green threads."""
@@ -288,8 +251,7 @@ class LockTestCase(test.BaseTestCase):
 
         @foo(lock_name, external=True)
         def bar(dirpath, pfix, name):
-            filepath = os.path.join(dirpath, '%s%s' % (pfix, name))
-            return os.path.isfile(filepath)
+            return True
 
         lock_dir = tempfile.mkdtemp()
         self.config(lock_path=lock_dir)
@@ -302,8 +264,8 @@ class LockTestCase(test.BaseTestCase):
 
         @lockutils.synchronized('lock', external=True)
         def test_without_prefix():
-            path = os.path.join(lock_dir, "lock")
-            self.assertTrue(os.path.exists(path))
+            # We can't check much
+            pass
 
         try:
             test_without_prefix()
@@ -317,8 +279,8 @@ class LockTestCase(test.BaseTestCase):
 
         @lockutils.synchronized('lock', 'hypen', True)
         def test_without_hypen():
-            path = os.path.join(lock_dir, "hypen-lock")
-            self.assertTrue(os.path.exists(path))
+            # We can't check much
+            pass
 
         try:
             test_without_hypen()
@@ -338,9 +300,8 @@ class LockTestCase(test.BaseTestCase):
 
                 # NOTE(flaper87): Lock is external so an InterProcessLock
                 # will be yielded.
-                with lockutils.lock("test2", external=True):
-                    path = os.path.join(lock_dir, "test2")
-                    self.assertTrue(os.path.exists(path))
+                with lockutils.lock("test2", external=True) as lock:
+                    self.assertTrue(lock.exists())
 
                 with lockutils.lock("test1",
                                     external=True) as lock1:
@@ -360,14 +321,12 @@ class LockTestCase(test.BaseTestCase):
             with lockutils.lock("test") as sem:
                 self.assertTrue(isinstance(sem, threading._Semaphore))
 
-                with lockutils.lock("test2", external=True):
-                    path = os.path.join(lock_dir, "test2")
-                    self.assertTrue(os.path.exists(path))
+                with lockutils.lock("test2", external=True) as lock:
+                    self.assertTrue(lock.exists())
 
                 # NOTE(flaper87): Lock should be free
-                with lockutils.lock("test2", external=True):
-                    path = os.path.join(lock_dir, "test2")
-                    self.assertTrue(os.path.exists(path))
+                with lockutils.lock("test2", external=True) as lock:
+                    self.assertTrue(lock.exists())
 
             # NOTE(flaper87): Lock should be free
             # but semaphore should already exist.
@@ -385,6 +344,11 @@ class LockTestCase(test.BaseTestCase):
             pass
 
         self.assertRaises(cfg.RequiredOptError, foo)
+
+    def test_no_slash_in_b64(self):
+        # base64(sha1(foobar)) has a slash in it
+        with lockutils.lock("foobar"):
+            pass
 
 
 class LockutilsModuleTestCase(test.BaseTestCase):
@@ -409,25 +373,6 @@ class LockutilsModuleTestCase(test.BaseTestCase):
             if not os.path.exists(os.path.join(lock_dir, 'test-lock')):
                 os._exit(3)
 
-    def test_lock_path_from_env(self):
-        lock_dir = tempfile.mkdtemp()
-        os.environ['OSLO_LOCK_PATH'] = lock_dir
-        try:
-            p = multiprocessing.Process(target=self._lock_path_conf_test,
-                                        args=(lock_dir,))
-            p.start()
-            p.join()
-            if p.exitcode == 2:
-                self.fail("lock_path directory %s does not exist" % lock_dir)
-            elif p.exitcode == 3:
-                self.fail("lock file hasn't been created in expected location")
-            else:
-                self.assertEqual(p.exitcode, 0,
-                                 "Subprocess failed with code %s" % p.exitcode)
-        finally:
-            if os.path.exists(lock_dir):
-                shutil.rmtree(lock_dir, ignore_errors=True)
-
     def test_main(self):
         script = '\n'.join([
             'import os',
@@ -448,9 +393,7 @@ class TestLockFixture(test.BaseTestCase):
         self.tempdir = tempfile.mkdtemp()
 
     def _check_in_lock(self):
-        # Check that the lock file exists during teardown
-        lock_path = os.path.join(self.tempdir, 'test-lock')
-        self.assertTrue(os.path.exists(lock_path))
+        self.assertTrue(self.lock.exists())
 
     def tearDown(self):
         self._check_in_lock()
@@ -459,4 +402,6 @@ class TestLockFixture(test.BaseTestCase):
     def test_lock_fixture(self):
         # Setup lock fixture to test that teardown is inside the lock
         self.config(lock_path=self.tempdir)
-        self.useFixture(fixtures.LockFixture('test-lock'))
+        fixture = fixtures.LockFixture('test-lock')
+        self.useFixture(fixture)
+        self.lock = fixture.lock
