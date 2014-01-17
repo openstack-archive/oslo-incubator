@@ -425,6 +425,7 @@ class Connection(object):
         # max retry-interval = 30 seconds
         self.interval_max = 30
         self.memory_transport = False
+        self.current_params = None
 
         if server_params is None:
             server_params = {}
@@ -501,6 +502,7 @@ class Connection(object):
             # Setting this in case the next statement fails, though
             # it shouldn't be doing any network operations, yet.
             self.connection = None
+            self.current_params = None
         self.connection = kombu.connection.BrokerConnection(**params)
         self.connection_errors = self.connection.connection_errors
         if self.memory_transport:
@@ -525,13 +527,19 @@ class Connection(object):
         seconds, backing off self.interval_stepping number of seconds
         each attempt.
         """
+        if self.current_params:
+            # When reconnecting, skip to the next broker in the list.
+            attempt = self.params_list.index(self.current_params) + 1
+        else:
+            # On initial connect, start from the first broker in the list.
+            attempt = 0
 
-        attempt = 0
         while True:
             params = self.params_list[attempt % len(self.params_list)]
             attempt += 1
             try:
                 self._connect(params)
+                self.current_params = params
                 return
             except (IOError, self.connection_errors) as e:
                 pass
