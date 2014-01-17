@@ -52,7 +52,7 @@ def set_defaults(lock_path):
     cfg.set_defaults(util_opts, lock_path=lock_path)
 
 
-class _InterProcessLock(object):
+class _WindowsLock(object):
     """Lock implementation which allows multiple locks, working around
     issues like bugs.debian.org/cgi-bin/bugreport.cgi?bug=632857 and does
     not require any cleanup. Since the lock is always held on a file
@@ -89,7 +89,7 @@ class _InterProcessLock(object):
                 # patched to deal with blocking locking calls.
                 # Also upon reading the MSDN docs for locking(), it seems
                 # to have a laughable 10 attempts "blocking" mechanism.
-                self.trylock()
+                msvcrt.locking(self.lockfile.fileno(), msvcrt.LK_NBLCK, 1)
                 LOG.debug('Got file lock "%s"', self.fname)
                 return True
             except IOError as e:
@@ -112,7 +112,7 @@ class _InterProcessLock(object):
 
     def release(self):
         try:
-            self.unlock()
+            msvcrt.locking(self.lockfile.fileno(), msvcrt.LK_UNLCK, 1)
             self.lockfile.close()
             LOG.debug('Released file lock "%s"', self.fname)
         except IOError:
@@ -122,34 +122,55 @@ class _InterProcessLock(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.release()
 
-    def trylock(self):
-        raise NotImplementedError()
-
-    def unlock(self):
-        raise NotImplementedError()
+    def exists(self):
+        return os.path.exists(self.fname)
 
 
-class _WindowsLock(_InterProcessLock):
-    def trylock(self):
-        msvcrt.locking(self.lockfile.fileno(), msvcrt.LK_NBLCK, 1)
+class _PosixLock(object):
+    def __init__(self, name):
+        # Hash the name because it's not valid to have POSIX semaphore names
+        # with things like / in them. Then use base64 to encode them so
+        # they are short enough. Most systems can't have shm sempahore names
+        # longer than 31 characters.
+        h = hashlib.sha1()
+        h.update(name)
+        self.name = '/' + base64.urlsafe_b64encode(h.digest())
 
-    def unlock(self):
-        msvcrt.locking(self.lockfile.fileno(), msvcrt.LK_UNLCK, 1)
+    def acquire(self, timeout=None):
+        self.semaphore = posix_ipc.Semaphore(self.name,
+                                             flags=posix_ipc.O_CREAT,
+                                             initial_value=1)
+        self.semaphore.acquire(timeout)
+        return self
 
+    def __enter__(self):
+        self.acquire()
+        return self
 
-class _PosixLock(_InterProcessLock):
-    def trylock(self):
-        fcntl.lockf(self.lockfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    def release(self):
+        self.semaphore.release()
+        self.semaphore.close()
 
-    def unlock(self):
-        fcntl.lockf(self.lockfile, fcntl.LOCK_UN)
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.release()
+
+    def exists(self):
+        try:
+            semaphore = posix_ipc.Semaphore(self.name)
+        except posix_ipc.ExistentialError:
+            return False
+        else:
+            semaphore.close()
+        return True
 
 
 if os.name == 'nt':
     import msvcrt
     InterProcessLock = _WindowsLock
 else:
-    import fcntl
+    import base64
+    import hashlib
+    import posix_ipc
     InterProcessLock = _PosixLock
 
 _semaphores = weakref.WeakValueDictionary()
