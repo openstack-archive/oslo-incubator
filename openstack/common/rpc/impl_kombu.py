@@ -39,7 +39,7 @@ kombu_opts = [
     cfg.StrOpt('kombu_ssl_version',
                default='',
                help='SSL version to use (valid only if SSL enabled). '
-                    'valid values are TLSv1, SSLv23 and SSLv3. SSLv2 may '
+                    'Valid values are TLSv1, SSLv23 and SSLv3. SSLv2 may '
                     'be available on some distributions'
                ),
     cfg.StrOpt('kombu_ssl_keyfile',
@@ -63,31 +63,31 @@ kombu_opts = [
                 help='RabbitMQ HA cluster host:port pairs'),
     cfg.BoolOpt('rabbit_use_ssl',
                 default=False,
-                help='connect over SSL for RabbitMQ'),
+                help='Connect over SSL for RabbitMQ'),
     cfg.StrOpt('rabbit_userid',
                default='guest',
-               help='the RabbitMQ userid'),
+               help='The RabbitMQ userid'),
     cfg.StrOpt('rabbit_password',
                default='guest',
-               help='the RabbitMQ password',
+               help='The RabbitMQ password',
                secret=True),
     cfg.StrOpt('rabbit_virtual_host',
                default='/',
-               help='the RabbitMQ virtual host'),
+               help='The RabbitMQ virtual host'),
     cfg.IntOpt('rabbit_retry_interval',
                default=1,
-               help='how frequently to retry connecting with RabbitMQ'),
+               help='How frequently to retry connecting with RabbitMQ'),
     cfg.IntOpt('rabbit_retry_backoff',
                default=2,
-               help='how long to backoff for between retries when connecting '
+               help='How long to backoff for between retries when connecting '
                     'to RabbitMQ'),
     cfg.IntOpt('rabbit_max_retries',
                default=0,
-               help='maximum retries with trying to connect to RabbitMQ '
+               help='Maximum retries with trying to connect to RabbitMQ '
                     '(the default of 0 implies an infinite retry count)'),
     cfg.BoolOpt('rabbit_ha_queues',
                 default=False,
-                help='use H/A queues in RabbitMQ (x-ha-policy: all).'
+                help='Use H/A queues in RabbitMQ (x-ha-policy: all). '
                      'You need to wipe RabbitMQ database when '
                      'changing this option.'),
 
