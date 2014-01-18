@@ -36,7 +36,7 @@ def _get_olso_configs():
 
     return [
         cfg.StrOpt('cache_url', default='memory://',
-                   help='Url to connect to the cache backend.')
+                   help='URL to connect to the cache backend.')
     ]
 
 
