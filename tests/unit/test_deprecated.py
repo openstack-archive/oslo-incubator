@@ -55,12 +55,4 @@ class DeprecatedConfigTestCase(test.BaseTestCase):
         LOG.deprecated('only once!')
         LOG.deprecated('only once!')
 
-        # TODO(blk-u): This isn't working correctly, it should only log once,
-        # see bug 1266812.
-        # The following should be
-        #   self.assertEqual(self.warnbuffer, 'Deprecated: only once!\n')
-
-        exp_msg = ('Deprecated: only once!\n'
-                   'Deprecated: only once!\n'
-                   'Deprecated: only once!\n')
-        self.assertEqual(self.warnbuffer, exp_msg)
+        self.assertEqual(self.warnbuffer, 'Deprecated: only once!\n')

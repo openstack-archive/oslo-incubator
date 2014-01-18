@@ -292,18 +292,36 @@ class ContextAdapter(BaseLoggerAdapter):
         self.logger = logger
         self.project = project_name
         self.version = version_string
+        self._deprecated_messages_sent = set()
 
     @property
     def handlers(self):
         return self.logger.handlers
 
     def deprecated(self, msg, *args, **kwargs):
+        """Call this method when a deprecated feature is used.
+
+        If the system is configured for fatal deprecations then the message
+        is logged at the 'critical' level and :class:`DeprecatedConfig` will
+        be raised.
+
+        Otherwise, the message will be logged (once) at the 'warn' level.
+
+        :raises: :class:`DeprecatedConfig` if the system is configured for
+                 fatal deprecations.
+
+        """
         stdmsg = _("Deprecated: %s") % msg
         if CONF.fatal_deprecations:
             self.critical(stdmsg, *args, **kwargs)
             raise DeprecatedConfig(msg=stdmsg)
-        else:
-            self.warn(stdmsg, *args, **kwargs)
+
+        if stdmsg in self._deprecated_messages_sent:
+            # Already logged this message, so don't log it again.
+            return
+
+        self._deprecated_messages_sent.add(stdmsg)
+        self.warn(stdmsg, *args, **kwargs)
 
     def process(self, msg, kwargs):
         # NOTE(mrodden): catch any Message/other object and
