@@ -63,15 +63,7 @@ class DeprecatedConfigTestCase(test.BaseTestCase):
         LOG.deprecated('only once!')
         LOG.deprecated('only once!')
 
-        # TODO(blk-u): This isn't working correctly, it should only log once,
-        # see bug 1266812.
-        # The following should be
-        #   exp_log = 'Deprecated: only once!\n'
-        #   self.assertEqual(exp_log, self.warnbuffer)
-
-        exp_log = ('Deprecated: only once!\n'
-                   'Deprecated: only once!\n'
-                   'Deprecated: only once!\n')
+        exp_log = 'Deprecated: only once!\n'
         self.assertEqual(exp_log, self.warnbuffer)
 
     def test_deprecated_logs_once_diff_messages(self):
@@ -86,17 +78,7 @@ class DeprecatedConfigTestCase(test.BaseTestCase):
         LOG.deprecated(msg2)
         LOG.deprecated(msg2)
 
-        # TODO(blk-u): This isn't working correctly, see bug 1266812.
-        # The following should be
-        #   exp_log = ('Deprecated: tdlodm_message 1\n'
-        #              'Deprecated: tdlodm_message 2\n')
-        #   self.assertEqual(exp_log, self.warnbuffer)
-
         exp_log = ('Deprecated: tdlodm_message 1\n'
-                   'Deprecated: tdlodm_message 2\n'
-                   'Deprecated: tdlodm_message 1\n'
-                   'Deprecated: tdlodm_message 1\n'
-                   'Deprecated: tdlodm_message 2\n'
                    'Deprecated: tdlodm_message 2\n')
         self.assertEqual(exp_log, self.warnbuffer)
 
@@ -109,15 +91,7 @@ class DeprecatedConfigTestCase(test.BaseTestCase):
         LOG.deprecated('only once! %s', 'arg2')
         LOG.deprecated('only once! %s', 'arg2')
 
-        # TODO(blk-u): This isn't working correctly, see bug 1266812.
-        # The following should be
-        #   exp_log = ('Deprecated: only once! arg1\n'
-        #              'Deprecated: only once! arg2\n')
-        #   self.assertEqual(exp_log, self.warnbuffer)
-
         exp_log = ('Deprecated: only once! arg1\n'
-                   'Deprecated: only once! arg1\n'
-                   'Deprecated: only once! arg2\n'
                    'Deprecated: only once! arg2\n')
         self.assertEqual(exp_log, self.warnbuffer)
 
@@ -141,18 +115,8 @@ class DeprecatedConfigTestCase(test.BaseTestCase):
         LOG.deprecated(msg_fmt_2, msg_fmt_2_arg_2)  # logged: args different
         LOG.deprecated(msg_fmt_2, msg_fmt_2_arg_2)  # no log: same msg+args
 
-        # TODO(blk-u): This isn't working correctly, see bug 1266812.
-        # The following should be
-        #   exp_log = ('Deprecated: tdldac_msg 1 val1_1 val2_1\n'
-        #              'Deprecated: tdldac_msg 1 val1_2 val2_2\n'
-        #              'Deprecated: tdldac_msg 2 3 4 5\n'
-        #              'Deprecated: tdldac_msg 2 6 None purple\n')
-        #   self.assertEqual(exp_log, self.warnbuffer)
-
         exp_log = ('Deprecated: tdldac_msg 1 val1_1 val2_1\n'
                    'Deprecated: tdldac_msg 1 val1_2 val2_2\n'
-                   'Deprecated: tdldac_msg 1 val1_1 val2_1\n'
                    'Deprecated: tdldac_msg 2 3 4 5\n'
-                   'Deprecated: tdldac_msg 2 6 None purple\n'
                    'Deprecated: tdldac_msg 2 6 None purple\n')
         self.assertEqual(exp_log, self.warnbuffer)
