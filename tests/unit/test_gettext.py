@@ -261,7 +261,7 @@ class MessageTestCase(test.BaseTestCase):
         self.assertEqual(first.params, expected.params)
 
         # Should have different objects
-        self.assertFalse(expected is first)
+        self.assertIsNot(expected, first)
 
         # Final translations should be the same
         self.assertEqual(expected.translate(), first.translate())
