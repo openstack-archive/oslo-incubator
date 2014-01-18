@@ -32,26 +32,35 @@ class DeprecatedConfigTestCase(test.BaseTestCase):
         self.critbuffer = ""
 
         def warn_log(msg):
-            self.warnbuffer = msg
+            self.warnbuffer += msg + '\n'
 
         def critical_log(msg):
-            self.critbuffer = msg
+            self.critbuffer += msg + '\n'
 
         self.stubs.Set(LOG, 'warn', warn_log)
         self.stubs.Set(LOG, 'critical', critical_log)
 
     def test_deprecated(self):
         LOG.deprecated('test')
-        self.assertEqual(self.warnbuffer, 'Deprecated: test')
+        self.assertEqual(self.warnbuffer, 'Deprecated: test\n')
 
     def test_deprecated_fatal(self):
         self.config(fatal_deprecations=True)
         self.assertRaises(logging.DeprecatedConfig,
                           LOG.deprecated, "test2")
-        self.assertEqual(self.critbuffer, 'Deprecated: test2')
+        self.assertEqual(self.critbuffer, 'Deprecated: test2\n')
 
     def test_deprecated_logs_only_once(self):
         LOG.deprecated('only once!')
         LOG.deprecated('only once!')
         LOG.deprecated('only once!')
-        self.assertEqual(self.warnbuffer, 'Deprecated: only once!')
+
+        # TODO(blk-u): This isn't working correctly, it should only log once,
+        # see bug 1266812.
+        # The following should be
+        #   self.assertEqual(self.warnbuffer, 'Deprecated: only once!\n')
+
+        exp_msg = ('Deprecated: only once!\n'
+                   'Deprecated: only once!\n'
+                   'Deprecated: only once!\n')
+        self.assertEqual(self.warnbuffer, exp_msg)
