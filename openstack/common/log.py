@@ -543,7 +543,7 @@ class WritableLogger(object):
         self.level = level
 
     def write(self, msg):
-        self.logger.log(self.level, msg)
+        self.logger.log(self.level, msg.rstrip())
 
 
 class ContextFormatter(logging.Formatter):
