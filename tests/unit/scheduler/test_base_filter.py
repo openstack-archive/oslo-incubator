@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import contextlib
+
+import mock
+
 from openstack.common.fixture import moxstubout
 from openstack.common.scheduler import base_filter
 from openstack.common import test
@@ -121,3 +125,27 @@ class TestBaseFilterHandler(test.BaseTestCase):
         expected = [FakeFilter1, FakeFilter4]
         result = self.handler.get_all_classes()
         self.assertEqual(expected, result)
+
+    def _get_filtered_objects(self):
+        filter_objs_initial = [1, 2, 3, 4]
+        filter_properties = {'x': 'y'}
+        filter_classes = [FakeFilter1, FakeFilter2, FakeFilter3, FakeFilter4]
+        return self.handler.get_filtered_objects(filter_classes,
+                                                 filter_objs_initial,
+                                                 filter_properties)
+
+    def test_get_filtered_objects_return_none(self):
+        def fake_filter_all(self, list_objs, filter_properties):
+            return
+        with contextlib.nested(
+            mock.patch.object(FakeFilter3, 'filter_all', fake_filter_all),
+            mock.patch.object(FakeFilter4, 'filter_all')
+        ) as (fake3_filter_all, fake4_filter_all):
+            result = self._get_filtered_objects()
+            self.assertIsNone(result)
+            self.assertFalse(fake4_filter_all.called)
+
+    def test_get_filtered_objects(self):
+        filter_objs_expected = [1, 2, 3, 4]
+        result = self._get_filtered_objects()
+        self.assertEqual(filter_objs_expected, result)
