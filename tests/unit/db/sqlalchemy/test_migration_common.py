@@ -14,7 +14,6 @@
 #    under the License.
 #
 
-
 import contextlib
 import os
 import tempfile
