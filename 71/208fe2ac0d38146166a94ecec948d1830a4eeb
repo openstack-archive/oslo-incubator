@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Code-Review+2: Zhongyue Luo <zhongyue.luo@gmail.com>
+Approved+1: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+1: Ilya Pekelny <ipekelny@mirantis.com>
+Submitted-by: Jenkins
+Submitted-at: Mon, 20 Jan 2014 14:26:45 +0000
+Reviewed-on: https://review.openstack.org/64123
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
