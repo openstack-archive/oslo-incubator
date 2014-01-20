@@ -561,7 +561,7 @@ class ContextFormatter(logging.Formatter):
 
     def format(self, record):
         """Uses contextstring if request_id is set, otherwise default."""
-        # NOTE(sdague): default the fancier formating params
+        # NOTE(sdague): default the fancier formatting params
         # to an empty string so we don't throw an exception if
         # they get used
         for key in ('instance', 'color'):
@@ -577,7 +577,7 @@ class ContextFormatter(logging.Formatter):
                 CONF.logging_debug_format_suffix):
             self._fmt += " " + CONF.logging_debug_format_suffix
 
-        # Cache this on the record, Logger will respect our formated copy
+        # Cache this on the record, Logger will respect our formatted copy
         if record.exc_info:
             record.exc_text = self.formatException(record.exc_info, record)
         return logging.Formatter.format(self, record)
