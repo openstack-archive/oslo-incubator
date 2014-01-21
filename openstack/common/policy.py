@@ -838,6 +838,7 @@ class GenericCheck(Check):
 
             tenant:%(tenant_id)s
             role:compute:admin
+            'True':%(user.enabled)s
         """
 
         # TODO(termie): do dict inspection via dot syntax
@@ -848,6 +849,10 @@ class GenericCheck(Check):
             # present in Target return false
             return False
 
-        if self.kind in creds:
+        # Interpret self.kind as a constant if enclosed by single
+        # quotes
+        if self.kind.startswith("'") and self.kind.endswith("'"):
+            return match == self.kind[1:-1]
+        elif self.kind in creds:
             return match == six.text_type(creds[self.kind])
         return False
