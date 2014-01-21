@@ -60,7 +60,8 @@ kombu_opts = [
                help='The RabbitMQ broker port where a single node is used'),
     cfg.ListOpt('rabbit_hosts',
                 default=['$rabbit_host:$rabbit_port'],
-                help='RabbitMQ HA cluster host:port pairs'),
+                help='RabbitMQ HA cluster host:port pairs. You should not '
+                     'rely on the order of hosts.'),
     cfg.BoolOpt('rabbit_use_ssl',
                 default=False,
                 help='connect over SSL for RabbitMQ'),
