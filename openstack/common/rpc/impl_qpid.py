@@ -45,7 +45,8 @@ qpid_opts = [
                help='Qpid broker port'),
     cfg.ListOpt('qpid_hosts',
                 default=['$qpid_hostname:$qpid_port'],
-                help='Qpid HA cluster host:port pairs'),
+                help='Qpid HA cluster host:port pairs. You should not rely on '
+                     'the order of hosts.'),
     cfg.StrOpt('qpid_username',
                default='',
                help='Username for qpid connection'),
