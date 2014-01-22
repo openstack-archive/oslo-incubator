@@ -40,6 +40,10 @@ database_opts = [
                                                   group='DATABASE'),
                                 cfg.DeprecatedOpt('connection',
                                                   group='sql'), ]),
+    cfg.StrOpt('mysql_sql_mode',
+               help='The SQL mode to be used for MySQL sessions '
+                    '(default is empty, meaning do not override '
+                    'any server-side SQL mode setting)'),
     cfg.IntOpt('idle_timeout',
                default=3600,
                deprecated_opts=[cfg.DeprecatedOpt('sql_idle_timeout',
