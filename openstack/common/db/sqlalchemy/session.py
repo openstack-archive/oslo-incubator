@@ -316,6 +316,10 @@ database_opts = [
                secret=True,
                help='The SQLAlchemy connection string used to connect to the '
                     'slave database'),
+    cfg.StrOpt('mysql_sql_mode',
+               help='The SQL mode to be used for MySQL sessions '
+                    '(default is empty, meaning do not override '
+                    'any server-side SQL mode setting)'),
     cfg.IntOpt('idle_timeout',
                default=3600,
                deprecated_opts=[cfg.DeprecatedOpt('sql_idle_timeout',
@@ -774,13 +778,13 @@ def create_engine(sql_connection, sqlite_fk=False,
     if engine.name in ['mysql', 'ibm_db_sa']:
         callback = functools.partial(_ping_listener, engine)
         sqlalchemy.event.listen(engine, 'checkout', callback)
-        if engine.name == 'mysql' and mysql_traditional_mode:
-            sqlalchemy.event.listen(engine, 'checkout', _set_mode_traditional)
-        else:
-            LOG.warning(_("This application has not enabled MySQL traditional"
-                          " mode, which means silent data corruption may"
-                          " occur. Please encourage the application"
-                          " developers to enable this mode."))
+        mysql_sql_mode = CONF.database.mysql_sql_mode
+        if mysql_traditional_mode:
+            mysql_sql_mode = 'TRADITIONAL'
+        if engine.name == 'mysql' and mysql_sql_mode:
+            sqlalchemy.event.listen(engine, 'checkout',
+                                    functools.partial(_set_session_sql_mode,
+                                                      sql_mode=mysql_sql_mode))
     elif 'sqlite' in connection_dict.drivername:
         if not CONF.sqlite_synchronous:
             sqlalchemy.event.listen(engine, 'connect',
