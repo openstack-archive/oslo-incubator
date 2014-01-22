@@ -118,7 +118,8 @@ class Message(six.text_type):
     and can be treated as such.
     """
 
-    def __new__(cls, msgid, msgtext=None, params=None, domain='oslo', *args):
+    def __new__(cls, msgid, msgtext=None, params=None,
+                domain='oslo', *args):
         """Create a new Message object.
 
         In order for translation to work gettext requires a message ID, this
