@@ -677,7 +677,24 @@ def _set_mode_traditional(dbapi_con, connection_rec, connection_proxy):
     than a declared field just with warning. That is fraught with data
     corruption.
     """
-    dbapi_con.cursor().execute("SET SESSION sql_mode = TRADITIONAL;")
+    _set_session_sql_mode(dbapi_con, 'TRADITIONAL')
+
+
+def _set_session_sql_mode(dbapi_con, sql_mode=None):
+    """Set the sql_mode session variable.
+
+    MySQL supports several server modes. The default is none, but sessions
+    may choose to enable server modes like TRADITIONAL, ANSI,
+    several STRICT_* modes and others.
+
+    Note: passing in '' (empty string) for sql_mode clears
+    the SQL mode for the session, overriding a potentially set
+    server default. Passing in None (the default) makes this
+    a no-op, meaning if a server-side SQL mode is set, it still applies.
+    """
+    if sql_mode is not None:
+        dbapi_con.cursor().execute("SET SESSION sql_mode = %s;" % sql_mode)
+        LOG.info(_('MySQL SQL mode set to %s') % sql_mode)
 
 
 def _is_db_connection_error(args):
