@@ -316,6 +316,11 @@ database_opts = [
                secret=True,
                help='The SQLAlchemy connection string used to connect to the '
                     'slave database'),
+    cfg.StrOpt('mysql_sql_mode',
+               choices=['', 'TRADITIONAL', 'STRICT_ALL_TABLES'],
+               help='The SQL mode to be used for MySQL sessions '
+                    '(default is empty, meaning do not override '
+                    'any server-side SQL mode setting)'),
     cfg.IntOpt('idle_timeout',
                default=3600,
                deprecated_opts=[cfg.DeprecatedOpt('sql_idle_timeout',
@@ -692,6 +697,9 @@ def _set_session_sql_mode(dbapi_con, sql_mode=None):
     server default. Passing in None (the default) makes this
     a no-op, meaning if a server-side SQL mode is set, it still applies.
     """
+    # SQL injection considerations: sql_mode comes out of a
+    # config option that is restricted to MYSQL_SUPPORTED_MODES
+    # via StrOpt's "choices" param.
     if sql_mode is not None:
         dbapi_con.cursor().execute("SET SESSION sql_mode = %s;" % sql_mode)
         LOG.info(_('MySQL SQL mode set to %s') % sql_mode)
@@ -754,13 +762,12 @@ def create_engine(sql_connection, sqlite_fk=False,
     if engine.name in ['mysql', 'ibm_db_sa']:
         callback = functools.partial(_ping_listener, engine)
         sqlalchemy.event.listen(engine, 'checkout', callback)
+        mysql_sql_mode = CONF.database.mysql_sql_mode
         if mysql_traditional_mode:
-            sqlalchemy.event.listen(engine, 'checkout', _set_mode_traditional)
-        else:
-            LOG.warning(_("This application has not enabled MySQL traditional"
-                          " mode, which means silent data corruption may"
-                          " occur. Please encourage the application"
-                          " developers to enable this mode."))
+            mysql_sql_mode = 'TRADITIONAL'
+        if mysql_sql_mode:
+            sqlalchemy.event.listen(engine, 'checkout',
+                                    _set_session_sql_mode, mysql_sql_mode)
     elif 'sqlite' in connection_dict.drivername:
         if not CONF.sqlite_synchronous:
             sqlalchemy.event.listen(engine, 'connect',
