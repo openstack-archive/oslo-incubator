@@ -15,6 +15,7 @@
 
 from __future__ import print_function
 
+import errno
 import os
 import tempfile
 
@@ -178,6 +179,24 @@ grep foo
         finally:
             os.unlink(tmpfilename)
             os.unlink(tmpfilename2)
+
+    def test_retry_on_communicate_error(self):
+        self.called = False
+
+        def fake_communicate(*args, **kwargs):
+            if self.called:
+                return ('', '')
+            self.called = True
+            e = OSError('foo')
+            e.errno = errno.EAGAIN
+            raise e
+
+        self.useFixture(fixtures.MonkeyPatch(
+            'subprocess.Popen.communicate', fake_communicate))
+
+        processutils.execute('/usr/bin/env', 'true', check_exit_code=False)
+
+        self.assertTrue(self.called)
 
 
 def fake_execute(*cmd, **kwargs):
