@@ -105,6 +105,78 @@ class ClientTest(test.BaseTestCase):
                 test_client, "GET", "/resource"),
             "GET /endpoint-1/resource")
 
+    def test_client_with_response_400_status_code(self):
+        http_client = client.HTTPClient(FakeAuthPlugin())
+        mock_request = mock.Mock()
+        mock_request.return_value = requests.Response()
+        mock_request.return_value.status_code = 400
+        with mock.patch("requests.Session.request", mock_request):
+            self.assertRaises(
+                exceptions.BadRequest, http_client.client_request,
+                TestClient(http_client), "GET", "/resource",
+                json={"bad": "request"})
+
+    def test_client_with_no_token_and_no_endpoint(self):
+        with mock.patch('%s.FakeAuthPlugin.token_and_endpoint' % __name__,
+                        mock.MagicMock()) as mocked_token_and_endpoint:
+            mocked_token_and_endpoint.return_value = (None, None)
+
+            http_client = client.HTTPClient(FakeAuthPlugin())
+            self.assertRaises(
+                exceptions.AuthorizationFailure, http_client.client_request,
+                TestClient(http_client), "GET", "/resource", json={"1": "2"})
+
+    def test_client_raising_unauthorized(self):
+        side_effect_rv = [True, False]
+
+        def side_effect(*args, **kwargs):
+            if side_effect_rv.pop():
+                raise exceptions.EndpointException()
+            return ("token-%s" % len(side_effect_rv),
+                    "/endpoint-%s" % len(side_effect_rv))
+
+        with mock.patch('%s.FakeAuthPlugin.token_and_endpoint' % __name__,
+                        mock.MagicMock()) as mocked_token_and_endpoint:
+            mocked_token_and_endpoint.side_effect = side_effect
+
+            http_client = client.HTTPClient(FakeAuthPlugin())
+            http_client.request = mock.MagicMock(
+                side_effect=exceptions.Unauthorized())
+            self.assertRaises(
+                exceptions.Unauthorized, http_client.client_request,
+                TestClient(http_client), "GET", "/resource", json={"1": "2"})
+
+    def test_client_raising_unauthorized_with_equal_token_and_endpoint(self):
+        with mock.patch('%s.FakeAuthPlugin.token_and_endpoint' % __name__,
+                        mock.MagicMock()) as mocked_token_and_endpoint:
+            mocked_token_and_endpoint.return_value = ('token-0', '/endpoint-0')
+            http_client = client.HTTPClient(FakeAuthPlugin())
+            http_client.request = mock.MagicMock(
+                side_effect=exceptions.Unauthorized())
+            self.assertRaises(
+                exceptions.Unauthorized, http_client.client_request,
+                TestClient(http_client), "GET", "/resource", json={"1": "2"})
+
+    def test_client_raising_unauthorized_with_just_authenticated(self):
+        side_effect_rv = [True, False, True]
+
+        def side_effect(*args, **kwargs):
+            if side_effect_rv.pop():
+                raise exceptions.EndpointException()
+            return ("token-%s" % len(side_effect_rv),
+                    "/endpoint-%s" % len(side_effect_rv))
+
+        with mock.patch('%s.FakeAuthPlugin.token_and_endpoint' % __name__,
+                        mock.MagicMock()) as mocked_token_and_endpoint:
+            mocked_token_and_endpoint.side_effect = side_effect
+
+            http_client = client.HTTPClient(FakeAuthPlugin())
+            http_client.request = mock.MagicMock(
+                side_effect=exceptions.Unauthorized())
+            self.assertRaises(
+                exceptions.Unauthorized, http_client.client_request,
+                TestClient(http_client), "GET", "/resource", json={"1": "2"})
+
 
 class FakeClientTest(test.BaseTestCase):
 
