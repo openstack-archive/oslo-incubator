@@ -14,6 +14,7 @@ import os
 
 from openstack.common.db.sqlalchemy import migration
 from openstack.common.db.sqlalchemy.migration_cli import ext_base
+from openstack.common.db.sqlalchemy import session as db_session
 from openstack.common.gettextutils import _  # noqa
 from openstack.common import log as logging
 
@@ -33,6 +34,8 @@ class MigrateExtension(ext_base.MigrationExtensionBase):
     def __init__(self, migration_config):
         self.repository = migration_config.get('migration_repo_path', '')
         self.init_version = migration_config.get('init_version', 0)
+        self.db_url = migration_config['db_url']
+        self.engine = db_session.create_engine(self.db_url)
 
     @property
     def enabled(self):
@@ -41,7 +44,7 @@ class MigrateExtension(ext_base.MigrationExtensionBase):
     def upgrade(self, version):
         version = None if version == 'head' else version
         return migration.db_sync(
-            self.repository, version,
+            self.engine, self.repository, version,
             init_version=self.init_version)
 
     def downgrade(self, version):
@@ -51,7 +54,7 @@ class MigrateExtension(ext_base.MigrationExtensionBase):
                 version = self.init_version
             version = int(version)
             return migration.db_sync(
-                self.repository, version,
+                self.engine, self.repository, version,
                 init_version=self.init_version)
         except ValueError:
             LOG.error(
@@ -63,4 +66,4 @@ class MigrateExtension(ext_base.MigrationExtensionBase):
 
     def version(self):
         return migration.db_version(
-            self.repository, init_version=self.init_version)
+            self.engine, self.repository, init_version=self.init_version)
