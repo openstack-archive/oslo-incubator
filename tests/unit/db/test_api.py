@@ -16,7 +16,6 @@
 """Unit tests for DB API."""
 
 from openstack.common.db import api
-from openstack.common.fixture import config
 from tests import utils as test_utils
 
 
@@ -30,38 +29,11 @@ class DBAPI(object):
 
 
 class DBAPITestCase(test_utils.BaseTestCase):
-
-    def setUp(self):
-        super(DBAPITestCase, self).setUp()
-        config_fixture = self.useFixture(config.Config())
-        self.conf = config_fixture.conf
-        self.config = config_fixture.config
-
-    def test_deprecated_dbapi_parameters(self):
-        path = self.create_tempfiles([['tmp', '[DEFAULT]\n'
-                                      'db_backend=test_123\n'
-                                       ]])[0]
-
-        self.conf(['--config-file', path])
-        self.assertEqual(self.conf.database.backend, 'test_123')
-
-    def test_dbapi_parameters(self):
-        path = self.create_tempfiles([['tmp', '[database]\n'
-                                      'backend=test_123\n'
-                                       ]])[0]
-
-        self.conf(['--config-file', path])
-        self.assertEqual(self.conf.database.backend, 'test_123')
-
     def test_dbapi_full_path_module_method(self):
-        self.config(backend='tests.unit.db.test_api',
-                    group='database')
-        dbapi = api.DBAPI()
+        dbapi = api.DBAPI('tests.unit.db.test_api')
         result = dbapi.api_class_call1(1, 2, kwarg1='meow')
         expected = ((1, 2), {'kwarg1': 'meow'})
         self.assertEqual(expected, result)
 
     def test_dbapi_unknown_invalid_backend(self):
-        self.config(backend='tests.unit.db.not_existent',
-                    group='database')
-        self.assertRaises(ImportError, api.DBAPI)
+        self.assertRaises(ImportError, api.DBAPI, 'tests.unit.db.not_existent')
