@@ -31,7 +31,8 @@ class MockWithCmp(mock.MagicMock):
 class TestAlembicExtension(test.BaseTestCase):
 
     def setUp(self):
-        self.migration_config = {'alembic_ini_path': '.'}
+        self.migration_config = {'alembic_ini_path': '.',
+                                 'db_url': 'sqlite://'}
         self.alembic = ext_alembic.AlembicExtension(self.migration_config)
         super(TestAlembicExtension, self).setUp()
 
@@ -90,7 +91,8 @@ class TestAlembicExtension(test.BaseTestCase):
 class TestMigrateExtension(test.BaseTestCase):
 
     def setUp(self):
-        self.migration_config = {'migration_repo_path': '.'}
+        self.migration_config = {'migration_repo_path': '.',
+                                 'db_url': 'sqlite://'}
         self.migrate = ext_migrate.MigrateExtension(self.migration_config)
         super(TestMigrateExtension, self).setUp()
 
@@ -105,40 +107,41 @@ class TestMigrateExtension(test.BaseTestCase):
     def test_upgrade_head(self, migration):
         self.migrate.upgrade('head')
         migration.db_sync.assert_called_once_with(
-            self.migrate.repository, None, init_version=0)
+            self.migrate.engine, self.migrate.repository, None, init_version=0)
 
     def test_upgrade_normal(self, migration):
         self.migrate.upgrade(111)
         migration.db_sync.assert_called_once_with(
-            self.migrate.repository, 111, init_version=0)
+            mock.ANY, self.migrate.repository, 111, init_version=0)
 
     def test_downgrade_init_version_from_base(self, migration):
         self.migrate.downgrade('base')
         migration.db_sync.assert_called_once_with(
-            self.migrate.repository, mock.ANY,
+            self.migrate.engine, self.migrate.repository, mock.ANY,
             init_version=mock.ANY)
 
     def test_downgrade_init_version_from_none(self, migration):
         self.migrate.downgrade(None)
         migration.db_sync.assert_called_once_with(
-            self.migrate.repository, mock.ANY,
+            self.migrate.engine, self.migrate.repository, mock.ANY,
             init_version=mock.ANY)
 
     def test_downgrade_normal(self, migration):
         self.migrate.downgrade(101)
         migration.db_sync.assert_called_once_with(
-            self.migrate.repository, 101, init_version=0)
+            self.migrate.engine, self.migrate.repository, 101, init_version=0)
 
     def test_version(self, migration):
         self.migrate.version()
         migration.db_version.assert_called_once_with(
-            self.migrate.repository, init_version=0)
+            self.migrate.engine, self.migrate.repository, init_version=0)
 
     def test_change_init_version(self, migration):
         self.migration_config['init_version'] = 101
         migrate = ext_migrate.MigrateExtension(self.migration_config)
         migrate.downgrade(None)
         migration.db_sync.assert_called_once_with(
+            migrate.engine,
             self.migrate.repository,
             self.migration_config['init_version'],
             init_version=self.migration_config['init_version'])
@@ -148,7 +151,8 @@ class TestMigrationManager(test.BaseTestCase):
 
     def setUp(self):
         self.migration_config = {'alembic_ini_path': '.',
-                                 'migrate_repo_path': '.'}
+                                 'migrate_repo_path': '.',
+                                 'db_url': 'sqlite://'}
         self.migration_manager = manager.MigrationManager(
             self.migration_config)
         self.ext = mock.Mock()
@@ -188,7 +192,8 @@ class TestMigrationRightOrder(test.BaseTestCase):
 
     def setUp(self):
         self.migration_config = {'alembic_ini_path': '.',
-                                 'migrate_repo_path': '.'}
+                                 'migrate_repo_path': '.',
+                                 'db_url': 'sqlite://'}
         self.migration_manager = manager.MigrationManager(
             self.migration_config)
         self.first_ext = MockWithCmp()
