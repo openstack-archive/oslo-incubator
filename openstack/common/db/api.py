@@ -15,38 +15,19 @@
 
 """Multiple DB API backend support.
 
-Supported configuration options:
-
-The following two parameters are in the 'database' group:
-`backend`: DB backend name or full module path to DB backend module.
-
 A DB backend module should implement a method named 'get_backend' which
 takes no arguments.  The method can return any object that implements DB
 API methods.
 """
 
-from oslo.config import cfg
-
 from openstack.common import importutils
 
 
-db_opts = [
-    cfg.StrOpt('backend',
-               default='sqlalchemy',
-               deprecated_name='db_backend',
-               deprecated_group='DEFAULT',
-               help='The backend to use for db'),
-]
-
-CONF = cfg.CONF
-CONF.register_opts(db_opts, 'database')
-
-
 class DBAPI(object):
-    def __init__(self, backend_mapping=None):
+    def __init__(self, backend_name, backend_mapping=None):
         if backend_mapping is None:
             backend_mapping = {}
-        backend_name = CONF.database.backend
+
         # Import the untranslated name if we don't have a
         # mapping.
         backend_path = backend_mapping.get(backend_name, backend_name)
