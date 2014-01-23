@@ -18,7 +18,6 @@ from migrate.changeset.databases import sqlite
 import sqlalchemy as sa
 
 from openstack.common.db.sqlalchemy import migration
-from openstack.common.db.sqlalchemy import session
 from tests.unit.db.sqlalchemy import base as test_base
 
 
@@ -44,7 +43,7 @@ class TestSqliteUniqueConstraints(test_base.DbTestCase):
 
         test_table = sa.Table(
             'test_table',
-            sa.schema.MetaData(bind=session.get_engine()),
+            sa.schema.MetaData(bind=self.engine),
             sa.Column('a', sa.Integer),
             sa.Column('b', sa.String(10)),
             sa.Column('c', sa.Integer),
@@ -58,7 +57,7 @@ class TestSqliteUniqueConstraints(test_base.DbTestCase):
         #                   we actually do in db migrations code
         self.reflected_table = sa.Table(
             'test_table',
-            sa.schema.MetaData(bind=session.get_engine()),
+            sa.schema.MetaData(bind=self.engine),
             autoload=True
         )
 
