@@ -31,7 +31,8 @@ class MockWithCmp(mock.MagicMock):
 class TestAlembicExtension(test.BaseTestCase):
 
     def setUp(self):
-        self.migration_config = {'alembic_ini_path': '.'}
+        self.migration_config = {'alembic_ini_path': '.',
+                                 'db_url': 'sqlite://'}
         self.alembic = ext_alembic.AlembicExtension(self.migration_config)
         super(TestAlembicExtension, self).setUp()
 
