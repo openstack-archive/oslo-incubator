@@ -16,17 +16,6 @@
 
 """Session Handling for SQLAlchemy backend.
 
-Initializing:
-
-* Call set_defaults with the minimal of the following kwargs:
-    sql_connection, sqlite_db
-
-  Example::
-
-    session.set_defaults(
-        sql_connection="sqlite:///var/lib/oslo/sqlite.db",
-        sqlite_db="/var/lib/oslo/sqlite.db")
-
 Recommended ways to use sessions within this framework:
 
 * Don't use them explicitly; this is like running with AUTOCOMMIT=1.
@@ -271,11 +260,9 @@ Efficient use of soft deletes:
 """
 
 import functools
-import os.path
 import re
 import time
 
-from oslo.config import cfg
 import six
 from sqlalchemy import exc as sqla_exc
 from sqlalchemy.interfaces import PoolListener
@@ -288,123 +275,8 @@ from openstack.common.gettextutils import _
 from openstack.common import log as logging
 from openstack.common import timeutils
 
-sqlite_db_opts = [
-    cfg.StrOpt('sqlite_db',
-               default='oslo.sqlite',
-               help='the filename to use with sqlite'),
-    cfg.BoolOpt('sqlite_synchronous',
-                default=True,
-                help='If true, use synchronous mode for sqlite'),
-]
-
-database_opts = [
-    cfg.StrOpt('connection',
-               default='sqlite:///' +
-                       os.path.abspath(os.path.join(os.path.dirname(__file__),
-                       '../', '$sqlite_db')),
-               help='The SQLAlchemy connection string used to connect to the '
-                    'database',
-               secret=True,
-               deprecated_opts=[cfg.DeprecatedOpt('sql_connection',
-                                                  group='DEFAULT'),
-                                cfg.DeprecatedOpt('sql_connection',
-                                                  group='DATABASE'),
-                                cfg.DeprecatedOpt('connection',
-                                                  group='sql'), ]),
-    cfg.StrOpt('slave_connection',
-               default='',
-               secret=True,
-               help='The SQLAlchemy connection string used to connect to the '
-                    'slave database'),
-    cfg.IntOpt('idle_timeout',
-               default=3600,
-               deprecated_opts=[cfg.DeprecatedOpt('sql_idle_timeout',
-                                                  group='DEFAULT'),
-                                cfg.DeprecatedOpt('sql_idle_timeout',
-                                                  group='DATABASE'),
-                                cfg.DeprecatedOpt('idle_timeout',
-                                                  group='sql')],
-               help='timeout before idle sql connections are reaped'),
-    cfg.IntOpt('min_pool_size',
-               default=1,
-               deprecated_opts=[cfg.DeprecatedOpt('sql_min_pool_size',
-                                                  group='DEFAULT'),
-                                cfg.DeprecatedOpt('sql_min_pool_size',
-                                                  group='DATABASE')],
-               help='Minimum number of SQL connections to keep open in a '
-                    'pool'),
-    cfg.IntOpt('max_pool_size',
-               default=None,
-               deprecated_opts=[cfg.DeprecatedOpt('sql_max_pool_size',
-                                                  group='DEFAULT'),
-                                cfg.DeprecatedOpt('sql_max_pool_size',
-                                                  group='DATABASE')],
-               help='Maximum number of SQL connections to keep open in a '
-                    'pool'),
-    cfg.IntOpt('max_retries',
-               default=10,
-               deprecated_opts=[cfg.DeprecatedOpt('sql_max_retries',
-                                                  group='DEFAULT'),
-                                cfg.DeprecatedOpt('sql_max_retries',
-                                                  group='DATABASE')],
-               help='maximum db connection retries during startup. '
-                    '(setting -1 implies an infinite retry count)'),
-    cfg.IntOpt('retry_interval',
-               default=10,
-               deprecated_opts=[cfg.DeprecatedOpt('sql_retry_interval',
-                                                  group='DEFAULT'),
-                                cfg.DeprecatedOpt('reconnect_interval',
-                                                  group='DATABASE')],
-               help='interval between retries of opening a sql connection'),
-    cfg.IntOpt('max_overflow',
-               default=None,
-               deprecated_opts=[cfg.DeprecatedOpt('sql_max_overflow',
-                                                  group='DEFAULT'),
-                                cfg.DeprecatedOpt('sqlalchemy_max_overflow',
-                                                  group='DATABASE')],
-               help='If set, use this value for max_overflow with sqlalchemy'),
-    cfg.IntOpt('connection_debug',
-               default=0,
-               deprecated_opts=[cfg.DeprecatedOpt('sql_connection_debug',
-                                                  group='DEFAULT')],
-               help='Verbosity of SQL debugging information. 0=None, '
-                    '100=Everything'),
-    cfg.BoolOpt('connection_trace',
-                default=False,
-                deprecated_opts=[cfg.DeprecatedOpt('sql_connection_trace',
-                                                   group='DEFAULT')],
-                help='Add python stack traces to SQL as comment strings'),
-    cfg.IntOpt('pool_timeout',
-               default=None,
-               deprecated_opts=[cfg.DeprecatedOpt('sqlalchemy_pool_timeout',
-                                                  group='DATABASE')],
-               help='If set, use this value for pool_timeout with sqlalchemy'),
-]
-
-CONF = cfg.CONF
-CONF.register_opts(sqlite_db_opts)
-CONF.register_opts(database_opts, 'database')
 
 LOG = logging.getLogger(__name__)
-
-
-def set_defaults(sql_connection, sqlite_db, max_pool_size=None,
-                 max_overflow=None, pool_timeout=None):
-    """Set defaults for configuration variables."""
-    cfg.set_defaults(database_opts,
-                     connection=sql_connection)
-    cfg.set_defaults(sqlite_db_opts,
-                     sqlite_db=sqlite_db)
-    # Update the QueuePool defaults
-    if max_pool_size is not None:
-        cfg.set_defaults(database_opts,
-                         max_pool_size=max_pool_size)
-    if max_overflow is not None:
-        cfg.set_defaults(database_opts,
-                         max_overflow=max_overflow)
-    if pool_timeout is not None:
-        cfg.set_defaults(database_opts,
-                         pool_timeout=pool_timeout)
 
 
 class SqliteForeignKeysListener(PoolListener):
@@ -623,25 +495,28 @@ def _is_db_connection_error(args):
 
 
 def create_engine(sql_connection, sqlite_fk=False,
-                  mysql_traditional_mode=False):
+                  mysql_traditional_mode=False, idle_timeout=3600,
+                  connection_debug=0, max_pool_size=None, max_overflow=None,
+                  pool_timeout=None, sqlite_synchronous=True,
+                  connection_trace=False, max_retries=10, retry_interval=10):
     """Return a new SQLAlchemy engine."""
+
     # NOTE(geekinutah): At this point we could be connecting to the normal
     #                   db handle or the slave db handle. Things like
     #                   _wrap_db_error aren't going to work well if their
     #                   backends don't match. Let's check.
-    _assert_matching_drivers()
     connection_dict = sqlalchemy.engine.url.make_url(sql_connection)
 
     engine_args = {
-        "pool_recycle": CONF.database.idle_timeout,
+        "pool_recycle": idle_timeout,
         "echo": False,
         'convert_unicode': True,
     }
 
     # Map our SQL debug level to SQLAlchemy's options
-    if CONF.database.connection_debug >= 100:
+    if connection_debug >= 100:
         engine_args['echo'] = 'debug'
-    elif CONF.database.connection_debug >= 50:
+    elif connection_debug >= 50:
         engine_args['echo'] = True
 
     if "sqlite" in connection_dict.drivername:
@@ -649,16 +524,16 @@ def create_engine(sql_connection, sqlite_fk=False,
             engine_args["listeners"] = [SqliteForeignKeysListener()]
         engine_args["poolclass"] = NullPool
 
-        if CONF.database.connection == "sqlite://":
+        if sql_connection == "sqlite://":
             engine_args["poolclass"] = StaticPool
             engine_args["connect_args"] = {'check_same_thread': False}
     else:
-        if CONF.database.max_pool_size is not None:
-            engine_args['pool_size'] = CONF.database.max_pool_size
-        if CONF.database.max_overflow is not None:
-            engine_args['max_overflow'] = CONF.database.max_overflow
-        if CONF.database.pool_timeout is not None:
-            engine_args['pool_timeout'] = CONF.database.pool_timeout
+        if max_pool_size is not None:
+            engine_args['pool_size'] = max_pool_size
+        if max_overflow is not None:
+            engine_args['max_overflow'] = max_overflow
+        if pool_timeout is not None:
+            engine_args['pool_timeout'] = pool_timeout
 
     engine = sqlalchemy.create_engine(sql_connection, **engine_args)
 
@@ -675,13 +550,12 @@ def create_engine(sql_connection, sqlite_fk=False,
                           " occur. Please encourage the application"
                           " developers to enable this mode."))
     elif 'sqlite' in connection_dict.drivername:
-        if not CONF.sqlite_synchronous:
+        if not sqlite_synchronous:
             sqlalchemy.event.listen(engine, 'connect',
                                     _synchronous_switch_listener)
         sqlalchemy.event.listen(engine, 'connect', _add_regexp_listener)
 
-    if (CONF.database.connection_trace and
-            engine.dialect.dbapi.__name__ == 'MySQLdb'):
+    if connection_trace and engine.dialect.dbapi.__name__ == 'MySQLdb':
         _patch_mysqldb_with_stacktrace_comments()
 
     try:
@@ -690,7 +564,7 @@ def create_engine(sql_connection, sqlite_fk=False,
         if not _is_db_connection_error(e.args[0]):
             raise
 
-        remaining = CONF.database.max_retries
+        remaining = max_retries
         if remaining == -1:
             remaining = 'infinite'
         while True:
@@ -698,7 +572,7 @@ def create_engine(sql_connection, sqlite_fk=False,
             LOG.warning(msg % remaining)
             if remaining != 'infinite':
                 remaining -= 1
-            time.sleep(CONF.database.retry_interval)
+            time.sleep(retry_interval)
             try:
                 engine.connect()
                 break
@@ -783,15 +657,3 @@ def _patch_mysqldb_with_stacktrace_comments():
         old_mysql_do_query(self, qq)
 
     setattr(MySQLdb.cursors.BaseCursor, '_do_query', _do_query)
-
-
-def _assert_matching_drivers():
-    """Make sure slave handle and normal handle have the same driver."""
-    # NOTE(geekinutah): There's no use case for writing to one backend and
-    #                 reading from another. Who knows what the future holds?
-    if CONF.database.slave_connection == '':
-        return
-
-    normal = sqlalchemy.engine.url.make_url(CONF.database.connection)
-    slave = sqlalchemy.engine.url.make_url(CONF.database.slave_connection)
-    assert normal.drivername == slave.drivername
