@@ -105,6 +105,27 @@ class ClientTest(test.BaseTestCase):
                 test_client, "GET", "/resource"),
             "GET /endpoint-1/resource")
 
+    def test_client_with_response_400_status_code(self):
+        http_client = client.HTTPClient(FakeAuthPlugin())
+        mock_request = mock.Mock()
+        mock_request.return_value = requests.Response()
+        mock_request.return_value.status_code = 400
+        with mock.patch("requests.Session.request", mock_request):
+            self.assertRaises(
+                exceptions.BadRequest, http_client.client_request,
+                TestClient(http_client), "GET", "/resource",
+                json={"bad": "request"})
+
+    def test_client_with_no_token_and_no_endpoint(self):
+        with mock.patch('%s.FakeAuthPlugin.token_and_endpoint' % __name__,
+                        mock.MagicMock()) as mocked_token_and_endpoint:
+            mocked_token_and_endpoint.return_value = (None, None)
+
+            http_client = client.HTTPClient(FakeAuthPlugin())
+            self.assertRaises(
+                exceptions.AuthorizationFailure, http_client.client_request,
+                TestClient(http_client), "GET", "/resource", json={"1": "2"})
+
 
 class FakeClientTest(test.BaseTestCase):
 
