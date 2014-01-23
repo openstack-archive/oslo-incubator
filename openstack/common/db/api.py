@@ -15,11 +15,6 @@
 
 """Multiple DB API backend support.
 
-Supported configuration options:
-
-The following two parameters are in the 'database' group:
-`backend`: DB backend name or full module path to DB backend module.
-
 A DB backend module should implement a method named 'get_backend' which
 takes no arguments.  The method can return any object that implements DB
 API methods.
@@ -29,42 +24,10 @@ import functools
 import logging
 import time
 
-from oslo.config import cfg
-
 from openstack.common.db import exception
-from openstack.common.gettextutils import _  # noqa
+from openstack.common.gettextutils import _
 from openstack.common import importutils
 
-
-db_opts = [
-    cfg.StrOpt('backend',
-               default='sqlalchemy',
-               deprecated_name='db_backend',
-               deprecated_group='DEFAULT',
-               help='The backend to use for db'),
-    cfg.BoolOpt('use_db_reconnect',
-                default=False,
-                help='Enable the experimental use of database reconnect '
-                     'on connection lost'),
-    cfg.IntOpt('db_retry_interval',
-               default=1,
-               help='seconds between db connection retries'),
-    cfg.BoolOpt('db_inc_retry_interval',
-                default=True,
-                help='Whether to increase interval between db connection '
-                     'retries, up to db_max_retry_interval'),
-    cfg.IntOpt('db_max_retry_interval',
-               default=10,
-               help='max seconds between db connection retries, if '
-                    'db_inc_retry_interval is enabled'),
-    cfg.IntOpt('db_max_retries',
-               default=20,
-               help='maximum db connection retries before error is raised. '
-                    '(setting -1 implies an infinite retry count)'),
-]
-
-CONF = cfg.CONF
-CONF.register_opts(db_opts, 'database')
 
 LOG = logging.getLogger(__name__)
 
@@ -75,7 +38,8 @@ def safe_for_db_retry(f):
     return f
 
 
-def _wrap_db_retry(f):
+def _wrap_db_retry(f, retry_interval, inc_retry_interval,
+                   max_retry_interval, max_retries):
     """Retry db.api methods, if DBConnectionError() raised
 
     Retry decorated db.api methods. If we enabled `use_db_reconnect`
@@ -83,11 +47,30 @@ def _wrap_db_retry(f):
     marked with @safe_for_db_retry decorator.
     Decorator catchs DBConnectionError() and retries function in a
     loop until it succeeds, or until maximum retries count will be reached.
+
+    :param f: function to decorate
+    :type f: function
+
+    :param next_interval: seconds between db connection retries
+    :type next_interval: integer
+
+    :param inc_retry_interval: whether to increase interval between db
+                               connection retries, up to db_max_retry_interval
+    :type inc_retry_interval: bool
+
+    :param db_max_retry_interval: maximum seconds between db connection
+                                  retries, if db_inc_retry_interval is enabled
+    :type db_max_retry_interval: integer
+
+    :param db_max_retries: maximum db connection retries before error is raised
+                           Setting -1 implies an infinite retry count
+    :type db_max_retries: integer
+
     """
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
-        next_interval = CONF.database.db_retry_interval
-        remaining = CONF.database.db_max_retries
+        next_retry_interval = retry_interval
+        remaining = max_retries
 
         while True:
             try:
@@ -102,25 +85,31 @@ def _wrap_db_retry(f):
                 # NOTE(vsergeyev): We are using patched time module, so this
                 #                  effectively yields the execution context to
                 #                  another green thread.
-                time.sleep(next_interval)
-                if CONF.database.db_inc_retry_interval:
-                    next_interval = min(
-                        next_interval * 2,
-                        CONF.database.db_max_retry_interval
+                time.sleep(next_retry_interval)
+                if inc_retry_interval:
+                    next_retry_interval = min(
+                        next_retry_interval * 2,
+                        max_retry_interval
                     )
     return wrapper
 
 
 class DBAPI(object):
-    def __init__(self, backend_mapping=None):
+    def __init__(self, backend_name, backend_mapping=None, **kwargs):
         if backend_mapping is None:
             backend_mapping = {}
-        backend_name = CONF.database.backend
+
         # Import the untranslated name if we don't have a
         # mapping.
         backend_path = backend_mapping.get(backend_name, backend_name)
         backend_mod = importutils.import_module(backend_path)
         self.__backend = backend_mod.get_backend()
+
+        self.use_db_reconnect = kwargs.get('use_db_reconnect', False)
+        self.db_retry_interval = kwargs.get('db_retry_interval', 1)
+        self.db_inc_retry_interval = kwargs.get('db_inc_retry_interval', True)
+        self.db_max_retry_interval = kwargs.get('db_max_retry_interval', 10)
+        self.db_max_retries = kwargs.get('db_max_retries', 20)
 
     def __getattr__(self, key):
         attr = getattr(self.__backend, key)
@@ -130,7 +119,13 @@ class DBAPI(object):
         # NOTE(vsergeyev): If `use_db_reconnect` option is set to True, retry
         #                  DB API methods, decorated with @safe_for_db_retry
         #                  on disconnect.
-        if CONF.database.use_db_reconnect and hasattr(attr, 'enable_retry'):
-            attr = _wrap_db_retry(attr)
+        if self.use_db_reconnect and hasattr(attr, 'enable_retry'):
+            attr = _wrap_db_retry(
+                attr,
+                retry_interval=self.db_retry_interval,
+                inc_retry_interval=self.db_inc_retry_interval,
+                max_retry_interval=self.db_max_retry_interval,
+                max_retries=self.db_max_retries,
+            )
 
         return attr
