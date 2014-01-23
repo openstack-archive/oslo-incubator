@@ -25,7 +25,6 @@ import sqlalchemy
 
 from openstack.common.db import exception as db_exception
 from openstack.common.db.sqlalchemy import migration
-from openstack.common.db.sqlalchemy import session as db_session
 from openstack.common.db.sqlalchemy import test_base
 
 
@@ -81,14 +80,15 @@ class TestMigrationCommon(test_base.DbTestCase):
             mock_find_repo.return_value = self.return_value
 
             version = migration.db_version_control(
-                self.path, self.test_version)
+                self.engine, self.path, self.test_version)
 
             self.assertEqual(version, self.test_version)
             mock_version_control.assert_called_once_with(
-                db_session.get_engine(), self.return_value, self.test_version)
+                self.engine, self.return_value, self.test_version)
 
     def test_db_version_return(self):
-        ret_val = migration.db_version(self.path, self.init_version)
+        ret_val = migration.db_version(self.engine, self.path,
+                                       self.init_version)
         self.assertEqual(ret_val, self.test_version)
 
     def test_db_version_raise_not_controlled_error_first(self):
@@ -98,7 +98,8 @@ class TestMigrationCommon(test_base.DbTestCase):
                 migrate_exception.DatabaseNotControlledError('oups'),
                 self.test_version]
 
-            ret_val = migration.db_version(self.path, self.init_version)
+            ret_val = migration.db_version(self.engine, self.path,
+                                           self.init_version)
             self.assertEqual(ret_val, self.test_version)
             mock_ver.assert_called_once_with(self.path, self.init_version)
 
@@ -112,7 +113,7 @@ class TestMigrationCommon(test_base.DbTestCase):
 
             self.assertRaises(
                 db_exception.DbMigrationError, migration.db_version,
-                self.path, self.init_version)
+                self.engine, self.path, self.init_version)
 
     def test_db_sync_wrong_version(self):
         self.assertRaises(
@@ -128,10 +129,11 @@ class TestMigrationCommon(test_base.DbTestCase):
             mock_find_repo.return_value = self.return_value
             self.mock_api_db_version.return_value = self.test_version - 1
 
-            migration.db_sync(self.path, self.test_version, init_ver)
+            migration.db_sync(self.engine, self.path, self.test_version,
+                              init_ver)
 
             mock_upgrade.assert_called_once_with(
-                db_session.get_engine(), self.return_value, self.test_version)
+                self.engine, self.return_value, self.test_version)
 
     def test_db_sync_downgrade(self):
         with contextlib.nested(
@@ -142,10 +144,10 @@ class TestMigrationCommon(test_base.DbTestCase):
             mock_find_repo.return_value = self.return_value
             self.mock_api_db_version.return_value = self.test_version + 1
 
-            migration.db_sync(self.path, self.test_version)
+            migration.db_sync(self.engine, self.path, self.test_version)
 
             mock_downgrade.assert_called_once_with(
-                db_session.get_engine(), self.return_value, self.test_version)
+                self.engine, self.return_value, self.test_version)
 
     def test_db_sync_sanity_called(self):
         with contextlib.nested(
@@ -155,15 +157,15 @@ class TestMigrationCommon(test_base.DbTestCase):
         ) as (mock_find_repo, mock_sanity, mock_downgrade):
 
             mock_find_repo.return_value = self.return_value
-            migration.db_sync(self.path, self.test_version)
+            migration.db_sync(self.engine, self.path, self.test_version)
 
             mock_sanity.assert_called_once()
 
     def test_db_sanity_table_not_utf8(self):
-        with mock.patch.object(migration, 'get_engine') as mock_get_eng:
-            mock_eng = mock_get_eng.return_value
+        with mock.patch.object(self, 'engine') as mock_eng:
             type(mock_eng).name = mock.PropertyMock(return_value='mysql')
             mock_eng.execute.return_value = [['table_A', 'latin1'],
                                              ['table_B', 'latin1']]
 
-            self.assertRaises(ValueError, migration._db_schema_sanity_check)
+            self.assertRaises(ValueError, migration._db_schema_sanity_check,
+                              mock_eng)
