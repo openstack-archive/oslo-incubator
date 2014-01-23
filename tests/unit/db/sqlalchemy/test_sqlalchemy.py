@@ -129,7 +129,7 @@ class SessionErrorWrapperTestCase(test_base.DbTestCase):
     def setUp(self):
         super(SessionErrorWrapperTestCase, self).setUp()
         meta = MetaData()
-        meta.bind = session.get_engine()
+        meta.bind = self.engine
         test_table = Table(_TABLE_NAME, meta,
                            Column('id', Integer, primary_key=True,
                                   nullable=False),
@@ -143,16 +143,18 @@ class SessionErrorWrapperTestCase(test_base.DbTestCase):
         self.addCleanup(test_table.drop)
 
     def test_flush_wrapper(self):
+        _session = self.sessionmaker()
+
         tbl = TmpTable()
         tbl.update({'foo': 10})
-        tbl.save()
+        tbl.save(_session)
 
         tbl2 = TmpTable()
         tbl2.update({'foo': 10})
-        self.assertRaises(db_exc.DBDuplicateEntry, tbl2.save)
+        self.assertRaises(db_exc.DBDuplicateEntry, tbl2.save, _session)
 
     def test_execute_wrapper(self):
-        _session = session.get_session()
+        _session = self.sessionmaker()
         with _session.begin():
             for i in [10, 20]:
                 tbl = TmpTable()
@@ -180,7 +182,7 @@ class RegexpFilterTestCase(test_base.DbTestCase):
     def setUp(self):
         super(RegexpFilterTestCase, self).setUp()
         meta = MetaData()
-        meta.bind = session.get_engine()
+        meta.bind = self.engine
         test_table = Table(_REGEXP_TABLE_NAME, meta,
                            Column('id', Integer, primary_key=True,
                                   nullable=False),
@@ -189,7 +191,7 @@ class RegexpFilterTestCase(test_base.DbTestCase):
         self.addCleanup(test_table.drop)
 
     def _test_regexp_filter(self, regexp, expected):
-        _session = session.get_session()
+        _session = self.sessionmaker()
         with _session.begin():
             for i in ['10', '20', u'♥']:
                 tbl = RegexpTable()
@@ -211,26 +213,6 @@ class RegexpFilterTestCase(test_base.DbTestCase):
 
     def test_regexp_filter_unicode_nomatch(self):
         self._test_regexp_filter(u'♦', [])
-
-
-class SlaveBackendTestCase(test.BaseTestCase):
-
-    def test_slave_engine_nomatch(self):
-        default = session.CONF.database.connection
-        session.CONF.database.slave_connection = default
-
-        e = session.get_engine()
-        slave_e = session.get_engine(slave_engine=True)
-        self.assertNotEqual(slave_e, e)
-
-    def test_no_slave_engine_match(self):
-        slave_e = session.get_engine()
-        e = session.get_engine()
-        self.assertEqual(slave_e, e)
-
-    def test_slave_backend_nomatch(self):
-        session.CONF.database.slave_connection = "mysql:///localhost"
-        self.assertRaises(AssertionError, session._assert_matching_drivers)
 
 
 class FakeDBAPIConnection():
@@ -323,7 +305,8 @@ class MySQLTraditionalModeTestCase(test_base.MySQLOpportunisticTestCase):
     def setUp(self):
         super(MySQLTraditionalModeTestCase, self).setUp()
 
-        self.engine = session.get_engine(mysql_traditional_mode=True)
+        self.engine = session.create_engine(self.engine.url,
+                                            mysql_traditional_mode=True)
         self.connection = self.engine.connect()
 
         meta = MetaData()
@@ -333,7 +316,6 @@ class MySQLTraditionalModeTestCase(test_base.MySQLOpportunisticTestCase):
                                 Column('bar', String(255)))
         self.test_table.create()
 
-        self.addCleanup(session.cleanup)
         self.addCleanup(self.test_table.drop)
         self.addCleanup(self.connection.close)
 
@@ -341,3 +323,28 @@ class MySQLTraditionalModeTestCase(test_base.MySQLOpportunisticTestCase):
         with self.connection.begin():
             self.assertRaises(DataError, self.connection.execute,
                               self.test_table.insert(), bar='a' * 512)
+
+
+class EngineFacadeTestCase(test.BaseTestCase):
+    def setUp(self):
+        super(EngineFacadeTestCase, self).setUp()
+
+        self.facade = session.EngineFacade('sqlite://')
+
+    def test_get_engine(self):
+        eng1 = self.facade.get_engine()
+        eng2 = self.facade.get_engine()
+
+        self.assertIs(eng1, eng2)
+
+    def test_get_session(self):
+        ses1 = self.facade.get_session()
+        ses2 = self.facade.get_session()
+
+        self.assertIsNot(ses1, ses2)
+
+    def test_get_session_arguments_override_default_settings(self):
+        ses = self.facade.get_session(autocommit=False, expire_on_commit=True)
+
+        self.assertFalse(ses.autocommit)
+        self.assertTrue(ses.expire_on_commit)
