@@ -19,7 +19,6 @@ import mock
 
 from openstack.common.db import api
 from openstack.common.db import exception
-from openstack.common.fixture import config
 from openstack.common import importutils
 from tests import utils as test_utils
 
@@ -63,41 +62,14 @@ class DBAPI(object):
 
 
 class DBAPITestCase(test_utils.BaseTestCase):
-
-    def setUp(self):
-        super(DBAPITestCase, self).setUp()
-        config_fixture = self.useFixture(config.Config())
-        self.conf = config_fixture.conf
-        self.config = config_fixture.config
-
-    def test_deprecated_dbapi_parameters(self):
-        path = self.create_tempfiles([['tmp', '[DEFAULT]\n'
-                                      'db_backend=test_123\n'
-                                       ]])[0]
-
-        self.conf(['--config-file', path])
-        self.assertEqual(self.conf.database.backend, 'test_123')
-
-    def test_dbapi_parameters(self):
-        path = self.create_tempfiles([['tmp', '[database]\n'
-                                      'backend=test_123\n'
-                                       ]])[0]
-
-        self.conf(['--config-file', path])
-        self.assertEqual(self.conf.database.backend, 'test_123')
-
     def test_dbapi_full_path_module_method(self):
-        self.config(backend='tests.unit.db.test_api',
-                    group='database')
-        dbapi = api.DBAPI()
+        dbapi = api.DBAPI('tests.unit.db.test_api')
         result = dbapi.api_class_call1(1, 2, kwarg1='meow')
         expected = ((1, 2), {'kwarg1': 'meow'})
         self.assertEqual(expected, result)
 
     def test_dbapi_unknown_invalid_backend(self):
-        self.config(backend='tests.unit.db.not_existent',
-                    group='database')
-        self.assertRaises(ImportError, api.DBAPI)
+        self.assertRaises(ImportError, api.DBAPI, 'tests.unit.db.not_existent')
 
 
 class DBReconnectTestCase(DBAPITestCase):
@@ -110,30 +82,36 @@ class DBReconnectTestCase(DBAPITestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
 
-        self.dbapi = api.DBAPI(
-            {'sqlalchemy': __name__}
-        )
-
     def test_raise_connection_error(self):
+        self.dbapi = api.DBAPI('sqlalchemy', {'sqlalchemy': __name__})
+
         self.test_db_api.error_counter = 5
         self.assertRaises(exception.DBConnectionError, self.dbapi._api_raise)
 
     def test_raise_connection_error_decorated(self):
+        self.dbapi = api.DBAPI('sqlalchemy', {'sqlalchemy': __name__})
+
         self.test_db_api.error_counter = 5
         self.assertRaises(exception.DBConnectionError,
                           self.dbapi.api_raise_enable_retry)
         self.assertEqual(4, self.test_db_api.error_counter, 'Unexpected retry')
 
-    def test_raise_connection_error_enabled_config(self):
-        self.config(group='database', use_db_reconnect=True)
+    def test_raise_connection_error_enabled(self):
+        self.dbapi = api.DBAPI('sqlalchemy',
+                               {'sqlalchemy': __name__},
+                               use_db_reconnect=True)
+
         self.test_db_api.error_counter = 5
         self.assertRaises(exception.DBConnectionError,
                           self.dbapi.api_raise_default)
         self.assertEqual(4, self.test_db_api.error_counter, 'Unexpected retry')
 
     def test_retry_one(self):
-        self.config(group='database', use_db_reconnect=True)
-        self.config(group='database', db_retry_interval=1)
+        self.dbapi = api.DBAPI('sqlalchemy',
+                               {'sqlalchemy': __name__},
+                               use_db_reconnect=True,
+                               retry_interval=1)
+
         try:
             func = self.dbapi.api_raise_enable_retry
             self.test_db_api.error_counter = 1
@@ -146,9 +124,11 @@ class DBReconnectTestCase(DBAPITestCase):
             'Counter not decremented, retry logic probably failed.')
 
     def test_retry_two(self):
-        self.config(group='database', use_db_reconnect=True)
-        self.config(group='database', db_inc_retry_interval=False)
-        self.config(group='database', db_retry_interval=1)
+        self.dbapi = api.DBAPI('sqlalchemy',
+                               {'sqlalchemy': __name__},
+                               use_db_reconnect=True,
+                               retry_interval=1,
+                               inc_retry_interval=False)
 
         try:
             func = self.dbapi.api_raise_enable_retry
@@ -162,10 +142,12 @@ class DBReconnectTestCase(DBAPITestCase):
             'Counter not decremented, retry logic probably failed.')
 
     def test_retry_until_failure(self):
-        self.config(group='database', use_db_reconnect=True)
-        self.config(group='database', db_inc_retry_interval=False)
-        self.config(group='database', db_max_retries=3)
-        self.config(group='database', db_retry_interval=1)
+        self.dbapi = api.DBAPI('sqlalchemy',
+                               {'sqlalchemy': __name__},
+                               use_db_reconnect=True,
+                               retry_interval=1,
+                               inc_retry_interval=False,
+                               max_retries=3)
 
         func = self.dbapi.api_raise_enable_retry
         self.test_db_api.error_counter = 5
