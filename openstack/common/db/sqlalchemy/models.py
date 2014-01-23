@@ -26,7 +26,6 @@ from sqlalchemy import Column, Integer
 from sqlalchemy import DateTime
 from sqlalchemy.orm import object_mapper
 
-from openstack.common.db.sqlalchemy import session as sa
 from openstack.common import timeutils
 
 
@@ -34,10 +33,9 @@ class ModelBase(object):
     """Base class for models."""
     __table_initialized__ = False
 
-    def save(self, session=None):
+    def save(self, session):
         """Save this object."""
-        if not session:
-            session = sa.get_session()
+
         # NOTE(boris-42): This part of code should be look like:
         #                       session.add(self)
         #                       session.flush()
