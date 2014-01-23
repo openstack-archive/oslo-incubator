@@ -87,7 +87,7 @@ Recommended ways to use sessions within this framework:
   .. code:: python
 
     def create_many_foo(context, foos):
-        session = get_session()
+        session = sessionmaker()
         with session.begin():
             for foo in foos:
                 foo_ref = models.Foo()
@@ -95,7 +95,7 @@ Recommended ways to use sessions within this framework:
                 session.add(foo_ref)
 
     def update_bar(context, foo_id, newbar):
-        session = get_session()
+        session = sessionmaker()
         with session.begin():
             foo_ref = (model_query(context, models.Foo, session).
                         filter_by(id=foo_id).
@@ -142,7 +142,7 @@ Recommended ways to use sessions within this framework:
         foo1 = models.Foo()
         foo2 = models.Foo()
         foo1.id = foo2.id = 1
-        session = get_session()
+        session = sessionmaker()
         try:
             with session.begin():
                 session.add(foo1)
@@ -168,7 +168,7 @@ Recommended ways to use sessions within this framework:
   .. code:: python
 
     def myfunc(foo):
-        session = get_session()
+        session = sessionmaker()
         with session.begin():
             # do some database things
             bar = _private_func(foo, session)
@@ -176,7 +176,7 @@ Recommended ways to use sessions within this framework:
 
     def _private_func(foo, session=None):
         if not session:
-            session = get_session()
+            session = sessionmaker()
         with session.begin(subtransaction=True):
             # do some other database things
         return bar
@@ -240,7 +240,7 @@ Efficient use of soft deletes:
 
         def complex_soft_delete_with_synchronization_bar(session=None):
             if session is None:
-                session = get_session()
+                session = sessionmaker()
             with session.begin(subtransactions=True):
                 count = (model_query(BarModel).
                             find(some_condition).
@@ -257,7 +257,7 @@ Efficient use of soft deletes:
   .. code:: python
 
         def soft_delete_bar_model():
-            session = get_session()
+            session = sessionmaker()
             with session.begin():
                 bar_ref = model_query(BarModel).find(some_condition).first()
                 # Work with bar_ref
@@ -269,7 +269,7 @@ Efficient use of soft deletes:
   .. code:: python
 
         def soft_delete_multi_models():
-            session = get_session()
+            session = sessionmaker()
             with session.begin():
                 query = (model_query(BarModel, session=session).
                             find(some_condition))
@@ -408,11 +408,6 @@ CONF.register_opts(database_opts, 'database')
 
 LOG = logging.getLogger(__name__)
 
-_ENGINE = None
-_MAKER = None
-_SLAVE_ENGINE = None
-_SLAVE_MAKER = None
-
 
 def set_defaults(sql_connection, sqlite_db, max_pool_size=None,
                  max_overflow=None, pool_timeout=None):
@@ -433,24 +428,6 @@ def set_defaults(sql_connection, sqlite_db, max_pool_size=None,
                          pool_timeout=pool_timeout)
 
 
-def cleanup():
-    global _ENGINE, _MAKER
-    global _SLAVE_ENGINE, _SLAVE_MAKER
-
-    if _MAKER:
-        _MAKER.close_all()
-        _MAKER = None
-    if _ENGINE:
-        _ENGINE.dispose()
-        _ENGINE = None
-    if _SLAVE_MAKER:
-        _SLAVE_MAKER.close_all()
-        _SLAVE_MAKER = None
-    if _SLAVE_ENGINE:
-        _SLAVE_ENGINE.dispose()
-        _SLAVE_ENGINE = None
-
-
 class SqliteForeignKeysListener(PoolListener):
     """Ensures that the foreign key constraints are enforced in SQLite.
 
@@ -460,30 +437,6 @@ class SqliteForeignKeysListener(PoolListener):
     """
     def connect(self, dbapi_con, con_record):
         dbapi_con.execute('pragma foreign_keys=ON')
-
-
-def get_session(autocommit=True, expire_on_commit=False, sqlite_fk=False,
-                slave_session=False, mysql_traditional_mode=False):
-    """Return a SQLAlchemy session."""
-    global _MAKER
-    global _SLAVE_MAKER
-    maker = _MAKER
-
-    if slave_session:
-        maker = _SLAVE_MAKER
-
-    if maker is None:
-        engine = get_engine(sqlite_fk=sqlite_fk, slave_engine=slave_session,
-                            mysql_traditional_mode=mysql_traditional_mode)
-        maker = get_maker(engine, autocommit, expire_on_commit)
-
-    if slave_session:
-        _SLAVE_MAKER = maker
-    else:
-        _MAKER = maker
-
-    session = maker()
-    return session
 
 
 # note(boris-42): In current versions of DB backends unique constraint
@@ -591,15 +544,19 @@ def _raise_if_deadlock_error(operational_error, engine_name):
 
 
 def _wrap_db_error(f):
+    #TODO(rpodolyaka): in a subsequent commit make this a class decorator to
+    # ensure it can only applied to Session subclasses instances (as we use
+    # Session instance bind attribute below)
+
     @functools.wraps(f)
-    def _wrap(*args, **kwargs):
+    def _wrap(self, *args, **kwargs):
         try:
-            return f(*args, **kwargs)
+            return f(self, *args, **kwargs)
         except UnicodeEncodeError:
             raise exception.DBInvalidUnicodeParameter()
         except sqla_exc.OperationalError as e:
-            _raise_if_db_connection_lost(e, get_engine())
-            _raise_if_deadlock_error(e, get_engine().name)
+            _raise_if_db_connection_lost(e, self.bind.dialect.name)
+            _raise_if_deadlock_error(e, self.bind.dialect.name)
             # NOTE(comstud): A lot of code is checking for OperationalError
             # so let's not wrap it for now.
             raise
@@ -612,35 +569,12 @@ def _wrap_db_error(f):
             # instance_types) there are more than one unique constraint. This
             # means we should get names of columns, which values violate
             # unique constraint, from error message.
-            _raise_if_duplicate_entry_error(e, get_engine().name)
+            _raise_if_duplicate_entry_error(e, self.bind.dialect.name)
             raise exception.DBError(e)
         except Exception as e:
             LOG.exception(_('DB exception wrapped.'))
             raise exception.DBError(e)
     return _wrap
-
-
-def get_engine(sqlite_fk=False, slave_engine=False,
-               mysql_traditional_mode=False):
-    """Return a SQLAlchemy engine."""
-    global _ENGINE
-    global _SLAVE_ENGINE
-    engine = _ENGINE
-    db_uri = CONF.database.connection
-
-    if slave_engine:
-        engine = _SLAVE_ENGINE
-        db_uri = CONF.database.slave_connection
-
-    if engine is None:
-        engine = create_engine(db_uri, sqlite_fk=sqlite_fk,
-                               mysql_traditional_mode=mysql_traditional_mode)
-    if slave_engine:
-        _SLAVE_ENGINE = engine
-    else:
-        _ENGINE = engine
-
-    return engine
 
 
 def _synchronous_switch_listener(dbapi_conn, connection_rec):
