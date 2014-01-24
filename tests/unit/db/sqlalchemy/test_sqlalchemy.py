@@ -220,13 +220,19 @@ class TestDBDisconnected(test.BaseTestCase):
                 self._test_ping_listener_disconnected(connection)
 
 
-class MySQLTraditionalModeTestCase(test_base.MySQLOpportunisticTestCase):
+class MySQLModeTestCase(test_base.MySQLOpportunisticTestCase):
+
+    def __init__(self, *args, **kwargs):
+        super(MySQLModeTestCase, self).__init__(*args, **kwargs)
+        # By default, run in empty SQL mode.
+        # Subclasses override this with specific modes.
+        self.mysql_mode = ''
 
     def setUp(self):
-        super(MySQLTraditionalModeTestCase, self).setUp()
+        super(MySQLModeTestCase, self).setUp()
 
         self.engine = session.create_engine(self.engine.url,
-                                            mysql_traditional_mode=True)
+                                            mysql_sql_mode=self.mysql_mode)
         self.connection = self.engine.connect()
 
         meta = MetaData()
@@ -239,10 +245,45 @@ class MySQLTraditionalModeTestCase(test_base.MySQLOpportunisticTestCase):
         self.addCleanup(self.test_table.drop)
         self.addCleanup(self.connection.close)
 
-    def test_string_too_long(self):
+    def _test_string_too_long(self, value):
         with self.connection.begin():
-            self.assertRaises(DataError, self.connection.execute,
-                              self.test_table.insert(), bar='a' * 512)
+            self.connection.execute(self.test_table.insert(),
+                                    bar=value)
+            result = self.connection.execute(self.test_table.select())
+            return result.fetchone()['bar']
+
+    def test_string_too_long(self):
+        value = 'a' * 512
+        # String is too long.
+        # With no SQL mode set, this gets truncated.
+        self.assertNotEqual(value,
+                            self._test_string_too_long(value))
+
+
+class MySQLStrictAllTablesModeTestCase(MySQLModeTestCase):
+    "Test data integrity enforcement in MySQL STRICT_ALL_TABLES mode."
+
+    def __init__(self, *args, **kwargs):
+        super(MySQLStrictAllTablesModeTestCase, self).__init__(*args, **kwargs)
+        self.mysql_mode = 'STRICT_ALL_TABLES'
+
+    def test_string_too_long(self):
+        value = 'a' * 512
+        # String is too long.
+        # With STRICT_ALL_TABLES or TRADITIONAL mode set, this is an error.
+        self.assertRaises(DataError,
+                          self._test_string_too_long, value)
+
+
+class MySQLTraditionalModeTestCase(MySQLStrictAllTablesModeTestCase):
+    """Test data integrity enforcement in MySQL TRADITIONAL mode.
+    Since TRADITIONAL includes STRICT_ALL_TABLES, this inherits all
+    STRICT_ALL_TABLES mode tests.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(MySQLTraditionalModeTestCase, self).__init__(*args, **kwargs)
+        self.mysql_mode = 'TRADITIONAL'
 
 
 class EngineFacadeTestCase(test.BaseTestCase):
