@@ -16,6 +16,8 @@ import collections
 
 from oslotest import base as test_base
 
+import mock
+
 from openstack.common.apiclient import base
 from openstack.common.apiclient import client
 from openstack.common.apiclient import exceptions
@@ -229,6 +231,83 @@ class BaseManagerTest(test_base.BaseTestCase):
         human_resource = self.tc.human_resources.update("1", name)
         self.assertEqual(human_resource.id, "1")
         self.assertEqual(human_resource.name, name)
+
+
+class BaseManagerTestCase(test_base.BaseTestCase):
+
+    def setUp(self):
+        super(BaseManagerTestCase, self).setUp()
+
+        self.response = mock.MagicMock()
+        self.http_client = mock.MagicMock()
+        self.http_client.get.return_value = self.response
+        self.http_client.post.return_value = self.response
+
+        self.manager = base.BaseManager(self.http_client)
+        self.manager.resource_class = HumanResource
+
+    def test_list(self):
+        self.response.json.return_value = {'human_resources': [{'id': 42}]}
+        expected = [HumanResource(self.manager, {'id': 42}, loaded=True)]
+        result = self.manager._list("/human_resources", "human_resources")
+        self.assertEqual(expected, result)
+
+    def test_list_no_response_key(self):
+        self.response.json.return_value = [{'id': 42}]
+        expected = [HumanResource(self.manager, {'id': 42}, loaded=True)]
+        result = self.manager._list("/human_resources")
+        self.assertEqual(expected, result)
+
+    def test_list_get(self):
+        self.manager._list("/human_resources", "human_resources")
+        self.manager.client.get.assert_called_with("/human_resources")
+
+    def test_list_post(self):
+        self.manager._list("/human_resources", "human_resources",
+                           json={'id': 42})
+        self.manager.client.post.assert_called_with("/human_resources",
+                                                    json={'id': 42})
+
+    def test_get(self):
+        self.response.json.return_value = {'human_resources': {'id': 42}}
+        expected = HumanResource(self.manager, {'id': 42}, loaded=True)
+        result = self.manager._get("/human_resources/42", "human_resources")
+        self.manager.client.get.assert_called_with("/human_resources/42")
+        self.assertEqual(expected, result)
+
+    def test_get_no_response_key(self):
+        self.response.json.return_value = {'id': 42}
+        expected = HumanResource(self.manager, {'id': 42}, loaded=True)
+        result = self.manager._get("/human_resources/42")
+        self.manager.client.get.assert_called_with("/human_resources/42")
+        self.assertEqual(expected, result)
+
+    def test_post(self):
+        self.response.json.return_value = {'human_resources': {'id': 42}}
+        expected = HumanResource(self.manager, {'id': 42}, loaded=True)
+        result = self.manager._post("/human_resources",
+                                    response_key="human_resources",
+                                    json={'id': 42})
+        self.manager.client.post.assert_called_with("/human_resources",
+                                                    json={'id': 42})
+        self.assertEqual(expected, result)
+
+    def test_post_return_raw(self):
+        self.response.json.return_value = {'human_resources': {'id': 42}}
+        result = self.manager._post("/human_resources",
+                                    response_key="human_resources",
+                                    json={'id': 42}, return_raw=True)
+        self.manager.client.post.assert_called_with("/human_resources",
+                                                    json={'id': 42})
+        self.assertEqual(result, {'id': 42})
+
+    def test_post_no_response_key(self):
+        self.response.json.return_value = {'id': 42}
+        expected = HumanResource(self.manager, {'id': 42}, loaded=True)
+        result = self.manager._post("/human_resources", json={'id': 42})
+        self.manager.client.post.assert_called_with("/human_resources",
+                                                    json={'id': 42})
+        self.assertEqual(expected, result)
 
 
 class CrudManagerTest(test_base.BaseTestCase):
