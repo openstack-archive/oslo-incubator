@@ -449,7 +449,7 @@ class SqliteForeignKeysListener(PoolListener):
 
 
 def get_session(autocommit=True, expire_on_commit=False, sqlite_fk=False,
-                slave_session=False, mysql_traditional_mode=False):
+                slave_session=False):
     """Return a SQLAlchemy session."""
     global _MAKER
     global _SLAVE_MAKER
@@ -459,8 +459,7 @@ def get_session(autocommit=True, expire_on_commit=False, sqlite_fk=False,
         maker = _SLAVE_MAKER
 
     if maker is None:
-        engine = get_engine(sqlite_fk=sqlite_fk, slave_engine=slave_session,
-                            mysql_traditional_mode=mysql_traditional_mode)
+        engine = get_engine(sqlite_fk=sqlite_fk, slave_engine=slave_session)
         maker = get_maker(engine, autocommit, expire_on_commit)
 
     if slave_session:
@@ -605,8 +604,7 @@ def _wrap_db_error(f):
     return _wrap
 
 
-def get_engine(sqlite_fk=False, slave_engine=False,
-               mysql_traditional_mode=False):
+def get_engine(sqlite_fk=False, slave_engine=False):
     """Return a SQLAlchemy engine."""
     global _ENGINE
     global _SLAVE_ENGINE
@@ -618,8 +616,7 @@ def get_engine(sqlite_fk=False, slave_engine=False,
         db_uri = CONF.database.slave_connection
 
     if engine is None:
-        engine = create_engine(db_uri, sqlite_fk=sqlite_fk,
-                               mysql_traditional_mode=mysql_traditional_mode)
+        engine = create_engine(db_uri, sqlite_fk=sqlite_fk)
     if slave_engine:
         _SLAVE_ENGINE = engine
     else:
@@ -676,18 +673,6 @@ def _ping_listener(engine, dbapi_conn, connection_rec, connection_proxy):
             raise
 
 
-def _set_mode_traditional(dbapi_con, connection_rec, connection_proxy):
-    """Set engine mode to 'traditional'.
-
-    Required to prevent silent truncates at insert or update operations
-    under MySQL. By default MySQL truncates inserted string if it longer
-    than a declared field just with warning. That is fraught with data
-    corruption.
-    """
-    _set_session_sql_mode(dbapi_con, connection_rec,
-                          connection_proxy, 'TRADITIONAL')
-
-
 def _set_session_sql_mode(dbapi_con, connection_rec,
                           connection_proxy, sql_mode=None):
     """Set the sql_mode session variable.
@@ -736,8 +721,7 @@ def _is_db_connection_error(args):
     return False
 
 
-def create_engine(sql_connection, sqlite_fk=False,
-                  mysql_traditional_mode=False):
+def create_engine(sql_connection, sqlite_fk=False):
     """Return a new SQLAlchemy engine."""
     # NOTE(geekinutah): At this point we could be connecting to the normal
     #                   db handle or the slave db handle. Things like
@@ -782,8 +766,6 @@ def create_engine(sql_connection, sqlite_fk=False,
         callback = functools.partial(_ping_listener, engine)
         sqlalchemy.event.listen(engine, 'checkout', callback)
         mysql_sql_mode = CONF.database.mysql_sql_mode
-        if mysql_traditional_mode:
-            mysql_sql_mode = 'TRADITIONAL'
         if mysql_sql_mode:
             sqlalchemy.event.listen(engine, 'checkout',
                                     functools.partial(_set_session_sql_mode,
