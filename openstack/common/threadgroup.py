@@ -51,7 +51,7 @@ class Thread(object):
 
 
 class ThreadGroup(object):
-    """The point of the ThreadGroup classis to:
+    """The point of the ThreadGroup class is to:
 
     * keep track of timers and greenthreads (making it easier to stop them
       when need be).
