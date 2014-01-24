@@ -413,38 +413,56 @@ def _raise_if_deadlock_error(operational_error, engine_name):
     raise exception.DBDeadlock(operational_error)
 
 
-def _wrap_db_error(f):
-    #TODO(rpodolyaka): in a subsequent commit make this a class decorator to
-    # ensure it can only applied to Session subclasses instances (as we use
-    # Session instance bind attribute below)
+def wrap_db_error(methods_to_wrap):
+    """Wrap errors raised when executing DB queries (e.g. constraint violation)
 
-    @functools.wraps(f)
-    def _wrap(self, *args, **kwargs):
-        try:
-            return f(self, *args, **kwargs)
-        except UnicodeEncodeError:
-            raise exception.DBInvalidUnicodeParameter()
-        except sqla_exc.OperationalError as e:
-            _raise_if_db_connection_lost(e, self.bind.dialect.name)
-            _raise_if_deadlock_error(e, self.bind.dialect.name)
-            # NOTE(comstud): A lot of code is checking for OperationalError
-            # so let's not wrap it for now.
-            raise
-        # note(boris-42): We should catch unique constraint violation and
-        # wrap it by our own DBDuplicateEntry exception. Unique constraint
-        # violation is wrapped by IntegrityError.
-        except sqla_exc.IntegrityError as e:
-            # note(boris-42): SqlAlchemy doesn't unify errors from different
-            # DBs so we must do this. Also in some tables (for example
-            # instance_types) there are more than one unique constraint. This
-            # means we should get names of columns, which values violate
-            # unique constraint, from error message.
-            _raise_if_duplicate_entry_error(e, self.bind.dialect.name)
-            raise exception.DBError(e)
-        except Exception as e:
-            LOG.exception(_('DB exception wrapped.'))
-            raise exception.DBError(e)
-    return _wrap
+    Note: can only be applied to SQLAlchemy Session subclasses.
+
+    :param methods_to_wrap: a list of methods to wrap
+
+    """
+
+    def class_decorator(cls):
+        if not issubclass(cls, sqlalchemy.orm.Session):
+            raise TypeError('cls argument must be a subclass of SQLAlchemy '
+                            'Session class')
+
+        def method_decorator(m):
+            @functools.wraps(m)
+            def wrapper(self, *args, **kwargs):
+                try:
+                    return m(self, *args, **kwargs)
+                except UnicodeEncodeError:
+                    raise exception.DBInvalidUnicodeParameter()
+                except sqla_exc.OperationalError as e:
+                    _raise_if_db_connection_lost(e, self.bind.dialect.name)
+                    _raise_if_deadlock_error(e, self.bind.dialect.name)
+                    # NOTE(comstud): A lot of code is checking for
+                    # OperationalError so let's not wrap it for now.
+                    raise
+                # note(boris-42): We should catch unique constraint violation
+                # and wrap it by our own DBDuplicateEntry exception. Unique
+                # constraint violation is wrapped by IntegrityError.
+                except sqla_exc.IntegrityError as e:
+                    # note(boris-42): SA doesn't unify errors from different
+                    # DBs so we must do this. Also in some tables (for example
+                    # instance_types) there are more than one unique constraint
+                    # This means we should get names of columns, which values
+                    # violate unique constraint, from error message.
+                    _raise_if_duplicate_entry_error(e, self.bind.dialect.name)
+                    raise exception.DBError(e)
+                except Exception as e:
+                    raise exception.DBError(e)
+
+            return wrapper
+
+        for name in methods_to_wrap:
+            original = getattr(cls, name)
+            setattr(cls, name, method_decorator(original))
+
+        return cls
+
+    return class_decorator
 
 
 def _synchronous_switch_listener(dbapi_conn, connection_rec):
@@ -539,7 +557,7 @@ def create_engine(sql_connection, sqlite_fk=False,
 
     # NOTE(geekinutah): At this point we could be connecting to the normal
     #                   db handle or the slave db handle. Things like
-    #                   _wrap_db_error aren't going to work well if their
+    #                   wrap_db_error aren't going to work well if their
     #                   backends don't match. Let's check.
     connection_dict = sqlalchemy.engine.url.make_url(sql_connection)
 
@@ -631,19 +649,9 @@ class Query(sqlalchemy.orm.query.Query):
                            synchronize_session=synchronize_session)
 
 
+@wrap_db_error(['query', 'flush', 'execute'])
 class Session(sqlalchemy.orm.session.Session):
     """Custom Session class to avoid SqlAlchemy Session monkey patching."""
-    @_wrap_db_error
-    def query(self, *args, **kwargs):
-        return super(Session, self).query(*args, **kwargs)
-
-    @_wrap_db_error
-    def flush(self, *args, **kwargs):
-        return super(Session, self).flush(*args, **kwargs)
-
-    @_wrap_db_error
-    def execute(self, *args, **kwargs):
-        return super(Session, self).execute(*args, **kwargs)
 
 
 def get_maker(engine, autocommit=True, expire_on_commit=False):
