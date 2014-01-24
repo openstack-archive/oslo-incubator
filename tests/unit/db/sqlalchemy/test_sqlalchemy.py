@@ -84,6 +84,10 @@ class SessionErrorWrapperTestCase(test_base.DbTestCase):
             self.assertRaises(db_exc.DBDuplicateEntry,
                               method, {'foo': 20})
 
+    def test_wrapper_wrong_cls_instance(self):
+        decorator = session.wrap_db_error(['query', 'flush', 'execute'])
+        self.assertRaises(TypeError, decorator, session.Query)
+
 
 _REGEXP_TABLE_NAME = _TABLE_NAME + "regexp"
 
