@@ -163,6 +163,26 @@ def external_lock(name, lock_file_prefix=None):
         return InterProcessLock(lock_file_path)
 
 
+def remove_external_lock_file(name, lock_file_prefix=None):
+    """Remove a external lock file when it's not used anymore
+    This will be helpful when we have a lot of lock files
+    """
+    if not CONF.lock_path:
+        raise cfg.RequiredOptError('lock_path')
+
+    name = name.replace(os.sep, '_')
+    if lock_file_prefix:
+        sep = '' if lock_file_prefix.endswith('-') else '-'
+        name = '%s%s%s' % (lock_file_prefix, sep, name)
+
+    lock_file_path = os.path.join(CONF.lock_path, name)
+    try:
+        os.remove(lock_file_path)
+    except OSError:
+        LOG.info(_('Failed to remove file %(file)s'),
+                 {'file': lock_file_path})
+
+
 def internal_lock(name):
     with _semaphores_lock:
         try:
