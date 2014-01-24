@@ -317,6 +317,7 @@ database_opts = [
                help='The SQLAlchemy connection string used to connect to the '
                     'slave database'),
     cfg.StrOpt('mysql_sql_mode',
+               default='TRADITIONAL',
                help='The SQL mode to be used for MySQL sessions '
                     '(default is empty, meaning do not override '
                     'any server-side SQL mode setting)'),
