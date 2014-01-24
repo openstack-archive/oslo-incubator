@@ -30,6 +30,7 @@ import time
 import traceback
 
 import eventlet
+import mock
 import mox
 
 from openstack.common import eventlet_backdoor
@@ -362,3 +363,21 @@ class LauncherTest(test.BaseTestCase):
         # make sure stop can be called more than once.  (i.e. play nice with
         # unit test fixtures in nova bug #1199315)
         launcher.stop()
+
+    @mock.patch('openstack.common.service.ServiceLauncher.launch_service')
+    def _test_launch_single(self, workers, mock_launch):
+        svc = service.Service()
+        service.launch(svc, workers=workers)
+        mock_launch.assert_called_with(svc)
+
+    def test_launch_none(self):
+        self._test_launch_single(None)
+
+    def test_launch_one_worker(self):
+        self._test_launch_single(1)
+
+    @mock.patch('openstack.common.service.ProcessLauncher.launch_service')
+    def test_multiple_worker(self, mock_launch):
+        svc = service.Service()
+        service.launch(svc, workers=3)
+        mock_launch.assert_called_with(svc, workers=3)
