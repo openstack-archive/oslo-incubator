@@ -318,12 +318,12 @@ class TestDBDisconnected(test.BaseTestCase):
                 self._test_ping_listener_disconnected(connection)
 
 
-class MySQLTraditionalModeTestCase(test_base.MySQLOpportunisticTestCase):
+class MySQLModeTestCase(test_base.MySQLOpportunisticTestCase):
 
     def setUp(self):
-        super(MySQLTraditionalModeTestCase, self).setUp()
+        super(MySQLModeTestCase, self).setUp()
 
-        self.engine = session.get_engine(mysql_traditional_mode=True)
+        self.engine = session.get_engine()
         self.connection = self.engine.connect()
 
         meta = MetaData()
@@ -336,6 +336,25 @@ class MySQLTraditionalModeTestCase(test_base.MySQLOpportunisticTestCase):
         self.addCleanup(session.cleanup)
         self.addCleanup(self.test_table.drop)
         self.addCleanup(self.connection.close)
+
+
+class MySQLTraditionalModeTestCase(MySQLModeTestCase):
+
+    def setUp(self):
+        super(MySQLTraditionalModeTestCase, self).setUp()
+        session.CONF.database.mysql_sql_mode = 'TRADITIONAL'
+
+    def test_string_too_long(self):
+        with self.connection.begin():
+            self.assertRaises(DataError, self.connection.execute,
+                              self.test_table.insert(), bar='a' * 512)
+
+
+class MySQLStrictAllTablesModeTestCase(MySQLModeTestCase):
+
+    def setUp(self):
+        super(MySQLStrictAllTablesModeTestCase, self).setUp()
+        session.CONF.database.mysql_sql_mode = 'STRICT_ALL_TABLES'
 
     def test_string_too_long(self):
         with self.connection.begin():
