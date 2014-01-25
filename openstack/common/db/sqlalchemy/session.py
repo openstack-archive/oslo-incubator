@@ -618,14 +618,33 @@ class Query(sqlalchemy.orm.query.Query):
 class Session(sqlalchemy.orm.session.Session):
     """Custom Session class to avoid SqlAlchemy Session monkey patching."""
 
+    def __init__(self, *args, **kwargs):
+        self.slave_engine = kwargs.pop('slave_engine', None)
 
-def get_maker(engine, autocommit=True, expire_on_commit=False):
+        super(Session, self).__init__(*args, **kwargs)
+
+    def get_bind(self, mapper=None, clause=None):
+        is_sql_write = clause is not None and (
+            'insert' in str(clause).lower() or
+            'update' in str(clause).lower())
+
+        if self._flushing or is_sql_write:
+            # always return master db on writes
+            return self.bind
+        else:
+            # return slave db on reads (if exists, otherwise return master)
+            return self.slave_engine or self.bind
+
+
+def get_maker(engine, autocommit=True, expire_on_commit=False,
+              slave_engine=None):
     """Return a SQLAlchemy sessionmaker using the given engine."""
     return sqlalchemy.orm.sessionmaker(bind=engine,
                                        class_=Session,
                                        autocommit=autocommit,
                                        expire_on_commit=expire_on_commit,
-                                       query_cls=Query)
+                                       query_cls=Query,
+                                       slave_engine=slave_engine)
 
 
 def _patch_mysqldb_with_stacktrace_comments():

@@ -240,3 +240,41 @@ class MySQLTraditionalModeTestCase(test_base.MySQLOpportunisticTestCase):
         with self.connection.begin():
             self.assertRaises(DataError, self.connection.execute,
                               self.test_table.insert(), bar='a' * 512)
+
+
+class TestSessionUtils(test.BaseTestCase):
+    def setUp(self):
+        super(TestSessionUtils, self).setUp()
+
+        self.master_mock = mock.MagicMock()
+        self.slave_mock = mock.MagicMock()
+
+        self.master = sqlalchemy.create_engine('sqlite://', strategy='mock',
+                                               executor=self.master_mock)
+        self.slave = sqlalchemy.create_engine('sqlite://', strategy='mock',
+                                              executor=self.slave_mock)
+
+        self.maker = session.get_maker(engine=self.master,
+                                       slave_engine=self.slave)
+        self.maker_wo_slave = session.get_maker(engine=self.master)
+
+    def test_session_uses_master_for_writes(self):
+        session = self.maker()
+
+        session.execute('insert into testtbl values (1);')
+        self.assertTrue(self.master_mock.called)
+        self.assertFalse(self.slave_mock.called)
+
+    def test_session_uses_slave_for_reads(self):
+        session = self.maker()
+
+        session.execute('select a from testtbl;')
+        self.assertFalse(self.master_mock.called)
+        self.assertTrue(self.slave_mock.called)
+
+    def test_session_uses_master_for_reads_when_slave_not_defined(self):
+        session = self.maker_wo_slave()
+
+        session.execute('select a from testtbl;')
+        self.assertTrue(self.master_mock.called)
+        self.assertFalse(self.slave_mock.called)
