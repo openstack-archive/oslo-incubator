@@ -153,6 +153,7 @@ log_opts = [
                     'sqlalchemy=WARN',
                     'suds=INFO',
                     'iso8601=WARN',
+                    'requests.packages.urllib3.connectionpool=WARN'
                 ],
                 help='list of logger=LEVEL pairs'),
     cfg.BoolOpt('publish_errors',
