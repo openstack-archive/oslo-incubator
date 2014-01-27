@@ -85,6 +85,50 @@ class LockTestCase(test.BaseTestCase):
         self.assertEqual(foo.__name__, 'foo', "Wrapped function's name "
                                               "got mangled")
 
+    def test_lock_acquire_release(self):
+        lock_dir = tempfile.mkdtemp()
+        lock_file = os.path.join(lock_dir, 'lock')
+        lock = lockutils.InterProcessLock(lock_file)
+
+        def try_lock():
+            lock.release()  # child co-owns it before fork
+            try:
+                my_lock = lockutils.InterProcessLock(lock_file)
+                my_lock.lockfile = open(lock_file, 'w')
+                my_lock.trylock()
+                my_lock.unlock()
+                os._exit(1)
+            except IOError:
+                os._exit(0)
+
+        def attempt_acquire(count):
+            children = []
+            for i in range(count):
+                child = multiprocessing.Process(target=try_lock)
+                child.start()
+                children.append(child)
+            exit_codes = []
+            for child in children:
+                child.join()
+                exit_codes.append(child.exitcode)
+            return sum(exit_codes)
+
+        self.assertTrue(lock.acquire())
+        try:
+            acquired_children = attempt_acquire(10)
+            self.assertEqual(0, acquired_children)
+        finally:
+            lock.release()
+
+        try:
+            acquired_children = attempt_acquire(5)
+            self.assertNotEqual(0, acquired_children)
+        finally:
+            try:
+                shutil.rmtree(lock_dir)
+            except IOError:
+                pass
+
     def test_lock_internally(self):
         """We can lock across multiple green threads."""
         saved_sem_num = len(lockutils._semaphores)
