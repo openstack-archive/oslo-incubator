@@ -20,11 +20,12 @@ import os
 import mock
 from oslo.config import cfg
 import six
+import six.moves.urllib.parse as urlparse
+import six.moves.urllib.request as urlrequest
 
 from openstack.common.fixture import config
 from openstack.common import jsonutils
 from openstack.common import policy
-from openstack.common.py3kcompat import urlutils
 from openstack.common import test
 
 
@@ -850,11 +851,11 @@ class HttpCheckTestCase(PolicyBaseTestCase):
         result = {}
         for item in post_data.split('&'):
             key, _sep, value = item.partition('=')
-            result[key] = jsonutils.loads(urlutils.unquote_plus(value))
+            result[key] = jsonutils.loads(urlparse.unquote_plus(value))
 
         return result
 
-    @mock.patch.object(urlutils, 'urlopen',
+    @mock.patch.object(urlrequest, 'urlopen',
                        return_value=six.StringIO('True'))
     def test_accept(self, mock_urlopen):
         check = policy.HttpCheck('http', '//example.com/%(name)s')
@@ -873,7 +874,7 @@ class HttpCheckTestCase(PolicyBaseTestCase):
             credentials=dict(user='user', roles=['a', 'b', 'c']),
         ))
 
-    @mock.patch.object(urlutils, 'urlopen',
+    @mock.patch.object(urlrequest, 'urlopen',
                        return_value=six.StringIO('other'))
     def test_reject(self, mock_urlopen):
         check = policy.HttpCheck('http', '//example.com/%(name)s')

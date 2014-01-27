@@ -59,6 +59,8 @@ import re
 
 from oslo.config import cfg
 import six
+import six.moves.urllib.parse as urlparse
+import six.moves.urllib.request as urlrequest
 
 from openstack.common import fileutils
 from openstack.common.gettextutils import _
@@ -824,8 +826,8 @@ class HttpCheck(Check):
         url = ('http:' + self.match) % target
         data = {'target': jsonutils.dumps(target),
                 'credentials': jsonutils.dumps(creds)}
-        post_data = urlutils.urlencode(data)
-        f = urlutils.urlopen(url, post_data)
+        post_data = urlparse.urlencode(data)
+        f = urlrequest.urlopen(url, post_data)
         return f.read() == "True"
 
 
