@@ -78,6 +78,13 @@ class RootwrapConfig(object):
         else:
             self.use_syslog = False
 
+        # use_syslog_rfc_format
+        if config.has_option("DEFAULT", "use_syslog_rfc_format"):
+            self.use_syslog_rfc_format = config.getboolean(
+                "DEFAULT", "use_syslog_rfc_format")
+        else:
+            self.use_syslog_rfc_format = False
+
 
 def setup_syslog(execname, facility, level):
     rootwrap_logger = logging.getLogger()
