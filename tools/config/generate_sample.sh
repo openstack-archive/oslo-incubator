@@ -83,10 +83,10 @@ find $TARGETDIR -type f -name "*.pyc" -delete
 FILES=$(find $TARGETDIR -type f -name "*.py" ! -path "*/tests/*" \
         -exec grep -l "Opt(" {} + | sed -e "s/^$BASEDIRESC\///g" | sort -u)
 
-EXTRA_MODULES_FILE="`dirname $0`/oslo.config.generator.rc"
-if test -r "$EXTRA_MODULES_FILE"
+RC_FILE="`dirname $0`/oslo.config.generator.rc"
+if test -r "$RC_FILE"
 then
-    source "$EXTRA_MODULES_FILE"
+    source "$RC_FILE"
 fi
 
 export EVENTLET_NO_GREENDNS=yes
