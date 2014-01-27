@@ -129,7 +129,7 @@ logging_cli_opts = [
                      'and will be removed in J.'),
     cfg.StrOpt('syslog-log-facility',
                default='LOG_USER',
-               help='syslog facility to receive log lines')
+               help='Syslog facility to receive log lines')
 ]
 
 generic_log_opts = [
@@ -143,18 +143,18 @@ log_opts = [
                default='%(asctime)s.%(msecs)03d %(process)d %(levelname)s '
                        '%(name)s [%(request_id)s %(user_identity)s] '
                        '%(instance)s%(message)s',
-               help='format string to use for log messages with context'),
+               help='Format string to use for log messages with context'),
     cfg.StrOpt('logging_default_format_string',
                default='%(asctime)s.%(msecs)03d %(process)d %(levelname)s '
                        '%(name)s [-] %(instance)s%(message)s',
-               help='format string to use for log messages without context'),
+               help='Format string to use for log messages without context'),
     cfg.StrOpt('logging_debug_format_suffix',
                default='%(funcName)s %(pathname)s:%(lineno)d',
-               help='data to append to log format when level is DEBUG'),
+               help='Data to append to log format when level is DEBUG'),
     cfg.StrOpt('logging_exception_prefix',
                default='%(asctime)s.%(msecs)03d %(process)d TRACE %(name)s '
                '%(instance)s',
-               help='prefix each line of exception output with this format'),
+               help='Prefix each line of exception output with this format'),
     cfg.ListOpt('default_log_levels',
                 default=[
                     'amqp=WARN',
@@ -165,13 +165,13 @@ log_opts = [
                     'suds=INFO',
                     'iso8601=WARN',
                 ],
-                help='list of logger=LEVEL pairs'),
+                help='List of logger=LEVEL pairs'),
     cfg.BoolOpt('publish_errors',
                 default=False,
-                help='publish error events'),
+                help='Publish error events'),
     cfg.BoolOpt('fatal_deprecations',
                 default=False,
-                help='make deprecations fatal'),
+                help='Make deprecations fatal'),
 
     # NOTE(mikal): there are two options here because sometimes we are handed
     # a full instance (and could include more information), and other times we
