@@ -100,10 +100,14 @@ def generate(argv):
     # Each entry point should be a function returning an iterable
     # of pairs with the group name (or None for the default group)
     # and the list of Opt instances for that group.
-    if parsed_args.libraries:
+    libraries = parsed_args.libraries
+    extra_libraries =  os.getenv("OSLO_CONFIG_GENERATOR_EXTRA_LIBRARIES", "")
+    if extra_libraries:
+        libraries.extend(l.strip() for l in extra_modules.split(','))
+    if libraries:
         loader = stevedore.named.NamedExtensionManager(
             'oslo.config.opts',
-            names=list(set(parsed_args.libraries)),
+            names=list(set(libraries)),
             invoke_on_load=False,
         )
         for ext in loader:
