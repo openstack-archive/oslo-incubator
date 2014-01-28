@@ -83,7 +83,7 @@ F: cliutils.py
 
 M: Chuck Short <chuck.short@canonical.com>
 S: Maintained
-F: py3kcompat
+F: py3kcompat/
 
 == context ==
 
@@ -189,6 +189,12 @@ M:
 S: Orphan
 F: log.py
 
+== log_handler ==
+
+M:
+S: Orphan
+F: log_handler.py
+
 == loopingcall ==
 
 M:
@@ -200,6 +206,12 @@ F: loopingcall.py
 M:
 S: Orphan
 F: memorycache.py
+
+== middleware ==
+
+M:
+S: Orphan
+F: middleware/
 
 == network_utils ==
 
@@ -239,6 +251,12 @@ M: Sergey Skripnick <sskripnick@mirantis.com>
 S: Maintained
 F: quota.py
 
+== requestutils ==
+
+M: Sandy Walsh <sandy.walsh@rackspace.com>
+S: Maintained
+F: request_utils.py
+
 == rootwrap ==
 
 M: Thierry Carrez <thierry@openstack.org>
@@ -276,6 +294,12 @@ M: Flavio Percoco <flavio@redhat.com>
 S: Maintained
 F: strutils.py
 
+== test ==
+
+M:
+S: Orphan
+F: test.py
+
 == threadgroup ==
 
 M:
@@ -288,11 +312,23 @@ M: Zhongyue Luo <zhongyue.nah@intel.com>
 S: Maintained
 F: timeutils.py
 
+== units ==
+
+M: Chang Bo Guo <guochbo@cn.ibm.com>
+S: Maintained
+F: units.py
+
 == uuidutils ==
 
 M: Zhongyue Luo <zhongyue.nah@intel.com>
 S: Maintained
 F: uuidutils.py
+
+== versionutils ==
+
+M:
+S: Orphan
+F: versionutils.py
 
 == xmlutils ==
 
