@@ -737,7 +737,7 @@ def create_engine(sql_connection, sqlite_fk=False,
     if engine.name in ['mysql', 'ibm_db_sa']:
         callback = functools.partial(_ping_listener, engine)
         sqlalchemy.event.listen(engine, 'checkout', callback)
-        if mysql_traditional_mode:
+        if engine.name == 'mysql' and mysql_traditional_mode:
             sqlalchemy.event.listen(engine, 'checkout', _set_mode_traditional)
         else:
             LOG.warning(_("This application has not enabled MySQL traditional"
