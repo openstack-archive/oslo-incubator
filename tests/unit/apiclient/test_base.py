@@ -135,6 +135,14 @@ class ResourceTest(test.BaseTestCase):
         r = HumanResource(None, {"name": "1"})
         self.assertEqual(r.human_id, "1")
 
+    def test__loaded(self):
+        client = TestClient(FakeHTTPClient())
+        mgr = CrudResourceManager(client)
+        r = base.Resource(mgr, {"id": 1})
+        self.assertFalse(r.is_loaded)
+        self.assertEqual("my-domain", r.domain_id)
+        self.assertTrue(r.is_loaded)
+
 
 class BaseManagerTest(test.BaseTestCase):
 
