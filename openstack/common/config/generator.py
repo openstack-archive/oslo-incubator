@@ -65,6 +65,7 @@ def generate(argv):
     parser = argparse.ArgumentParser(
         description='generate sample configuration file',
     )
+    parser.add_argument('-m', dest='modules', action='append')
     parser.add_argument('-l', dest='libraries', action='append')
     parser.add_argument('srcfiles', nargs='*')
     parsed_args = parser.parse_args(argv)
@@ -84,10 +85,8 @@ def generate(argv):
     # The options list is a list of (module, options) tuples
     opts_by_group = {'DEFAULT': []}
 
-    extra_modules = os.getenv("OSLO_CONFIG_GENERATOR_EXTRA_MODULES", "")
-    if extra_modules:
-        for module_name in extra_modules.split(','):
-            module_name = module_name.strip()
+    if parsed_args.modules:
+        for module_name in parsed_args.modules:
             module = _import_module(module_name)
             if module:
                 for group, opts in _list_opts(module):
@@ -100,14 +99,10 @@ def generate(argv):
     # Each entry point should be a function returning an iterable
     # of pairs with the group name (or None for the default group)
     # and the list of Opt instances for that group.
-    libraries = parsed_args.libraries or []
-    extra_libraries = os.getenv("OSLO_CONFIG_GENERATOR_EXTRA_LIBRARIES", "")
-    if extra_libraries:
-        libraries.extend(l.strip() for l in extra_libraries.split(','))
-    if libraries:
+    if parsed_args.libraries:
         loader = stevedore.named.NamedExtensionManager(
             'oslo.config.opts',
-            names=list(set(libraries)),
+            names=list(set(parsed_args.libraries)),
             invoke_on_load=False,
         )
         for ext in loader:
