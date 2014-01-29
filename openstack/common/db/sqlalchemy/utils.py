@@ -499,27 +499,29 @@ def _change_deleted_column_type_to_id_type_sqlite(migrate_engine, table_name,
         execute()
 
 
-def get_connect_string(backend, user, passwd, database):
+def get_connect_string(backend, database, user=None, passwd=None):
     """Get database connection
 
     Try to get a connection with a very specific set of values, if we get
     these then we'll run the tests, otherwise they are skipped
     """
-    if backend == "postgres":
-        backend = "postgresql+psycopg2"
-    elif backend == "mysql":
-        backend = "mysql+mysqldb"
+    args = {'backend': backend,
+            'user': user,
+            'passwd': passwd,
+            'database': database}
+    if backend == 'sqlite':
+        template = '%(backend)s:///%(database)s'
     else:
-        raise Exception("Unrecognized backend: '%s'" % backend)
-
-    return ("%(backend)s://%(user)s:%(passwd)s@localhost/%(database)s"
-            % {'backend': backend, 'user': user, 'passwd': passwd,
-               'database': database})
+        template = "%(backend)s://%(user)s:%(passwd)s@localhost/%(database)s"
+    return template % args
 
 
-def is_backend_avail(backend, user, passwd, database):
+def is_backend_avail(backend, database, user=None, passwd=None):
     try:
-        connect_uri = get_connect_string(backend, user, passwd, database)
+        connect_uri = get_connect_string(backend=backend,
+                                         database=database,
+                                         user=user,
+                                         passwd=passwd)
         engine = sqlalchemy.create_engine(connect_uri)
         connection = engine.connect()
     except Exception:

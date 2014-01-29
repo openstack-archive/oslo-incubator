@@ -35,14 +35,20 @@ LOG = logging.getLogger(__name__)
 def _have_mysql(user, passwd, database):
     present = os.environ.get('TEST_MYSQL_PRESENT')
     if present is None:
-        return utils.is_backend_avail('mysql', user, passwd, database)
+        return utils.is_backend_avail(backend='mysql',
+                                      user=user,
+                                      passwd=passwd,
+                                      database=database)
     return present.lower() in ('', 'true')
 
 
 def _have_postgresql(user, passwd, database):
     present = os.environ.get('TEST_POSTGRESQL_PRESENT')
     if present is None:
-        return utils.is_backend_avail('postgres', user, passwd, database)
+        return utils.is_backend_avail(backend='postgres',
+                                      user=user,
+                                      passwd=passwd,
+                                      database=database)
     return present.lower() in ('', 'true')
 
 
