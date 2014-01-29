@@ -350,6 +350,11 @@ class ContextAdapter(BaseLoggerAdapter):
 
         extra['project'] = self.project
         extra['version'] = self.version
+        if extra.get('sub_context', None):
+            sub_context = extra.get('sub_context', None)
+            for k in sub_context:
+                extra.update({k: sub_context[k]})
+
         extra['extra'] = extra.copy()
         return msg, kwargs
 
@@ -641,6 +646,23 @@ class ContextFormatter(logging.Formatter):
         if (record.levelno == logging.DEBUG and
                 CONF.logging_debug_format_suffix):
             self._fmt += " " + CONF.logging_debug_format_suffix
+
+        if record.__dict__.get('sub_context', None):
+            sub_context = record.__dict__.get('sub_context', None)
+            _sub_context_fmt = ''
+            for k in sub_context:
+                _sub_context_fmt += '[' + k + ':%(' + k + ')s]'
+
+            # NOTE(ssurana): Inject the sub context before the
+            # message appears. In case message is not found append
+            # it to the current format
+            if _sub_context_fmt != '':
+                if self._fmt.find('%(message)s') != -1:
+                    self._fmt = self._fmt.replace('%(message)s',
+                                                  _sub_context_fmt +
+                                                  ' %(message)s')
+                else:
+                    self._fmt += _sub_context_fmt
 
         # Cache this on the record, Logger will respect our formatted copy
         if record.exc_info:

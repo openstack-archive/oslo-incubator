@@ -263,6 +263,21 @@ class ContextFormatterTestCase(test.BaseTestCase):
         expected = "HAS CONTEXT [%s]: bar\n" % ctxt.request_id
         self.assertEqual(expected, self.stream.getvalue())
 
+    def test_sub_contextualized_log(self):
+        ctxt = _fake_context()
+        self.log.info("bar", context=ctxt,
+                      extra={"sub_context": {"driverid": "foo"}})
+        expected = "HAS CONTEXT [%s]: [driverid:foo] bar\n"\
+            % ctxt.request_id
+        self.assertEqual(expected, self.stream.getvalue())
+
+    def test_empty_sub_contextualized_log(self):
+        ctxt = _fake_context()
+        self.log.info("bar", context=ctxt,
+                      extra={})
+        expected = "HAS CONTEXT [%s]: bar\n" % ctxt.request_id
+        self.assertEqual(expected, self.stream.getvalue())
+
     def test_context_is_taken_from_tls_variable(self):
         ctxt = _fake_context()
         local.store.context = ctxt
