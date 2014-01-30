@@ -540,3 +540,42 @@ class MysqlSetCallbackTest(test_log.LogTestBase):
             "SELECT * FROM bar",
         ]
         self.assertEqual(exp_calls, engine._execs)
+
+
+class PatchStacktraceTest(test.BaseTestCase):
+
+    @mock.patch('openstack.common.db.sqlalchemy.session.LOG.info')
+    def test_ibm_db(self, log_info_mock):
+        # session._patch_ibm_db_with_log_stacktrace() sets up tracing
+        # for the module passed in.
+
+        # Set up a mock "package", needs a class Cursor.
+
+        class Cursor_(object):
+            execute = mock.MagicMock()
+
+        class FakeIbmDbModule(object):
+            Cursor = Cursor_
+
+        fake_ibm_db_module = FakeIbmDbModule()
+
+        # Keep a reference to the original function so we can validate it was
+        # called as expected.
+        orig_exec = Cursor_.execute
+
+        # Call the function under test to patch the module.
+        session._patch_ibm_db_with_log_stacktrace(
+            dbi_module=fake_ibm_db_module)
+
+        # Simulate sql.
+
+        cursor = fake_ibm_db_module.Cursor()
+        sql_to_exec = 'SELECT something FROM somewhere'
+        cursor.execute(sql_to_exec)
+
+        # Assert that the SQL was logged.
+        self.assertTrue(log_info_mock.call_args)
+        self.assertIn(sql_to_exec, log_info_mock.call_args[0])
+
+        # Assert that the original execute was called.
+        orig_exec.assert_called_once_with(mock.ANY, sql_to_exec)

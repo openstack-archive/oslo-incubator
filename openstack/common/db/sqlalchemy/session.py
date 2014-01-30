@@ -657,8 +657,11 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
                                     _synchronous_switch_listener)
         sqlalchemy.event.listen(engine, 'connect', _add_regexp_listener)
 
-    if connection_trace and engine.dialect.dbapi.__name__ == 'MySQLdb':
-        _patch_mysqldb_with_stacktrace_comments()
+    if connection_trace:
+        if engine.dialect.dbapi.__name__ == 'MySQLdb':
+            _patch_mysqldb_with_stacktrace_comments()
+        elif engine.dialect.dbapi.__name__ == 'ibm_db_dbi':
+            _patch_ibm_db_with_log_stacktrace()
 
     try:
         engine.connect()
@@ -759,6 +762,52 @@ def _patch_mysqldb_with_stacktrace_comments():
         old_mysql_do_query(self, qq)
 
     setattr(MySQLdb.cursors.BaseCursor, '_do_query', _do_query)
+
+
+def _patch_ibm_db_with_log_stacktrace(dbi_module=None):
+    """Logs stack trace before executing the query.
+
+    Patches ibm_db_dbi.Cursor.execute.
+
+    """
+
+    if not dbi_module:
+        import ibm_db_dbi
+        dbi_module = ibm_db_dbi
+
+    import traceback
+
+    old_execute = dbi_module.Cursor.execute
+
+    def _do_execute(self, operation, *args, **kwargs):
+        stack = ''
+        for file, line, method, function in traceback.extract_stack():
+            # exclude various common things from trace
+            if method == 'wrapper' or method == '_wrap':
+                continue
+            if method == '_inner' or method == 'inner':
+                continue
+            # db/api is just a wrapper around db/sqlalchemy/api
+            if file.endswith('db/api.py'):
+                continue
+            # exclude itself
+            if file.endswith('session.py') and method == '_do_execute':
+                continue
+            # only trace inside oslo
+            if 'oslo' not in file:
+                continue
+            # exclude COMMIT - too many of these calls
+            if file.endswith('models.py') and method == 'save':
+                stack = ''
+                break
+            stack += '\tFile %s:%s %s() %s\n' % (file, line, method, function)
+        if stack:
+            # strip the last new-line
+            stack = stack[:-1]
+            LOG.info('ibm_db_dbi stack trace: %s\n%s', operation, stack)
+        old_execute(self, operation, *args, **kwargs)
+
+    setattr(dbi_module.Cursor, 'execute', _do_execute)
 
 
 class EngineFacade(object):
