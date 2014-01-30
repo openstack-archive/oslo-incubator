@@ -17,6 +17,7 @@
 
 import logging
 import os
+import tempfile
 
 import fixtures
 import testtools
@@ -34,6 +35,7 @@ class BaseTestCase(testtools.TestCase):
         self._fake_logs()
         self.useFixture(fixtures.NestedTempfile())
         self.useFixture(fixtures.TempHomeDir())
+        self.tempdirs = []
 
     def _set_timeout(self):
         test_timeout = os.environ.get('OS_TEST_TIMEOUT', 0)
@@ -69,3 +71,18 @@ class BaseTestCase(testtools.TestCase):
             )
         else:
             logging.basicConfig(format=_LOG_FORMAT, level=level)
+
+    def create_tempfiles(self, files, ext='.conf'):
+        tempfiles = []
+        for (basename, contents) in files:
+            if not os.path.isabs(basename):
+                (fd, path) = tempfile.mkstemp(prefix=basename, suffix=ext)
+            else:
+                path = basename + ext
+                fd = os.open(path, os.O_CREAT | os.O_WRONLY)
+            tempfiles.append(path)
+            try:
+                os.write(fd, contents)
+            finally:
+                os.close(fd)
+        return tempfiles
