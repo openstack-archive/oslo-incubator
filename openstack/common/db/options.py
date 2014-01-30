@@ -103,7 +103,7 @@ database_opts = [
                 default=False,
                 deprecated_opts=[cfg.DeprecatedOpt('sql_connection_trace',
                                                    group='DEFAULT')],
-                help='Add python stack traces to SQL as comment strings'),
+                help='Trace SQL commands using an engine-specific method'),
     cfg.IntOpt('pool_timeout',
                default=None,
                deprecated_opts=[cfg.DeprecatedOpt('sqlalchemy_pool_timeout',
