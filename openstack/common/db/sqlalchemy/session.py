@@ -373,7 +373,7 @@ database_opts = [
                 default=False,
                 deprecated_opts=[cfg.DeprecatedOpt('sql_connection_trace',
                                                    group='DEFAULT')],
-                help='Add python stack traces to SQL as comment strings'),
+                help='Trace SQL commands using an engine-specific method'),
     cfg.IntOpt('pool_timeout',
                default=None,
                deprecated_opts=[cfg.DeprecatedOpt('sqlalchemy_pool_timeout',
@@ -750,9 +750,11 @@ def create_engine(sql_connection, sqlite_fk=False,
                                     _synchronous_switch_listener)
         sqlalchemy.event.listen(engine, 'connect', _add_regexp_listener)
 
-    if (CONF.database.connection_trace and
-            engine.dialect.dbapi.__name__ == 'MySQLdb'):
-        _patch_mysqldb_with_stacktrace_comments()
+    if CONF.database.connection_trace:
+        if engine.dialect.dbapi.__name__ == 'MySQLdb':
+            _patch_mysqldb_with_stacktrace_comments()
+        elif engine.dialect.dbapi.__name__ == 'ibm_db_dbi':
+            _patch_ibm_db_with_log_stacktrace()
 
     try:
         engine.connect()
@@ -853,6 +855,48 @@ def _patch_mysqldb_with_stacktrace_comments():
         old_mysql_do_query(self, qq)
 
     setattr(MySQLdb.cursors.BaseCursor, '_do_query', _do_query)
+
+
+def _patch_ibm_db_with_log_stacktrace():
+    """Logs stack trace before executing the query.
+    
+    Patches ibm_db_dbi.Cursor.execute.
+    
+    """
+    import ibm_db_dbi
+    import traceback
+
+    old_execute = ibm_db_dbi.Cursor.execute
+
+    def _do_execute(self, operation, *args, **kwargs):
+        stack = ''
+        for file, line, method, function in traceback.extract_stack():
+            # exclude various common things from trace
+            if method == 'wrapper' or method == '_wrap':
+                continue
+            if method == '_inner' or method == 'inner':
+                continue
+            # db/api is just a wrapper around db/sqlalchemy/api
+            if file.endswith('db/api.py'):
+                continue
+            # exclude itself
+            if file.endswith('session.py') and method == '_do_execute':
+                continue
+            # only trace inside oslo
+            if 'oslo' not in file:
+                continue
+            # exclude COMMIT - too many of these calls
+            if file.endswith('models.py') and method == 'save':
+                stack = ''
+                break
+            stack += '\tFile %s:%s %s() %s\n' % (file, line, method, function)
+        if stack:
+            # strip the last new-line
+            stack = stack[:-1]
+            LOG.info('ibm_db_dbi stack trace: %s\n%s', operation, stack)
+        old_execute(self, operation, *args, **kwargs)
+
+    setattr(ibm_db_dbi.Cursor, 'execute', _do_execute)
 
 
 def _assert_matching_drivers():
