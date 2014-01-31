@@ -176,6 +176,18 @@ class TestMigrationCommon(test_base.DbTestCase):
 
             mock_sanity.assert_called_once()
 
+    def test_db_sync_sanity_skipped(self):
+        with contextlib.nested(
+            mock.patch.object(migration, '_find_migrate_repo'),
+            mock.patch.object(migration, '_db_schema_sanity_check'),
+            mock.patch.object(versioning_api, 'downgrade')
+        ) as (mock_find_repo, mock_sanity, mock_downgrade):
+
+            mock_find_repo.return_value = self.return_value
+            migration.db_sync(self.engine, self.path, self.test_version, False)
+
+            mock_sanity.assert_not_called()
+
     def test_db_sanity_table_not_utf8(self):
         with mock.patch.object(self, 'engine') as mock_eng:
             type(mock_eng).name = mock.PropertyMock(return_value='mysql')
