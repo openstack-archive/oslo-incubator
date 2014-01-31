@@ -183,4 +183,12 @@ class TestMigrationCommon(test_base.DbTestCase):
                                              ['table_B', 'latin1']]
 
             self.assertRaises(ValueError, migration._db_schema_sanity_check,
-                              mock_eng)
+                              mock_eng, True, [])
+
+    def test_db_sanity_table_without_utf8_checking(self):
+        with mock.patch.object(self, 'engine') as mock_eng:
+            type(mock_eng).name = mock.PropertyMock(return_value='mysql')
+            mock_eng.execute.return_value = [['table', 'latin1']]
+
+            self.assertIsNone(migration._db_schema_sanity_check(
+                mock_eng, False, []))
