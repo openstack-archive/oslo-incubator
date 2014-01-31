@@ -169,3 +169,5 @@ class TestMigrationCommon(test_base.DbTestCase):
 
             self.assertRaises(ValueError, migration._db_schema_sanity_check,
                               mock_eng)
+            self.assertIsNone(migration._db_schema_sanity_check(
+                mock_eng, require_utf8=False))

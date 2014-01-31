@@ -168,7 +168,7 @@ def patch_migrate():
                                 sqlite.SQLiteConstraintGenerator)
 
 
-def db_sync(engine, abs_path, version=None, init_version=0):
+def db_sync(engine, abs_path, version=None, init_version=0, require_utf8=True):
     """Upgrade or downgrade a database.
 
     Function runs the upgrade() or downgrade() functions in change scripts.
@@ -179,7 +179,9 @@ def db_sync(engine, abs_path, version=None, init_version=0):
                          If None - database will update to the latest
                          available version.
     :param init_version: Initial database version
+    :param require_utf8: Make sure all tables are CHARSET=utf8
     """
+
     if version is not None:
         try:
             version = int(version)
@@ -189,7 +191,7 @@ def db_sync(engine, abs_path, version=None, init_version=0):
 
     current_version = db_version(engine, abs_path, init_version)
     repository = _find_migrate_repo(abs_path)
-    _db_schema_sanity_check(engine)
+    _db_schema_sanity_check(engine, require_utf8)
     if version is None or version > current_version:
         return versioning_api.upgrade(engine, repository, version)
     else:
@@ -197,25 +199,26 @@ def db_sync(engine, abs_path, version=None, init_version=0):
                                         version)
 
 
-def _db_schema_sanity_check(engine):
+def _db_schema_sanity_check(engine, require_utf8=True):
     """Ensure all database tables were created with required parameters.
 
-    :param engine:  SQLAlchemy engine instance for a given database
-
+    :param engine:       SQLAlchemy engine instance for a given database
+    :param require_utf8: Make sure all tables are CHARSET=utf8
     """
 
-    if engine.name == 'mysql':
-        onlyutf8_sql = ('SELECT TABLE_NAME,TABLE_COLLATION '
-                        'from information_schema.TABLES '
-                        'where TABLE_SCHEMA=%s and '
-                        'TABLE_COLLATION NOT LIKE "%%utf8%%"')
+    if require_utf8:
+        if engine.name == 'mysql':
+            onlyutf8_sql = ('SELECT TABLE_NAME,TABLE_COLLATION '
+                            'from information_schema.TABLES '
+                            'where TABLE_SCHEMA=%s and '
+                            'TABLE_COLLATION NOT LIKE "%%utf8%%"')
 
-        table_names = [res[0] for res in engine.execute(onlyutf8_sql,
-                                                        engine.url.database)]
-        if len(table_names) > 0:
-            raise ValueError(_('Tables "%s" have non utf8 collation, '
-                               'please make sure all tables are CHARSET=utf8'
-                               ) % ','.join(table_names))
+            table_names = [res[0] for res in
+                           engine.execute(onlyutf8_sql, engine.url.database)]
+            if len(table_names) > 0:
+                raise ValueError(_('Tables "%s" have non utf8 collation, '
+                                   'please make sure all tables are '
+                                   'CHARSET=utf8') % ','.join(table_names))
 
 
 def db_version(engine, abs_path, init_version):
