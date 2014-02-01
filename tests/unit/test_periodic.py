@@ -34,20 +34,21 @@ class AnException(Exception):
 class AService(periodic_task.PeriodicTasks):
 
     def __init__(self):
-        self.called = {}
+        super(AService, self).__init__()
+        self.called = {'doit': 0, 'urg': 0, 'ticks': 0}
 
     @periodic_task.periodic_task
     def doit(self, context):
-        self.called['doit'] = True
+        self.called['doit'] += 1
 
     @periodic_task.periodic_task
     def crashit(self, context):
-        self.called['urg'] = True
+        self.called['urg'] += 1
         raise AnException('urg')
 
-    @periodic_task.periodic_task(spacing=10)
+    @periodic_task.periodic_task(spacing=10, run_immediately=True)
     def doit_with_kwargs_odd(self, context):
-        self.called['ticks'] = True
+        self.called['ticks'] += 1
 
 
 class PeriodicTasksTestCase(test.BaseTestCase):
@@ -56,16 +57,17 @@ class PeriodicTasksTestCase(test.BaseTestCase):
     def test_is_called(self):
         serv = AService()
         serv.run_periodic_tasks(None)
-        self.assertTrue(serv.called['doit'])
-        self.assertTrue(len(serv.called) == 2)
+        self.assertEqual(serv.called['doit'], 1)
+        self.assertEqual(serv.called['urg'], 1)
+        self.assertEqual(serv.called['ticks'], 1)
 
     def test_called_twice(self):
         serv = AService()
         serv.run_periodic_tasks(None)
         serv.run_periodic_tasks(None)
-        # expect doit_with_kwargs to be called twice
-        # and doit_with_kwargs_odd to be called once.
-        self.assertTrue(len(serv.called) == 3)
+        self.assertEqual(serv.called['doit'], 2)
+        self.assertEqual(serv.called['urg'], 2)
+        self.assertEqual(serv.called['ticks'], 1)
 
     def test_raises(self):
         serv = AService()
