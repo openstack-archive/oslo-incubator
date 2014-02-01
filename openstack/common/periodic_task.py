@@ -146,11 +146,15 @@ class _PeriodicTasksMeta(type):
 
                 cls._periodic_tasks.append((name, task))
                 cls._periodic_spacing[name] = task._periodic_spacing
-                cls._periodic_last_run[name] = task._periodic_last_run
 
 
 @six.add_metaclass(_PeriodicTasksMeta)
 class PeriodicTasks(object):
+    def __init__(self):
+        super(PeriodicTasks, self).__init__()
+        self._periodic_last_run = {}
+        for name, task in self._periodic_tasks:
+            self._periodic_last_run[name] = task._periodic_last_run
 
     def run_periodic_tasks(self, context, raise_on_error=False):
         """Tasks to be run at a periodic interval."""
