@@ -31,6 +31,12 @@ class Config(fixtures.Fixture):
 
     All overrides are automatically cleared at the end of the current
     test by the reset() method, which is registered by addCleanup().
+
+    Options can be registered using the register_opt() method.  All
+    options registered in this way will be automatically unregistered at the
+    end of the current test by the _unregister_config_opts() method, which is
+    registered by addCleanup().  Multiple options can be registered with the
+    register_opts() method.
     """
 
     def __init__(self, conf=cfg.CONF):
@@ -38,9 +44,24 @@ class Config(fixtures.Fixture):
 
     def setUp(self):
         super(Config, self).setUp()
+        self.addCleanup(self._unregister_config_opts)
         self.addCleanup(self.conf.reset)
+        self._registered_config_opts = {}
 
     def config(self, **kw):
         group = kw.pop('group', None)
         for k, v in six.iteritems(kw):
             self.conf.set_override(k, v, group)
+
+    def _unregister_config_opts(self):
+        for group in self._registered_config_opts:
+            self.conf.unregister_opts(self._registered_config_opts[group],
+                                      group=group)
+
+    def register_opt(self, opt, group=None):
+        self.conf.register_opt(opt, group=group)
+        self._registered_config_opts.setdefault(group, set()).add(opt)
+
+    def register_opts(self, opts, group=None):
+        for opt in opts:
+            self.register_opt(opt, group=group)
