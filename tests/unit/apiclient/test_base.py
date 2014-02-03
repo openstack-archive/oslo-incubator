@@ -21,6 +21,9 @@ from openstack.common import test
 
 
 class HumanResource(base.Resource):
+
+    __slots__ = set(['id', 'name', 'foo'])
+
     HUMAN_ID = True
 
 
@@ -48,7 +51,8 @@ class HumanResourceManager(base.ManagerWithFind):
 
 
 class CrudResource(base.Resource):
-    pass
+
+    __slots__ = set(['id', 'domain_id', 'crud_resource_id'])
 
 
 class CrudResourceManager(base.CrudManager):
@@ -99,7 +103,6 @@ class FakeHTTPClient(fake_client.FakeHTTPClient):
         return (204, {}, None)
 
     def patch_crud_resources_1(self, **kw):
-        self.crud_resource_json.update(kw)
         return (200, {}, {"crud_resource": self.crud_resource_json})
 
     def delete_crud_resources_1(self, **kw):
@@ -121,8 +124,9 @@ class TestClient(client.BaseClient):
 class ResourceTest(test.BaseTestCase):
 
     def test_resource_repr(self):
-        r = base.Resource(None, dict(foo="bar", baz="spam"))
-        self.assertEqual(repr(r), "<Resource baz=spam, foo=bar>")
+        r = HumanResource(None, dict(foo="bar", name="spam"))
+        self.assertEqual('<HumanResource foo=bar, id=None, name=spam>',
+                         repr(r))
 
     def test_getid(self):
         class TmpObject(base.Resource):
@@ -130,18 +134,23 @@ class ResourceTest(test.BaseTestCase):
         self.assertEqual(base.getid(TmpObject(None, {})), "4")
 
     def test_human_id(self):
-        r = base.Resource(None, {"name": "1"})
-        self.assertIsNone(r.human_id)
         r = HumanResource(None, {"name": "1"})
         self.assertEqual(r.human_id, "1")
 
     def test__loaded(self):
         client = TestClient(FakeHTTPClient())
         mgr = CrudResourceManager(client)
-        r = base.Resource(mgr, {"id": 1})
+        r = CrudResource(mgr, {"id": 1})
         self.assertFalse(r.is_loaded)
         self.assertEqual("my-domain", r.domain_id)
         self.assertTrue(r.is_loaded)
+
+    def test_to_dict(self):
+        r = CrudResource(None, {'id': 1, "domain_id": "my-domain"})
+        info = r.to_dict()
+        self.assertIn('id', info)
+        self.assertIn('crud_resource_id', info)
+        self.assertNotIn('_loaded', info)
 
 
 class BaseManagerTest(test.BaseTestCase):
@@ -156,23 +165,30 @@ class BaseManagerTest(test.BaseTestCase):
         self.assertEqual(f.name, '256 MB Server')
         self.http_client.assert_called('GET', '/human_resources/1')
 
-        # Missing stuff still fails after a second get
+    def test_resource_getattr_not_in_slots(self):
+        f = HumanResource(self.tc.human_resources, {'id': 1})
         self.assertRaises(AttributeError, getattr, f, 'blahblah')
+        self.assertFalse(f.is_loaded)
+
+    def test_resource_getattr_in_slots_not_set(self):
+        f = CrudResource(self.tc.crud_resources, {'id': 1})
+        self.assertEqual(None, f.crud_resource_id)
+        self.http_client.assert_called('GET', '/crud_resources/1')
 
     def test_eq(self):
         # Two resources of the same type with the same id: equal
-        r1 = base.Resource(None, {'id': 1, 'name': 'hi'})
-        r2 = base.Resource(None, {'id': 1, 'name': 'hello'})
+        r1 = CrudResource(None, {'id': 1, 'domain_id': 'hi'})
+        r2 = CrudResource(None, {'id': 1, 'domain_id': 'hello'})
         self.assertEqual(r1, r2)
 
         # Two resources of different types: never equal
-        r1 = base.Resource(None, {'id': 1})
+        r1 = CrudResource(None, {'id': 1})
         r2 = HumanResource(None, {'id': 1})
         self.assertNotEqual(r1, r2)
 
         # Two resources with no ID: equal if their info is equal
-        r1 = base.Resource(None, {'name': 'joe', 'age': 12})
-        r2 = base.Resource(None, {'name': 'joe', 'age': 12})
+        r1 = CrudResource(None, {'id': 1, 'domain_id': 'hi'})
+        r2 = CrudResource(None, {'id': 1, 'domain_id': 'hi'})
         self.assertEqual(r1, r2)
 
     def test_findall_invalid_attribute(self):
@@ -223,7 +239,7 @@ class CrudManagerTest(test.BaseTestCase):
         crud_resource = self.tc.crud_resources.get(self.crud_resource_id)
         self.assertEqual(crud_resource.id, self.crud_resource_id)
         fake_client.assert_has_keys(
-            crud_resource._info,
+            crud_resource.to_dict(),
             required=["id", "domain_id"],
             optional=["missing-attr"])
 
