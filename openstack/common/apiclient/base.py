@@ -24,11 +24,11 @@ Base utilities to build API operation managers and objects on top of.
 # pylint: disable=E1102
 
 import abc
-import copy
 
 import six
 
 from openstack.common.apiclient import exceptions
+from openstack.common.gettextutils import _
 from openstack.common.py3kcompat import urlutils
 from openstack.common import strutils
 
@@ -418,6 +418,8 @@ class Resource(object):
     HUMAN_ID = False
     NAME_ATTR = 'name'
 
+    __slots__ = set(['manager', '_loaded'])
+
     def __init__(self, manager, info, loaded=False):
         """Populate and bind to a manager.
 
@@ -426,44 +428,41 @@ class Resource(object):
         :param loaded: prevent lazy-loading if set to True
         """
         self.manager = manager
-        self._info = info
         self._add_details(info)
         self._loaded = loaded
 
     def __repr__(self):
-        reprkeys = sorted(k
-                          for k in self.__dict__.keys()
-                          if k[0] != '_' and k != 'manager')
-        info = ", ".join("%s=%s" % (k, getattr(self, k)) for k in reprkeys)
+        info_dict = self.to_dict()
+        info = ", ".join("%s=%s" % (k, v) for (k, v) in info_dict.items())
         return "<%s %s>" % (self.__class__.__name__, info)
 
     @property
     def human_id(self):
         """Human-readable ID which can be used for bash completion.
         """
-        if self.NAME_ATTR in self.__dict__ and self.HUMAN_ID:
+        if self.NAME_ATTR in self.__slots__ and self.HUMAN_ID:
             return strutils.to_slug(getattr(self, self.NAME_ATTR))
         return None
 
     def _add_details(self, info):
         for (k, v) in six.iteritems(info):
+            if k not in self.__slots__:
+                raise AttributeError(_("Resource has no attribute %s") % k)
             try:
                 setattr(self, k, v)
-                self._info[k] = v
             except AttributeError:
                 # In this case we already defined the attribute on the class
                 pass
 
     def __getattr__(self, k):
-        if k not in self.__dict__:
-            #NOTE(bcwaldon): disallow lazy-loading if already loaded once
-            if not self.is_loaded:
-                self._get()
-                return self.__getattr__(k)
-
-            raise AttributeError(k)
-        else:
-            return self.__dict__[k]
+        if k not in self.__slots__:
+            raise AttributeError
+        if not self.is_loaded:
+            self._get()
+        try:
+            return self.__getattribute__(k)
+        except AttributeError:
+            return None
 
     def _get(self):
         # set _loaded first ... so if we have to bail, we know we tried.
@@ -473,7 +472,7 @@ class Resource(object):
 
         new = self.manager.get(self.id)
         if new:
-            self._add_details(new._info)
+            self._add_details(new.to_dict())
 
     def __eq__(self, other):
         if not isinstance(other, Resource):
@@ -483,11 +482,15 @@ class Resource(object):
             return False
         if hasattr(self, 'id') and hasattr(other, 'id'):
             return self.id == other.id
-        return self._info == other._info
+        return self == other
 
     @property
     def is_loaded(self):
         return self._loaded
 
     def to_dict(self):
-        return copy.deepcopy(self._info)
+        info = {}
+        # Set resource attributes except service attributes.
+        for attr in self.__slots__ - Resource.__slots__:
+            info[attr] = getattr(self, attr)
+        return info
