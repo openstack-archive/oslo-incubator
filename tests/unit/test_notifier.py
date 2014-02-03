@@ -25,6 +25,7 @@ from openstack.common.notifier import api as notifier_api
 from openstack.common.notifier import log_notifier
 from openstack.common.notifier import no_op_notifier
 from openstack.common.notifier import proxy
+from openstack.common.notifier import rpc_notifier
 from openstack.common import rpc
 from openstack.common import test
 
