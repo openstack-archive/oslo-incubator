@@ -110,6 +110,7 @@ class ManagerTestCase(test.BaseTestCase):
     def setUp(self):
         super(ManagerTestCase, self).setUp()
         self.config = self.useFixture(config.Config()).config
+        self.addCleanup(timeutils.clear_time_override)
 
     def test_periodic_tasks_with_idle(self):
         class Manager(periodic_task.PeriodicTasks):
