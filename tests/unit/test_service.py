@@ -25,11 +25,11 @@ import multiprocessing
 import os
 import signal
 import socket
-import threading
 import time
 import traceback
 
 import eventlet
+from eventlet import event
 import mock
 import mox
 
@@ -274,11 +274,11 @@ class ServiceRestartTest(ServiceTestBase):
 class _Service(service.Service):
     def __init__(self):
         super(_Service, self).__init__()
-        self.init = threading.Event()
+        self.init = event.Event()
         self.cleaned_up = False
 
     def start(self):
-        self.init.set()
+        self.init.send()
 
     def stop(self):
         self.cleaned_up = True
@@ -358,7 +358,7 @@ class LauncherTest(test.BaseTestCase):
 
         launcher.stop()
         self.assertTrue(svc.cleaned_up)
-        self.assertTrue(svc._done.is_set())
+        self.assertTrue(svc._done.ready())
 
         # make sure stop can be called more than once.  (i.e. play nice with
         # unit test fixtures in nova bug #1199315)
