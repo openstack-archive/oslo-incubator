@@ -55,6 +55,7 @@ class CommonLoggerTestsMixIn(object):
                                                   '%(user)s %(tenant)s] '
                                                   '%(message)s')
         self.log = None
+        log._setup_logging_from_conf('test', 'test')
 
     def test_handlers_have_context_formatter(self):
         formatters = []
@@ -100,13 +101,55 @@ class CommonLoggerTestsMixIn(object):
 class LoggerTestCase(CommonLoggerTestsMixIn, test.BaseTestCase):
     def setUp(self):
         super(LoggerTestCase, self).setUp()
-        self.log = log.getLogger()
+        self.log = log.getLogger(None)
 
 
 class LazyLoggerTestCase(CommonLoggerTestsMixIn, test.BaseTestCase):
     def setUp(self):
         super(LazyLoggerTestCase, self).setUp()
-        self.log = log.getLazyLogger()
+        self.log = log.getLazyLogger(None)
+
+
+class LogTestBase(test.BaseTestCase):
+    """Base test class that provides some convenience functions."""
+    def _add_handler_with_cleanup(self, log_instance, handler=None,
+                                  formatter=None):
+        """Add a log handler to a log instance.
+
+        This function should be used to add handlers to loggers in test cases
+        instead of directly adding them to ensure that the handler is
+        correctly removed at the end of the test.  Otherwise the handler may
+        be left on the logger and interfere with subsequent tests.
+
+        :param log_instance: The log instance to which the handler will be
+            added.
+        :param handler: The handler class to be added.  Must be the class
+            itself, not an instance.
+        :param formatter: The formatter class to set on the handler.  Must be
+            the class itself, not an instance.
+        """
+        self.stream = six.StringIO()
+        if handler is None:
+            handler = logging.StreamHandler
+        self.handler = handler(self.stream)
+        if formatter is None:
+            formatter = log.ContextFormatter
+        self.handler.setFormatter(formatter())
+        log_instance.logger.addHandler(self.handler)
+        self.addCleanup(log_instance.logger.removeHandler, self.handler)
+
+    def _set_log_level_with_cleanup(self, log_instance, level):
+        """Set the log level of a logger for the duration of a test.
+
+        Use this function to set the log level of a logger and add the
+        necessary cleanup to reset it back to default at the end of the test.
+
+        :param log_instance: The logger whose level will be changed.
+        :param level: The new log level to use.
+        """
+        self.level = log_instance.logger.getEffectiveLevel()
+        log_instance.logger.setLevel(level)
+        self.addCleanup(log_instance.logger.setLevel, self.level)
 
 
 class LogHandlerTestCase(test.BaseTestCase):
@@ -181,15 +224,12 @@ class LogLevelTestCase(test.BaseTestCase):
         self.assertEqual(logging.AUDIT, l.logger.getEffectiveLevel())
 
 
-class JSONFormatterTestCase(test.BaseTestCase):
+class JSONFormatterTestCase(LogTestBase):
     def setUp(self):
         super(JSONFormatterTestCase, self).setUp()
         self.log = log.getLogger('test-json')
-        self.stream = six.StringIO()
-        handler = logging.StreamHandler(self.stream)
-        handler.setFormatter(log.JSONFormatter())
-        self.log.logger.addHandler(handler)
-        self.log.logger.setLevel(logging.DEBUG)
+        self._add_handler_with_cleanup(self.log, formatter=log.JSONFormatter)
+        self._set_log_level_with_cleanup(self.log, logging.DEBUG)
 
     def test_json(self):
         test_msg = 'This is a %(test)s line'
@@ -234,7 +274,7 @@ class JSONFormatterTestCase(test.BaseTestCase):
         self.assertTrue(data['traceback'])
 
 
-class ContextFormatterTestCase(test.BaseTestCase):
+class ContextFormatterTestCase(LogTestBase):
     def setUp(self):
         super(ContextFormatterTestCase, self).setUp()
         self.config = self.useFixture(config.Config()).config
@@ -244,14 +284,8 @@ class ContextFormatterTestCase(test.BaseTestCase):
                     logging_default_format_string="NOCTXT: %(message)s",
                     logging_debug_format_suffix="--DBG")
         self.log = log.getLogger('')  # obtain root logger instead of 'unknown'
-        self.stream = six.StringIO()
-        self.handler = logging.StreamHandler(self.stream)
-        self.handler.setFormatter(log.ContextFormatter())
-        self.log.logger.addHandler(self.handler)
-        self.addCleanup(self.log.logger.removeHandler, self.handler)
-        self.level = self.log.logger.getEffectiveLevel()
-        self.log.logger.setLevel(logging.DEBUG)
-        self.addCleanup(self.log.logger.setLevel, self.level)
+        self._add_handler_with_cleanup(self.log)
+        self._set_log_level_with_cleanup(self.log, logging.DEBUG)
 
     def test_uncontextualized_log(self):
         self.log.info("foo")
@@ -321,18 +355,14 @@ class ContextFormatterTestCase(test.BaseTestCase):
         self.assertEqual(expected, self.stream.getvalue())
 
 
-class ExceptionLoggingTestCase(test.BaseTestCase):
+class ExceptionLoggingTestCase(LogTestBase):
     """Test that Exceptions are logged."""
 
     def test_excepthook_logs_exception(self):
         product_name = 'somename'
         exc_log = log.getLogger(product_name)
 
-        stream = six.StringIO()
-        handler = logging.StreamHandler(stream)
-        handler.setFormatter(log.ContextFormatter())
-        exc_log.logger.addHandler(handler)
-        self.addCleanup(exc_log.logger.removeHandler, handler)
+        self._add_handler_with_cleanup(exc_log)
         excepthook = log._create_logging_excepthook(product_name)
 
         try:
@@ -342,7 +372,7 @@ class ExceptionLoggingTestCase(test.BaseTestCase):
 
         expected_string = ("CRITICAL somename [-] "
                            "Exception: Some error happened")
-        self.assertTrue(expected_string in stream.getvalue(),
+        self.assertTrue(expected_string in self.stream.getvalue(),
                         msg="Exception is not logged")
 
     def test_excepthook_installed(self):
@@ -350,7 +380,7 @@ class ExceptionLoggingTestCase(test.BaseTestCase):
         self.assertTrue(sys.excepthook != sys.__excepthook__)
 
 
-class FancyRecordTestCase(test.BaseTestCase):
+class FancyRecordTestCase(LogTestBase):
     """Test how we handle fancy record keys that are not in the
     base python logging.
     """
@@ -366,15 +396,9 @@ class FancyRecordTestCase(test.BaseTestCase):
                                                   "%(instance)s"
                                                   "%(message)s",
                     logging_default_format_string="%(missing)s: %(message)s")
-        self.stream = six.StringIO()
-
-        self.colorhandler = log.ColorHandler(self.stream)
-        self.colorhandler.setFormatter(log.ContextFormatter())
-
         self.colorlog = log.getLogger()
-        self.colorlog.logger.addHandler(self.colorhandler)
-        self.level = self.colorlog.logger.getEffectiveLevel()
-        self.colorlog.logger.setLevel(logging.DEBUG)
+        self._add_handler_with_cleanup(self.colorlog, log.ColorHandler)
+        self._set_log_level_with_cleanup(self.colorlog, logging.DEBUG)
 
     def test_unsupported_key_in_log_msg(self):
         # NOTE(sdague): exception logging bypasses the main stream
@@ -412,7 +436,7 @@ class FancyRecordTestCase(test.BaseTestCase):
                                    (ctxt.request_id, ctxt.instance_uuid)))
 
 
-class DomainTestCase(test.BaseTestCase):
+class DomainTestCase(LogTestBase):
     def setUp(self):
         super(DomainTestCase, self).setUp()
         self.config = self.useFixture(config.Config()).config
@@ -420,11 +444,8 @@ class DomainTestCase(test.BaseTestCase):
                                                   "%(user_identity)s "
                                                   "%(message)s")
         self.mylog = log.getLogger()
-        self.stream = six.StringIO()
-        handler = logging.StreamHandler(self.stream)
-        handler.setFormatter(log.ContextFormatter())
-        self.mylog.logger.addHandler(handler)
-        self.mylog.logger.setLevel(logging.DEBUG)
+        self._add_handler_with_cleanup(self.mylog)
+        self._set_log_level_with_cleanup(self.mylog, logging.DEBUG)
 
     def _validate_keys(self, ctxt, keyed_log_string):
         infoexpected = "%s info\n" % (keyed_log_string)
