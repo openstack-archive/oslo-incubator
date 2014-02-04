@@ -24,6 +24,7 @@ import six.moves.urllib.parse as urlparse
 import six.moves.urllib.request as urlrequest
 
 from openstack.common.fixture import config
+from openstack.common.fixture import lockutils
 from openstack.common import jsonutils
 from openstack.common import policy
 from openstack.common import test
@@ -116,14 +117,13 @@ class PolicyBaseTestCase(test.BaseTestCase):
 
     def setUp(self):
         super(PolicyBaseTestCase, self).setUp()
+        # NOTE(bnemec): Many of these tests use the same ENFORCER object, so
+        # I believe we need to serialize them.
+        self.useFixture(lockutils.LockFixture('policy-lock'))
         self.CONF = self.useFixture(config.Config()).conf
         self.CONF(args=['--config-dir', TEST_VAR_DIR])
         self.enforcer = ENFORCER
-
-    def tearDown(self):
-        super(PolicyBaseTestCase, self).tearDown()
-        # Make sure the policy rules are reset for remaining tests
-        self.enforcer.clear()
+        self.addCleanup(self.enforcer.clear)
 
 
 class EnforcerTest(PolicyBaseTestCase):
@@ -151,6 +151,8 @@ class EnforcerTest(PolicyBaseTestCase):
                         "cloudwatch:PutMetricData": ""
                         }"""
         rules = policy.Rules.load_json(rules_json)
+        # Make sure enforce won't try to reload the rules on us
+        self.enforcer.load_rules()
         self.enforcer.set_rules(rules)
         action = "cloudwatch:PutMetricData"
         creds = {'roles': ''}
@@ -177,6 +179,9 @@ class EnforcerTest(PolicyBaseTestCase):
         self.assertIn('admin', self.enforcer.rules)
 
     def test_enforcer_force_reload_false(self):
+        # Make sure we have the current policy file loaded, or load_rules may
+        # reload even with force_reload False
+        self.enforcer.load_rules()
         self.enforcer.set_rules({'test': 'test'})
         self.enforcer.load_rules(force_reload=False)
         self.assertIn('test', self.enforcer.rules)
@@ -230,10 +235,15 @@ class CheckFunctionTestCase(PolicyBaseTestCase):
         self.assertEqual(result, ("target", "creds", self.enforcer))
 
     def test_check_no_rules(self):
+        cfg.CONF.set_override('policy_file', 'empty.json')
+        self.enforcer.default_rule = None
+        self.enforcer.load_rules()
         result = self.enforcer.enforce('rule', "target", "creds")
         self.assertEqual(result, False)
 
     def test_check_with_rule(self):
+        # Make sure the load_rules call in enforce won't overwrite our test
+        # rules.
         self.enforcer.load_rules()
         self.enforcer.rules = dict(default=FakeCheck())
         result = self.enforcer.enforce("default", "target", "creds")
@@ -241,7 +251,8 @@ class CheckFunctionTestCase(PolicyBaseTestCase):
         self.assertEqual(result, ("target", "creds", self.enforcer))
 
     def test_check_raises(self):
-        self.enforcer.rules = None
+        self.enforcer.load_rules()
+        self.enforcer.rules = dict(default=policy.FalseCheck())
 
         try:
             self.enforcer.enforce('rule', 'target', 'creds',
