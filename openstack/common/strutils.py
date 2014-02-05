@@ -17,6 +17,7 @@
 System-level utilities and helper functions.
 """
 
+import locale
 import re
 import sys
 import unicodedata
@@ -195,6 +196,40 @@ def to_bytes(text, default=0):
         msg = _('Unknown byte multiplier: %s') % mult_key_org
         raise TypeError(msg)
     return magnitude * multiplier
+
+
+def safe_unicode(obj, incoming=None):
+    """Return the unicode representation of a object.
+
+    Objects in openstack are typically *safe* to translate to unicode
+    but for those that want to ensure that unicode is returned for their
+    object type (str() is not safe to call to perform this in python2.x and
+    python3.x). This utility function will translate an object safely to
+    unicode and resort back to safe decoding for when this decoding is
+    problematic.
+
+    :param obj: Object to get the unicode text version of.
+    """
+    try:
+        # Try to directly make it into unicode (usually works).
+        return six.text_type(obj)
+    except UnicodeError:
+        pass
+    # Try the incoming encoding, the locale preferred encoding, then try
+    # utf-8 (all in strict mode); it is typical that one of these should work.
+    for (encoding, errors) in ((incoming, 'strict'),
+                               (locale.getpreferredencoding(), 'strict'),
+                               ('utf-8', 'strict')):
+        if not encoding:
+            continue
+        try:
+            return six.binary_type(obj).decode(encoding, errors)
+        except UnicodeError:
+            pass
+    # Give up, convert the object to the system defined decoding
+    # or utf8 but replace all invalid characters with the replacement character
+    # instead.
+    return safe_decode(six.binary_type(obj), errors='replace')
 
 
 def to_slug(value, incoming=None, errors="strict"):
