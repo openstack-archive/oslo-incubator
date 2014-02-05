@@ -53,9 +53,8 @@ class RingExchange(mm.Exchange):
         if ring:
             self.ring = ring
         else:
-            fh = open(CONF.matchmaker_ring.ringfile, 'r')
-            self.ring = json.load(fh)
-            fh.close()
+            with open(CONF.matchmaker_ring.ringfile, 'r') as fh:
+                self.ring = json.load(fh)
 
         self.ring0 = {}
         for k in self.ring.keys():
