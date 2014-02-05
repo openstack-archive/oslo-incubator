@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Approved+1: p-draigbrady <P@draigBrady.com>
+Code-Review+2: p-draigbrady <P@draigBrady.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 05 Feb 2014 13:02:23 +0000
+Reviewed-on: https://review.openstack.org/71253
+Project: openstack/oslo-incubator
+Branch: refs/heads/stable/grizzly
