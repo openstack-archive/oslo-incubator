@@ -97,3 +97,28 @@ def forever_retry_uncaught_exceptions(infunc):
                 # a sleep.
                 time.sleep(1)
     return inner_func
+
+
+def exception_message(exc):
+    """Return the unicode representation of a exception.
+
+    Exception messages in openstack are typically (when translated) unicode
+    and for those that want to include the exception message in there own
+    text they need to be careful to handle this inclusion correctly (as just
+    using str() will not work across python2.x and 3.x) so whenever a exception
+    message is included it should be passed to this function to get a valid
+    unicode string from.
+    """
+    try:
+        # Try to directly make it into unicode (usually works).
+        return six.text_type(exc)
+    except UnicodeError:
+        pass
+    for (encoding, errors) in (('utf-8', 'strict'), ("latin-1", "strict")):
+        try:
+            return six.binary_type(exc).decode(encoding, errors)
+        except UnicodeError:
+            pass
+    # Give up, convert the exception message to utf-8 but replace all invalid
+    # characters with the replacement character instead.
+    return six.binary_type(exc).decode("utf-8", 'replace')
