@@ -17,6 +17,6 @@ pylint
 pyzmq==2.2.0.1
 redis
 setuptools-git>=0.4
-sphinx
+sphinx>=1.1.2,<1.2
 testtools>=0.9.22
 webtest
