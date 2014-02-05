@@ -32,6 +32,46 @@ class StrUtilsTest(test.BaseTestCase):
         self.assertTrue(strutils.bool_from_string('', default=True))
         self.assertFalse(strutils.bool_from_string('wibble', default=False))
 
+    def test_safe_unicode(self):
+        # Taken from http://www.cl.cam.ac.uk/~mgk25/ucs/examples/UTF-8-test.txt
+        #
+        # Ok utf-8 examples...
+        self.assertEqual(u"\x00", strutils.safe_unicode(b"\x00"))
+
+        # Invalid utf-8 examples...
+        self.assertEqual(u"\x00\x00\x00\ufffd",
+                         strutils.safe_unicode(b"\x00\x00\x00\x80"))
+        self.assertEqual(u'\ufffd', strutils.safe_unicode(b"\x80"))
+        self.assertEqual(u'\ufffd\ufffd', strutils.safe_unicode(b"\xff\xfe"))
+        self.assertEqual(u'\ufffd\ufffd', strutils.safe_unicode(b"\xa0\xa1"))
+        self.assertEqual(u'\ufffd\ufffd\ufffd\ufffd\ufffd',
+                         strutils.safe_unicode(b"\xf8\xa1\xa1\xa1\xa1"))
+
+        # These are some byte type to unicode translations.
+        self.assertEqual(u"κόσμε", strutils.safe_unicode(b"κόσμε"))
+        self.assertEqual(u'привет', strutils.safe_unicode(b'привет'))
+        self.assertEqual(u'嗨', strutils.safe_unicode(b'嗨'))
+
+        # These are in latin-1 (it should be translated to unicode for the
+        # same) and not to its latin-1 version (which is not the same).
+        self.assertEqual(u'\x00\xd8',
+                         strutils.safe_unicode(b'\x00\xd8',
+                                               incoming='latin-1'))
+        self.assertEqual(u'el niño',
+                         strutils.safe_unicode(b'el ni\xf1o',
+                                               incoming='latin-1'))
+        self.assertEqual(u'è',
+                         strutils.safe_unicode(b'\xe8', incoming='latin-1'))
+
+        # Try some shift-jis encodings that will trigger the replacement code.
+        #
+        # From:
+        # ftp.unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/JIS/SHIFTJIS.TXT
+        self.assertEqual(u'\ufffd\ufffd', strutils.safe_unicode(b'\x81\x89'))
+        self.assertEqual(u'♂',
+                         strutils.safe_unicode(b'\x81\x89',
+                                               incoming='shift-jis'))
+
     def _test_bool_from_string(self, c):
         self.assertTrue(strutils.bool_from_string(c('true')))
         self.assertTrue(strutils.bool_from_string(c('TRUE')))
