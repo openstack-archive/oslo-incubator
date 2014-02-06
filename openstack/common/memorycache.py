@@ -18,6 +18,7 @@
 
 from oslo.config import cfg
 
+from openstack.common import periodic_task
 from openstack.common import timeutils
 
 memcache_opts = [
@@ -48,23 +49,28 @@ def get_client(memcached_servers=None):
 class Client(object):
     """Replicates a tiny subset of memcached client interface."""
 
+    EXPUNGE_PERIOD = 60
+
     def __init__(self, *args, **kwargs):
         """Ignores the passed in args."""
         self.cache = {}
 
-    def get(self, key):
-        """Retrieves the value for a key or None.
-
-        This expunges expired keys during each get.
-        """
-
+    def _is_expired(self, timeout):
         now = timeutils.utcnow_ts()
+        return timeout and now >= timeout
+
+    @periodic_task.periodic_task(spacing=EXPUNGE_PERIOD)
+    def _expunge_expired_items(self):
+        """Removes items which have passed their timeout."""
         for k in list(self.cache):
             (timeout, _value) = self.cache[k]
-            if timeout and now >= timeout:
+            if self._is_expired(timeout):
                 del self.cache[k]
 
-        return self.cache.get(key, (0, None))[1]
+    def get(self, key):
+        """Retrieves the value for a key or None."""
+        (timeout, value) = self.cache.get(key, (0, None))
+        return value if not self._is_expired(timeout) else None
 
     def set(self, key, value, time=0, min_compress_len=0):
         """Sets the value for a key."""
