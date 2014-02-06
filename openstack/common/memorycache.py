@@ -48,23 +48,39 @@ def get_client(memcached_servers=None):
 class Client(object):
     """Replicates a tiny subset of memcached client interface."""
 
-    def __init__(self, *args, **kwargs):
-        """Ignores the passed in args."""
+    def __init__(self, _servers, cache_clean_period=60, *args, **kwargs):
+        """Ignores the passed in args, except for cache_clean_period."""
+        self.cache_clean_period = cache_clean_period
+        self.last_cache_clean = timeutils.utcnow_ts()
         self.cache = {}
 
-    def get(self, key):
-        """Retrieves the value for a key or None.
-
-        This expunges expired keys during each get.
+    def _clean_expired_items_if_necessary(self):
+        """Calls the clean method if it hasn't been called
+        recently enough.
         """
+        if timeutils.utcnow_ts() > (self.last_cache_clean +
+                                    self.cache_clean_period):
+            self.clean_expired_items()
 
+    def clean_expired_items(self):
+        """Removes items which have passed their timeout.  This will
+        happen automatically every cache_clean_period seconds,
+        but clients may wish to call this method more frequently for
+        a busy cache.  Returns the number of evicted items.
+        """
         now = timeutils.utcnow_ts()
         for k in list(self.cache):
             (timeout, _value) = self.cache[k]
-            if timeout and now >= timeout:
+            if timeout and timeout <= now:
                 del self.cache[k]
+        self.last_cache_clean = now
 
-        return self.cache.get(key, (0, None))[1]
+    def get(self, key):
+        """Retrieves the value for a key or None."""
+        self._clean_expired_items_if_necessary()
+        (timeout, value) = self.cache.get(key, (0, None))
+        expired = timeout and timeout <= timeutils.utcnow_ts()
+        return value if not expired else None
 
     def set(self, key, value, time=0, min_compress_len=0):
         """Sets the value for a key."""
