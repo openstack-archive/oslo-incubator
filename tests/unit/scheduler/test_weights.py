@@ -31,3 +31,34 @@ class TestWeightHandler(test.BaseTestCase):
         self.assertTrue(fakes.FakeWeigher1 in classes)
         self.assertTrue(fakes.FakeWeigher2 in classes)
         self.assertFalse(fakes.FakeClass in classes)
+
+    def test_no_multiplier(self):
+        class FakeWeigher(base_weight.BaseWeigher):
+            def _weigh_object(self, *args, **kwargs):
+                pass
+
+        self.assertEqual(1.0,
+                         FakeWeigher().weight_multiplier())
+
+    def test_no_weight_object(self):
+        class FakeWeigher(base_weight.BaseWeigher):
+            def weight_multiplier(self, *args, **kwargs):
+                pass
+        self.assertRaises(TypeError,
+                          FakeWeigher)
+
+    def test_normalization(self):
+        # weight_list, expected_result, minval, maxval
+        map_ = (
+            ((), (), None, None),
+            ((0.0, 0.0), (0.0, 0.0), None, None),
+            ((1.0, 1.0), (0.0, 0.0), None, None),
+
+            ((20.0, 50.0), (0.0, 1.0), None, None),
+            ((20.0, 50.0), (0.0, 0.375), None, 100.0),
+            ((20.0, 50.0), (0.4, 1.0), 0.0, None),
+            ((20.0, 50.0), (0.2, 0.5), 0.0, 100.0),
+        )
+        for seq, result, minval, maxval in map_:
+            ret = base_weight.normalize(seq, minval=minval, maxval=maxval)
+            self.assertEqual(result, tuple(ret))
