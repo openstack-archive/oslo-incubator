@@ -16,6 +16,7 @@
 from oslo.config import cfg
 
 from openstack.common.fixture import moxstubout
+from openstack.common import lockutils
 from openstack.common import test
 
 
@@ -27,3 +28,4 @@ class BaseTestCase(test.BaseTestCase):
         self.stubs = moxfixture.stubs
         self.conf = conf
         self.addCleanup(self.conf.reset)
+        lockutils.set_defaults('lock_path')
