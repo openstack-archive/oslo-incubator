@@ -21,12 +21,12 @@ import subprocess
 
 import lockfile
 from six import moves
+from six.moves.urllib import parse
 import sqlalchemy
 import sqlalchemy.exc
 
 from openstack.common.db.sqlalchemy import utils
 from openstack.common.gettextutils import _
-from openstack.common.py3kcompat import urlutils
 from openstack.common import test
 
 LOG = logging.getLogger(__name__)
@@ -153,7 +153,7 @@ class BaseMigrationTestCase(test.BaseTestCase):
     def _reset_databases(self):
         for key, engine in self.engines.items():
             conn_string = self.test_databases[key]
-            conn_pieces = urlutils.urlparse(conn_string)
+            conn_pieces = parse.urlparse(conn_string)
             engine.dispose()
             if conn_string.startswith('sqlite'):
                 # We can just delete the SQLite database, which is

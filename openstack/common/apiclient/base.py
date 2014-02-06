@@ -26,9 +26,9 @@ Base utilities to build API operation managers and objects on top of.
 import abc
 
 import six
+from six.moves.urllib import parse
 
 from openstack.common.apiclient import exceptions
-from openstack.common.py3kcompat import urlutils
 from openstack.common import strutils
 
 
@@ -327,7 +327,7 @@ class CrudManager(BaseManager):
         return self._list(
             '%(base_url)s%(query)s' % {
                 'base_url': self.build_url(base_url=base_url, **kwargs),
-                'query': '?%s' % urlutils.urlencode(kwargs) if kwargs else '',
+                'query': '?%s' % parse.urlencode(kwargs) if kwargs else '',
             },
             self.collection_key)
 
@@ -366,7 +366,7 @@ class CrudManager(BaseManager):
         rl = self._list(
             '%(base_url)s%(query)s' % {
                 'base_url': self.build_url(base_url=base_url, **kwargs),
-                'query': '?%s' % urlutils.urlencode(kwargs) if kwargs else '',
+                'query': '?%s' % parse.urlencode(kwargs) if kwargs else '',
             },
             self.collection_key)
         num = len(rl)
