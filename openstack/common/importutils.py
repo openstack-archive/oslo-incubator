@@ -33,6 +33,18 @@ def import_class(import_str):
                            traceback.format_exception(*sys.exc_info())))
 
 
+def _import_class_fallback(import_str, error):
+    """Returns a class from a string including module and class.
+
+    Holds information about previous error and use it in the
+    error message.
+    """
+    try:
+        return import_class(import_str)
+    except ImportError as ex:
+        raise ImportError('%s (%s)' % (ex, error))
+
+
 def import_object(import_str, *args, **kwargs):
     """Import a class and return an instance of it."""
     return import_class(import_str)(*args, **kwargs)
@@ -48,8 +60,8 @@ def import_object_ns(name_space, import_str, *args, **kwargs):
     import_value = "%s.%s" % (name_space, import_str)
     try:
         return import_class(import_value)(*args, **kwargs)
-    except ImportError:
-        return import_class(import_str)(*args, **kwargs)
+    except ImportError as ex:
+        return _import_class_fallback(import_str, ex)(*args, **kwargs)
 
 
 def import_module(import_str):
