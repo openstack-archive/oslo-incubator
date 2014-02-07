@@ -15,7 +15,6 @@ import os
 
 from openstack.common.db.sqlalchemy import migration
 from openstack.common.db.sqlalchemy.migration_cli import ext_base
-from openstack.common.db.sqlalchemy import session as db_session
 from openstack.common.gettextutils import _  # noqa
 
 
@@ -31,11 +30,10 @@ class MigrateExtension(ext_base.MigrationExtensionBase):
 
     order = 1
 
-    def __init__(self, migration_config):
+    def __init__(self, engine, migration_config):
+        self.engine = engine
         self.repository = migration_config.get('migration_repo_path', '')
         self.init_version = migration_config.get('init_version', 0)
-        self.db_url = migration_config['db_url']
-        self.engine = db_session.create_engine(self.db_url)
 
     @property
     def enabled(self):
