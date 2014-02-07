@@ -1,4 +1,5 @@
 # Copyright 2012 SINA Corporation
+# Copyright 2014 Cisco Systems, Inc.
 # All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -40,6 +41,7 @@ BOOLOPT = "BoolOpt"
 INTOPT = "IntOpt"
 FLOATOPT = "FloatOpt"
 LISTOPT = "ListOpt"
+DICTOPT = "DictOpt"
 MULTISTROPT = "MultiStrOpt"
 
 OPT_TYPES = {
@@ -48,11 +50,12 @@ OPT_TYPES = {
     INTOPT: 'integer value',
     FLOATOPT: 'floating point value',
     LISTOPT: 'list value',
+    DICTOPT: 'dict value',
     MULTISTROPT: 'multi valued',
 }
 
 OPTION_REGEX = re.compile(r"(%s)" % "|".join([STROPT, BOOLOPT, INTOPT,
-                                              FLOATOPT, LISTOPT,
+                                              FLOATOPT, LISTOPT, DICTOPT,
                                               MULTISTROPT]))
 
 PY_EXT = ".py"
@@ -274,6 +277,11 @@ def _print_opt(opt):
         elif opt_type == LISTOPT:
             assert(isinstance(opt_default, list))
             print('#%s=%s' % (opt_name, ','.join(opt_default)))
+        elif opt_type == DICTOPT:
+            assert(isinstance(opt_default, dict))
+            opt_default_strlist = [str(key) + ':' + str(value)
+                                   for (key, value) in opt_default.items()]
+            print('#%s=%s' % (opt_name, ','.join(opt_default_strlist)))
         elif opt_type == MULTISTROPT:
             assert(isinstance(opt_default, list))
             if not opt_default:
