@@ -29,7 +29,7 @@ from openstack.common import log as logging
 matchmaker_opts = [
     cfg.IntOpt('matchmaker_heartbeat_freq',
                default=300,
-               help='Heartbeat frequency'),
+               help='Heartbeat frequency.'),
     cfg.IntOpt('matchmaker_heartbeat_ttl',
                default=600,
                help='Heartbeat time-to-live.'),

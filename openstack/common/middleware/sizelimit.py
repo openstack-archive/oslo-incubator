@@ -29,8 +29,8 @@ from openstack.common.middleware import base
 max_req_body_size = cfg.IntOpt('max_request_body_size',
                                deprecated_name='osapi_max_request_body_size',
                                default=114688,
-                               help='The maximum body size '
-                                    'per request, in bytes')
+                               help='The maximum body size in bytes, '
+                                    'for each request.')
 
 CONF = cfg.CONF
 CONF.register_opt(max_req_body_size)
