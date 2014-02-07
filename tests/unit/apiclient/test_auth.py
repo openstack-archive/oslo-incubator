@@ -150,7 +150,7 @@ class AuthPluginTest(test_base.BaseTestCase):
                 parser.add_argument('--auth_system_opt',
                                     default=False,
                                     action='store_true',
-                                    help="Fake option")
+                                    help="Fake option.")
 
         mock_mgr_map.side_effect = (
             lambda func: func(MockEntrypoint("fake", FakePlugin)))

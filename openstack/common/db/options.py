@@ -19,7 +19,7 @@ database_opts = [
     cfg.StrOpt('sqlite_db',
                deprecated_group='DEFAULT',
                default='oslo.sqlite',
-               help='The file name to use with SQLite'),
+               help='The file name to use with SQLite.'),
     cfg.BoolOpt('sqlite_synchronous',
                 deprecated_group='DEFAULT',
                 default=True,
@@ -28,10 +28,10 @@ database_opts = [
                default='sqlalchemy',
                deprecated_name='db_backend',
                deprecated_group='DEFAULT',
-               help='The backend to use for db'),
+               help='The backend to use for db.'),
     cfg.StrOpt('connection',
                help='The SQLAlchemy connection string used to connect to the '
-                    'database',
+                    'database.',
                secret=True,
                deprecated_opts=[cfg.DeprecatedOpt('sql_connection',
                                                   group='DEFAULT'),
@@ -54,7 +54,7 @@ database_opts = [
                                                   group='DATABASE'),
                                 cfg.DeprecatedOpt('idle_timeout',
                                                   group='sql')],
-               help='Timeout before idle sql connections are reaped'),
+               help='Timeout before idle SQL connections are reaped.'),
     cfg.IntOpt('min_pool_size',
                default=1,
                deprecated_opts=[cfg.DeprecatedOpt('sql_min_pool_size',
@@ -62,7 +62,7 @@ database_opts = [
                                 cfg.DeprecatedOpt('sql_min_pool_size',
                                                   group='DATABASE')],
                help='Minimum number of SQL connections to keep open in a '
-                    'pool'),
+                    'pool.'),
     cfg.IntOpt('max_pool_size',
                default=None,
                deprecated_opts=[cfg.DeprecatedOpt('sql_max_pool_size',
@@ -70,7 +70,7 @@ database_opts = [
                                 cfg.DeprecatedOpt('sql_max_pool_size',
                                                   group='DATABASE')],
                help='Maximum number of SQL connections to keep open in a '
-                    'pool'),
+                    'pool.'),
     cfg.IntOpt('max_retries',
                default=10,
                deprecated_opts=[cfg.DeprecatedOpt('sql_max_retries',
@@ -78,21 +78,22 @@ database_opts = [
                                 cfg.DeprecatedOpt('sql_max_retries',
                                                   group='DATABASE')],
                help='Maximum db connection retries during startup. '
-                    '(setting -1 implies an infinite retry count)'),
+                    'Set to -1 to specify an infinite retry count.'),
     cfg.IntOpt('retry_interval',
                default=10,
                deprecated_opts=[cfg.DeprecatedOpt('sql_retry_interval',
                                                   group='DEFAULT'),
                                 cfg.DeprecatedOpt('reconnect_interval',
                                                   group='DATABASE')],
-               help='Interval between retries of opening a sql connection'),
+               help='Interval between retries of opening a SQL connection.'),
     cfg.IntOpt('max_overflow',
                default=None,
                deprecated_opts=[cfg.DeprecatedOpt('sql_max_overflow',
                                                   group='DEFAULT'),
                                 cfg.DeprecatedOpt('sqlalchemy_max_overflow',
                                                   group='DATABASE')],
-               help='If set, use this value for max_overflow with sqlalchemy'),
+               help='If set, use this value for max_overflow with '
+                    'sqlalchemy.'),
     cfg.IntOpt('connection_debug',
                default=0,
                deprecated_opts=[cfg.DeprecatedOpt('sql_connection_debug',
@@ -103,31 +104,33 @@ database_opts = [
                 default=False,
                 deprecated_opts=[cfg.DeprecatedOpt('sql_connection_trace',
                                                    group='DEFAULT')],
-                help='Add python stack traces to SQL as comment strings'),
+                help='Add python stack traces to SQL as comment strings.'),
     cfg.IntOpt('pool_timeout',
                default=None,
                deprecated_opts=[cfg.DeprecatedOpt('sqlalchemy_pool_timeout',
                                                   group='DATABASE')],
-               help='If set, use this value for pool_timeout with sqlalchemy'),
+               help='If set, use this value for pool_timeout with '
+                    'SQLAlchemy.'),
     cfg.BoolOpt('use_db_reconnect',
                 default=False,
                 help='Enable the experimental use of database reconnect '
-                     'on connection lost'),
+                     'on connection lost.'),
     cfg.IntOpt('db_retry_interval',
                default=1,
-               help='seconds between db connection retries'),
+               help='Seconds between db connection retries.'),
     cfg.BoolOpt('db_inc_retry_interval',
                 default=True,
-                help='Whether to increase interval between db connection '
-                     'retries, up to db_max_retry_interval'),
+                help='Enables or disables increasing the interval '
+                     'between db connection retries, up to '
+                     'db_max_retry_interval.'),
     cfg.IntOpt('db_max_retry_interval',
                default=10,
-               help='max seconds between db connection retries, if '
-                    'db_inc_retry_interval is enabled'),
+               help='If db_inc_retry_interval is enabled, the '
+                    'maximum seconds between db connection retries.'),
     cfg.IntOpt('db_max_retries',
                default=20,
-               help='maximum db connection retries before error is raised. '
-                    '(setting -1 implies an infinite retry count)'),
+               help='Maximum db connection retries before error is raised. '
+                    'Set to -1 to specify an infinite retry count.'),
 ]
 
 CONF = cfg.CONF
