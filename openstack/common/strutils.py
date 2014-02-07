@@ -18,6 +18,7 @@ System-level utilities and helper functions.
 """
 
 import locale
+import logging
 import re
 import sys
 import unicodedata
@@ -26,6 +27,8 @@ import six
 
 from openstack.common.gettextutils import _
 
+
+LOG = logging.getLogger(__name__)
 
 # Used for looking up extensions of text
 # to their 'multiplied' byte amount
@@ -233,6 +236,9 @@ def safe_unicode(obj, incoming=None):
     # Give up, convert the object to the system defined decoding
     # or utf8 but replace all invalid characters with the replacement character
     # instead.
+    LOG.warn(_("Invalid object -> text translation detected for binary string"
+               " version of %r, replacing incompatible unicode with the system"
+               " (typically U+FFFD) replacement"), obj)
     return safe_decode(bobj, errors='replace')
 
 
