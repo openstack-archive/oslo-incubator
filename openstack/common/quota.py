@@ -31,19 +31,19 @@ LOG = logging.getLogger(__name__)
 common_quota_opts = [
     cfg.BoolOpt('use_default_quota_class',
                 default=True,
-                help='Whether to use default quota class for default quota'),
+                help='Whether to use default quota class for default quota.'),
     cfg.StrOpt('quota_driver',
                default='openstack.common.quota.DbQuotaDriver',
-               help='Default driver to use for quota checks'),
+               help='Default driver to use for quota checks.'),
     cfg.IntOpt('until_refresh',
                default=0,
-               help='Count of reservations until usage is refreshed'),
+               help='Count of reservations until usage is refreshed.'),
     cfg.IntOpt('max_age',
                default=0,
-               help='Number of seconds between subsequent usage refreshes'),
+               help='Number of seconds between subsequent usage refreshes.'),
     cfg.IntOpt('reservation_expire',
                default=86400,
-               help='Number of seconds until a reservation expires'),
+               help='Number of seconds until a reservation expires.'),
 ]
 
 CONF = cfg.CONF

@@ -84,7 +84,7 @@ logging_cli_opts = [
     cfg.StrOpt('log-config-append',
                metavar='PATH',
                deprecated_name='log-config',
-               help='The name of logging configuration file. It does not '
+               help='The name of the logging configuration file. It does not '
                     'disable existing loggers, but just appends specified '
                     'logging configuration to any other existing logging '
                     'options. Please see the Python logging module '
@@ -103,7 +103,7 @@ logging_cli_opts = [
                default=_DEFAULT_LOG_DATE_FORMAT,
                metavar='DATE_FORMAT',
                help='Format string for %%(asctime)s in log records. '
-                    'Default: %(default)s'),
+                    'Default: %(default)s.'),
     cfg.StrOpt('log-file',
                metavar='PATH',
                deprecated_name='logfile',
@@ -112,12 +112,12 @@ logging_cli_opts = [
     cfg.StrOpt('log-dir',
                deprecated_name='logdir',
                help='(Optional) The base directory used for relative '
-                    '--log-file paths'),
+                    '--log-file paths.'),
     cfg.BoolOpt('use-syslog',
                 default=False,
                 help='Use syslog for logging. '
                      'Existing syslog format is DEPRECATED during I, '
-                     'and then will be changed in J to honor RFC5424'),
+                     'and then will be changed in J to honor RFC5424.'),
     cfg.BoolOpt('use-syslog-rfc-format',
                 # TODO(bogdando) remove or use True after existing
                 #    syslog format deprecation in J
@@ -129,13 +129,13 @@ logging_cli_opts = [
                      'and will be removed in J.'),
     cfg.StrOpt('syslog-log-facility',
                default='LOG_USER',
-               help='Syslog facility to receive log lines')
+               help='Syslog facility to receive log lines.')
 ]
 
 generic_log_opts = [
     cfg.BoolOpt('use_stderr',
                 default=True,
-                help='Log output to standard error')
+                help='Log output to standard error.')
 ]
 
 log_opts = [
@@ -143,18 +143,18 @@ log_opts = [
                default='%(asctime)s.%(msecs)03d %(process)d %(levelname)s '
                        '%(name)s [%(request_id)s %(user_identity)s] '
                        '%(instance)s%(message)s',
-               help='Format string to use for log messages with context'),
+               help='Format string to use for log messages with context.'),
     cfg.StrOpt('logging_default_format_string',
                default='%(asctime)s.%(msecs)03d %(process)d %(levelname)s '
                        '%(name)s [-] %(instance)s%(message)s',
-               help='Format string to use for log messages without context'),
+               help='Format string to use for log messages without context.'),
     cfg.StrOpt('logging_debug_format_suffix',
                default='%(funcName)s %(pathname)s:%(lineno)d',
-               help='Data to append to log format when level is DEBUG'),
+               help='Data to append to log format when level is DEBUG.'),
     cfg.StrOpt('logging_exception_prefix',
                default='%(asctime)s.%(msecs)03d %(process)d TRACE %(name)s '
                '%(instance)s',
-               help='Prefix each line of exception output with this format'),
+               help='Prefix each line of exception output with this format.'),
     cfg.ListOpt('default_log_levels',
                 default=[
                     'amqp=WARN',
@@ -166,13 +166,13 @@ log_opts = [
                     'iso8601=WARN',
                     'requests.packages.urllib3.connectionpool=WARN'
                 ],
-                help='List of logger=LEVEL pairs'),
+                help='List of logger=LEVEL pairs.'),
     cfg.BoolOpt('publish_errors',
                 default=False,
-                help='Publish error events'),
+                help='Publish error events.'),
     cfg.BoolOpt('fatal_deprecations',
                 default=False,
-                help='Make deprecations fatal'),
+                help='Make deprecations fatal.'),
 
     # NOTE(mikal): there are two options here because sometimes we are handed
     # a full instance (and could include more information), and other times we
@@ -180,11 +180,11 @@ log_opts = [
     cfg.StrOpt('instance_format',
                default='[instance: %(uuid)s] ',
                help='If an instance is passed with the log message, format '
-                    'it like this'),
+                    'it like this.'),
     cfg.StrOpt('instance_uuid_format',
                default='[instance: %(uuid)s] ',
                help='If an instance UUID is passed with the log message, '
-                    'format it like this'),
+                    'format it like this.'),
 ]
 
 CONF = cfg.CONF
