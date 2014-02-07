@@ -17,6 +17,7 @@
 
 import mock
 import requests
+from webob import exc as http_exc
 
 from openstack.common.apiclient import auth
 from openstack.common.apiclient import client
@@ -88,7 +89,8 @@ class ClientTest(test.BaseTestCase):
 
         def fake_request(method, url, **kwargs):
             if kwargs["headers"]["X-Auth-Token"] == reject_token:
-                raise exceptions.Unauthorized(method=method, url=url)
+                raise http_exc.HTTPUnauthorized(
+                    detail={'method': method, 'url': url})
             return "%s %s" % (method, url)
 
         http_client = client.HTTPClient(FakeAuthPlugin())
