@@ -12,12 +12,14 @@
 
 import os
 
-import alembic
+from alembic import autogenerate as autogen
 from alembic import config as alembic_config
+from alembic import environment
 import alembic.migration as alembic_migration
+from alembic import script
+from alembic import util
 
 from openstack.common.db.sqlalchemy.migration_cli import ext_base
-from openstack.common.db.sqlalchemy import session as db_session
 
 
 class AlembicExtension(ext_base.MigrationExtensionBase):
@@ -28,35 +30,87 @@ class AlembicExtension(ext_base.MigrationExtensionBase):
     def enabled(self):
         return os.path.exists(self.alembic_ini_path)
 
-    def __init__(self, migration_config):
+    def __init__(self, engine, migration_config):
         """Extension to provide alembic features.
 
         :param migration_config: Stores specific configuration for migrations
         :type migration_config: dict
         """
+        self.engine = engine
         self.alembic_ini_path = migration_config.get('alembic_ini_path', '')
         self.config = alembic_config.Config(self.alembic_ini_path)
         # option should be used if script is not in default directory
         repo_path = migration_config.get('alembic_repo_path')
         if repo_path:
             self.config.set_main_option('script_location', repo_path)
-        self.db_url = migration_config['db_url']
 
-    def upgrade(self, version):
-        return alembic.command.upgrade(self.config, version or 'head')
+        self.config.set_main_option('sqlalchemy.url', str(self.engine.url))
 
-    def downgrade(self, version):
+    def upgrade(self, version, sql=False, tag=None):
+        # if no version provided upgrade to head
+        version = version or 'head'
+        script_dir = script.ScriptDirectory.from_config(self.config)
+
+        starting_rev = None
+        if ":" in version:
+            if not sql:
+                raise util.CommandError("Range version not allowed")
+            starting_rev, version = version.split(':', 2)
+
+        def upgrade(rev, context):
+            return script_dir._upgrade_revs(version, rev)
+
+        with self.engine.connect() as conn:
+            with environment.EnvironmentContext(
+                self.config,
+                script_dir,
+                fn=upgrade,
+                as_sql=sql,
+                starting_rev=starting_rev,
+                destination_rev=version,
+                tag=tag,
+            ) as env:
+                env.configure(connection=conn)
+                script_dir.run_env()
+
+    def downgrade(self, version, sql=False, tag=None):
+        # integer is used for versions in sqlalchemy-migrate
+        # so if one provided - just downgrade to alembic base state
         if isinstance(version, int) or version is None or version.isdigit():
             version = 'base'
-        return alembic.command.downgrade(self.config, version)
+        script_dir = script.ScriptDirectory.from_config(self.config)
+        starting_rev = None
+        if ":" in version:
+            if not sql:
+                raise util.CommandError("Range version not allowed")
+            starting_rev, version = version.split(':', 2)
+        elif sql:
+            raise util.CommandError("downgrade with --sql"
+                                    "requires <fromrev>:<torev>")
+
+        def downgrade(rev, context):
+            return script_dir._downgrade_revs(version, rev)
+
+        with self.engine.connect() as conn:
+            with environment.EnvironmentContext(
+                self.config,
+                script_dir,
+                fn=downgrade,
+                as_sql=sql,
+                starting_rev=starting_rev,
+                destination_rev=version,
+                tag=tag,
+            ) as env:
+                env.configure(connection=conn)
+                script_dir.run_env()
 
     def version(self):
-        engine = db_session.create_engine(self.db_url)
-        with engine.connect() as conn:
+        with self.engine.connect() as conn:
             context = alembic_migration.MigrationContext.configure(conn)
             return context.get_current_revision()
 
-    def revision(self, message='', autogenerate=False):
+    def revision(self, message=None, autogenerate=False, sql=False,
+                 update_template_args=None):
         """Creates template for migration.
 
         :param message: Text that will be used for migration title
@@ -64,15 +118,81 @@ class AlembicExtension(ext_base.MigrationExtensionBase):
         :param autogenerate: If True - generates diff based on current database
                              state
         :type autogenerate: bool
+        :param sql: If True run offline migration mode
+        :type sql: bool
+        :param update_template_args: Used to update template_args dict
         """
-        return alembic.command.revision(self.config, message=message,
-                                        autogenerate=autogenerate)
+        script_dir = script.ScriptDirectory.from_config(self.config)
+        template_args = {
+            'config': self.config  # Let templates use config for
+                                   # e.g. multiple databases
+        }
 
-    def stamp(self, revision):
-        """Stamps database with provided revision.
+        if update_template_args:
+            template_args.update(update_template_args)
 
-        :param revision: Should match one from repository or head - to stamp
-                         database with most recent revision
-        :type revision: string
+        imports = set()
+
+        environ = util.asbool(
+            self.config.get_main_option("version_environment")
+        )
+
+        if autogenerate:
+            environ = True
+
+            def retrieve_migrations(rev, context):
+                if (script_dir.get_revision(rev)
+                        is not script_dir.get_revision("head")):
+                    raise util.CommandError("Target database is"
+                                            "not up to date.")
+                autogen._produce_migration_diffs(
+                    context, template_args, imports)
+                return []
+        elif environ:
+            def retrieve_migrations(rev, context):
+                return []
+
+        with self.engine.connect() as conn:
+            if environ:
+                with environment.EnvironmentContext(
+                    self.config,
+                    script_dir,
+                    fn=retrieve_migrations,
+                    as_sql=sql,
+                    template_args=template_args,
+                ) as env:
+                    env.configure(connection=conn)
+                    script_dir.run_env()
+        script_dir.generate_revision(util.rev_id(), message, **template_args)
+
+    def stamp(self, version, sql=False, tag=None):
+        """Stamps database with provided version.
+
+        :param version: Should match one from repository or head - to stamp
+                         database with most recent version
+        :type version: string
         """
-        return alembic.command.stamp(self.config, revision=revision)
+        script_dir = script.ScriptDirectory.from_config(self.config)
+
+        def do_stamp(rev, context):
+            if sql:
+                current = False
+            else:
+                current = context._current_rev()
+            dest = script_dir.get_revision(version)
+            if dest is not None:
+                dest = dest.revision
+            context._update_current_rev(current, dest)
+            return []
+
+        with self.engine.connect() as conn:
+            with environment.EnvironmentContext(
+                self.config,
+                script_dir,
+                fn=do_stamp,
+                as_sql=sql,
+                destination_rev=version,
+                tag=tag,
+            ) as env:
+                env.configure(connection=conn)
+                script_dir.run_env()
