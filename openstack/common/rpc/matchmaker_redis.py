@@ -29,13 +29,13 @@ redis = importutils.try_import('redis')
 matchmaker_redis_opts = [
     cfg.StrOpt('host',
                default='127.0.0.1',
-               help='Host to locate redis'),
+               help='Host name for Redis server. Default is 127.0.0.1.'),
     cfg.IntOpt('port',
                default=6379,
-               help='Use this port to connect to redis host.'),
+               help='Port for Redis host. Default is 6379.'),
     cfg.StrOpt('password',
                default=None,
-               help='Password for Redis server. (optional)'),
+               help='(Optional) Password for Redis server. Default is none.'),
 ]
 
 CONF = cfg.CONF

@@ -39,43 +39,45 @@ LOG = logging.getLogger(__name__)
 qpid_opts = [
     cfg.StrOpt('qpid_hostname',
                default='localhost',
-               help='Qpid broker hostname'),
+               help='Qpid broker host name.'),
     cfg.IntOpt('qpid_port',
                default=5672,
-               help='Qpid broker port'),
+               help='Qpid broker port.'),
     cfg.ListOpt('qpid_hosts',
                 default=['$qpid_hostname:$qpid_port'],
-                help='Qpid HA cluster host:port pairs'),
+                help='Qpid HA cluster host:port pairs.'),
     cfg.StrOpt('qpid_username',
                default='',
-               help='Username for qpid connection'),
+               help='User name for Qpid connection.'),
     cfg.StrOpt('qpid_password',
                default='',
-               help='Password for qpid connection',
+               help='Password for Qpid connection.',
                secret=True),
     cfg.StrOpt('qpid_sasl_mechanisms',
                default='',
-               help='Space separated list of SASL mechanisms to use for auth'),
+               help='Space-separated list of SASL mechanisms to use for '
+                    'auth.'),
     cfg.IntOpt('qpid_heartbeat',
                default=60,
-               help='Seconds between connection keepalive heartbeats'),
+               help='Connection time, in seconds, between keepalive '
+                    'heartbeats.'),
     cfg.StrOpt('qpid_protocol',
                default='tcp',
-               help="Transport to use, either 'tcp' or 'ssl'"),
+               help="Transport to use. Valid values are tcp or ssl."),
     cfg.BoolOpt('qpid_tcp_nodelay',
                 default=True,
-                help='Disable Nagle algorithm'),
+                help='Enables or disables Nagle algorithm. Default is True.'),
     # NOTE(russellb) If any additional versions are added (beyond 1 and 2),
     # this file could probably use some additional refactoring so that the
     # differences between each version are split into different classes.
     cfg.IntOpt('qpid_topology_version',
                default=1,
-               help="The qpid topology version to use.  Version 1 is what "
-                    "was originally used by impl_qpid.  Version 2 includes "
-                    "some backwards-incompatible changes that allow broker "
-                    "federation to work.  Users should update to version 2 "
-                    "when they are able to take everything down, as it "
-                    "requires a clean break."),
+               help='The Qpid topology version. Version 2 enables broker '
+                    'federation but includes some backward-incompatible '
+                    'changes. Version 1 is the original version used by '
+                    'impl_qpid. You should update to version 2 '
+                    'when you are able to take everything down, as it '
+                    'requires a clean break.'),
 ]
 
 cfg.CONF.register_opts(qpid_opts)
@@ -156,7 +158,7 @@ class ConsumerBase(object):
         self._declare_receiver(session)
 
     def reconnect(self, session):
-        """Re-declare the receiver after a qpid reconnect."""
+        """Re-declare the receiver after a Qpid reconnect."""
         self._declare_receiver(session)
 
     def _declare_receiver(self, session):

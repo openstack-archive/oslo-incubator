@@ -38,16 +38,18 @@ rpc_opts = [
                help="The messaging module to use, defaults to kombu."),
     cfg.IntOpt('rpc_thread_pool_size',
                default=64,
-               help='Size of RPC thread pool'),
+               help='Size (number of threads to use) of RPC thread pool.'),
     cfg.IntOpt('rpc_conn_pool_size',
                default=30,
-               help='Size of RPC connection pool'),
+               help='Size (number of threads to use) of RPC connection '
+                    'pool.'),
     cfg.IntOpt('rpc_response_timeout',
                default=60,
-               help='Seconds to wait for a response from call or multicall'),
+               help='Wait time, in seconds, for a response from call or '
+                    'multicall.'),
     cfg.IntOpt('rpc_cast_timeout',
                default=30,
-               help='Seconds to wait before a cast expires (TTL). '
+               help='Wait time, in seconds, before a cast expires (TTL). '
                     'Only supported by impl_zmq.'),
     cfg.ListOpt('allowed_rpc_exception_modules',
                 default=['nova.exception',
@@ -58,10 +60,12 @@ rpc_opts = [
                      ' upon receiving exception data from an rpc call.'),
     cfg.BoolOpt('fake_rabbit',
                 default=False,
-                help='If passed, use a fake RabbitMQ provider'),
+                help='Optional. Enables or disables use of a fake RabbitMQ '
+                     'provider. Default is False.'),
     cfg.StrOpt('control_exchange',
                default='openstack',
-               help='AMQP exchange to connect to if using RabbitMQ or Qpid'),
+               help='AMQP exchange to which to connect if using RabbitMQ '
+                    'or Qpid.'),
 ]
 
 CONF = cfg.CONF
