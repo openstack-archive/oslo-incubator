@@ -16,6 +16,8 @@
 import datetime
 import sys
 
+import mock
+
 from openstack.common import importutils
 from openstack.common import test
 
@@ -98,6 +100,22 @@ class ImportUtilsTest(test.BaseTestCase):
                                            'tests.unit.fake.FakeDriver2',
                                            first_arg=False)
         self.assertEqual(obj.__class__.__name__, 'FakeDriver2')
+
+    @mock.patch('openstack.common.importutils.import_class')
+    def test_import_object_ns_error_message(self, mock_import_class):
+        mock_import_class.side_effect = (ImportError('No module named foo'),
+                                         ImportError('No module named bar'))
+        expected = ('No module named bar\n'
+                    'original message: No module named foo')
+        # TODO(achudnovets): use self.assertRaisesRegexp when
+        # assertRaisesRegexp will be added to testtools
+        try:
+            importutils.import_object_ns('spam.eggs',
+                                         'bar.SpamClass')
+        except ImportError as ex:
+            self.assertEqual(expected, str(ex))
+        else:
+            self.fail('ImportError expected')
 
     def test_import_object(self):
         dt = importutils.import_object('datetime.time')
