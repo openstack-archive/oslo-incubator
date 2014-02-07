@@ -31,13 +31,13 @@ LOG = logging.getLogger(__name__)
 notifier_opts = [
     cfg.MultiStrOpt('notification_driver',
                     default=[],
-                    help='Driver or drivers to handle sending notifications'),
+                    help='Driver or drivers to handle sending notifications.'),
     cfg.StrOpt('default_notification_level',
                default='INFO',
-               help='Default notification level for outgoing notifications'),
+               help='Default notification level for outgoing notifications.'),
     cfg.StrOpt('default_publisher_id',
                default=None,
-               help='Default publisher_id for outgoing notifications'),
+               help='Default publisher_id for outgoing notifications.'),
 ]
 
 CONF = cfg.CONF

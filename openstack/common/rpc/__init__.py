@@ -38,13 +38,13 @@ rpc_opts = [
                help="The messaging module to use, defaults to kombu."),
     cfg.IntOpt('rpc_thread_pool_size',
                default=64,
-               help='Size of RPC thread pool'),
+               help='Size of RPC thread pool.'),
     cfg.IntOpt('rpc_conn_pool_size',
                default=30,
-               help='Size of RPC connection pool'),
+               help='Size of RPC connection pool.'),
     cfg.IntOpt('rpc_response_timeout',
                default=60,
-               help='Seconds to wait for a response from call or multicall'),
+               help='Seconds to wait for a response from call or multicall.'),
     cfg.IntOpt('rpc_cast_timeout',
                default=30,
                help='Seconds to wait before a cast expires (TTL). '
@@ -58,10 +58,10 @@ rpc_opts = [
                      ' upon receiving exception data from an rpc call.'),
     cfg.BoolOpt('fake_rabbit',
                 default=False,
-                help='If passed, use a fake RabbitMQ provider'),
+                help='If passed, use a fake RabbitMQ provider.'),
     cfg.StrOpt('control_exchange',
                default='openstack',
-               help='AMQP exchange to connect to if using RabbitMQ or Qpid'),
+               help='AMQP exchange to connect to if using RabbitMQ or Qpid.'),
 ]
 
 CONF = cfg.CONF
