@@ -69,23 +69,25 @@ opts = [
     cfg.ListOpt('modules',
                 default=[],
                 help='The list of modules to copy from oslo-incubator '
-                     '(deprecated in favor of --module)'),
+                     '(deprecated in favor of --module).'),
     cfg.MultiStrOpt('module',
                     default=[],
-                    help='The list of modules to copy from oslo-incubator'),
+                    help='The list of modules to copy from oslo-incubator.'),
     cfg.StrOpt('base',
                default=None,
-               help='The base module to hold the copy of openstack.common'),
+               help='The base module to hold the copy of openstack.common.'),
     cfg.StrOpt('dest-dir',
                default=None,
-               help='Destination project directory'),
+               help='Destination project directory.'),
     cfg.StrOpt('configfile_or_destdir',
                default=None,
-               help='A config file or destination project directory',
+               help='A configuration file or destination project directory.',
                positional=True),
     cfg.BoolOpt('nodeps',
                 default=False,
-                help='Discard dependencies of configured modules'),
+                help='Enables or disables the use of dependencies for '
+                     'configured modules. Default is False, which enables '
+                     'dependencies.'),
 ]
 
 
