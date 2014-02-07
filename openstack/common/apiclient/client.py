@@ -34,6 +34,7 @@ except ImportError:
     import json
 
 import requests
+from webob import exc as http_exc
 
 from openstack.common.apiclient import exceptions
 from openstack.common import importutils
@@ -240,7 +241,7 @@ class HTTPClient(object):
         try:
             return self.request(
                 method, self.concat_url(endpoint, url), **kwargs)
-        except exceptions.Unauthorized as unauth_ex:
+        except http_exc.HTTPUnauthorized as unauth_ex:
             if just_authenticated:
                 raise
             self.cached_token = None

@@ -27,6 +27,7 @@ import textwrap
 import prettytable
 import six
 from six import moves
+from webob import exc as http_exc
 
 from openstack.common.apiclient import exceptions
 from openstack.common.gettextutils import _
@@ -231,7 +232,7 @@ def find_resource(manager, name_or_id, **find_args):
     # first try to get entity as integer id
     try:
         return manager.get(int(name_or_id))
-    except (TypeError, ValueError, exceptions.NotFound):
+    except (TypeError, ValueError, http_exc.HTTPNotFound):
         pass
 
     # now try to get entity as uuid
@@ -240,20 +241,20 @@ def find_resource(manager, name_or_id, **find_args):
 
         if uuidutils.is_uuid_like(tmp_id):
             return manager.get(tmp_id)
-    except (TypeError, ValueError, exceptions.NotFound):
+    except (TypeError, ValueError, http_exc.HTTPNotFound):
         pass
 
     # for str id which is not uuid
     if getattr(manager, 'is_alphanum_id_allowed', False):
         try:
             return manager.get(name_or_id)
-        except exceptions.NotFound:
+        except http_exc.HTTPNotFound:
             pass
 
     try:
         try:
             return manager.find(human_id=name_or_id, **find_args)
-        except exceptions.NotFound:
+        except http_exc.HTTPNotFound:
             pass
 
         # finally try to find entity by name
@@ -263,7 +264,7 @@ def find_resource(manager, name_or_id, **find_args):
             kwargs = {name_attr: name_or_id}
             kwargs.update(find_args)
             return manager.find(**kwargs)
-        except exceptions.NotFound:
+        except http_exc.HTTPNotFound:
             msg = _("No %(name)s with a name or "
                     "ID of '%(name_or_id)s' exists.") % \
                 {
@@ -271,7 +272,7 @@ def find_resource(manager, name_or_id, **find_args):
                     "name_or_id": name_or_id
                 }
             raise exceptions.CommandError(msg)
-    except exceptions.NoUniqueMatch:
+    except http_exc.HTTPMultipleChoices:
         msg = _("Multiple %(name)s matches found for "
                 "'%(name_or_id)s', use an ID to be more specific.") % \
             {

@@ -26,8 +26,8 @@ Base utilities to build API operation managers and objects on top of.
 import abc
 
 import six
+from webob import exc as http_exc
 
-from openstack.common.apiclient import exceptions
 from openstack.common.py3kcompat import urlutils
 from openstack.common import strutils
 
@@ -219,9 +219,9 @@ class ManagerWithFind(BaseManager):
         num_matches = len(matches)
         if num_matches == 0:
             msg = "No %s matching %s." % (self.resource_class.__name__, kwargs)
-            raise exceptions.NotFound(msg)
+            raise http_exc.HTTPNotFound(message=msg)
         elif num_matches > 1:
-            raise exceptions.NoUniqueMatch()
+            raise http_exc.HTTPMultipleChoices()
         else:
             return matches[0]
 
@@ -373,9 +373,9 @@ class CrudManager(BaseManager):
 
         if num == 0:
             msg = "No %s matching %s." % (self.resource_class.__name__, kwargs)
-            raise exceptions.NotFound(404, msg)
+            raise http_exc.HTTPNotFound(message=msg)
         elif num > 1:
-            raise exceptions.NoUniqueMatch
+            raise http_exc.HTTPMultipleChoices()
         else:
             return rl[0]
 
