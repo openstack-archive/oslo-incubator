@@ -1,0 +1,76 @@
+Upgrade nova db common code from oslo
+
+Couple of changes in nova/tests was made to work with new TimestampMixin
+introduced in https://review.openstack.org/#/c/67484
+
+Coresponding commit to oslo.incubator fa785cea8fae58744a99d4b8a8cf27e4f4207532
+
+Changes from oslo-incubator
+===============================================================
+b4f72b2 Don't raise MySQL 2013 'Lost connection' errors
+271adfb Format sql in db.sqlalchemy.session docstring
+0334cb3 Handle exception messages with six.text_type
+eff69ce Drop dependency on log from oslo db code
+11f2add Clean up docstring in db.sqlalchemy.session
+1b5147f Only enable MySQL TRADITIONAL mode if we're running against MySQL
+39e1c5c Move db tests base.py to common code
+986dafd Fix parsing of UC errors in sqlite 3.7.16+/3.8.2+
+9a203e6 Use dialect rather than a particular DB API driver
+1779029 Move helper DB functions to db.sqlalchemy.utils
+bcf6d5e Small edits on help strings
+ae01e9a Transition from migrate to alembic
+70ebb19 Fix mocking of utcnow() for model datetime cols
+7aa94df Add a db check for CHARSET=utf8
+aff0171 Remove "vim: tabstop=4 shiftwidth=4 softtabstop=4" from headers
+fa0f36f Fix database connection string is secret
+8575d87 Removed copyright from empty files
+d08d27f Fix the obsolete exception message
+8b2b0b7 Use hacking import_exceptions for gettextutils._
+9bc593e Add docstring for exception handlers of session
+855644a Removal of _REPOSITORY global variable.
+ea6caf9 Remove string.lowercase usage
+a33989e Remove eventlet tpool from common db.api
+e40903b Database hook enabling traditional mode at MySQL
+f2115a0 Replace xrange in for loop with range
+c802fa6 SQLAlchemy error patterns improved
+1c1f199 Remove unused import
+6d0a6c3 Correct invalid docstrings
+135dd00 Remove start index 0 in range()
+28f8fd5 Make _extra_keys a property of ModelBase
+45658e2 Fix violations of H302:import only modules
+bb4d7a2 Enables db2 server disconnects to be handled pessimistically
+915f8ab db.sqlalchemy.session add [sql].idle_timeout
+e6494c2 Use six.iteritems to make dict work on Python2/3
+48cfb7b Drop dependency on processutils from oslo db code
+4c47d3e Fix locking in migration tests
+c2ee282 Incorporating MIT licensed code
+c5a1088 Typos fix in db and periodic_task module
+fb0e86a Use six.moves.configparser instead of ConfigParser
+1dd4971 fix typo in db session docstring
+8a01dd8 The ability to run tests at various backend
+0fe4e28 Use log.warning() instead of log.warn() in oslo.db
+12bcdb7 Remove vim header
+4c22556 Use py3kcompat urlutils functions instead of urlparse
+ca7a2ab Don't use deprecated module commands
+6603e8f Remove sqlalchemy-migrate 0.7.3 patching
+274c7e2 Drop dependency on lockutils from oslo db code
+97d8cf4 Remove lazy loading of database backend
+2251cb5 Do not name variables as builtins
+3acd57c Add db2 communication error code when check the db connection
+c2dcf6e Add [sql].connection as deprecated opt for db
+001729d Modify SQLA session due to dispose of eventlet
+4de827a Clean up db.sqla.Models.extra_keys interface
+347f29e Use functools.wrap() instead of custom implementation
+771d843 Move base migration test classes to common code
+9721129 exception: remove
+56ff3b3 Use single meta when change column type
+3f2f70e Helper function to sanitize db url credentials
+df3f2ba BaseException.message is deprecated since Python 2.6
+c76be5b Add function drop_unique_constraint()
+d4d8126 Change sqlalchemy/utils.py mode back to 644
+cf41936 Move sqlalchemy migration from Nova
+5758360 Raise ValueError if sort_dir is unknown
+31c1995 python3: Add python3 compatibility support
+3972c3f Migrate sqlalchemy utils from Nova
+1a2df89 Enable H302 hacking check
+3f503fa Add a monkey-patching util for sqlalchemy-migrate

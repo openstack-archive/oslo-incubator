@@ -10,7 +10,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import os
+import shutil
+import subprocess
+import tempfile
+
+from alembic import command as alembic_command
+from alembic import config
+from alembic import script
 import mock
+import sqlalchemy
 
 from openstack.common.db.sqlalchemy.migration_cli import ext_alembic
 from openstack.common.db.sqlalchemy.migration_cli import ext_migrate
@@ -26,64 +35,83 @@ class MockWithCmp(mock.MagicMock):
         return self.order > other.order
 
 
-@mock.patch(('openstack.common.db.sqlalchemy.migration_cli.'
-             'ext_alembic.alembic.command'))
 class TestAlembicExtension(test.BaseTestCase):
 
     def setUp(self):
-        self.migration_config = {'alembic_ini_path': '.',
-                                 'db_url': 'sqlite://'}
-        self.alembic = ext_alembic.AlembicExtension(self.migration_config)
+        temp_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, temp_dir)
+
+        config_filename = os.path.join(temp_dir, 'alembic_test.ini')
+        alembic_tempdir = os.path.join(temp_dir, 'alembic_test')
+        alembic_env_py = os.path.join(alembic_tempdir, 'env.py')
+
+        self.alembic_config = config.Config(config_filename)
+        alembic_command.init(self.alembic_config, alembic_tempdir)
+
+        #delete fileConfig from alembic env.py
+        subprocess.call(
+            '/bin/sed -i /fileConfig\(config/d %s' % alembic_env_py,
+            shell=True)
+
+        db_url = 'sqlite:///{path}/{dbname}'.format(
+            path=temp_dir, dbname='alembic_test.db')
+        self.alembic_config.set_main_option('sqlalchemy.url', db_url)
+
+        migration_config = {'alembic_ini_path': config_filename}
+        engine = sqlalchemy.create_engine(db_url)
+
+        self.alembic = ext_alembic.AlembicExtension(engine,
+                                                    migration_config)
+        self.alembic.revision(message='test')
         super(TestAlembicExtension, self).setUp()
 
-    def test_check_enabled_true(self, command):
+    def yield_revisions(self):
+        script_dir = script.ScriptDirectory.from_config(self.alembic_config)
+        for revision in script_dir.walk_revisions():
+            yield revision.revision
+
+    def test_check_enabled_true(self):
         """Verifies that enabled returns True on non empty
         alembic_ini_path conf variable
         """
         self.assertTrue(self.alembic.enabled)
 
-    def test_check_enabled_false(self, command):
-        """Verifies enabled returns False on empty
-        alembic_ini_path variable
-        """
-        self.migration_config['alembic_ini_path'] = ''
-        alembic = ext_alembic.AlembicExtension(self.migration_config)
-        self.assertFalse(alembic.enabled)
+    def test_upgrade(self):
+        for revision in self.yield_revisions():
+            self.alembic.upgrade(revision)
+            self.assertEqual(self.alembic.version(), revision)
 
-    def test_upgrade_none(self, command):
-        self.alembic.upgrade(None)
-        command.upgrade.assert_called_once_with(self.alembic.config, 'head')
+    def test_upgreade_head(self):
+        self.alembic.upgrade('head')
+        revisions = list(self.yield_revisions())
+        self.assertEqual(self.alembic.version(), revisions[-1])
 
-    def test_upgrade_normal(self, command):
-        self.alembic.upgrade('131daa')
-        command.upgrade.assert_called_once_with(self.alembic.config, '131daa')
-
-    def test_downgrade_none(self, command):
+    def test_downgrade(self):
+        self.alembic.upgrade('head')
+        self.assertIsNotNone(self.alembic.version())
         self.alembic.downgrade(None)
-        command.downgrade.assert_called_once_with(self.alembic.config, 'base')
+        self.assertIsNone(self.alembic.version())
 
-    def test_downgrade_int(self, command):
-        self.alembic.downgrade(111)
-        command.downgrade.assert_called_once_with(self.alembic.config, 'base')
+    def test_downgrade_base(self):
+        self.alembic.upgrade('head')
+        self.assertIsNotNone(self.alembic.version())
+        self.alembic.downgrade('base')
+        self.assertIsNone(self.alembic.version())
 
-    def test_downgrade_normal(self, command):
-        self.alembic.downgrade('131daa')
-        command.downgrade.assert_called_once_with(
-            self.alembic.config, '131daa')
+    def test_revision(self):
+        self.alembic.revision(message='test', autogenerate=False)
+        list_revisions = list(self.yield_revisions())
+        self.assertEqual(len(list_revisions), 2)
 
-    def test_revision(self, command):
-        self.alembic.revision(message='test', autogenerate=True)
-        command.revision.assert_called_once_with(
-            self.alembic.config, message='test', autogenerate=True)
+    def test_stamp_head(self):
+        self.alembic.stamp('head')
+        list_revisions = list(self.yield_revisions())
+        self.assertEqual(self.alembic.version(), list_revisions[-1])
 
-    def test_stamp(self, command):
-        self.alembic.stamp('stamp')
-        command.stamp.assert_called_once_with(
-            self.alembic.config, revision='stamp')
-
-    def test_version(self, command):
-        version = self.alembic.version()
-        self.assertIsNone(version)
+    def test_version(self):
+        self.assertIsNone(self.alembic.version())
+        self.alembic.upgrade('head')
+        self.assertIsNotNone(self.alembic.version())
 
 
 @mock.patch(('openstack.common.db.sqlalchemy.migration_cli.'
@@ -93,7 +121,9 @@ class TestMigrateExtension(test.BaseTestCase):
     def setUp(self):
         self.migration_config = {'migration_repo_path': '.',
                                  'db_url': 'sqlite://'}
-        self.migrate = ext_migrate.MigrateExtension(self.migration_config)
+        self.engine = mock.Mock()
+        self.migrate = ext_migrate.MigrateExtension(self.engine,
+                                                    self.migration_config)
         super(TestMigrateExtension, self).setUp()
 
     def test_check_enabled_true(self, migration):
@@ -101,7 +131,8 @@ class TestMigrateExtension(test.BaseTestCase):
 
     def test_check_enabled_false(self, migration):
         self.migration_config['migration_repo_path'] = ''
-        migrate = ext_migrate.MigrateExtension(self.migration_config)
+        migrate = ext_migrate.MigrateExtension(self.engine,
+                                               self.migration_config)
         self.assertFalse(migrate.enabled)
 
     def test_upgrade_head(self, migration):
@@ -138,7 +169,8 @@ class TestMigrateExtension(test.BaseTestCase):
 
     def test_change_init_version(self, migration):
         self.migration_config['init_version'] = 101
-        migrate = ext_migrate.MigrateExtension(self.migration_config)
+        migrate = ext_migrate.MigrateExtension(self.engine,
+                                               self.migration_config)
         migrate.downgrade(None)
         migration.db_sync.assert_called_once_with(
             migrate.engine,
@@ -151,13 +183,27 @@ class TestMigrationManager(test.BaseTestCase):
 
     def setUp(self):
         self.migration_config = {'alembic_ini_path': '.',
-                                 'migrate_repo_path': '.',
-                                 'db_url': 'sqlite://'}
+                                 'migrate_repo_path': '.'}
+        self.engine = mock.Mock()
+        self.manager_patcher = mock.patch(
+            'openstack.common.db.sqlalchemy.migration_cli.manager.'
+            'enabled.EnabledExtensionManager')
+        self.ext_manager = self.manager_patcher.start()
+        self.plugin = mock.Mock()
+        self.ext_manager().extensions = [self.plugin]
+        self.addCleanup(self.manager_patcher.stop)
         self.migration_manager = manager.MigrationManager(
-            self.migration_config)
+            self.migration_config, engine=self.engine)
         self.ext = mock.Mock()
         self.migration_manager._manager.extensions = [self.ext]
         super(TestMigrationManager, self).setUp()
+
+    def test_initialized(self):
+        self.ext_manager.assert_called_with(
+            manager.MIGRATION_NAMESPACE,
+            manager.check_plugin_enabled,
+            invoke_on_load=True,
+            invoke_args=(self.engine, self.migration_config))
 
     def test_manager_update(self):
         self.migration_manager.upgrade('head')
@@ -192,10 +238,14 @@ class TestMigrationRightOrder(test.BaseTestCase):
 
     def setUp(self):
         self.migration_config = {'alembic_ini_path': '.',
-                                 'migrate_repo_path': '.',
-                                 'db_url': 'sqlite://'}
-        self.migration_manager = manager.MigrationManager(
-            self.migration_config)
+                                 'migrate_repo_path': '.'}
+        self.engine = mock.Mock()
+        self.manager_patcher = mock.patch(
+            'openstack.common.db.sqlalchemy.migration_cli.manager.'
+            'enabled.EnabledExtensionManager')
+        self.ext_manager = self.manager_patcher.start()
+        self.addCleanup(self.manager_patcher.stop)
+
         self.first_ext = MockWithCmp()
         self.first_ext.obj.order = 1
         self.first_ext.obj.upgrade.return_value = 100
@@ -204,8 +254,10 @@ class TestMigrationRightOrder(test.BaseTestCase):
         self.second_ext.obj.order = 2
         self.second_ext.obj.upgrade.return_value = 200
         self.second_ext.obj.downgrade.return_value = 100
-        self.migration_manager._manager.extensions = [self.first_ext,
-                                                      self.second_ext]
+        self.ext_manager().extensions = [self.first_ext, self.second_ext]
+
+        self.migration_manager = manager.MigrationManager(
+            self.migration_config, engine=self.engine)
         super(TestMigrationRightOrder, self).setUp()
 
     def test_upgrade_right_order(self):
