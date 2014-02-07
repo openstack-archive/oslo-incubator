@@ -71,10 +71,10 @@ from openstack.common import log as logging
 policy_opts = [
     cfg.StrOpt('policy_file',
                default='policy.json',
-               help=_('JSON file containing policy')),
+               help=_('JSON file containing policy.')),
     cfg.StrOpt('policy_default_rule',
                default='default',
-               help=_('Rule enforced when requested rule is not found')),
+               help=_('Rule enforced when requested rule is not found.')),
 ]
 
 CONF = cfg.CONF

@@ -35,7 +35,7 @@ db_opts = [
                default='sqlalchemy',
                deprecated_name='db_backend',
                deprecated_group='DEFAULT',
-               help='The backend to use for db'),
+               help='The backend to use for db.'),
 ]
 
 CONF = cfg.CONF
