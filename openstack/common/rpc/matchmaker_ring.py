@@ -33,7 +33,7 @@ matchmaker_opts = [
                deprecated_name='matchmaker_ringfile',
                deprecated_group='DEFAULT',
                default='/etc/oslo/matchmaker_ring.json',
-               help='Matchmaker ring file (JSON)'),
+               help='Matchmaker ring file (JSON).'),
 ]
 
 CONF = cfg.CONF
@@ -42,7 +42,7 @@ LOG = logging.getLogger(__name__)
 
 
 class RingExchange(mm.Exchange):
-    """Match Maker where hosts are loaded from a static JSON formatted file.
+    """Matchmaker where hosts are loaded from a static JSON formatted file.
 
     __init__ takes optional ring dictionary argument, otherwise
     loads the ringfile from CONF.mathcmaker_ringfile.
