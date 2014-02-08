@@ -46,7 +46,7 @@ class AService(periodic_task.PeriodicTasks):
         self.called['urg'] += 1
         raise AnException('urg')
 
-    @periodic_task.periodic_task(spacing=10, run_immediately=True)
+    @periodic_task.periodic_task(spacing=10)
     def doit_with_kwargs_odd(self, context):
         self.called['ticks'] += 1
 
@@ -59,7 +59,7 @@ class PeriodicTasksTestCase(test.BaseTestCase):
         serv.run_periodic_tasks(None)
         self.assertEqual(serv.called['doit'], 1)
         self.assertEqual(serv.called['urg'], 1)
-        self.assertEqual(serv.called['ticks'], 1)
+        self.assertEqual(serv.called['ticks'], 0)
 
     def test_called_twice(self):
         serv = AService()
@@ -67,9 +67,9 @@ class PeriodicTasksTestCase(test.BaseTestCase):
         serv.run_periodic_tasks(None)
         self.assertEqual(serv.called['doit'], 2)
         self.assertEqual(serv.called['urg'], 2)
-        # doit_with_kwargs_odd will only be called the first time because its
+        # doit_with_kwargs_odd will not be called since its
         # spacing time interval will not have elapsed between the calls.
-        self.assertEqual(serv.called['ticks'], 1)
+        self.assertEqual(serv.called['ticks'], 0)
 
     def test_raises(self):
         serv = AService()
