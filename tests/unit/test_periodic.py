@@ -34,7 +34,7 @@ class AService(periodic_task.PeriodicTasks):
 
     def __init__(self):
         super(AService, self).__init__()
-        self.called = {'doit': 0, 'urg': 0, 'ticks': 0}
+        self.called = {'doit': 0, 'urg': 0, 'ticks': 0, 'tocks': 0}
 
     @periodic_task.periodic_task
     def doit(self, context):
@@ -46,29 +46,44 @@ class AService(periodic_task.PeriodicTasks):
         raise AnException('urg')
 
     @periodic_task.periodic_task(spacing=10, run_immediately=True)
-    def doit_with_kwargs_odd(self, context):
+    def doit_with_ticks(self, context):
         self.called['ticks'] += 1
+
+    @periodic_task.periodic_task(spacing=10)
+    def doit_with_tocks(self, context):
+        self.called['tocks'] += 1
 
 
 class PeriodicTasksTestCase(test.BaseTestCase):
     """Test cases for PeriodicTasks."""
 
-    def test_is_called(self):
+    @mock.patch('time.time')
+    def test_called_trice(self, mock_time):
         serv = AService()
+        now = serv._periodic_last_run['doit_with_tocks']
+
+        mock_time.return_value = now
         serv.run_periodic_tasks(None)
         self.assertEqual(serv.called['doit'], 1)
         self.assertEqual(serv.called['urg'], 1)
         self.assertEqual(serv.called['ticks'], 1)
+        self.assertEqual(serv.called['tocks'], 0)
 
-    def test_called_twice(self):
-        serv = AService()
-        serv.run_periodic_tasks(None)
+        mock_time.return_value = now + 9
         serv.run_periodic_tasks(None)
         self.assertEqual(serv.called['doit'], 2)
         self.assertEqual(serv.called['urg'], 2)
-        # doit_with_kwargs_odd will only be called the first time because its
+        # doit_with_ticks will only be called the first time because its
         # spacing time interval will not have elapsed between the calls.
         self.assertEqual(serv.called['ticks'], 1)
+        self.assertEqual(serv.called['tocks'], 0)
+
+        mock_time.return_value = now + 10
+        serv.run_periodic_tasks(None)
+        self.assertEqual(serv.called['doit'], 3)
+        self.assertEqual(serv.called['urg'], 3)
+        self.assertEqual(serv.called['ticks'], 2)
+        self.assertEqual(serv.called['tocks'], 1)
 
     def test_raises(self):
         serv = AService()
