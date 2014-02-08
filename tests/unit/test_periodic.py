@@ -20,10 +20,11 @@ Unit Tests for periodic_task decorator and PeriodicTasks class.
 
 import datetime
 
+import mock
+
 from openstack.common.fixture import config
 from openstack.common import periodic_task
 from openstack.common import test
-from openstack.common import timeutils
 from testtools import matchers
 
 
@@ -45,7 +46,7 @@ class AService(periodic_task.PeriodicTasks):
         self.called['urg'] = True
         raise AnException('urg')
 
-    @periodic_task.periodic_task(spacing=10)
+    @periodic_task.periodic_task(spacing=10, run_immediately=True)
     def doit_with_kwargs_odd(self, context):
         self.called['ticks'] = True
 
@@ -56,6 +57,7 @@ class PeriodicTasksTestCase(test.BaseTestCase):
     def test_is_called(self):
         serv = AService()
         serv.run_periodic_tasks(None)
+        # NOTE(zyluo): expect doit and crashit each to be called once.
         self.assertTrue(serv.called['doit'])
         self.assertTrue(len(serv.called) == 2)
 
@@ -63,8 +65,8 @@ class PeriodicTasksTestCase(test.BaseTestCase):
         serv = AService()
         serv.run_periodic_tasks(None)
         serv.run_periodic_tasks(None)
-        # expect doit_with_kwargs to be called twice
-        # and doit_with_kwargs_odd to be called once.
+        # NOTE(zyluo): expect doit, crashit, and doit_with_kwargs_odd
+        # each to be called once.
         self.assertTrue(len(serv.called) == 3)
 
     def test_raises(self):
@@ -133,9 +135,10 @@ class ManagerTestCase(test.BaseTestCase):
         idle = m.run_periodic_tasks(None)
         self.assertAlmostEqual(60, idle, 1)
 
-    def test_periodic_tasks_idle_calculation(self):
+    @mock.patch('openstack.common.timeutils.utcnow')
+    def test_periodic_tasks_idle_calculation(self, mock_utcnow):
         fake_time = datetime.datetime(3000, 1, 1)
-        timeutils.set_time_override(fake_time)
+        mock_utcnow.return_value = fake_time
 
         class Manager(periodic_task.PeriodicTasks):
 
@@ -161,16 +164,17 @@ class ManagerTestCase(test.BaseTestCase):
         self.assertEqual(10, m._periodic_spacing[task_name])
         self.assertIsNotNone(m._periodic_last_run[task_name])
 
-        timeutils.advance_time_delta(datetime.timedelta(seconds=5))
+        mock_utcnow.return_value = fake_time + datetime.timedelta(seconds=5)
         m.run_periodic_tasks(None)
 
-        timeutils.advance_time_delta(datetime.timedelta(seconds=5))
+        mock_utcnow.return_value = fake_time + datetime.timedelta(seconds=10)
         idle = m.run_periodic_tasks(None)
         self.assertAlmostEqual(10, idle, 1)
 
-    def test_periodic_tasks_immediate_runs_now(self):
+    @mock.patch('openstack.common.timeutils.utcnow')
+    def test_periodic_tasks_immediate_runs_now(self, mock_utcnow):
         fake_time = datetime.datetime(3000, 1, 1)
-        timeutils.set_time_override(fake_time)
+        mock_utcnow.return_value = fake_time
 
         class Manager(periodic_task.PeriodicTasks):
 
@@ -201,7 +205,7 @@ class ManagerTestCase(test.BaseTestCase):
                          m._periodic_last_run[task_name])
         self.assertAlmostEqual(10, idle, 1)
 
-        timeutils.advance_time_delta(datetime.timedelta(seconds=5))
+        mock_utcnow.return_value = fake_time + datetime.timedelta(seconds=5)
         idle = m.run_periodic_tasks(None)
         self.assertAlmostEqual(5, idle, 1)
 
