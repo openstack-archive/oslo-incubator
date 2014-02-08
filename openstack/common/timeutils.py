@@ -17,7 +17,6 @@
 Time related utilities and helper functions.
 """
 
-import calendar
 import datetime
 import time
 
@@ -95,61 +94,17 @@ def is_newer_than(after, seconds):
 
 def utcnow_ts():
     """Timestamp version of our utcnow function."""
-    if utcnow.override_time is None:
-        # NOTE(kgriffs): This is several times faster
-        # than going through calendar.timegm(...)
-        return int(time.time())
-
-    return calendar.timegm(utcnow().timetuple())
+    return int(time.time())
 
 
 def utcnow():
     """Overridable version of utils.utcnow."""
-    if utcnow.override_time:
-        try:
-            return utcnow.override_time.pop(0)
-        except AttributeError:
-            return utcnow.override_time
     return datetime.datetime.utcnow()
 
 
 def iso8601_from_timestamp(timestamp):
     """Returns a iso8601 formatted date from timestamp."""
     return isotime(datetime.datetime.utcfromtimestamp(timestamp))
-
-
-utcnow.override_time = None
-
-
-def set_time_override(override_time=None):
-    """Overrides utils.utcnow.
-
-    Make it return a constant time or a list thereof, one at a time.
-
-    :param override_time: datetime instance or list thereof. If not
-                          given, defaults to the current UTC time.
-    """
-    utcnow.override_time = override_time or datetime.datetime.utcnow()
-
-
-def advance_time_delta(timedelta):
-    """Advance overridden time using a datetime.timedelta."""
-    assert(not utcnow.override_time is None)
-    try:
-        for dt in utcnow.override_time:
-            dt += timedelta
-    except TypeError:
-        utcnow.override_time += timedelta
-
-
-def advance_time_seconds(seconds):
-    """Advance overridden time by seconds."""
-    advance_time_delta(datetime.timedelta(0, seconds))
-
-
-def clear_time_override():
-    """Remove the overridden time."""
-    utcnow.override_time = None
 
 
 def marshall_now(now=None):

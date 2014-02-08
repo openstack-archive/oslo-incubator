@@ -15,12 +15,10 @@
 
 import calendar
 import datetime
-import time
 
 import iso8601
 import mock
 from oslotest import base as test_base
-from testtools import matchers
 
 from openstack.common import timeutils
 
@@ -39,7 +37,6 @@ class TimeUtilsTest(test_base.BaseTestCase):
         self.skynet_self_aware_time_perfect_str = '1997-08-29T06:14:00.000000'
         self.skynet_self_aware_time_perfect = datetime.datetime(1997, 8, 29,
                                                                 6, 14, 0)
-        self.addCleanup(timeutils.clear_time_override)
 
     def test_isotime(self):
         with mock.patch('datetime.datetime') as datetime_mock:
@@ -132,52 +129,25 @@ class TimeUtilsTest(test_base.BaseTestCase):
         self._test_is_newer_than(lambda x: x.replace(
             tzinfo=iso8601.iso8601.UTC))
 
-    def test_set_time_override_using_default(self):
-        now = timeutils.utcnow_ts()
-
-        # NOTE(kgriffs): Normally it's bad form to sleep in a unit test,
-        # but this is the only way to test that set_time_override defaults
-        # to setting the override to the current time.
-        time.sleep(1)
-
-        timeutils.set_time_override()
-        overriden_now = timeutils.utcnow_ts()
-        self.assertThat(now, matchers.LessThan(overriden_now))
-
     def test_utcnow_ts(self):
         skynet_self_aware_ts = 872835240
-        skynet_dt = datetime.datetime.utcfromtimestamp(skynet_self_aware_ts)
-        self.assertEqual(self.skynet_self_aware_time, skynet_dt)
 
         # NOTE(kgriffs): timeutils.utcnow_ts() uses time.time()
-        # IFF time override is not set.
         with mock.patch('time.time') as time_mock:
             time_mock.return_value = skynet_self_aware_ts
             ts = timeutils.utcnow_ts()
             self.assertEqual(ts, skynet_self_aware_ts)
 
-        timeutils.set_time_override(skynet_dt)
-        ts = timeutils.utcnow_ts()
-        self.assertEqual(ts, skynet_self_aware_ts)
-
     def test_utcnow(self):
-        timeutils.set_time_override(mock.sentinel.utcnow)
-        self.assertEqual(timeutils.utcnow(), mock.sentinel.utcnow)
+        with mock.patch('datetime.datetime') as datetime_mock:
+            datetime_mock.utcnow.return_value = self.skynet_self_aware_time
+            past = timeutils.utcnow()
+            self.assertEqual(past, self.skynet_self_aware_time)
 
-        timeutils.clear_time_override()
-        self.assertFalse(timeutils.utcnow() == mock.sentinel.utcnow)
+        present = timeutils.utcnow()
+        self.assertTrue(past < present)
 
-        self.assertTrue(timeutils.utcnow())
-
-    def test_advance_time_delta(self):
-        timeutils.set_time_override(self.one_minute_before)
-        timeutils.advance_time_delta(datetime.timedelta(seconds=60))
-        self.assertEqual(timeutils.utcnow(), self.skynet_self_aware_time)
-
-    def test_advance_time_seconds(self):
-        timeutils.set_time_override(self.one_minute_before)
-        timeutils.advance_time_seconds(60)
-        self.assertEqual(timeutils.utcnow(), self.skynet_self_aware_time)
+        self.assertTrue(present)
 
     def test_marshall_time(self):
         now = timeutils.utcnow()
