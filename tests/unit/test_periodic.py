@@ -20,10 +20,11 @@ Unit Tests for periodic_task decorator and PeriodicTasks class.
 
 import datetime
 
+import mock
+
 from openstack.common.fixture import config
 from openstack.common import periodic_task
 from openstack.common import test
-from openstack.common import timeutils
 from testtools import matchers
 
 
@@ -133,9 +134,10 @@ class ManagerTestCase(test.BaseTestCase):
         idle = m.run_periodic_tasks(None)
         self.assertAlmostEqual(60, idle, 1)
 
-    def test_periodic_tasks_idle_calculation(self):
+    @mock.patch('openstack.common.timeutils.utcnow')
+    def test_periodic_tasks_idle_calculation(self, mock_utcnow):
         fake_time = datetime.datetime(3000, 1, 1)
-        timeutils.set_time_override(fake_time)
+        mock_utcnow.return_value = fake_time
 
         class Manager(periodic_task.PeriodicTasks):
 
@@ -161,16 +163,17 @@ class ManagerTestCase(test.BaseTestCase):
         self.assertEqual(10, m._periodic_spacing[task_name])
         self.assertIsNotNone(m._periodic_last_run[task_name])
 
-        timeutils.advance_time_delta(datetime.timedelta(seconds=5))
+        mock_utcnow.return_value = fake_time + datetime.timedelta(seconds=5)
         m.run_periodic_tasks(None)
 
-        timeutils.advance_time_delta(datetime.timedelta(seconds=5))
+        mock_utcnow.return_value = fake_time + datetime.timedelta(seconds=10)
         idle = m.run_periodic_tasks(None)
         self.assertAlmostEqual(10, idle, 1)
 
-    def test_periodic_tasks_immediate_runs_now(self):
+    @mock.patch('openstack.common.timeutils.utcnow')
+    def test_periodic_tasks_immediate_runs_now(self, mock_utcnow):
         fake_time = datetime.datetime(3000, 1, 1)
-        timeutils.set_time_override(fake_time)
+        mock_utcnow.return_value = fake_time
 
         class Manager(periodic_task.PeriodicTasks):
 
@@ -201,7 +204,7 @@ class ManagerTestCase(test.BaseTestCase):
                          m._periodic_last_run[task_name])
         self.assertAlmostEqual(10, idle, 1)
 
-        timeutils.advance_time_delta(datetime.timedelta(seconds=5))
+        mock_utcnow.return_value = fake_time + datetime.timedelta(seconds=5)
         idle = m.run_periodic_tasks(None)
         self.assertAlmostEqual(5, idle, 1)
 
