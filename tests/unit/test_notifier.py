@@ -109,6 +109,8 @@ class NotifierTestCase(test.BaseTestCase):
                           'event_type', 'not a priority', dict(a=3))
 
     def test_rpc_priority_queue(self):
+        self.CONF.import_opt('notification_topics',
+                             'openstack.common.notifier.rpc_notifier')
         self.stubs.Set(self.CONF, 'notification_driver',
                        ['openstack.common.notifier.rpc_notifier'])
         self.stubs.Set(self.CONF, 'notification_topics',
