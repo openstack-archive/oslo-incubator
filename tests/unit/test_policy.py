@@ -931,3 +931,31 @@ class GenericCheckTestCase(PolicyBaseTestCase):
         self.assertEqual(check(dict(name1='spam'),
                                dict(name='spam'),
                                self.enforcer), False)
+
+    def test_constant_string_mismatch(self):
+        check = policy.GenericCheck("'spam'", '%(name)s')
+
+        self.assertEqual(check(dict(name='ham'),
+                               {},
+                               self.enforcer), False)
+
+    def test_constant_string_accept(self):
+        check = policy.GenericCheck("'spam'", '%(name)s')
+
+        self.assertEqual(check(dict(name='spam'),
+                               {},
+                               self.enforcer), True)
+
+    def test_constant_literal_mismatch(self):
+        check = policy.GenericCheck("True", '%(enabled)s')
+
+        self.assertEqual(check(dict(enabled=False),
+                               {},
+                               self.enforcer), False)
+
+    def test_constant_literal_accept(self):
+        check = policy.GenericCheck("True", '%(enabled)s')
+
+        self.assertEqual(check(dict(enabled=True),
+                               {},
+                               self.enforcer), True)
