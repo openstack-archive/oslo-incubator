@@ -24,6 +24,7 @@ Base utilities to build API operation managers and objects on top of.
 # pylint: disable=E1102
 
 import abc
+import copy
 
 import six
 
@@ -489,3 +490,6 @@ class Resource(object):
 
     def set_loaded(self, val):
         self._loaded = val
+
+    def to_dict(self):
+        return copy.deepcopy(self._info)
