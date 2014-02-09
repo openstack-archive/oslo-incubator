@@ -26,9 +26,11 @@ conf = cfg.CONF
 class ConfigTestCase(utils.BaseTestCase):
     def setUp(self):
         super(ConfigTestCase, self).setUp()
-        self.config = self.useFixture(config.Config(conf)).config
-        self.config_fixture = config.Config(conf)
-        conf.register_opt(cfg.StrOpt(
+        self.config_fixture = self.useFixture(config.Config(conf))
+        self.config = self.config_fixture.config
+        self.register_opt = self.config_fixture.register_opt
+        self.register_opts = self.config_fixture.register_opts
+        self.config_fixture.register_opt(cfg.StrOpt(
             'testing_option', default='initial_value'))
 
     def test_overriden_value(self):
@@ -43,3 +45,24 @@ class ConfigTestCase(utils.BaseTestCase):
                          'changed_value')
         self.config_fixture.conf.reset()
         self.assertEqual(conf.get('testing_option'), 'initial_value')
+
+    def test_register_option(self):
+        opt = cfg.StrOpt('new_test_opt', default='initial_value')
+        self.config_fixture.register_opt(opt)
+        self.assertEqual(conf.get('new_test_opt'),
+                         opt.default)
+
+    def test_register_options(self):
+        opt1 = cfg.StrOpt('first_test_opt', default='initial_value_1')
+        opt2 = cfg.StrOpt('second_test_opt', default='initial_value_2')
+        self.register_opts([opt1, opt2])
+        self.assertEqual(conf.get('first_test_opt'), opt1.default)
+        self.assertEqual(conf.get('second_test_opt'), opt2.default)
+
+    def test_cleanup_unregister_option(self):
+        opt = cfg.StrOpt('new_test_opt', default='initial_value')
+        self.config_fixture.register_opt(opt)
+        self.assertEqual(conf.get('new_test_opt'),
+                         opt.default)
+        self.config_fixture.cleanUp()
+        self.assertRaises(cfg.NoSuchOptError, conf.get, 'new_test_opt')
