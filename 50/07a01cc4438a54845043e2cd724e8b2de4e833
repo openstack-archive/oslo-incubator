@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Approved+1: Alan Pevec <apevec@gmail.com>
+Code-Review+2: Alan Pevec <apevec@gmail.com>
+Code-Review+1: Victor Sergeyev <vsergeyev@mirantis.com>
+Code-Review+1: Dougal Matthews <dougal@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Sun, 09 Feb 2014 17:21:39 +0000
+Reviewed-on: https://review.openstack.org/71473
+Project: openstack/oslo-incubator
+Branch: refs/heads/stable/havana
