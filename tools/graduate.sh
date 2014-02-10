@@ -23,7 +23,7 @@
 set -e
 
 # FIXME(dhellmann): Need to pull templates from the right repo
-COOKIECUTTER_TEMPLATE_REPO=https://github.com/dhellmann/oslo-cookiecutter.git
+COOKIECUTTER_TEMPLATE_REPO=https://git.openstack.org/openstack-dev/oslo-cookiecutter
 
 tmpdir=$(mktemp -d -t oslo-graduate.XXXX)
 mkdir -p $tmpdir
