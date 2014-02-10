@@ -203,6 +203,24 @@ class PublishErrorsHandlerTestCase(test.BaseTestCase):
         self.publiserrorshandler.emit(logrecord)
         self.assertTrue(self.stub_flg)
 
+    def test_emit_with_args(self):
+        """Make sure emit the message which merged user-supplied arguments."""
+        self.config(notification_driver=[
+            'openstack.common.notifier.rabbit_notifier'
+        ])
+        self.emit_payload = None
+        expect_payload = dict(error="msg with args: show me")
+
+        def fake_notifier(_context, _publisher_id, _event_type, _priority,
+                          payload):
+            self.emit_payload = payload
+
+        self.stubs.Set(notifier, 'notify', fake_notifier)
+        logrecord = logging.LogRecord('name', 'WARN', '/tmp', 1,
+                                      'msg with args: %s', 'show me', None)
+        self.publiserrorshandler.emit(logrecord)
+        self.assertEqual(self.emit_payload, expect_payload)
+
 
 class LogLevelTestCase(test.BaseTestCase):
     def setUp(self):
