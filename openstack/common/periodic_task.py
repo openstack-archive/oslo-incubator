@@ -11,7 +11,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import datetime
 import time
 
 from oslo.config import cfg
@@ -19,7 +18,6 @@ import six
 
 from openstack.common.gettextutils import _
 from openstack.common import log as logging
-from openstack.common import timeutils
 
 
 periodic_opts = [
@@ -78,7 +76,7 @@ def periodic_task(*args, **kwargs):
         if f._periodic_immediate:
             f._periodic_last_run = None
         else:
-            f._periodic_last_run = timeutils.utcnow()
+            f._periodic_last_run = time.time()
         return f
 
     # NOTE(sirp): The `if` is necessary to allow the decorator to be used with
@@ -157,15 +155,15 @@ class PeriodicTasks(object):
         for task_name, task in self._periodic_tasks:
             full_task_name = '.'.join([self.__class__.__name__, task_name])
 
-            now = timeutils.utcnow()
+            now = time.time()
             spacing = self._periodic_spacing[task_name]
             last_run = self._periodic_last_run[task_name]
 
             # If a periodic task is _nearly_ due, then we'll run it early
             if spacing is not None and last_run is not None:
-                due = last_run + datetime.timedelta(seconds=spacing)
-                if not timeutils.is_soon(due, 0.2):
-                    idle_for = min(idle_for, timeutils.delta_seconds(now, due))
+                due = last_run + spacing
+                if due > now + 0.2:
+                    idle_for = min(idle_for, due - now)
                     continue
 
             if spacing is not None:
@@ -173,7 +171,7 @@ class PeriodicTasks(object):
 
             LOG.debug(_("Running periodic task %(full_task_name)s"),
                       {"full_task_name": full_task_name})
-            self._periodic_last_run[task_name] = timeutils.utcnow()
+            self._periodic_last_run[task_name] = time.time()
 
             try:
                 task(self, context)
