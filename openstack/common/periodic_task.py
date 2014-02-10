@@ -159,15 +159,14 @@ class PeriodicTasks(object):
             last_run = self._periodic_last_run[task_name]
 
             # If a periodic task is _nearly_ due, then we'll run it early
-            if spacing is not None and last_run is not None:
-                due = last_run + spacing
-                now = time.time()
-                if due > now + 0.2:
-                    idle_for = min(idle_for, due - now)
-                    continue
-
             if spacing is not None:
                 idle_for = min(idle_for, spacing)
+                if last_run is not None:
+                    due = last_run + spacing
+                    now = time.time()
+                    if due > now + 0.2:
+                        idle_for = min(idle_for, due - now)
+                        continue
 
             LOG.debug(_("Running periodic task %(full_task_name)s"),
                       {"full_task_name": full_task_name})
