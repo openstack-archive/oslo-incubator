@@ -46,6 +46,27 @@ policy rule::
 
     project_id:%(project_id)s and not role:dunce
 
+It is possible to perform policy checks on the following user
+attributes (obtained through the token): user_id, domain_id or
+project_id::
+
+    domain_id:<some_value>
+
+Attributes sent along with API calls can be used by the policy engine
+(on the right side of the expression), by using the following syntax::
+
+    <some_value>:user.id
+
+Contextual attributes of objects identified by their IDs are loaded
+from the database. They are also available to the policy engine and
+can be checked through the `target` keyword::
+
+    <some_value>:target.role.name
+
+All these attributes (related to users, API calls, and context) can be
+checked against each other or against constants, be it literals (True,
+<a_number>) of strings.
+
 Finally, two special policy checks should be mentioned; the policy
 check "@" will always accept an access, and the policy check "!" will
 always reject an access.  (Note that if a rule is either the empty
