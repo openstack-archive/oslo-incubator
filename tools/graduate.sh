@@ -106,11 +106,19 @@ git filter-branch -f --commit-filter \
 # Move things around
 echo "Moving files into place..."
 git mv openstack oslo
-git mv oslo/common oslo/$new_lib
+if [[ -d oslo/common/$new_lib ]]; then
+    git mv oslo/common/$new_lib oslo/$new_lib
+else
+    git mv oslo/common oslo/$new_lib
+fi
 
 # Fix imports after moving files
 echo "Fixing imports..."
-find . -name '*.py' -exec sed -i "s/openstack.common/oslo.${new_lib}/" {} \;
+if [[ -d oslo/$new_lib ]]; then
+    find . -name '*.py' -exec sed -i "s/openstack.common.${new_lib}/oslo.${new_lib}/" {} \;
+else
+    find . -name '*.py' -exec sed -i "s/openstack.common/oslo.${new_lib}/" {} \;
+fi
 
 # Apply the cookiecutter template by building out a fresh copy using
 # the name chosen for this library and then copying any parts of the
