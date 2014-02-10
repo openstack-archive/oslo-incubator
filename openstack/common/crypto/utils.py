@@ -55,18 +55,25 @@ class HKDF(object):
         self.hashfn = importutils.import_module('Crypto.Hash.' + hashtype)
         self.max_okm_length = 255 * self.hashfn.digest_size
 
-    def extract(self, ikm, salt=None):
+    def extract(self, ikm, salt=None, hexdigest=False):
         """An extract function that can be used to derive a robust key given
         weak Input Key Material (IKM) which could be a password.
         Returns a pseudorandom key (of HashLen octets)
 
         :param ikm: input keying material (ex a password)
         :param salt: optional salt value (a non-secret random value)
+        :param hexdigest: optional boolean to specify return of `.hexdigest()`
+                          instead of `.digest()` from the HMAC object
         """
         if salt is None:
             salt = '\x00' * self.hashfn.digest_size
 
-        return HMAC.new(salt, ikm, self.hashfn).digest()
+        hasher = HMAC.new(salt, ikm, self.hashfn)
+
+        if hexdigest:
+            return hasher.hexdigest()
+
+        return hasher.digest()
 
     def expand(self, prk, info, length):
         """An expand function that will return arbitrary length output that can
