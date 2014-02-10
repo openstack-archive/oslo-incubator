@@ -25,8 +25,14 @@ takes no arguments.  The method can return any object that implements DB
 API methods.
 """
 
+import functools
+import logging
+import time
+
 from oslo.config import cfg
 
+from openstack.common.db import exception
+from openstack.common.gettextutils import _  # noqa
 from openstack.common import importutils
 
 
@@ -36,10 +42,73 @@ db_opts = [
                deprecated_name='db_backend',
                deprecated_group='DEFAULT',
                help='The backend to use for db'),
+    cfg.BoolOpt('use_db_reconnect',
+                default=False,
+                help='Enable the experimental use of database reconnect '
+                     'on connection lost'),
+    cfg.IntOpt('db_retry_interval',
+               default=1,
+               help='seconds between db connection retries'),
+    cfg.BoolOpt('db_inc_retry_interval',
+                default=True,
+                help='Whether to increase interval between db connection '
+                     'retries, up to db_max_retry_interval'),
+    cfg.IntOpt('db_max_retry_interval',
+               default=10,
+               help='max seconds between db connection retries, if '
+                    'db_inc_retry_interval is enabled'),
+    cfg.IntOpt('db_max_retries',
+               default=20,
+               help='maximum db connection retries before error is raised. '
+                    '(setting -1 implies an infinite retry count)'),
 ]
 
 CONF = cfg.CONF
 CONF.register_opts(db_opts, 'database')
+
+LOG = logging.getLogger(__name__)
+
+
+def safe_for_db_retry(f):
+    """Enable db-retry for decorated function, if config option enabled."""
+    f.__dict__['enable_retry'] = True
+    return f
+
+
+def _wrap_db_retry(f):
+    """Retry db.api methods, if DBConnectionError() raised
+
+    Retry decorated db.api methods. If we enabled `use_db_reconnect`
+    in config, this decorator will be applied to all db.api functions,
+    marked with @safe_for_db_retry decorator.
+    Decorator catchs DBConnectionError() and retries function in a
+    loop until it succeeds, or until maximum retries count will be reached.
+    """
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        next_interval = CONF.database.db_retry_interval
+        remaining = CONF.database.db_max_retries
+
+        while True:
+            try:
+                return f(*args, **kwargs)
+            except exception.DBConnectionError as e:
+                if remaining == 0:
+                    LOG.exception(_('DB exceeded retry limit.'))
+                    raise exception.DBError(e)
+                if remaining != -1:
+                    remaining -= 1
+                    LOG.exception(_('DB connection error.'))
+                # NOTE(vsergeyev): We are using patched time module, so this
+                #                  effectively yields the execution context to
+                #                  another green thread.
+                time.sleep(next_interval)
+                if CONF.database.db_inc_retry_interval:
+                    next_interval = min(
+                        next_interval * 2,
+                        CONF.database.db_max_retry_interval
+                    )
+    return wrapper
 
 
 class DBAPI(object):
@@ -54,4 +123,14 @@ class DBAPI(object):
         self.__backend = backend_mod.get_backend()
 
     def __getattr__(self, key):
-        return getattr(self.__backend, key)
+        attr = getattr(self.__backend, key)
+
+        if not hasattr(attr, '__call__'):
+            return attr
+        # NOTE(vsergeyev): If `use_db_reconnect` option is set to True, retry
+        #                  DB API methods, decorated with @safe_for_db_retry
+        #                  on disconnect.
+        if CONF.database.use_db_reconnect and hasattr(attr, 'enable_retry'):
+            attr = _wrap_db_retry(attr)
+
+        return attr

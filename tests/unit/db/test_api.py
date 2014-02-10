@@ -15,9 +15,15 @@
 
 """Unit tests for DB API."""
 
+import mock
+
 from openstack.common.db import api
+from openstack.common.db import exception
 from openstack.common.fixture import config
+from openstack.common import importutils
 from tests import utils as test_utils
+
+sqla = importutils.import_module('sqlalchemy')
 
 
 def get_backend():
@@ -25,6 +31,33 @@ def get_backend():
 
 
 class DBAPI(object):
+    def _api_raise(self, *args, **kwargs):
+        """Simulate raising a database-has-gone-away error
+
+        This method creates a fake OperationalError with an ID matching
+        a valid MySQL "database has gone away" situation. It also decrements
+        the error_counter so that we can artificially keep track of
+        how many times this function is called by the wrapper. When
+        error_counter reaches zero, this function returns True, simulating
+        the database becoming available again and the query succeeding.
+        """
+
+        if self.error_counter > 0:
+            self.error_counter -= 1
+            orig = sqla.exc.DBAPIError(False, False, False)
+            orig.args = [2006, 'Test raise operational error']
+            e = exception.DBConnectionError(orig)
+            raise e
+        else:
+            return True
+
+    def api_raise_default(self, *args, **kwargs):
+        return self._api_raise(*args, **kwargs)
+
+    @api.safe_for_db_retry
+    def api_raise_enable_retry(self, *args, **kwargs):
+        return self._api_raise(*args, **kwargs)
+
     def api_class_call1(_self, *args, **kwargs):
         return args, kwargs
 
@@ -65,3 +98,81 @@ class DBAPITestCase(test_utils.BaseTestCase):
         self.config(backend='tests.unit.db.not_existent',
                     group='database')
         self.assertRaises(ImportError, api.DBAPI)
+
+
+class DBReconnectTestCase(DBAPITestCase):
+    def setUp(self):
+        super(DBReconnectTestCase, self).setUp()
+
+        self.test_db_api = DBAPI()
+        patcher = mock.patch(__name__ + '.get_backend',
+                             return_value=self.test_db_api)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+        self.dbapi = api.DBAPI(
+            {'sqlalchemy': __name__}
+        )
+
+    def test_raise_connection_error(self):
+        self.test_db_api.error_counter = 5
+        self.assertRaises(exception.DBConnectionError, self.dbapi._api_raise)
+
+    def test_raise_connection_error_decorated(self):
+        self.test_db_api.error_counter = 5
+        self.assertRaises(exception.DBConnectionError,
+                          self.dbapi.api_raise_enable_retry)
+        self.assertEqual(4, self.test_db_api.error_counter, 'Unexpected retry')
+
+    def test_raise_connection_error_enabled_config(self):
+        self.config(group='database', use_db_reconnect=True)
+        self.test_db_api.error_counter = 5
+        self.assertRaises(exception.DBConnectionError,
+                          self.dbapi.api_raise_default)
+        self.assertEqual(4, self.test_db_api.error_counter, 'Unexpected retry')
+
+    def test_retry_one(self):
+        self.config(group='database', use_db_reconnect=True)
+        self.config(group='database', db_retry_interval=1)
+        try:
+            func = self.dbapi.api_raise_enable_retry
+            self.test_db_api.error_counter = 1
+            self.assertTrue(func(), 'Single retry did not succeed.')
+        except Exception:
+            self.fail('Single retry raised an un-wrapped error.')
+
+        self.assertEqual(
+            0, self.test_db_api.error_counter,
+            'Counter not decremented, retry logic probably failed.')
+
+    def test_retry_two(self):
+        self.config(group='database', use_db_reconnect=True)
+        self.config(group='database', db_inc_retry_interval=False)
+        self.config(group='database', db_retry_interval=1)
+
+        try:
+            func = self.dbapi.api_raise_enable_retry
+            self.test_db_api.error_counter = 2
+            self.assertTrue(func(), 'Multiple retry did not succeed.')
+        except Exception:
+            self.fail('Multiple retry raised an un-wrapped error.')
+
+        self.assertEqual(
+            0, self.test_db_api.error_counter,
+            'Counter not decremented, retry logic probably failed.')
+
+    def test_retry_until_failure(self):
+        self.config(group='database', use_db_reconnect=True)
+        self.config(group='database', db_inc_retry_interval=False)
+        self.config(group='database', db_max_retries=3)
+        self.config(group='database', db_retry_interval=1)
+
+        func = self.dbapi.api_raise_enable_retry
+        self.test_db_api.error_counter = 5
+        self.assertRaises(
+            exception.DBError, func,
+            'Retry of permanent failure did not throw DBError exception.')
+
+        self.assertNotEqual(
+            0, self.test_db_api.error_counter,
+            'Retry did not stop after sql_max_retries iterations.')
