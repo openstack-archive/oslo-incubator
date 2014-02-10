@@ -18,12 +18,11 @@
 Unit Tests for periodic_task decorator and PeriodicTasks class.
 """
 
-import datetime
+import mock
 
 from openstack.common.fixture import config
 from openstack.common import periodic_task
 from openstack.common import test
-from openstack.common import timeutils
 from testtools import matchers
 
 
@@ -110,7 +109,6 @@ class ManagerTestCase(test.BaseTestCase):
     def setUp(self):
         super(ManagerTestCase, self).setUp()
         self.config = self.useFixture(config.Config()).config
-        self.addCleanup(timeutils.clear_time_override)
 
     def test_periodic_tasks_with_idle(self):
         class Manager(periodic_task.PeriodicTasks):
@@ -138,9 +136,10 @@ class ManagerTestCase(test.BaseTestCase):
         idle = m.run_periodic_tasks(None)
         self.assertAlmostEqual(60, idle, 1)
 
-    def test_periodic_tasks_idle_calculation(self):
-        fake_time = datetime.datetime(3000, 1, 1)
-        timeutils.set_time_override(fake_time)
+    @mock.patch('time.time')
+    def test_periodic_tasks_idle_calculation(self, mock_time):
+        fake_time = 32503680000.0
+        mock_time.return_value = fake_time
 
         class Manager(periodic_task.PeriodicTasks):
 
@@ -160,22 +159,30 @@ class ManagerTestCase(test.BaseTestCase):
         self.assertEqual(True, task._periodic_enabled)
         self.assertEqual(False, task._periodic_external_ok)
         self.assertEqual(False, task._periodic_immediate)
-        self.assertIsNotNone(task._periodic_last_run)
+        self.assertAlmostEqual(32503680000.0,
+                               task._periodic_last_run)
 
         # Test the manager's representation of those values
         self.assertEqual(10, m._periodic_spacing[task_name])
-        self.assertIsNotNone(m._periodic_last_run[task_name])
+        self.assertAlmostEqual(32503680000.0,
+                               m._periodic_last_run[task_name])
 
-        timeutils.advance_time_delta(datetime.timedelta(seconds=5))
-        m.run_periodic_tasks(None)
+        mock_time.return_value = fake_time + 5
+        idle = m.run_periodic_tasks(None)
+        self.assertAlmostEqual(5, idle, 1)
+        self.assertAlmostEqual(32503680000.0,
+                               m._periodic_last_run[task_name])
 
-        timeutils.advance_time_delta(datetime.timedelta(seconds=5))
+        mock_time.return_value = fake_time + 10
         idle = m.run_periodic_tasks(None)
         self.assertAlmostEqual(10, idle, 1)
+        self.assertAlmostEqual(32503680010.0,
+                               m._periodic_last_run[task_name])
 
-    def test_periodic_tasks_immediate_runs_now(self):
-        fake_time = datetime.datetime(3000, 1, 1)
-        timeutils.set_time_override(fake_time)
+    @mock.patch('time.time')
+    def test_periodic_tasks_immediate_runs_now(self, mock_time):
+        fake_time = 32503680000.0
+        mock_time.return_value = fake_time
 
         class Manager(periodic_task.PeriodicTasks):
 
@@ -202,11 +209,11 @@ class ManagerTestCase(test.BaseTestCase):
         self.assertIsNone(m._periodic_last_run[task_name])
 
         idle = m.run_periodic_tasks(None)
-        self.assertEqual(datetime.datetime(3000, 1, 1, 0, 0),
-                         m._periodic_last_run[task_name])
+        self.assertAlmostEqual(32503680000.0,
+                               m._periodic_last_run[task_name])
         self.assertAlmostEqual(10, idle, 1)
 
-        timeutils.advance_time_delta(datetime.timedelta(seconds=5))
+        mock_time.return_value = fake_time + 5
         idle = m.run_periodic_tasks(None)
         self.assertAlmostEqual(5, idle, 1)
 
