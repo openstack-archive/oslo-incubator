@@ -425,8 +425,8 @@ def from_response(response, method, url):
         except ValueError:
             pass
         else:
-            if hasattr(body, "keys"):
-                error = body[body.keys()[0]]
+            if isinstance(body, dict):
+                error = list(body.values())[0]
                 kwargs["message"] = error.get("message", None)
                 kwargs["details"] = error.get("details", None)
     elif content_type.startswith("text/"):
