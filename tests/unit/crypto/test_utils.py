@@ -153,6 +153,16 @@ class CryptoUtilsTestCase(test.BaseTestCase):
         except cryptoutils.HKDFOutputLengthTooLong:
             pass
 
+    def test_HKDF_hexdigest(self):
+        ikm = '\x0b' * 22
+        prk = ('19ef24a32c717b167f33a91d6f648bdf96'
+               '596776afdb6377ac434c1c293ccb04')
+
+        hkdf = cryptoutils.HKDF(hashtype='SHA256')
+
+        hexdigest = hkdf.extract(ikm, salt=None, hexdigest=True)
+        self.assertEqual(hexdigest, prk)
+
     def test_SymmetricCrypto_encrypt_string(self):
         msg = 'Plain Text'
 
