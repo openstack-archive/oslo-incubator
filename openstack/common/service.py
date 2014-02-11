@@ -41,6 +41,7 @@ from openstack.common import eventlet_backdoor
 from openstack.common.gettextutils import _
 from openstack.common import importutils
 from openstack.common import log as logging
+from openstack.common import systemd
 from openstack.common import threadgroup
 
 
@@ -484,6 +485,7 @@ class Services(object):
 
         """
         service.start()
+        systemd.notify_once()
         done.wait()
 
 
