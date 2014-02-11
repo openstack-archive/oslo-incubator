@@ -82,7 +82,9 @@ class TestGuruMeditationReport(utils.BaseTestCase):
                          report_lines[0:len(target_str_header)])
 
         # followed by at least one thread...
-        self.assertTrue(re.match(r'------(\s+)Thread #\d+\1\s?------',
+        # NOTE(zqfan): add an optional '-' because sys._current_frames()
+        # may return a negative thread id on 32 bit operating system.
+        self.assertTrue(re.match(r'------(\s+)Thread #-?\d+\1\s?------',
                                  report_lines[len(target_str_header)]))
         self.assertEqual('', report_lines[len(target_str_header) + 1])
 
