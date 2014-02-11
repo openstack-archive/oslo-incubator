@@ -738,15 +738,11 @@ def create_engine(sql_connection, sqlite_fk=False,
 
     engine_args = {
         "pool_recycle": CONF.database.idle_timeout,
-        "echo": False,
         'convert_unicode': True,
     }
 
-    # Map our SQL debug level to SQLAlchemy's options
-    if CONF.database.connection_debug >= 100:
-        engine_args['echo'] = 'debug'
-    elif CONF.database.connection_debug >= 50:
-        engine_args['echo'] = True
+    logger = logging.getLogger('sqlalchemy.engine')
+    logger.setLevel(CONF.database.connection_debug)
 
     if "sqlite" in connection_dict.drivername:
         if sqlite_fk:
