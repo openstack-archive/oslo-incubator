@@ -282,6 +282,12 @@ M: Flavio Percoco <flavio@redhat.com>
 S: Maintained
 F: strutils.py
 
+== systemd ==
+
+M: Alan Pevec <apevec@redhat.com>
+S: Maintained
+F: systemd.py
+
 == test ==
 
 M:
