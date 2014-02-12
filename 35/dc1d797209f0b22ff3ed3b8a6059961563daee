@@ -1,0 +1,12 @@
+Verified+2: Jenkins
+Code-Review+1: Chuck Short <chuck.short@canonical.com>
+Approved+1: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+2: Ben Nemec <openstack@nemebean.com>
+Code-Review+1: Victor Sergeyev <vsergeyev@mirantis.com>
+Code-Review+1: Eric Guo <glongwave@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 12 Feb 2014 16:54:27 +0000
+Reviewed-on: https://review.openstack.org/71591
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
