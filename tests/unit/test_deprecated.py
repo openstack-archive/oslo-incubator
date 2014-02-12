@@ -55,11 +55,7 @@ class DeprecatedConfigTestCase(test.BaseTestCase):
         LOG.deprecated('only once!')
         LOG.deprecated('only once!')
 
-        # TODO(blk-u): This isn't working correctly, see bug 1266812.
-        # The following should be
-        #   self.warn_mock.assert_called_once_with('Deprecated: only once!')
-
-        self.warn_mock.assert_called_with('Deprecated: only once!')
+        self.warn_mock.assert_called_once_with('Deprecated: only once!')
 
     def test_deprecated_logs_once_diff_messages(self):
         # If different messages are used, you get one log per message.
@@ -78,12 +74,7 @@ class DeprecatedConfigTestCase(test.BaseTestCase):
             mock.call('Deprecated: tdlodm_message 2'),
         ]
         self.warn_mock.assert_has_calls(exp_calls)
-
-        # TODO(blk-u): This isn't working correctly, see bug 1266812.
-        # The following should be
-        #   self.assertEqual(2, self.warn_mock.call_count)
-
-        self.assertEqual(6, self.warn_mock.call_count)
+        self.assertEqual(2, self.warn_mock.call_count)
 
     def test_deprecated_logs_different_arg_simple(self):
         # If the same message format with different arguments is used then each
@@ -99,12 +90,7 @@ class DeprecatedConfigTestCase(test.BaseTestCase):
             mock.call('Deprecated: only once! %s', 'arg2'),
         ]
         self.warn_mock.assert_has_calls(exp_calls)
-
-        # TODO(blk-u): This isn't working correctly, see bug 1266812.
-        # The following should be
-        #   self.assertEqual(2, self.warn_mock.call_count)
-
-        self.assertEqual(4, self.warn_mock.call_count)
+        self.assertEqual(2, self.warn_mock.call_count)
 
     def test_deprecated_logs_different_arg_complex(self):
         # If the same message format with different arguments is used then each
@@ -136,11 +122,5 @@ class DeprecatedConfigTestCase(test.BaseTestCase):
             mock.call('Deprecated: %s' % msg_fmt_2, *msg_fmt_2_arg_2),
             mock.call('Deprecated: %s' % msg_fmt_2, *msg_fmt_2_arg_3),
         ]
-
-        # TODO(blk-u): This isn't working correctly, see bug 1266812.
-        # The following should be
-        #   self.warn_mock.assert_has_calls(exp_calls)
-        #   self.assertEqual(5, self.warn_mock.call_count)
-
-        self.warn_mock.assert_has_calls(exp_calls, any_order=True)
-        self.assertEqual(8, self.warn_mock.call_count)
+        self.warn_mock.assert_has_calls(exp_calls)
+        self.assertEqual(5, self.warn_mock.call_count)
