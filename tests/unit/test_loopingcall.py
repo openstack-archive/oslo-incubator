@@ -62,22 +62,23 @@ class LoopingCallTestCase(test.BaseTestCase):
         now = datetime.datetime.utcnow()
         second = datetime.timedelta(seconds=1)
         smidgen = datetime.timedelta(microseconds=10000)
-        timeoverrides = [now, now + second - smidgen,
-                         now, now + second + second,
-                         now, now + second + smidgen]
 
         m = mox.Mox()
         m.StubOutWithMock(greenthread, 'sleep')
         greenthread.sleep(mox.IsAlmost(0.02))
         greenthread.sleep(mox.IsAlmost(0.0))
         greenthread.sleep(mox.IsAlmost(0.0))
+        m.StubOutWithMock(timeutils, 'utcnow')
+        timeutils.utcnow().AndReturn(now)
+        timeutils.utcnow().AndReturn(now + second - smidgen)
+        timeutils.utcnow().AndReturn(now)
+        timeutils.utcnow().AndReturn(now + second + second)
+        timeutils.utcnow().AndReturn(now)
+        timeutils.utcnow().AndReturn(now + second + smidgen)
+        timeutils.utcnow().AndReturn(now)
         m.ReplayAll()
 
-        try:
-            timeutils.set_time_override(timeoverrides)
-            timer = loopingcall.FixedIntervalLoopingCall(self._wait_for_zero)
-            timer.start(interval=1.01).wait()
-        finally:
-            timeutils.clear_time_override()
-            m.UnsetStubs()
-            m.VerifyAll()
+        timer = loopingcall.FixedIntervalLoopingCall(self._wait_for_zero)
+        timer.start(interval=1.01).wait()
+        m.UnsetStubs()
+        m.VerifyAll()

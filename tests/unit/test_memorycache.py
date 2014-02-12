@@ -13,11 +13,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import datetime
+import time
+
+import mock
 
 from openstack.common import memorycache
 from openstack.common import test
-from openstack.common import timeutils
 
 
 class MemorycacheTest(test.BaseTestCase):
@@ -44,13 +45,11 @@ class MemorycacheTest(test.BaseTestCase):
         self.assertIsNone(self.client.get('foo'))
 
     def test_timeout(self):
-        try:
-            now = datetime.datetime.utcnow()
-            timeutils.set_time_override(now)
+        now = time.time()
+        with mock.patch('time.time') as time_mock:
+            time_mock.return_value = now
             self.client.set('foo', 'bar', time=3)
-            timeutils.set_time_override(now + datetime.timedelta(seconds=1))
+            time_mock.return_value = now + 1
             self.assertEqual(self.client.get('foo'), 'bar')
-            timeutils.set_time_override(now + datetime.timedelta(seconds=3))
+            time_mock.return_value = now + 3
             self.assertIsNone(self.client.get('foo'))
-        finally:
-            timeutils.clear_time_override()

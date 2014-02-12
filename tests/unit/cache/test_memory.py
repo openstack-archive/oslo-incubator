@@ -12,9 +12,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import datetime
+import time
 
-from openstack.common import timeutils
+import mock
+
 from tests.unit.cache import base
 
 
@@ -28,55 +29,51 @@ class MemorycacheTest(base.CacheBaseTest):
     cache_url = 'memory://'
 
     def test_timeout(self):
-        try:
-            now = datetime.datetime.utcnow()
-            timeutils.set_time_override(now)
+        now = time.time()
+        with mock.patch('time.time') as time_mock:
+            time_mock.return_value = now
             self.client.set('foo', 'bar', ttl=3)
-            timeutils.set_time_override(now + datetime.timedelta(seconds=1))
+            time_mock.return_value = now + 1
             self.assertEqual(self.client.get('foo'), 'bar')
-            timeutils.set_time_override(now + datetime.timedelta(seconds=3))
+            time_mock.return_value = now + 3
             self.assertIsNone(self.client.get('foo'))
-        finally:
-            timeutils.clear_time_override()
 
     def test_timeout_unset(self):
-        try:
-            now = datetime.datetime.utcnow()
-            timeutils.set_time_override(now)
+        now = time.time()
+        with mock.patch('time.time') as time_mock:
+            time_mock.return_value = now
             self.client.set('foo', 'bar', ttl=3)
             self.client.set('fooo', 'bar', ttl=4)
             self.client.set('foooo', 'bar', ttl=5)
             self.client.set('fooooo', 'bar', ttl=6)
-            timeutils.set_time_override(now + datetime.timedelta(seconds=1))
+            time_mock.return_value = now + 1
             self.assertEqual(self.client.get('foo'), 'bar')
             self.assertEqual(self.client.get('fooo'), 'bar')
             self.assertEqual(self.client.get('foooo'), 'bar')
             self.assertEqual(self.client.get('fooooo'), 'bar')
 
-            timeutils.set_time_override(now + datetime.timedelta(seconds=5))
+            time_mock.return_value = now + 5
             del self.client['foo']
             self.assertIsNone(self.client.get('foo'))
             self.assertIsNone(self.client.get('fooo'))
             self.assertIsNone(self.client.get('foooo'))
             self.assertEqual(self.client.get('fooooo'), 'bar')
-        finally:
-            timeutils.clear_time_override()
 
     def test_timeout_unset_pop(self):
-        try:
-            now = datetime.datetime.utcnow()
-            timeutils.set_time_override(now)
+        now = time.time()
+        with mock.patch('time.time') as time_mock:
+            time_mock.return_value = now
             self.client.set('foo', 'bar', ttl=3)
             self.client.set('fooo', 'bar', ttl=4)
             self.client.set('foooo', 'bar', ttl=5)
             self.client.set('fooooo', 'bar', ttl=6)
-            timeutils.set_time_override(now + datetime.timedelta(seconds=1))
+            time_mock.return_value = now + 1
             self.assertEqual(self.client.get('foo'), 'bar')
             self.assertEqual(self.client.get('fooo'), 'bar')
             self.assertEqual(self.client.get('foooo'), 'bar')
             self.assertEqual(self.client.get('fooooo'), 'bar')
 
-            timeutils.set_time_override(now + datetime.timedelta(seconds=4))
+            time_mock.return_value = now + 4
 
             # NOTE(flaper87): Let unset delete foooo and timeout
             # expire foo and fooo.
@@ -85,5 +82,3 @@ class MemorycacheTest(base.CacheBaseTest):
             self.assertIsNone(self.client.get('fooo'))
             self.assertIsNone(self.client.get('foooo'))
             self.assertEqual(self.client.get('fooooo'), 'bar')
-        finally:
-            timeutils.clear_time_override()
