@@ -726,6 +726,22 @@ def _raise_if_db_connection_lost(error, engine):
         raise exception.DBConnectionError(error)
 
 
+def _unique_constraint_check_name(target, parent):
+        constrain_name = 'uniq_%s' % target.table.name
+        for column in target.columns:
+            constrain_name += '0%s' % column.name
+
+        if not hasattr(target, 'name') or target.name != constrain_name:
+            target.name = constrain_name
+
+
+def apply_naming_conventions():
+    """Apply naming conventions to constraints name."""
+    sqlalchemy.event.listens_for(
+        sqlalchemy.UniqueConstraint,
+        'after_parent_attach')(_unique_constraint_check_name)
+
+
 def create_engine(sql_connection, sqlite_fk=False,
                   mysql_traditional_mode=False):
     """Return a new SQLAlchemy engine."""

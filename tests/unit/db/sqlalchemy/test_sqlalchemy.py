@@ -22,6 +22,7 @@ import mock
 import sqlalchemy
 from sqlalchemy import Column, MetaData, Table, UniqueConstraint
 from sqlalchemy import DateTime, Integer, String
+from sqlalchemy.engine import reflection
 from sqlalchemy.exc import DataError
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -341,3 +342,47 @@ class MySQLTraditionalModeTestCase(test_base.MySQLOpportunisticTestCase):
         with self.connection.begin():
             self.assertRaises(DataError, self.connection.execute,
                               self.test_table.insert(), bar='a' * 512)
+
+
+class TestDBWithApplyNamingConventions(test_base.DbTestCase):
+
+    def setUp(self):
+        super(TestDBWithApplyNamingConventions, self).setUp()
+        self.meta = MetaData()
+        self.meta.bind = session.get_engine()
+        self.inspector = reflection.Inspector.from_engine(self.meta.bind)
+        session.apply_naming_conventions()
+
+    def test_creating_constraint_with_wrong_name(self):
+        test_table = Table(_TABLE_NAME, self.meta,
+                           Column('id', Integer, primary_key=True,
+                                  nullable=False),
+                           Column('deleted', Integer, default=0),
+                           Column('deleted_at', DateTime),
+                           Column('updated_at', DateTime),
+                           Column('created_at', DateTime),
+                           Column('foo', Integer),
+                           UniqueConstraint('foo', name='wrong_name'))
+        test_table.create()
+        self.addCleanup(test_table.drop)
+
+        constraints = self.inspector.get_unique_constraints(_TABLE_NAME)
+        self.assertEqual(1, len(constraints))
+        self.assertEqual('uniq___tmp__test__tmp__0foo', constraints[0]['name'])
+
+    def test_creating_constraint_without_any_name(self):
+        test_table = Table(_TABLE_NAME, self.meta,
+                           Column('id', Integer, primary_key=True,
+                                  nullable=False),
+                           Column('deleted', Integer, default=0),
+                           Column('deleted_at', DateTime),
+                           Column('updated_at', DateTime),
+                           Column('created_at', DateTime),
+                           Column('bar', Integer),
+                           UniqueConstraint('bar'))
+        test_table.create()
+        self.addCleanup(test_table.drop)
+
+        constraints = self.inspector.get_unique_constraints(_TABLE_NAME)
+        self.assertEqual(1, len(constraints))
+        self.assertEqual('uniq___tmp__test__tmp__0bar', constraints[0]['name'])
