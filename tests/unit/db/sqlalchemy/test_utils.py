@@ -18,6 +18,7 @@ import warnings
 from migrate.changeset import UniqueConstraint
 import six
 from six import moves
+from six.moves.urllib import parse
 import sqlalchemy
 from sqlalchemy.dialects import mysql
 from sqlalchemy import Boolean, Index, Integer, DateTime, String
@@ -26,7 +27,6 @@ from sqlalchemy.engine import reflection
 from sqlalchemy.exc import SAWarning, OperationalError
 from sqlalchemy.sql import select
 from sqlalchemy.types import UserDefinedType, NullType
-from openstack.common.py3kcompat import urlutils
 
 from openstack.common.db import exception
 from openstack.common.db.sqlalchemy import migration
@@ -592,7 +592,7 @@ class TestConnectionUtils(test_utils.BaseTestCase):
         self.assertFalse(utils.is_backend_avail(**self.full_credentials))
 
     def test_get_db_connection_info(self):
-        conn_pieces = urlutils.urlparse(self.connect_string)
+        conn_pieces = parse.urlparse(self.connect_string)
         self.assertEqual(utils.get_db_connection_info(conn_pieces),
                          ('dude', 'pass', 'test', 'localhost'))
 
