@@ -17,7 +17,21 @@
 Exception definitions.
 """
 
-NOT_AUTHENTICATED_FAULT = "NotAuthenticated"
+import six
+
+from openstack.common.gettextutils import _
+from openstack.common import log as logging
+
+LOG = logging.getLogger(__name__)
+
+ALREADY_EXISTS = 'AlreadyExists'
+CANNOT_DELETE_FILE = 'CannotDeleteFile'
+FILE_ALREADY_EXISTS = 'FileAlreadyExists'
+FILE_FAULT = 'FileFault'
+FILE_LOCKED = 'FileLocked'
+FILE_NOT_FOUND = 'FileNotFound'
+INVALID_PROPERTY = 'InvalidProperty'
+NOT_AUTHENTICATED = 'NotAuthenticated'
 
 
 class VimException(Exception):
@@ -66,3 +80,88 @@ class VimFaultException(VimException):
 class ImageTransferException(VimException):
     """Thrown when there is an error during image transfer."""
     pass
+
+
+class VMwareDriverException(Exception):
+    """Base VMware Driver Exception
+
+    To correctly use this class, inherit from it and define
+    a 'msg_fmt' property. That msg_fmt will get printf'd
+    with the keyword arguments provided to the constructor.
+
+    """
+    msg_fmt = _("An unknown exception occurred.")
+
+    def __init__(self, message=None, **kwargs):
+        self.kwargs = kwargs
+
+        if not message:
+            try:
+                message = self.msg_fmt % kwargs
+
+            except Exception:
+                # kwargs doesn't match a variable in the message
+                # log the issue and the kwargs
+                LOG.exception(_('Exception in string format operation'))
+                for name, value in six.iteritems(kwargs):
+                    LOG.error("%s: %s" % (name, value))
+                # at least get the core message out if something happened
+                message = self.msg_fmt
+
+        super(VMwareDriverException, self).__init__(message)
+
+
+class AlreadyExistsException(VMwareDriverException):
+    msg_fmt = _("Resource already exists.")
+
+
+class CannotDeleteFileException(VMwareDriverException):
+    msg_fmt = _("Cannot delete file.")
+
+
+class FileAlreadyExistsException(VMwareDriverException):
+    msg_fmt = _("File already exists.")
+
+
+class FileFaultException(VMwareDriverException):
+    msg_fmt = _("File fault.")
+
+
+class FileLockedException(VMwareDriverException):
+    msg_fmt = _("File locked.")
+
+
+class FileNotFoundException(VMwareDriverException):
+    msg_fmt = _("File not found.")
+
+
+class InvalidPropertyException(VMwareDriverException):
+    msg_fmt = _("Invalid property.")
+
+
+class NotAuthenticatedException(VMwareDriverException):
+    msg_fmt = _("Not Authenticated.")
+
+
+# Populate the fault registry with the exceptions that have
+# special treatment.
+_fault_classes_registry = {
+    ALREADY_EXISTS: AlreadyExistsException,
+    CANNOT_DELETE_FILE: CannotDeleteFileException,
+    FILE_ALREADY_EXISTS: FileAlreadyExistsException,
+    FILE_FAULT: FileFaultException,
+    FILE_LOCKED: FileLockedException,
+    FILE_NOT_FOUND: FileNotFoundException,
+    INVALID_PROPERTY: InvalidPropertyException,
+    NOT_AUTHENTICATED: NotAuthenticatedException,
+}
+
+
+def get_fault_class(name):
+    """Get a named subclass of NovaException."""
+    name = str(name)
+    fault_class = _fault_classes_registry.get(name)
+    if not fault_class:
+        LOG.debug(_('Fault %s not matched.'), name)
+        fault_class = VMwareDriverException
+    return fault_class

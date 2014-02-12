@@ -200,7 +200,7 @@ class VMwareAPISessionTest(test.BaseTestCase):
 
         def api(*args, **kwargs):
             raise exceptions.VimFaultException(
-                [exceptions.NOT_AUTHENTICATED_FAULT], None)
+                [exceptions.NOT_AUTHENTICATED], None)
 
         module = mock.Mock()
         module.api = api
@@ -249,7 +249,7 @@ class VMwareAPISessionTest(test.BaseTestCase):
 
         api_session.invoke_api = mock.Mock(side_effect=invoke_api_side_effect)
         task = mock.Mock()
-        self.assertRaises(exceptions.VimException,
+        self.assertRaises(exceptions.VMwareDriverException,
                           lambda: api_session.wait_for_task(task))
         api_session.invoke_api.assert_called_with(vim_util,
                                                   'get_object_property',

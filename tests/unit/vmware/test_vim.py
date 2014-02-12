@@ -71,7 +71,7 @@ class VimTest(test.BaseTestCase):
             vim.Vim._retrieve_properties_ex_fault_checker(None)
             assert False
         except exceptions.VimFaultException as ex:
-            self.assertEqual([exceptions.NOT_AUTHENTICATED_FAULT],
+            self.assertEqual([exceptions.NOT_AUTHENTICATED],
                              ex.fault_list)
 
     def test_retrieve_properties_ex_fault_checker(self):

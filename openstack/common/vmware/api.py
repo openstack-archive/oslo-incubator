@@ -251,7 +251,7 @@ class VMwareAPISession(object):
             except exceptions.VimFaultException as excep:
                 # If this is due to an inactive session, we should re-create
                 # the session and retry.
-                if exceptions.NOT_AUTHENTICATED_FAULT in excep.fault_list:
+                if exceptions.NOT_AUTHENTICATED in excep.fault_list:
                     # The NotAuthenticated fault is set by the fault checker
                     # due to an empty response. An empty response could be a
                     # valid response; for e.g., response for the query to
@@ -281,6 +281,9 @@ class VMwareAPISession(object):
                 else:
                     # no need to retry for other VIM faults like
                     # InvalidArgument
+                    # Raise specific exceptions here if possible
+                    if excep.fault_list:
+                        raise exceptions.get_fault_class(excep.fault_list[0])
                     raise
 
             except exceptions.VimConnectionException:
@@ -369,7 +372,11 @@ class VMwareAPISession(object):
                               "%(error)s.") % {'task': task,
                                                'error': error_msg}
                 LOG.error(excep_msg)
-                raise exceptions.VimException(excep_msg)
+                error = task_info.error
+                name = error.fault.__class__.__name__
+                task_ex = exceptions.get_fault_class(name)(error_msg)
+                # Check if we can raise a specific exception
+                raise task_ex
 
     def wait_for_lease_ready(self, lease):
         """Waits for the given lease to be ready.

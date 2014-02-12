@@ -135,8 +135,8 @@ class Vim(object):
             # fault.
             LOG.debug(_("RetrievePropertiesEx API response is empty; setting "
                         "fault to %s."),
-                      exceptions.NOT_AUTHENTICATED_FAULT)
-            fault_list = [exceptions.NOT_AUTHENTICATED_FAULT]
+                      exceptions.NOT_AUTHENTICATED)
+            fault_list = [exceptions.NOT_AUTHENTICATED]
         else:
             for obj_cont in response.objects:
                 if hasattr(obj_cont, 'missingSet'):
