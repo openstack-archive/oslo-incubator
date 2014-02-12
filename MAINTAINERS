@@ -257,12 +257,6 @@ M: Sandy Walsh <sandy.walsh@rackspace.com>
 S: Maintained
 F: request_utils.py
 
-== rootwrap ==
-
-M: Thierry Carrez <thierry@openstack.org>
-S: Graduating
-F: rootwrap/
-
 == rpc ==
 
 M: Mark McLoughlin <markmc@redhat.com>
