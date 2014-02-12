@@ -22,6 +22,7 @@ API methods.
 
 import functools
 import logging
+import threading
 import time
 
 from openstack.common.db import exception
@@ -86,7 +87,8 @@ class wrap_db_retry(object):
 
 
 class DBAPI(object):
-    def __init__(self, backend_name, backend_mapping=None, **kwargs):
+    def __init__(self, backend_name, backend_mapping=None, lazy=False,
+                 **kwargs):
         """Initialize the choosen DB API backend.
 
         :param backend_name: name of the backend to load
@@ -116,12 +118,14 @@ class DBAPI(object):
 
         if backend_mapping is None:
             backend_mapping = {}
+        self.backend_name = backend_name
 
-        # Import the untranslated name if we don't have a
-        # mapping.
-        backend_path = backend_mapping.get(backend_name, backend_name)
-        backend_mod = importutils.import_module(backend_path)
-        self.__backend = backend_mod.get_backend()
+        self.__backend = None
+        self.__backend_mapping = backend_mapping
+        self.__lock = threading.Lock()
+
+        if not lazy:
+            self.__get_backend()
 
         self.use_db_reconnect = kwargs.get('use_db_reconnect', False)
         self.retry_interval = kwargs.get('retry_interval', 1)
@@ -129,8 +133,21 @@ class DBAPI(object):
         self.max_retry_interval = kwargs.get('max_retry_interval', 10)
         self.max_retries = kwargs.get('max_retries', 20)
 
+    def __get_backend(self):
+        with self.__lock:
+            if not self.__backend:
+                # Import the untranslated name if we don't have a
+                # mapping.
+                backend_path = self.__backend_mapping.get(self.backend_name,
+                                                          self.backend_name)
+                backend_mod = importutils.import_module(backend_path)
+                self.__backend = backend_mod.get_backend()
+
+        return self.__backend
+
     def __getattr__(self, key):
-        attr = getattr(self.__backend, key)
+        backend = self.__backend or self.__get_backend()
+        attr = getattr(backend, key)
 
         if not hasattr(attr, '__call__'):
             return attr
