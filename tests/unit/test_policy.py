@@ -129,6 +129,7 @@ class PolicyBaseTestCase(test.BaseTestCase):
 class EnforcerTest(PolicyBaseTestCase):
 
     def test_load_file(self):
+        self.enforcer.use_conf = True
         self.enforcer.load_rules(True)
         self.assertIsNotNone(self.enforcer.rules)
         self.assertIn('default', self.enforcer.rules)
@@ -172,7 +173,7 @@ class EnforcerTest(PolicyBaseTestCase):
         self.assertEqual(enforcer.enforce(action, {}, creds), True)
 
     def test_enforcer_force_reload_true(self):
-        self.enforcer.set_rules({'test': 'test'})
+        self.enforcer.set_rules({'test': 'test'}, use_conf=True)
         self.enforcer.load_rules(force_reload=True)
         self.assertNotIn({'test': 'test'}, self.enforcer.rules)
         self.assertIn('default', self.enforcer.rules)
@@ -212,6 +213,12 @@ class EnforcerTest(PolicyBaseTestCase):
         e = self.assertRaises(cfg.ConfigFilesNotFoundError,
                               enforcer._get_policy_path)
         self.assertEqual(('raise_error.json', ), e.config_files)
+
+    def test_enforcer_set_rules(self):
+        self.enforcer.load_rules(force_reload=True)
+        self.enforcer.set_rules({'test': 'test1'})
+        self.enforcer.load_rules(force_reload=True)
+        self.assertEqual(self.enforcer.rules, {'test': 'test1'})
 
 
 class FakeCheck(policy.BaseCheck):
