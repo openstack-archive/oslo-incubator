@@ -99,6 +99,15 @@ class DBAPITestCase(test_utils.BaseTestCase):
                     group='database')
         self.assertRaises(ImportError, api.DBAPI)
 
+    def test_dbapi_lazy_loading(self):
+        self.config(backend='tests.unit.db.test_api',
+                    group='database')
+        dbapi = api.DBAPI(lazy=True)
+
+        self.assertIsNone(dbapi._DBAPI__backend)
+        dbapi.api_class_call1(1, 'abc')
+        self.assertIsNotNone(dbapi._DBAPI__backend)
+
 
 class DBReconnectTestCase(DBAPITestCase):
     def setUp(self):

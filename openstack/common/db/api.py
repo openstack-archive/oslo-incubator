@@ -27,6 +27,7 @@ API methods.
 
 import functools
 import logging
+import threading
 import time
 
 from oslo.config import cfg
@@ -112,18 +113,43 @@ def _wrap_db_retry(f):
 
 
 class DBAPI(object):
-    def __init__(self, backend_mapping=None):
+    """Load and initialize the given DB backend.
+
+    :param backend_mapping: backend name -> module/class to load mapping
+    :type backend_mapping: dict
+
+    :param lazy: load backend instance lazily on the first call of DBAPI method
+    :type lazy: bool
+
+    """
+
+    def __init__(self, backend_mapping=None, lazy=False):
         if backend_mapping is None:
             backend_mapping = {}
-        backend_name = CONF.database.backend
-        # Import the untranslated name if we don't have a
-        # mapping.
-        backend_path = backend_mapping.get(backend_name, backend_name)
-        backend_mod = importutils.import_module(backend_path)
-        self.__backend = backend_mod.get_backend()
+
+        self.__backend = None
+        self.__backend_mapping = backend_mapping
+        self.__lock = threading.Lock()
+
+        if not lazy:
+            self.__get_backend()
+
+    def __get_backend(self):
+        with self.__lock:
+            if not self.__backend:
+                # Import the untranslated name if we don't have a
+                # mapping.
+                backend_name = CONF.database.backend
+                backend_path = self.__backend_mapping.get(backend_name,
+                                                          backend_name)
+                backend_mod = importutils.import_module(backend_path)
+                self.__backend = backend_mod.get_backend()
+
+        return self.__backend
 
     def __getattr__(self, key):
-        attr = getattr(self.__backend, key)
+        backend = self.__backend or self.__get_backend()
+        attr = getattr(backend, key)
 
         if not hasattr(attr, '__call__'):
             return attr
