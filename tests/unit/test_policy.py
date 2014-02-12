@@ -129,6 +129,7 @@ class PolicyBaseTestCase(test.BaseTestCase):
 class EnforcerTest(PolicyBaseTestCase):
 
     def test_load_file(self):
+        self.enforcer.use_conf = True
         self.enforcer.load_rules(True)
         self.assertIsNotNone(self.enforcer.rules)
         self.assertIn('default', self.enforcer.rules)
@@ -151,8 +152,6 @@ class EnforcerTest(PolicyBaseTestCase):
                         "cloudwatch:PutMetricData": ""
                         }"""
         rules = policy.Rules.load_json(rules_json)
-        # Make sure enforce won't try to reload the rules on us
-        self.enforcer.load_rules()
         self.enforcer.set_rules(rules)
         action = "cloudwatch:PutMetricData"
         creds = {'roles': ''}
@@ -179,9 +178,6 @@ class EnforcerTest(PolicyBaseTestCase):
         self.assertIn('admin', self.enforcer.rules)
 
     def test_enforcer_force_reload_false(self):
-        # Make sure we have the current policy file loaded, or load_rules may
-        # reload even with force_reload False
-        self.enforcer.load_rules()
         self.enforcer.set_rules({'test': 'test'})
         self.enforcer.load_rules(force_reload=False)
         self.assertIn('test', self.enforcer.rules)
@@ -213,6 +209,12 @@ class EnforcerTest(PolicyBaseTestCase):
                               enforcer._get_policy_path)
         self.assertEqual(('raise_error.json', ), e.config_files)
 
+    def test_enforcer_set_rules(self):
+        self.enforcer.load_rules()
+        self.enforcer.set_rules({'test': 'test1'})
+        self.enforcer.load_rules()
+        self.assertEqual(self.enforcer.rules, {'test': 'test1'})
+
 
 class FakeCheck(policy.BaseCheck):
     def __init__(self, result=None):
@@ -242,17 +244,13 @@ class CheckFunctionTestCase(PolicyBaseTestCase):
         self.assertEqual(result, False)
 
     def test_check_with_rule(self):
-        # Make sure the load_rules call in enforce won't overwrite our test
-        # rules.
-        self.enforcer.load_rules()
-        self.enforcer.rules = dict(default=FakeCheck())
+        self.enforcer.set_rules(dict(default=FakeCheck()))
         result = self.enforcer.enforce("default", "target", "creds")
 
         self.assertEqual(result, ("target", "creds", self.enforcer))
 
     def test_check_raises(self):
-        self.enforcer.load_rules()
-        self.enforcer.rules = dict(default=policy.FalseCheck())
+        self.enforcer.set_rules(dict(default=policy.FalseCheck()))
 
         try:
             self.enforcer.enforce('rule', 'target', 'creds',
