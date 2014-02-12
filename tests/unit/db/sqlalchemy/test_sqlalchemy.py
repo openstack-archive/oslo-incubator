@@ -22,6 +22,7 @@ import mock
 import sqlalchemy
 from sqlalchemy import Column, MetaData, Table, UniqueConstraint
 from sqlalchemy import DateTime, Integer, String
+from sqlalchemy.engine import reflection
 from sqlalchemy import exc as sqla_exc
 from sqlalchemy.exc import DataError
 from sqlalchemy.ext.declarative import declarative_base
@@ -448,3 +449,56 @@ class SetSQLModeTestCase(test_log.LogTestBase):
                                       sql_mode=test_mode)
         self.assertIn(_LW('Unable to detect effective SQL mode'),
                       self.stream.getvalue())
+
+
+class TestSchemaNamingConventions(test_base.DbTestCase):
+    def setUp(self):
+        super(TestSchemaNamingConventions, self).setUp()
+        self.meta = MetaData()
+        self.meta.bind = self.engine
+        self.inspector = reflection.Inspector.from_engine(self.meta.bind)
+
+        if not hasattr(self.inspector, 'get_unique_constraints'):
+            self.skipTest("Class Inspector doesn't support method "
+                          "'get_unique_constraints' in this library version")
+
+    def test_creating_constraint_with_wrong_name(self):
+        session.apply_naming_conventions(force=False)
+        test_table = Table(_TABLE_NAME, self.meta,
+                           Column('id', Integer, primary_key=True),
+                           Column('foo', Integer),
+                           UniqueConstraint('foo', name='wrong_name'))
+        test_table.create()
+        self.addCleanup(test_table.drop)
+
+        constraints = self.inspector.get_unique_constraints(_TABLE_NAME)
+        self.assertEqual(1, len(constraints))
+        self.assertEqual('wrong_name', constraints[0]['name'])
+
+    def test_creating_constraint_with_wrong_name_with_force(self):
+        session.apply_naming_conventions(force=True)
+        test_table = Table(_TABLE_NAME, self.meta,
+                           Column('id', Integer, primary_key=True),
+                           Column('foo', Integer),
+                           UniqueConstraint('foo', name='wrong_name'))
+        test_table.create()
+        self.addCleanup(test_table.drop)
+
+        constraints = self.inspector.get_unique_constraints(_TABLE_NAME)
+        self.assertEqual(1, len(constraints))
+        self.assertEqual('uniq___tmp__test__tmp__0foo', constraints[0]['name'])
+
+    def test_creating_constraint_without_any_name(self):
+        session.apply_naming_conventions(force=False)
+        test_table = Table(_TABLE_NAME, self.meta,
+                           Column('id', Integer, primary_key=True),
+                           Column('some_column', Integer),
+                           Column('foo', Integer),
+                           UniqueConstraint('some_column', 'foo'))
+        test_table.create()
+        self.addCleanup(test_table.drop)
+
+        constraints = self.inspector.get_unique_constraints(_TABLE_NAME)
+        self.assertEqual(1, len(constraints))
+        self.assertEqual('uniq___tmp__test__tmp__0some_column0foo',
+                         constraints[0]['name'])
