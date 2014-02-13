@@ -662,6 +662,7 @@ class HostFiltersTestCase(test.BaseTestCase):
         host = fakes.FakeHostState('host1',
                                    {'service': service})
         self.assertTrue(filt_cls.host_passes(host, request))
+        self.assertTrue(filt_cls.run_filter_once_per_request)
 
     def test_availability_zone_filter_different(self):
         filt_cls = self.class_map['AvailabilityZoneFilter']()
@@ -670,6 +671,7 @@ class HostFiltersTestCase(test.BaseTestCase):
         host = fakes.FakeHostState('host1',
                                    {'service': service})
         self.assertFalse(filt_cls.host_passes(host, request))
+        self.assertTrue(filt_cls.run_filter_once_per_request)
 
     def test_availability_zone_filter_empty(self):
         filt_cls = self.class_map['AvailabilityZoneFilter']()
@@ -678,6 +680,7 @@ class HostFiltersTestCase(test.BaseTestCase):
         host = fakes.FakeHostState('host1',
                                    {'service': service})
         self.assertTrue(filt_cls.host_passes(host, request))
+        self.assertTrue(filt_cls.run_filter_once_per_request)
 
     def test_ignore_attempted_hosts_filter_disabled(self):
         # Test case where re-scheduling is disabled.
