@@ -126,7 +126,7 @@ F: fileutils.py
 == fixtures ==
 
 M: Monty Taylor <mordred@inaugust.com>
-S: Maintained
+S: Graduating
 F: fixture/
 
 == funcutils ==
@@ -291,7 +291,7 @@ F: strutils.py
 == test ==
 
 M:
-S: Orphan
+S: Graduating
 F: test.py
 
 == threadgroup ==
