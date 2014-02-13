@@ -12,10 +12,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""Provides Openstack Version Info Model
+"""Provides OpenStack Version Info Model
 
 This module defines a class representing the data
-model for Openstack package and version information
+model for OpenStack package and version information
 """
 
 import openstack.common.report.models.with_default_views as mwdv

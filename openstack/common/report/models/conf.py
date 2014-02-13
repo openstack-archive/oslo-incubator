@@ -12,7 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""Provides Openstack Configuration Model
+"""Provides OpenStack Configuration Model
 
 This module defines a class representing the data
 model for :mod:`oslo.config` configuration options
