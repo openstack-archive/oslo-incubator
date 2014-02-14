@@ -22,15 +22,15 @@ from openstack.common import timeutils
 
 memcache_opts = [
     cfg.ListOpt('memcached_servers',
-                default=None,
-                help='Memcached servers or None for in process cache.'),
+                default=[],
+                help='Memcached servers or empty list for in process cache.'),
 ]
 
 CONF = cfg.CONF
 CONF.register_opts(memcache_opts)
 
 
-def get_client(memcached_servers=None):
+def get_client(memcached_servers=[]):
     client_cls = Client
 
     if not memcached_servers:
