@@ -58,8 +58,10 @@ class BaseTestCase(testtools.TestCase):
     def _fake_logs(self):
         if os.environ.get('OS_DEBUG') in _TRUE_VALUES:
             level = logging.DEBUG
-        else:
+        elif os.environ.get('OS_VERBOSE') in _TRUE_VALUES:
             level = logging.INFO
+        else:
+            level = logging.WARNING
         capture_logs = os.environ.get('OS_LOG_CAPTURE') in _TRUE_VALUES
         if capture_logs:
             self.useFixture(
