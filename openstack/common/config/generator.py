@@ -244,7 +244,8 @@ def _print_opt(opt):
     except (ValueError, AttributeError) as err:
         sys.stderr.write("%s\n" % str(err))
         sys.exit(1)
-    opt_help += ' (' + OPT_TYPES[opt_type] + ')'
+    opt_help = u'%s (%s)' % (six.text_type(opt_help),
+                             six.text_type(OPT_TYPES[opt_type]))
     print('#', "\n# ".join(textwrap.wrap(opt_help, WORDWRAP_WIDTH)))
     if opt.deprecated_opts:
         for deprecated_opt in opt.deprecated_opts:
