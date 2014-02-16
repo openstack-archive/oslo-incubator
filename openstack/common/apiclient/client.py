@@ -46,6 +46,7 @@ class HTTPClient(object):
     """This client handles sending HTTP requests to OpenStack servers.
 
     Features:
+
     - share authentication information between several clients to different
       services (e.g., for compute and image clients);
     - reissue authentication request for expired tokens;
@@ -151,7 +152,7 @@ class HTTPClient(object):
         :param method: method of HTTP request
         :param url: URL of HTTP request
         :param kwargs: any other parameter that can be passed to
-'            requests.Session.request (such as `headers`) or `json`
+             requests.Session.request (such as `headers`) or `json`
              that will be encoded as JSON and used as `data` argument
         """
         kwargs.setdefault("headers", kwargs.get("headers", {}))
@@ -206,7 +207,7 @@ class HTTPClient(object):
         :param method: method of HTTP request
         :param url: URL of HTTP request
         :param kwargs: any other parameter that can be passed to
-'            `HTTPClient.request`
+            `HTTPClient.request`
         """
 
         filter_args = {
