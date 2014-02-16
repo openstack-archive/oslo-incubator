@@ -30,6 +30,8 @@ class GeneratorTestcase(test.BaseTestCase):
                  "tests/testmods/bar_foo_opt.py",
                  "tests/testmods/fblaa_opt"]
 
+    conffiles_i18n = ["tests/testmods/i18n_opt"]
+
     def setUp(self):
         super(GeneratorTestcase, self).setUp()
         self.groups = []
@@ -63,3 +65,17 @@ class GeneratorTestcase(test.BaseTestCase):
         self.assertIn('#baa=<None>\n', lines)
         self.assertIn('#foo=<None>\n', lines)
         self.assertIn('#fblaa=fblaa\n', lines)
+
+    def test_i18n(self):
+        stdout = self.useFixture(fixtures.StringStream('confstdout')).stream
+        self.useFixture(mockpatch.Patch('sys.stdout', new=stdout))
+        generator.generate(self.conffiles_i18n)
+        stdout.flush()
+        stdout.seek(0)
+        lines = stdout.readlines()
+        # Test we have group in the output
+        self.assertIn('[i18n]\n', lines)
+        # Test we have opt in the output
+        self.assertIn('#i18n=i18n\n', lines)
+        # Test we have help in the output
+        self.assertIn('# helpful message (string value)\n', lines)
