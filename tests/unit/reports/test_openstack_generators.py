@@ -84,6 +84,44 @@ class TestOpenstackGenerators(utils.BaseTestCase):
                       '  name = cheddar')
         self.assertEqual(target_str, str(model))
 
+    def test_config_model_scrubs_passwords(self):
+        conf = cfg.ConfigOpts()
+        conf.register_opt(cfg.StrOpt('some_password', default='abcde'))
+        conf.register_opt(cfg.StrOpt('some_key', default='fghijklm'))
+        conf.register_group(cfg.OptGroup('group_token', title='TokenGroup'))
+        conf.register_opt(cfg.StrOpt('some_service_token', default='blah'),
+                          group='group_token')
+
+        model = os_cgen.ConfigReportGenerator(conf)()
+        model.set_current_view_type('text')
+
+        target_str = ('\ndefault: \n'
+                      '  some_key = ********\n'
+                      '  some_password = *****\n'
+                      '\n'
+                      'group_token: \n'
+                      '  some_service_token = ****')
+        self.assertEqual(target_str, str(model))
+
+    def test_config_model_disable_pass_scrubbing(self):
+        conf = cfg.ConfigOpts()
+        conf.register_opt(cfg.StrOpt('some_password', default='abcde'))
+        conf.register_opt(cfg.StrOpt('some_key', default='fghijklm'))
+        conf.register_group(cfg.OptGroup('group_token', title='TokenGroup'))
+        conf.register_opt(cfg.StrOpt('some_service_token', default='blah'),
+                          group='group_token')
+
+        model = os_cgen.ConfigReportGenerator(conf, scrub_passwords=False)()
+        model.set_current_view_type('text')
+
+        target_str = ('\ndefault: \n'
+                      '  some_key = fghijklm\n'
+                      '  some_password = abcde\n'
+                      '\n'
+                      'group_token: \n'
+                      '  some_service_token = blah')
+        self.assertEqual(target_str, str(model))
+
     def test_package_report_generator(self):
         class VersionObj(object):
             def vendor_string(self):

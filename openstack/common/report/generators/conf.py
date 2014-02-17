@@ -37,8 +37,10 @@ class ConfigReportGenerator(object):
     :type cnf: :class:`oslo.config.cfg.ConfigOpts`
     """
 
-    def __init__(self, cnf=cfg.CONF):
+    def __init__(self, cnf=cfg.CONF, scrub_passwords=True):
         self.conf_obj = cnf
+        self.scrub_passwords = scrub_passwords
 
     def __call__(self):
-        return cm.ConfigModel(self.conf_obj)
+        return cm.ConfigModel(self.conf_obj,
+                              scrub_passwords=self.scrub_passwords)
