@@ -14,16 +14,24 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import abc
 import functools
 import logging
 import os
+import pprint
 import subprocess
 
+import alembic
+import alembic.autogenerate
+import alembic.migration
 import lockfile
+import six
 from six import moves
 from six.moves.urllib import parse
 import sqlalchemy
 import sqlalchemy.exc
+import sqlalchemy.sql.expression as expr
+import sqlalchemy.types as types
 
 from openstack.common.db.sqlalchemy import utils
 from openstack.common.gettextutils import _LE
@@ -267,3 +275,155 @@ class WalkVersionsMixin(object):
             LOG.error(_LE("Failed to migrate to version %s on engine %s") %
                       (version, engine))
             raise
+
+
+@six.add_metaclass(abc.ABCMeta)
+class ModelsMigrationsSync(object):
+    """A helper class for comparison of DB migration scripts and models.
+
+    It's intended to be inherited by test cases in target projects. They have
+    to provide implementations for methods used internally in the test (as
+    we have no way to implement them here).
+
+    test_model_sync() will run migration scripts for the engine provided and
+    then compare the given metadata to the one reflected from the database.
+    The difference between MODELS and MIGRATION scripts will be printed and
+    the test will fail, if the difference is not empty.
+
+    Method include_object() can be overriden to exclude some tables from
+    comparison (e.g. migrate_repo).
+
+    """
+
+    @abc.abstractmethod
+    def db_sync(self, engine):
+        """Run migration scripts with the given engine instance.
+
+        This method must be implemented in subclasses and run migration scripts
+        for a DB the given engine is connected to.
+
+        """
+
+    @abc.abstractmethod
+    def get_engine(self):
+        """Return the engine instance to be used when running tests.
+
+        This method must be implemented in subclasses and return an engine
+        instance to be used when running tests.
+
+        """
+
+    @abc.abstractmethod
+    def get_metadata(self):
+        """Return the metadata instance to be used for schema comparison.
+
+        This method must be implemented in subclasses and return the metadata
+        instance attached to the BASE model.
+
+        """
+
+    def include_object(self, object_, name, type_, reflected, compare_to):
+        """Return True for objects, that should be compared.
+
+        :param object_: a SchemaItem object such as a Table or Column object
+        :param name: the name of the object
+        :param type_: a string describing the type of object (e.g. "table")
+        :param reflected: True if the given object was produced based on
+                          table reflection, False if it's from a local
+                          MetaData object
+        :param compare_to: the object being compared against, if available,
+                           else None
+
+        """
+
+        return True
+
+    def compare_type(self, ctxt, insp_col, meta_col, insp_type, meta_type):
+        """Return True if types are different, False if not.
+
+        Return None to allow the default implementation to compare these types.
+
+        :param ctxt: alembic MigrationContext instance
+        :param insp_col: reflected column
+        :param meta_col: column from model
+        :param insp_type: reflected column type
+        :param meta_type: column type from model
+
+        """
+
+        # some backends (e.g. mysql) don't provide native boolean type
+        BOOLEAN_METADATA = (types.BOOLEAN, types.Boolean)
+        BOOLEAN_SQL = BOOLEAN_METADATA + (types.INTEGER, types.Integer)
+
+        if issubclass(type(meta_type), BOOLEAN_METADATA):
+            return not issubclass(type(insp_type), BOOLEAN_SQL)
+
+        return None  # tells alembic to use the default comparison method
+
+    def compare_server_default(self, ctxt, ins_col, meta_col,
+                               insp_def, meta_def, rendered_meta_def):
+        """Compare default values between model and db table.
+
+        Return True if the defaults are different, False if not, or None to
+        allow the default implementation to compare these defaults.
+
+        :param ctxt: alembic MigrationContext instance
+        :param insp_col: reflected column
+        :param meta_col: column from model
+        :param insp_def: reflected column default value
+        :param meta_def: column default value from model
+        :param rendered_meta_def: rendered column default value (from model)
+
+        """
+
+        if (ctxt.dialect.name == 'mysql' and
+                issubclass(type(meta_col.type), sqlalchemy.Boolean)):
+
+            if meta_def is None or insp_def is None:
+                return meta_def != insp_def
+
+            return not (
+                isinstance(meta_def.arg, expr.True_) and insp_def == "'1'" or
+                isinstance(meta_def.arg, expr.False_) and insp_def == "'0'"
+            )
+
+        return None  # tells alembic to use the default comparison method
+
+    def test_models_sync(self):
+        # recent versions of sqlalchemy and alembic are needed for running of
+        # this test, but we already have them in requirements
+        sa_version = tuple(int(p) for p in sqlalchemy.__version__.split('.'))
+        alembic_version = tuple(int(p) for p in alembic.__version__.split('.'))
+        if not (sa_version > (0, 8, 3) and alembic_version > (0, 6, 2)):
+            self.skipTest(
+                _LE('sqlalchemy>=0.8.4 and alembic>=0.6.3 are required'
+                    ' for running of this test.')
+            )
+
+        # run migration scripts
+        self.db_sync(self.get_engine())
+
+        # drop all tables after a test run
+        def cleanup():
+            meta = sqlalchemy.MetaData(bind=self.get_engine())
+            meta.reflect()
+            meta.drop_all()
+            self.get_metadata().drop_all(bind=self.get_engine())
+        self.addCleanup(cleanup)
+
+        with self.get_engine().connect() as conn:
+            opts = {
+                'include_object': self.include_object,
+                'compare_type': self.compare_type,
+                'compare_server_default': self.compare_server_default,
+            }
+            mc = alembic.migration.MigrationContext.configure(conn, opts=opts)
+
+            # compare schemas and fail with diff, if it's not empty
+            diff = alembic.autogenerate.compare_metadata(mc,
+                                                         self.get_metadata())
+            if diff:
+                msg = pprint.pformat(diff, indent=2, width=20)
+
+                self.fail(
+                    "Models and migration scripts aren't in sync:\n%s" % msg)
