@@ -15,7 +15,10 @@
 #    under the License.
 
 import mock
+import sqlalchemy as sa
+import sqlalchemy.ext.declarative as sa_decl
 
+from openstack.common.db.sqlalchemy import test_base
 from openstack.common.db.sqlalchemy import test_migrations as migrate
 from openstack.common import test
 
@@ -152,3 +155,65 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
             mock.call(self.engine, v, with_data=True) for v in versions
         ]
         self.assertEqual(upgraded, self._migrate_up.call_args_list)
+
+
+class ModelsMigrationSyncMixin(test.BaseTestCase):
+    def setUp(self):
+        super(ModelsMigrationSyncMixin, self).setUp()
+
+        self.metadata = sa.MetaData()
+        self.metadata_migrations = sa.MetaData()
+
+        sa.Table(
+            'testtbl', self.metadata_migrations,
+            sa.Column('id', sa.Integer, primary_key=True),
+            sa.Column('spam', sa.String(10), nullable=False),
+            sa.Column('eggs', sa.DateTime),
+            sa.Column('foo', sa.Boolean),
+            sa.Column('bar', sa.Numeric(10, 5)),
+            sa.UniqueConstraint('spam', 'eggs', name='uniq_cons'),
+        )
+
+        BASE = sa_decl.declarative_base(metadata=self.metadata)
+
+        class TestModel(BASE):
+            __tablename__ = 'testtbl'
+            __table_args__ = (
+                sa.UniqueConstraint('spam', 'eggs', name='uniq_cons'),
+            )
+
+            id = sa.Column('id', sa.Integer, primary_key=True)
+            spam = sa.Column('spam', sa.String(10), nullable=False)
+            eggs = sa.Column('eggs', sa.DateTime)
+            foo = sa.Column('foo', sa.Boolean)
+            bar = sa.Column('bar', sa.Numeric(10, 5))
+
+        class ModelThatShouldNotBeCompared(BASE):
+            __tablename__ = 'testtbl2'
+
+            id = sa.Column('id', sa.Integer, primary_key=True)
+            spam = sa.Column('spam', sa.String(10), nullable=False)
+
+    def get_metadata(self):
+        return self.metadata
+
+    def get_engine(self):
+        return self.engine
+
+    def db_sync(self, engine):
+        self.metadata_migrations.create_all(bind=engine)
+
+    def include_object(self, object_, name, type_, reflected, compare_to):
+        return type_ == 'table' and name == 'testtbl' or type_ == 'column'
+
+
+class ModelsMigrationsSyncMysql(ModelsMigrationSyncMixin,
+                                migrate.ModelsMigrationsSync,
+                                test_base.MySQLOpportunisticTestCase):
+    pass
+
+
+class ModelsMigrationsSyncPsql(ModelsMigrationSyncMixin,
+                               migrate.ModelsMigrationsSync,
+                               test_base.PostgreSQLOpportunisticTestCase):
+    pass
