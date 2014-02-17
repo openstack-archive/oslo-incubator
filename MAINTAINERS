@@ -123,7 +123,7 @@ M: Zhongyue Luo <zhongyue.nah@intel.com>
 S: Maintained
 F: fileutils.py
 
-== fixtures ==
+== fixture ==
 
 M: Monty Taylor <mordred@inaugust.com>
 S: Graduating
