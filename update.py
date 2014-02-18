@@ -16,7 +16,7 @@ r"""
 A simple script to update openstack-common modules which have been copied
 into other projects. See:
 
-  http://wiki.openstack.org/CommonLibrary#Incubation
+  https://wiki.openstack.org/wiki/Oslo#Incubation
 
 The script can be called the following ways:
 
