@@ -414,13 +414,14 @@ def _raise_if_deadlock_error(operational_error, engine_name):
 
 
 def _wrap_db_error(f):
-    #TODO(rpodolyaka): in a subsequent commit make this a class decorator to
-    # ensure it can only applied to Session subclasses instances (as we use
-    # Session instance bind attribute below)
-
     @functools.wraps(f)
     def _wrap(self, *args, **kwargs):
         try:
+            assert issubclass(
+                self.__class__, sqlalchemy.orm.session.Session
+            ), _('_wrap_db_error() can only be applied to methods of '
+                 'subclasses of sqlalchemy.orm.session.Session')
+
             return f(self, *args, **kwargs)
         except UnicodeEncodeError:
             raise exception.DBInvalidUnicodeParameter()
