@@ -56,7 +56,7 @@ def validate_args(fn, *args, **kwargs):
     required_args = argspec.args[:len(argspec.args) - num_defaults]
 
     def isbound(method):
-        return getattr(method, 'im_self', None) is not None
+        return getattr(method, '__self__', None) is not None
 
     if isbound(fn):
         required_args.pop(0)
@@ -235,7 +235,10 @@ def find_resource(manager, name_or_id, **find_args):
 
     # now try to get entity as uuid
     try:
-        tmp_id = strutils.safe_encode(name_or_id)
+        if six.PY2:
+            tmp_id = strutils.safe_encode(name_or_id)
+        else:
+            tmp_id = strutils.safe_decode(name_or_id)
 
         if uuidutils.is_uuid_like(tmp_id):
             return manager.get(tmp_id)
