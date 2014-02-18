@@ -22,7 +22,7 @@ to hide internal errors from API response.
 import webob.dec
 import webob.exc
 
-from openstack.common.gettextutils import _  # noqa
+from openstack.common.gettextutils import _
 from openstack.common import log as logging
 from openstack.common.middleware import base
 

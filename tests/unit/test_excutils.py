@@ -15,7 +15,7 @@
 import logging
 import time
 
-from six.moves import mox  # noqa
+from six.moves import mox
 
 from openstack.common import excutils
 from openstack.common.fixture import moxstubout

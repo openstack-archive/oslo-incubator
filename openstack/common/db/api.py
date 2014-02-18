@@ -25,7 +25,7 @@ import logging
 import time
 
 from openstack.common.db import exception
-from openstack.common.gettextutils import _  # noqa
+from openstack.common.gettextutils import _
 from openstack.common import importutils
 
 

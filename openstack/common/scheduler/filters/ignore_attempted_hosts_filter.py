@@ -13,7 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from openstack.common.gettextutils import _  # noqa
+from openstack.common.gettextutils import _
 from openstack.common import log as logging
 from openstack.common.scheduler import filters
 

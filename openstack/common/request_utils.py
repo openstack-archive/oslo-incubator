@@ -19,7 +19,7 @@ Utilities for linking request ID's across service calls.
 
 import logging
 
-from openstack.common.gettextutils import _  # noqa
+from openstack.common.gettextutils import _
 
 
 LOG = logging.getLogger(__name__)
