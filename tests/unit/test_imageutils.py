@@ -38,6 +38,10 @@ class ImageUtilsRawTestCase(test.BaseTestCase):
                                     exp_virtual_size=67108844)),
         ('64M_byte', dict(virtual_size='67108844',
                           exp_virtual_size=67108844)),
+        ('4.4M', dict(virtual_size='4.4M',
+                      exp_virtual_size=4613735)),
+        ('4.4M_with_byte_hint', dict(virtual_size='4.4M (4592640 bytes)',
+                                     exp_virtual_size=4592640)),
         ('2K', dict(virtual_size='2K',
                     exp_virtual_size=2048)),
         ('2K_with_byte_hint', dict(virtual_size='2K (2048 bytes)',
@@ -49,6 +53,8 @@ class ImageUtilsRawTestCase(test.BaseTestCase):
                      exp_disk_size=98304)),
         ('96K_byte', dict(disk_size='963434',
                           exp_disk_size=963434)),
+        ('3.1M', dict(disk_size='3.1G',
+                      exp_disk_size=3328599655)),
     ]
 
     _garbage_before_snapshot = [
