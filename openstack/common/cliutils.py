@@ -30,7 +30,6 @@ from six import moves
 
 from openstack.common.apiclient import exceptions
 from openstack.common.gettextutils import _
-from openstack.common import importutils
 from openstack.common import strutils
 from openstack.common import uuidutils
 
@@ -302,20 +301,6 @@ def get_service_type(f):
 
 def pretty_choice_list(l):
     return ', '.join("'%s'" % i for i in l)
-
-
-def import_class(import_str):
-    """Returns a class from a string including module and class."""
-    mod_str, _sep, class_str = import_str.rpartition('.')
-    __import__(mod_str)
-    return getattr(sys.modules[mod_str], class_str)
-
-
-def import_versioned_module(version, submodule=None):
-    module = 'oslo.v%s' % version
-    if submodule:
-        module = '.'.join((module, submodule))
-    return importutils.import_module(module)
 
 
 def exit(msg=''):
