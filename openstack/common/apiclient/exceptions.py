@@ -427,8 +427,8 @@ def from_response(response, method, url):
         else:
             if isinstance(body, dict):
                 error = list(body.values())[0]
-                kwargs["message"] = error.get("message", None)
-                kwargs["details"] = error.get("details", None)
+                kwargs["message"] = error.get("message")
+                kwargs["details"] = error.get("details")
     elif content_type.startswith("text/"):
         kwargs["details"] = response.text
 

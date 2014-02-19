@@ -103,7 +103,7 @@ class JsonFilter(filters.BaseHostFilter):
         if obj is None:
             return None
         for item in path[1:]:
-            obj = obj.get(item, None)
+            obj = obj.get(item)
             if obj is None:
                 return None
         return obj
