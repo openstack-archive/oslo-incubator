@@ -20,6 +20,7 @@ import os
 import fixtures
 import six
 
+from openstack.common.db.sqlalchemy import provision
 from openstack.common.db.sqlalchemy import session
 from openstack.common.db.sqlalchemy import utils
 from openstack.common import test
@@ -42,12 +43,14 @@ class DbFixture(fixtures.Fixture):
 
         self.test = test
 
+    def cleanUp(self):
+        self.test.engine.dispose()
+
     def setUp(self):
         super(DbFixture, self).setUp()
 
         self.test.engine = session.create_engine(self._get_uri())
         self.test.sessionmaker = session.get_maker(self.test.engine)
-        self.addCleanup(self.test.engine.dispose)
 
 
 class DbTestCase(test.BaseTestCase):
@@ -102,11 +105,24 @@ class OpportunisticFixture(DbFixture):
     DRIVER = abc.abstractproperty(lambda: None)
     DBNAME = PASSWORD = USERNAME = 'openstack_citest'
 
+    def setUp(self):
+        self._provisioning_engine = provision._get_engine(
+            utils.get_connect_string(backend=self.DRIVER,
+                                     user=self.USERNAME,
+                                     passwd=self.PASSWORD,
+                                     database=self.DBNAME)
+        )
+        self._uri = provision.create_database(self._provisioning_engine)
+
+        super(OpportunisticFixture, self).setUp()
+
+    def cleanUp(self):
+        super(OpportunisticFixture, self).cleanUp()
+
+        provision.drop_database(self._provisioning_engine, self._uri)
+
     def _get_uri(self):
-        return utils.get_connect_string(backend=self.DRIVER,
-                                        user=self.USERNAME,
-                                        passwd=self.PASSWORD,
-                                        database=self.DBNAME)
+        return self._uri
 
 
 @six.add_metaclass(abc.ABCMeta)
