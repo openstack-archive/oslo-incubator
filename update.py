@@ -184,12 +184,14 @@ def _copy_module(mod, base, dest_dir):
     copy_pyfile = functools.partial(_copy_pyfile,
                                     base=base, dest_dir=dest_dir)
 
+    path = _mod_to_path('openstack.common')
     if '.' in mod:
-        path = _mod_to_path('openstack.common')
         for d in mod.split('.')[:-1]:
             path = os.path.join(path, d)
             if os.path.isdir(path):
                 copy_pyfile(os.path.join(path, '__init__.py'))
+    else:
+        copy_pyfile(os.path.join(path, '__init__.py'))
 
     mod_path = _mod_to_path('openstack.common.%s' % mod)
     mod_file = '%s.py' % mod_path
