@@ -11,7 +11,6 @@
 #  under the License.
 
 import copy
-import os
 
 from oslo.config import cfg
 
@@ -32,9 +31,6 @@ database_opts = [
                deprecated_group='DEFAULT',
                help='The backend to use for db'),
     cfg.StrOpt('connection',
-               default='sqlite:///' +
-                       os.path.abspath(os.path.join(os.path.dirname(__file__),
-                       '../', '$sqlite_db')),
                help='The SQLAlchemy connection string used to connect to the '
                     'database',
                secret=True,
