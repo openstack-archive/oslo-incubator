@@ -15,6 +15,7 @@
 
 import abc
 import functools
+import lockfile
 import os
 
 import fixtures
@@ -129,6 +130,16 @@ class OpportunisticTestCase(DbTestCase):
         if self.FIXTURE.DRIVER and not utils.is_backend_avail(**credentials):
             msg = '%s backend is not available.' % self.FIXTURE.DRIVER
             return self.skip(msg)
+
+        # openstack_citest database is shared among all test running processes.
+        # Ensure that test cases which use it are run sequentially for each
+        # db backend (but still run in parallel for e.g. mysql and postgresql).
+        path = os.path.join(os.environ.get("OSLO_LOCK_PATH"),
+                            credentials['backend'] + '-' +
+                            credentials['database'])
+        self._lock = lockfile.FileLock(path)
+        self.addCleanup(self._lock.release)
+        self._lock.acquire()
 
         super(OpportunisticTestCase, self).setUp()
 
