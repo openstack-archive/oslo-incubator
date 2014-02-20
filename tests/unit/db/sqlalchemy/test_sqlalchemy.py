@@ -197,6 +197,10 @@ class ProgrammingError(Exception):
     pass
 
 
+class DBAPIError(Exception):
+    pass
+
+
 class FakeDB2Engine(object):
 
     class Dialect():
@@ -254,6 +258,91 @@ class TestDBDisconnected(test.BaseTestCase):
                 connection = ('ibm_db_sa://db2inst1:openstack@fakehost:50000'
                               '/fakedab')
                 self._test_ping_listener_disconnected(connection)
+
+
+class TestDBDeadlocked(test_base.DbTestCase):
+
+    def test_mysql_deadlock(self):
+        statement = ('SELECT quota_usages.created_at AS '
+                     'quota_usages_created_at, quota_usages.updated_at AS '
+                     'quota_usages_updated_at, quota_usages.deleted_at AS '
+                     'quota_usages_deleted_at, quota_usages.deleted AS '
+                     'quota_usages_deleted, quota_usages.id AS '
+                     'quota_usages_id, quota_usages.project_id AS '
+                     'quota_usages_project_id, quota_usages.user_id AS '
+                     'quota_usages_user_id, quota_usages.resource AS '
+                     'quota_usages_resource, quota_usages.in_use AS '
+                     'quota_usages_in_use, quota_usages.reserved AS '
+                     'quota_usages_reserved, quota_usages.until_refresh AS '
+                     'quota_usages_until_refresh \nFROM quota_usages \n'
+                     'WHERE quota_usages.deleted = %(deleted_1)s AND '
+                     'quota_usages.project_id = %(project_id_1)s AND '
+                     '(quota_usages.user_id = %(user_id_1)s OR '
+                     'quota_usages.user_id IS NULL) FOR UPDATE')
+        params = {'project_id_1': u'8891d4478bbf48ad992f050cdf55e9b5',
+                  'user_id_1': u'22b6a9fe91b349639ce39146274a25ba',
+                  'deleted_1': 0}
+        orig = sqla_exc.SQLAlchemyError(
+            'ERROR 1213 (40001): Deadlock found when trying to get lock;'\
+            ' try restarting transaction')
+        deadlock_error = sqla_exc.OperationalError(statement, params, orig)
+        self.assertRaises(db_exc.DBDeadlock,
+                          session._raise_if_deadlock_error,
+                          deadlock_error,
+                          'mysql')
+
+    def test_postgresql_deadlock(self):
+        statement = ('SELECT quota_usages.created_at AS '
+                     'quota_usages_created_at, quota_usages.updated_at AS '
+                     'quota_usages_updated_at, quota_usages.deleted_at AS '
+                     'quota_usages_deleted_at, quota_usages.deleted AS '
+                     'quota_usages_deleted, quota_usages.id AS '
+                     'quota_usages_id, quota_usages.project_id AS '
+                     'quota_usages_project_id, quota_usages.user_id AS '
+                     'quota_usages_user_id, quota_usages.resource AS '
+                     'quota_usages_resource, quota_usages.in_use AS '
+                     'quota_usages_in_use, quota_usages.reserved AS '
+                     'quota_usages_reserved, quota_usages.until_refresh AS '
+                     'quota_usages_until_refresh \nFROM quota_usages \n'
+                     'WHERE quota_usages.deleted = %(deleted_1)s AND '
+                     'quota_usages.project_id = %(project_id_1)s AND '
+                     '(quota_usages.user_id = %(user_id_1)s OR '
+                     'quota_usages.user_id IS NULL) FOR UPDATE')
+        params = {'project_id_1': u'8891d4478bbf48ad992f050cdf55e9b5',
+                  'user_id_1': u'22b6a9fe91b349639ce39146274a25ba',
+                  'deleted_1': 0}
+        orig = sqla_exc.SQLAlchemyError('(TransactionRollbackError) '
+                                        'deadlock detected')
+        deadlock_error = sqla_exc.DBAPIError(statement, params, orig)
+        self.assertRaises(db_exc.DBDeadlock,
+                          session._raise_if_deadlock_error,
+                          deadlock_error,
+                          'postgresql')
+
+    def test_DBAPIError_without_deadlock(self):
+        statement = ('SELECT quota_usages.created_at AS '
+                     'quota_usages_created_at, quota_usages.updated_at AS '
+                     'quota_usages_updated_at, quota_usages.deleted_at AS '
+                     'quota_usages_deleted_at, quota_usages.deleted AS '
+                     'quota_usages_deleted, quota_usages.id AS '
+                     'quota_usages_id, quota_usages.project_id AS '
+                     'quota_usages_project_id, quota_usages.user_id AS '
+                     'quota_usages_user_id, quota_usages.resource AS '
+                     'quota_usages_resource, quota_usages.in_use AS '
+                     'quota_usages_in_use, quota_usages.reserved AS '
+                     'quota_usages_reserved, quota_usages.until_refresh AS '
+                     'quota_usages_until_refresh \nFROM quota_usages \n'
+                     'WHERE quota_usages.deleted = %(deleted_1)s AND '
+                     'quota_usages.project_id = %(project_id_1)s AND '
+                     '(quota_usages.user_id = %(user_id_1)s OR '
+                     'quota_usages.user_id IS NULL) FOR UPDATE')
+        params = {'project_id_1': u'8891d4478bbf48ad992f050cdf55e9b5',
+                  'user_id_1': u'22b6a9fe91b349639ce39146274a25ba',
+                  'deleted_1': 0}
+        orig = sqla_exc.SQLAlchemyError('Other error occurred.')
+        dbapi_error = sqla_exc.DBAPIError(statement, params, orig)
+        self.assertIsNone(session._raise_if_deadlock_error(dbapi_error,
+                                                           'postgresql'))
 
 
 class MySQLModeTestCase(test_base.MySQLOpportunisticTestCase):
