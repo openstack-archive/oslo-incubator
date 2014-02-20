@@ -20,8 +20,8 @@ import setuptools
 setuptools.setup(
     name='oslo',
     version='1',
-    description="Namespace for common components for Openstack",
-    long_description="Namespace for common components for Openstack",
+    description="Namespace for common components for OpenStack",
+    long_description="Namespace for common components for OpenStack",
     classifiers=[
         'Development Status :: 4 - Beta',
         'License :: OSI Approved :: Apache Software License',
