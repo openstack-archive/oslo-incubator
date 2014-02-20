@@ -503,7 +503,44 @@ def _set_mode_traditional(dbapi_con, connection_rec, connection_proxy):
     than a declared field just with warning. That is fraught with data
     corruption.
     """
-    dbapi_con.cursor().execute("SET SESSION sql_mode = TRADITIONAL;")
+    _set_session_sql_mode(dbapi_con, connection_rec,
+                          connection_proxy, 'TRADITIONAL')
+
+
+def _set_session_sql_mode(dbapi_con, connection_rec,
+                          connection_proxy, sql_mode=None):
+    """Set the sql_mode session variable.
+
+    MySQL supports several server modes. The default is None, but sessions
+    may choose to enable server modes like TRADITIONAL, ANSI,
+    several STRICT_* modes and others.
+
+    Note: passing in '' (empty string) for sql_mode clears
+    the SQL mode for the session, overriding a potentially set
+    server default. Passing in None (the default) makes this
+    a no-op, meaning if a server-side SQL mode is set, it still applies.
+    """
+    cursor = dbapi_con.cursor()
+    if sql_mode is not None:
+        cursor.execute("SET SESSION sql_mode = %s", [sql_mode])
+
+    # Check against the real effective SQL mode. Even when unset by
+    # our own config, the server may still be operating in a specific
+    # SQL mode as set by the server configuration
+    cursor.execute("SHOW VARIABLES LIKE 'sql_mode'")
+    row = cursor.fetchone()
+    if row is None:
+        LOG.warning(_('Unable to detect effective SQL mode'))
+        return
+    realmode = row[1]
+    LOG.info(_('MySQL server mode set to %s') % realmode)
+    # 'TRADITIONAL' mode enables several other modes, so
+    # we need a substring match here
+    if not ('TRADITIONAL' in realmode.upper() or
+            'STRICT_ALL_TABLES' in realmode.upper()):
+        LOG.warning(_("MySQL SQL mode is '%s', "
+                      "consider enabling TRADITIONAL or STRICT_ALL_TABLES")
+                    % realmode)
 
 
 def _is_db_connection_error(args):
