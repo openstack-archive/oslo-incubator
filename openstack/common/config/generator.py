@@ -20,6 +20,7 @@ from __future__ import print_function
 
 import argparse
 import imp
+import inspect
 import os
 import re
 import socket
@@ -92,6 +93,7 @@ def generate(argv):
                 for group, opts in _list_opts(module):
                     opts_by_group.setdefault(group, []).append((module_name,
                                                                 opts))
+                _call_sample_opts_func(module_name, module, opts_by_group)
 
     # Look for entry points defined in libraries (or applications) for
     # option discovery, and include their return values in the output.
@@ -123,6 +125,8 @@ def generate(argv):
 
             for group, opts in _list_opts(mod_obj):
                 opts_by_group.setdefault(group, []).append((mod_str, opts))
+
+            _call_sample_opts_func(mod_str, mod_obj, opts_by_group)
 
     print_group_opts('DEFAULT', opts_by_group.pop('DEFAULT', []))
     for group in sorted(opts_by_group.keys()):
@@ -167,6 +171,16 @@ def _guess_groups(opt, mod_obj):
         "maybe it's defined twice in the same group?"
         % opt.name
     )
+
+
+def _call_sample_opts_func(module_name, module, opts_by_group):
+    # Look for our well-known-entry point for application projects
+    # that won't be installed and won't have
+    func = getattr(module, 'oslo_config_sample_get_options', None)
+    if inspect.isfunction(func):
+        for group_name, opts in func():
+            opts_list = opts_by_group.setdefault(group_name, [])
+            opts_list.append((module_name, opts))
 
 
 def _list_opts(obj):
