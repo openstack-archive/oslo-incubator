@@ -19,7 +19,6 @@
 import logging
 import re
 
-from migrate.changeset import UniqueConstraint
 import sqlalchemy
 from sqlalchemy import Boolean
 from sqlalchemy import CheckConstraint
@@ -313,6 +312,8 @@ def drop_unique_constraint(migrate_engine, table_name, uc_name, *columns,
                             are required only for columns that have unsupported
                             types by sqlite. For example BigInteger.
     """
+
+    from migrate.changeset import UniqueConstraint
 
     meta = MetaData()
     meta.bind = migrate_engine
