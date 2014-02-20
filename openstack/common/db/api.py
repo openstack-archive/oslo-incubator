@@ -22,6 +22,7 @@ API methods.
 
 import functools
 import logging
+import threading
 import time
 
 from openstack.common.db import exception
@@ -86,7 +87,8 @@ class wrap_db_retry(object):
 
 
 class DBAPI(object):
-    def __init__(self, backend_name, backend_mapping=None, **kwargs):
+    def __init__(self, backend_name, backend_mapping=None, lazy=False,
+                 **kwargs):
         """Initialize the choosen DB API backend.
 
         :param backend_name: name of the backend to load
@@ -94,6 +96,9 @@ class DBAPI(object):
 
         :param backend_mapping: backend name -> module/class to load mapping
         :type backend_mapping: dict
+
+        :param lazy: load the DB backend lazily on the first DB API method call
+        :type lazy: bool
 
         Keyword arguments:
 
@@ -114,14 +119,13 @@ class DBAPI(object):
 
         """
 
-        if backend_mapping is None:
-            backend_mapping = {}
+        self._backend = None
+        self._backend_name = backend_name
+        self._backend_mapping = backend_mapping or {}
+        self._lock = threading.Lock()
 
-        # Import the untranslated name if we don't have a
-        # mapping.
-        backend_path = backend_mapping.get(backend_name, backend_name)
-        backend_mod = importutils.import_module(backend_path)
-        self.__backend = backend_mod.get_backend()
+        if not lazy:
+            self._load_backend()
 
         self.use_db_reconnect = kwargs.get('use_db_reconnect', False)
         self.retry_interval = kwargs.get('retry_interval', 1)
@@ -129,9 +133,20 @@ class DBAPI(object):
         self.max_retry_interval = kwargs.get('max_retry_interval', 10)
         self.max_retries = kwargs.get('max_retries', 20)
 
-    def __getattr__(self, key):
-        attr = getattr(self.__backend, key)
+    def _load_backend(self):
+        with self._lock:
+            if not self._backend:
+                # Import the untranslated name if we don't have a mapping
+                backend_path = self._backend_mapping.get(self._backend_name,
+                                                         self._backend_name)
+                backend_mod = importutils.import_module(backend_path)
+                self._backend = backend_mod.get_backend()
 
+    def __getattr__(self, key):
+        if not self._backend:
+            self._load_backend()
+
+        attr = getattr(self._backend, key)
         if not hasattr(attr, '__call__'):
             return attr
         # NOTE(vsergeyev): If `use_db_reconnect` option is set to True, retry
