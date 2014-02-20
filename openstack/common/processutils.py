@@ -184,7 +184,9 @@ def execute(*cmd, **kwargs):
                 break
             obj.stdin.close()  # pylint: disable=E1101
             _returncode = obj.returncode  # pylint: disable=E1101
-            LOG.log(loglevel, _('Result was %s') % _returncode)
+            LOG.log(loglevel, _('Return code was %s') % _returncode)
+            LOG.log(loglevel,
+                    _('Result was stdout: {0} stderr: {1}').format(result))
             if not ignore_exit_code and _returncode not in check_exit_code:
                 (stdout, stderr) = result
                 raise ProcessExecutionError(exit_code=_returncode,
