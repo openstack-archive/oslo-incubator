@@ -388,8 +388,13 @@ def _raise_if_duplicate_entry_error(integrity_error, engine_name):
 # mysql:
 # (OperationalError) (1213, 'Deadlock found when trying to get lock; try '
 #                     'restarting transaction') <query_str> <query_args>
+#
+# postgresql:
+# (TransactionRollbackError) deadlock detected <deadlock_details>
+#
 _DEADLOCK_RE_DB = {
-    "mysql": re.compile(r"^.*\(1213, 'Deadlock.*")
+    "mysql": re.compile(r"^.*\(1213, 'Deadlock.*"),
+    "postgresql": re.compile(r"^.*deadlock detected.*")
 }
 
 
@@ -441,6 +446,15 @@ def _wrap_db_error(f):
             # unique constraint, from error message.
             _raise_if_duplicate_entry_error(e, self.bind.dialect.name)
             raise exception.DBError(e)
+        except sqla_exc.DBAPIError as e:
+            # NOTE(wingwj): This branch is used to catch deadlock exception
+            # under postgresql. The original exception thrown from postgresql
+            # is TransactionRollbackError, it's not included in the sqlalchemy.
+            # Moreover, DBAPIError is the base class of OperationalError
+            # and IntegrityError, so we catch it on the end of the process.
+            _raise_if_db_connection_lost(e, self.bind)
+            _raise_if_deadlock_error(e, self.bind.dialect.name)
+            raise
         except Exception as e:
             LOG.exception(_('DB exception wrapped.'))
             raise exception.DBError(e)
