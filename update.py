@@ -202,6 +202,8 @@ def _copy_module(mod, base, dest_dir):
         sources = filter(lambda x: x[-3:] == '.py', os.listdir(mod_path))
         for s in sources:
             copy_pyfile(os.path.join(mod_path, s))
+    else:
+        print("Module not found. Tried: \n\t%s \n\t%s" % (mod_path, mod_file))
 
     globs_to_copy = [
         os.path.join('tools', mod, '*.sh'),
