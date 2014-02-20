@@ -197,6 +197,10 @@ class ProgrammingError(Exception):
     pass
 
 
+class DBAPIError(Exception):
+    pass
+
+
 class FakeDB2Engine(object):
 
     class Dialect():
@@ -254,6 +258,26 @@ class TestDBDisconnected(test.BaseTestCase):
                 connection = ('ibm_db_sa://db2inst1:openstack@fakehost:50000'
                               '/fakedab')
                 self._test_ping_listener_disconnected(connection)
+
+
+class TestDBDeadlocked(test_base.DbTestCase):
+
+    def test_mysql_deadlock(self):
+        msg = 'ERROR 1213 (40001): Deadlock found when trying to get lock;'\
+            ' try restarting transaction'
+        deadlock_error = OperationalError(msg)
+        self.assertRaises(db_exc.DBDeadlock,
+                          session._raise_if_deadlock_error,
+                          deadlock_error,
+                          'mysql')
+
+    def test_postgresql_deadlock(self):
+        msg = '(TransactionRollbackError) deadlock detected'
+        deadlock_error = DBAPIError(msg)
+        self.assertRaises(db_exc.DBDeadlock,
+                          session._raise_if_deadlock_error,
+                          deadlock_error,
+                          'postgresql')
 
 
 class MySQLModeTestCase(test_base.MySQLOpportunisticTestCase):
