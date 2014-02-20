@@ -56,7 +56,7 @@ class RequestNotifier(base.Middleware):
         return _factory
 
     def __init__(self, app, **conf):
-        self.service_name = conf.get('service_name', None)
+        self.service_name = conf.get('service_name')
         self.ignore_req_list = [x.upper().strip() for x in
                                 conf.get('ignore_req_list', '').split(',')]
         super(RequestNotifier, self).__init__(app)

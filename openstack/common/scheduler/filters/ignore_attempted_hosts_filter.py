@@ -37,7 +37,7 @@ class IgnoreAttemptedHostsFilter(filters.BaseHostFilter):
 
     def host_passes(self, host_state, filter_properties):
         """Skip nodes that have already been attempted."""
-        attempted = filter_properties.get('retry', None)
+        attempted = filter_properties.get('retry')
         if not attempted:
             # Re-scheduling is disabled
             LOG.debug(_("Re-scheduling is disabled."))
