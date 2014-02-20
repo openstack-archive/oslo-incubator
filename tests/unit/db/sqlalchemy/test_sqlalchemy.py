@@ -256,6 +256,26 @@ class TestDBDisconnected(test.BaseTestCase):
                 self._test_ping_listener_disconnected(connection)
 
 
+class TestDBDeadlocked(test_base.DbTestCase):
+
+    def test_mysql_deadlock(self):
+        msg = 'ERROR 1213 (40001): Deadlock found when trying to get lock;'\
+            ' try restarting transaction'
+        deadlock_error = sqlalchemy.exc.OperationalError(msg)
+        self.assertRaises(db_exc.DBDeadlock,
+                          session._raise_if_deadlock_error,
+                          deadlock_error,
+                          'mysql')
+
+    def test_postgresql_deadlock(self):
+        msg = '(TransactionRollbackError) deadlock detected'
+        deadlock_error = sqlalchemy.exc.DBAPIError(msg)
+        self.assertRaises(db_exc.DBDeadlock,
+                          session._raise_if_deadlock_error,
+                          deadlock_error,
+                          'postgresql')
+
+
 class MySQLModeTestCase(test_base.MySQLOpportunisticTestCase):
 
     def __init__(self, *args, **kwargs):
