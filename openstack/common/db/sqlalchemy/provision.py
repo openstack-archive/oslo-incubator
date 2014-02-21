@@ -16,27 +16,18 @@
 """Provision test environment for specific DB backends"""
 
 import argparse
+import logging
 import os
 import random
 import string
 
-from six import moves
 import sqlalchemy
 
 from openstack.common.db import exception as exc
 
 
+LOG = logging.getLogger(__name__)
 SQL_CONNECTION = os.getenv('OS_TEST_DBAPI_ADMIN_CONNECTION', 'sqlite://')
-
-
-def _gen_credentials(*names):
-    """Generate credentials."""
-    auth_dict = {}
-    for name in names:
-        val = ''.join(random.choice(string.ascii_lowercase)
-                      for i in moves.range(10))
-        auth_dict[name] = val
-    return auth_dict
 
 
 def _get_engine(uri=SQL_CONNECTION):
@@ -62,50 +53,43 @@ def _execute_sql(engine, sql, driver):
     except sqlalchemy.exc.OperationalError:
         msg = ('%s does not match database admin '
                'credentials or database does not exist.')
-        raise exc.DBConnectionError(msg % SQL_CONNECTION)
+        LOG.exception(msg % engine.url)
+        raise exc.DBConnectionError(msg % engine.url)
 
 
 def create_database(engine):
     """Provide temporary user and database for each particular test."""
     driver = engine.name
 
-    auth = _gen_credentials('database', 'user', 'passwd')
-
-    sqls = {
-        'mysql': [
-            "drop database if exists %(database)s;",
-            "grant all on %(database)s.* to '%(user)s'@'localhost'"
-            " identified by '%(passwd)s';",
-            "create database %(database)s;",
-        ],
-        'postgresql': [
-            "drop database if exists %(database)s;",
-            "drop user if exists %(user)s;",
-            "create user %(user)s with password '%(passwd)s';",
-            "create database %(database)s owner %(user)s;",
-        ]
+    auth = {
+        'database': ''.join(random.choice(string.ascii_lowercase)
+                            for i in range(10)),
+        'user': engine.url.username,
+        'passwd': engine.url.password,
     }
+
+    sqls = [
+        "drop database if exists %(database)s;",
+        "create database %(database)s;"
+    ]
 
     if driver == 'sqlite':
         return 'sqlite:////tmp/%s' % auth['database']
-
-    try:
-        sql_rows = sqls[driver]
-    except KeyError:
+    elif driver == 'mysql' or driver == 'postgresql':
+        sql_query = map(lambda x: x % auth, sqls)
+        _execute_sql(engine, sql_query, driver)
+    else:
         raise ValueError('Unsupported RDBMS %s' % driver)
-    sql_query = map(lambda x: x % auth, sql_rows)
-
-    _execute_sql(engine, sql_query, driver)
 
     params = auth.copy()
     params['backend'] = driver
     return "%(backend)s://%(user)s:%(passwd)s@localhost/%(database)s" % params
 
 
-def drop_database(engine, current_uri):
+def drop_database(admin_engine, current_uri):
     """Drop temporary database and user after each particular test."""
+
     engine = _get_engine(current_uri)
-    admin_engine = _get_engine()
     driver = engine.name
     auth = {'database': engine.url.database, 'user': engine.url.username}
 
@@ -114,26 +98,11 @@ def drop_database(engine, current_uri):
             os.remove(auth['database'])
         except OSError:
             pass
-        return
-
-    sqls = {
-        'mysql': [
-            "drop database if exists %(database)s;",
-            "drop user '%(user)s'@'localhost';",
-        ],
-        'postgresql': [
-            "drop database if exists %(database)s;",
-            "drop user if exists %(user)s;",
-        ]
-    }
-
-    try:
-        sql_rows = sqls[driver]
-    except KeyError:
+    elif driver == 'mysql' or driver == 'postgresql':
+        sql = "drop database if exists %(database)s;"
+        _execute_sql(admin_engine, [sql % auth], driver)
+    else:
         raise ValueError('Unsupported RDBMS %s' % driver)
-    sql_query = map(lambda x: x % auth, sql_rows)
-
-    _execute_sql(admin_engine, sql_query, driver)
 
 
 def main():
