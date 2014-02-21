@@ -17,11 +17,11 @@ from __future__ import print_function
 import os
 import re
 import signal
-import StringIO
 import sys
 
 # needed to get greenthreads
 import greenlet
+import six
 
 from openstack.common.report import guru_meditation_report as gmr
 from openstack.common.report.models import with_default_views as mwdv
@@ -143,7 +143,7 @@ class TestGuruMeditationReport(utils.BaseTestCase):
     def test_register_autorun(self):
         gmr.TextGuruMeditation.setup_autorun(FakeVersionObj())
         self.old_stderr = sys.stderr
-        sys.stderr = StringIO.StringIO()
+        sys.stderr = six.StringIO()
 
         os.kill(os.getpid(), signal.SIGUSR1)
         self.assertIn('Guru Meditation', sys.stderr.getvalue())
