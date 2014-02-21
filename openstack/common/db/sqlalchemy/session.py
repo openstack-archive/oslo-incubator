@@ -488,7 +488,7 @@ def _ping_listener(engine, dbapi_conn, connection_rec, connection_proxy):
         cursor.execute(ping_sql)
     except Exception as ex:
         if engine.dialect.is_disconnect(ex, dbapi_conn, cursor):
-            msg = _('Database server has gone away: %s') % ex
+            msg = _LW('Database server has gone away: %s') % ex
             LOG.warning(msg)
             raise sqla_exc.DisconnectionError(msg)
         else:
