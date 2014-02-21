@@ -63,3 +63,11 @@ class GeneratorTestcase(test.BaseTestCase):
         self.assertIn('#baa=<None>\n', lines)
         self.assertIn('#foo=<None>\n', lines)
         self.assertIn('#fblaa=fblaa\n', lines)
+
+    def test_sanitize_default_fqdn(self):
+        fake_fqdn = 'fakehost.fakedomain'
+        self.useFixture(fixtures.MonkeyPatch('socket.getfqdn',
+                                             lambda: fake_fqdn))
+
+        result = generator._sanitize_default('host', fake_fqdn)
+        self.assertEqual('oslo', result)
