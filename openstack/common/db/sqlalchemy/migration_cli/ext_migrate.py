@@ -16,7 +16,7 @@ import os
 from openstack.common.db.sqlalchemy import migration
 from openstack.common.db.sqlalchemy.migration_cli import ext_base
 from openstack.common.db.sqlalchemy import session as db_session
-from openstack.common.gettextutils import _  # noqa
+from openstack.common.gettextutils import _LE
 
 
 LOG = logging.getLogger(__name__)
@@ -58,9 +58,9 @@ class MigrateExtension(ext_base.MigrationExtensionBase):
                 init_version=self.init_version)
         except ValueError:
             LOG.error(
-                _('Migration number for migrate plugin must be valid '
-                  'integer or empty, if you want to downgrade '
-                  'to initial state')
+                _LE('Migration number for migrate plugin must be valid '
+                    'integer or empty, if you want to downgrade '
+                    'to initial state')
             )
             raise
 

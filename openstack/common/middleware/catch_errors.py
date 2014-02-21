@@ -22,7 +22,7 @@ to hide internal errors from API response.
 import webob.dec
 import webob.exc
 
-from openstack.common.gettextutils import _  # noqa
+from openstack.common.gettextutils import _LE
 from openstack.common import log as logging
 from openstack.common.middleware import base
 
@@ -37,7 +37,7 @@ class CatchErrorsMiddleware(base.Middleware):
         try:
             response = req.get_response(self.application)
         except Exception:
-            LOG.exception(_('An error occurred during '
-                            'processing the request: %s'))
+            LOG.exception(_LE('An error occurred during '
+                              'processing the request: %s'))
             response = webob.exc.HTTPInternalServerError()
         return response

@@ -85,7 +85,7 @@ import six.moves.urllib.parse as urlparse
 import six.moves.urllib.request as urlrequest
 
 from openstack.common import fileutils
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _, _LE
 from openstack.common import jsonutils
 from openstack.common import log as logging
 
@@ -230,7 +230,7 @@ class Enforcer(object):
         if reloaded or not self.rules:
             rules = Rules.load_json(data, self.default_rule)
             self.set_rules(rules)
-            LOG.debug(_("Rules successfully reloaded"))
+            LOG.debug("Rules successfully reloaded")
 
     def _get_policy_path(self):
         """Locate the policy json data file.
@@ -276,7 +276,7 @@ class Enforcer(object):
 
         # NOTE(flaper87): Not logging target or creds to avoid
         # potential security issues.
-        LOG.debug(_("Rule %s will be now enforced") % rule)
+        LOG.debug("Rule %s will be now enforced" % rule)
 
         self.load_rules()
 
@@ -291,7 +291,7 @@ class Enforcer(object):
                 # Evaluate the rule
                 result = self.rules[rule](target, creds, self)
             except KeyError:
-                LOG.debug(_("Rule [%s] doesn't exist") % rule)
+                LOG.debug("Rule [%s] doesn't exist" % rule)
                 # If the rule doesn't exist, fail closed
                 result = False
 
@@ -499,7 +499,7 @@ def _parse_check(rule):
     try:
         kind, match = rule.split(':', 1)
     except Exception:
-        LOG.exception(_("Failed to understand rule %s") % rule)
+        LOG.exception(_LE("Failed to understand rule %s") % rule)
         # If the rule is invalid, we'll fail closed
         return FalseCheck()
 
@@ -509,7 +509,7 @@ def _parse_check(rule):
     elif None in _checks:
         return _checks[None](kind, match)
     else:
-        LOG.error(_("No handler for matches of kind %s") % kind)
+        LOG.error(_LE("No handler for matches of kind %s") % kind)
         return FalseCheck()
 
 
@@ -779,7 +779,7 @@ def _parse_text_rule(rule):
         return state.result
     except ValueError:
         # Couldn't parse the rule
-        LOG.exception(_("Failed to understand rule %r") % rule)
+        LOG.exception(_LE("Failed to understand rule %r") % rule)
 
         # Fail closed
         return FalseCheck()

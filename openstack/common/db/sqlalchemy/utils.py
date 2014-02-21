@@ -37,7 +37,7 @@ from sqlalchemy import String
 from sqlalchemy import Table
 from sqlalchemy.types import NullType
 
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _, _LI, _LW
 from openstack.common import timeutils
 
 
@@ -93,7 +93,7 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
     if 'id' not in sort_keys:
         # TODO(justinsb): If this ever gives a false-positive, check
         # the actual primary key, rather than assuming its id
-        LOG.warning(_('Id not in sort_keys; is sort_keys unique?'))
+        LOG.warning(_LW('Id not in sort_keys; is sort_keys unique?'))
 
     assert(not (sort_dir and sort_dirs))
 
@@ -276,8 +276,8 @@ def drop_old_duplicate_entries_from_table(migrate_engine, table_name,
 
         rows_to_delete_select = select([table.c.id]).where(delete_condition)
         for row in migrate_engine.execute(rows_to_delete_select).fetchall():
-            LOG.info(_("Deleting duplicated row with id: %(id)s from table: "
-                       "%(table)s") % dict(id=row[0], table=table_name))
+            LOG.info(_LI("Deleting duplicated row with id: %(id)s from table: "
+                         "%(table)s") % dict(id=row[0], table=table_name))
 
         if use_soft_delete:
             delete_statement = table.update().\
