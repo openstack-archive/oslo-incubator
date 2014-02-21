@@ -13,6 +13,18 @@
 #    under the License.
 
 
+##############################################################################
+##############################################################################
+##
+## DO NOT MODIFY THIS FILE
+##
+## This file is being graduated to the oslotest library. Please make all
+## changes there, and only backport critical fixes here. - dhellmann
+##
+##############################################################################
+##############################################################################
+
+
 import mock
 
 from openstack.common.fixture import mockpatch
