@@ -29,7 +29,7 @@ from sqlalchemy.orm import object_mapper
 from openstack.common import timeutils
 
 
-class ModelBase(object):
+class ModelBase(six.Iterator):
     """Base class for models."""
     __table_initialized__ = False
 
@@ -81,6 +81,9 @@ class ModelBase(object):
     def next(self):
         n = six.advance_iterator(self._i)
         return n, getattr(self, n)
+
+    # In Python 3, __next__() has replaced next().
+    __next__ = next
 
     def update(self, values):
         """Make the model object behave like a dict."""
