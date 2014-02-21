@@ -189,7 +189,7 @@ def remove_external_lock_file(name, lock_file_prefix=None):
         try:
             os.remove(lock_file_path)
         except OSError:
-            LOG.info(_('Failed to remove file %(file)s'),
+            LOG.info(_LI('Failed to remove file %(file)s'),
                      {'file': lock_file_path})
 
 
