@@ -89,7 +89,7 @@ class wrap_db_retry(object):
 class DBAPI(object):
     def __init__(self, backend_name, backend_mapping=None, lazy=False,
                  **kwargs):
-        """Initialize the choosen DB API backend.
+        """Initialize the chosen DB API backend.
 
         :param backend_name: name of the backend to load
         :type backend_name: str
