@@ -15,11 +15,12 @@
 import logging
 import time
 
-from six.moves import mox  # noqa
-
 from openstack.common import excutils
 from openstack.common.fixture import moxstubout
 from openstack.common import test
+
+
+mox = moxstubout.mox
 
 
 class SaveAndReraiseTest(test.BaseTestCase):
