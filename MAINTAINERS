@@ -302,7 +302,7 @@ F: timeutils.py
 
 == units ==
 
-M: Chang Bo Guo <guochbo@cn.ibm.com>
+M: ChangBo Guo <glongwave@gmail.com>
 S: Maintained
 F: units.py
 
