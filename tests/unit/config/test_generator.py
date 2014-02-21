@@ -96,3 +96,10 @@ class GeneratorTestcase(test.BaseTestCase):
         # Test we have help in the output
         self.assertIn(u'# helpful message with unicode char:'
                       u' \xE7\x94\xB5 (string value)\n', lines)
+
+    def test_sanitize_default_fqdn(self):
+        fake_fqdn = 'fakehost.fakedomain'
+        self.useFixture(fixtures.MonkeyPatch('socket.getfqdn',
+                                             lambda: fake_fqdn))
+        result = generator._sanitize_default('host', fake_fqdn)
+        self.assertEqual('oslo', result)
