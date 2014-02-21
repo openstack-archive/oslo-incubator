@@ -156,24 +156,41 @@ _semaphores = weakref.WeakValueDictionary()
 _semaphores_lock = threading.Lock()
 
 
+def _get_lock_path(name, lock_file_prefix):
+    # NOTE(mikal): the lock name cannot contain directory
+    # separators
+    name = name.replace(os.sep, '_')
+    if lock_file_prefix:
+        sep = '' if lock_file_prefix.endswith('-') else '-'
+        name = '%s%s%s' % (lock_file_prefix, sep, name)
+
+    if not CONF.lock_path:
+        raise cfg.RequiredOptError('lock_path')
+
+    return os.path.join(CONF.lock_path, name)
+
+
 def external_lock(name, lock_file_prefix=None):
     with internal_lock(name):
         LOG.debug('Attempting to grab external lock "%(lock)s"',
                   {'lock': name})
 
-        # NOTE(mikal): the lock name cannot contain directory
-        # separators
-        name = name.replace(os.sep, '_')
-        if lock_file_prefix:
-            sep = '' if lock_file_prefix.endswith('-') else '-'
-            name = '%s%s%s' % (lock_file_prefix, sep, name)
-
-        if not CONF.lock_path:
-            raise cfg.RequiredOptError('lock_path')
-
-        lock_file_path = os.path.join(CONF.lock_path, name)
+        lock_file_path = _get_lock_path(name, lock_file_prefix)
 
         return InterProcessLock(lock_file_path)
+
+
+def remove_external_lock_file(name, lock_file_prefix=None):
+    """Remove a external lock file when it's not used anymore
+    This will be helpful when we have a lot of lock files
+    """
+    with internal_lock(name):
+        lock_file_path = _get_lock_path(name, lock_file_prefix)
+        try:
+            os.remove(lock_file_path)
+        except OSError:
+            LOG.info(_('Failed to remove file %(file)s'),
+                     {'file': lock_file_path})
 
 
 def internal_lock(name):

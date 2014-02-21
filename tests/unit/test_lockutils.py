@@ -386,6 +386,21 @@ class LockTestCase(test.BaseTestCase):
 
         self.assertRaises(cfg.RequiredOptError, foo)
 
+    def test_remove_lock_external_file(self):
+        lock_name = 'mylock'
+        lock_pfix = 'mypfix-remove-lock-test-'
+
+        lock_dir = tempfile.mkdtemp()
+        self.config(lock_path=lock_dir)
+
+        lockutils.remove_external_lock_file(lock_name, lock_pfix)
+
+        for ent in os.listdir(lock_dir):
+            self.assertRaises(OSError, ent.startswith, lock_pfix)
+
+        if os.path.exists(lock_dir):
+            shutil.rmtree(lock_dir, ignore_errors=True)
+
 
 class LockutilsModuleTestCase(test.BaseTestCase):
 
