@@ -233,7 +233,7 @@ def db_version(engine, abs_path, init_version):
         meta.reflect(bind=engine)
         tables = meta.tables
         if len(tables) == 0 or 'alembic_version' in tables:
-            db_version_control(abs_path, init_version)
+            db_version_control(engine, abs_path, version=init_version)
             return versioning_api.db_version(engine, repository)
         else:
             raise exception.DbMigrationError(

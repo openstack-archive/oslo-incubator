@@ -101,9 +101,10 @@ class TestMigrationCommon(test_base.DbTestCase):
             ret_val = migration.db_version(self.engine, self.path,
                                            self.init_version)
             self.assertEqual(ret_val, self.test_version)
-            mock_ver.assert_called_once_with(self.path, self.init_version)
+            mock_ver.assert_called_once_with(self.engine, self.path,
+                                             version=self.init_version)
 
-    def test_db_version_raise_not_controlled_error_no_tables(self):
+    def test_db_version_raise_not_controlled_error_tables(self):
         with mock.patch.object(sqlalchemy, 'MetaData') as mock_meta:
             self.mock_api_db_version.side_effect = \
                 migrate_exception.DatabaseNotControlledError('oups')
@@ -114,6 +115,20 @@ class TestMigrationCommon(test_base.DbTestCase):
             self.assertRaises(
                 db_exception.DbMigrationError, migration.db_version,
                 self.engine, self.path, self.init_version)
+
+    @mock.patch.object(versioning_api, 'version_control')
+    def test_db_version_raise_not_controlled_error_no_tables(self, mock_vc):
+        with mock.patch.object(sqlalchemy, 'MetaData') as mock_meta:
+            self.mock_api_db_version.side_effect = (
+                migrate_exception.DatabaseNotControlledError('oups'),
+                self.init_version)
+            my_meta = mock.MagicMock()
+            my_meta.tables = {}
+            mock_meta.return_value = my_meta
+            migration.db_version(self.engine, self.path, self.init_version)
+
+            mock_vc.assert_called_once_with(self.engine, self.return_value1,
+                                            self.init_version)
 
     def test_db_sync_wrong_version(self):
         self.assertRaises(
