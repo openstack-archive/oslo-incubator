@@ -717,11 +717,12 @@ class EngineFacade(object):
     integrate engine/sessionmaker instances into your apps any way you like
     (e.g. one might want to bind a session to a request context). Two important
     things to remember:
-        1. An Engine instance is effectively a pool of DB connections, so it's
-           meant to be shared (and it's thread-safe).
-        2. A Session instance is not meant to be shared and represents a DB
-           transactional context (i.e. it's not thread-safe). sessionmaker is
-           a factory of sessions.
+
+    1. An Engine instance is effectively a pool of DB connections, so it's
+       meant to be shared (and it's thread-safe).
+    2. A Session instance is not meant to be shared and represents a DB
+       transactional context (i.e. it's not thread-safe). sessionmaker is
+       a factory of sessions.
 
     """
 

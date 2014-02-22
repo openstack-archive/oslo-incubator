@@ -218,6 +218,9 @@ def model_query(context, model, session, args=None, project_only=False,
     :type read_deleted:   bool
 
     Usage:
+
+    ..code:: python
+
         result = (utils.model_query(context, models.Instance, session=session)
                        .filter_by(uuid=instance_uuid)
                        .all())
@@ -226,7 +229,8 @@ def model_query(context, model, session, args=None, project_only=False,
                     context, Node,
                     session=session,
                     args=(func.count(Node.id), func.sum(Node.ram))
-            ).filter_by(project_id=project_id)
+                    ).filter_by(project_id=project_id)
+
     """
 
     if not read_deleted:
