@@ -14,4 +14,4 @@ redis
 sphinx>=1.1.2,<1.2
 testrepository>=0.0.17
 testscenarios>=0.4
-testtools>=0.9.32
+testtools>=0.9.34
