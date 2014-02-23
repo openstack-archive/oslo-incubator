@@ -12,6 +12,6 @@ pylint==0.25.2
 pyzmq==2.2.0.1
 redis
 sphinx>=1.1.2,<1.2
-testrepository>=0.0.17
+testrepository>=0.0.18
 testscenarios>=0.4
-testtools>=0.9.32
+testtools>=0.9.34

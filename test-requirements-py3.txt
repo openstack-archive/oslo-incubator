@@ -4,11 +4,11 @@ fixtures>=0.3.14
 flake8==2.0
 hacking>=0.8.0,<0.9
 mock>=1.0
-mox3
+mox3>=0.7.0
 pep8==1.4.5
 pyflakes>=0.7.2,<0.7.4
 pyzmq==2.2.0.1
 redis
 sphinx>=1.1.2,<1.2
-testrepository>=0.0.17
-testtools>=0.9.32
+testrepository>=0.0.18
+testtools>=0.9.34
