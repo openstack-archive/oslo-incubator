@@ -131,8 +131,8 @@ class TestMigrationCommon(test_base.DbTestCase):
                                             self.init_version)
 
     def test_db_sync_wrong_version(self):
-        self.assertRaises(
-            db_exception.DbMigrationError, migration.db_sync, self.path, 'foo')
+        self.assertRaises(db_exception.DbMigrationError,
+                          migration.db_sync, self.engine, self.path, 'foo')
 
     def test_db_sync_upgrade(self):
         init_ver = 55
