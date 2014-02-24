@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Approved+1: Ben Nemec <openstack@nemebean.com>
+Code-Review+2: Ben Nemec <openstack@nemebean.com>
+Code-Review+1: Victor Sergeyev <vsergeyev@mirantis.com>
+Submitted-by: Jenkins
+Submitted-at: Mon, 24 Feb 2014 17:04:48 +0000
+Reviewed-on: https://review.openstack.org/68474
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
