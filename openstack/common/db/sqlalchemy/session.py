@@ -431,17 +431,25 @@ def _wrap_db_error(f):
     @functools.wraps(f)
     def _wrap(self, *args, **kwargs):
         try:
-            assert issubclass(
-                self.__class__, sqlalchemy.orm.session.Session
-            ), ('_wrap_db_error() can only be applied to methods of '
-                'subclasses of sqlalchemy.orm.session.Session.')
+            if issubclass(self.__class__, sqlalchemy.orm.session.Session):
+                bind = self.bind
+                engine_name = self.bind.dialect.name
+            elif issubclass(self.__class__, sqlalchemy.orm.query.Query):
+                bind = self.session.bind
+                engine_name = self.session.bind.dialect.name
+            else:
+                msg = "_wrap_db_error() can only be applied to methods of "\
+                    "subclasses of sqlalchemy.orm.session.Session "\
+                    "or sqlalchemy.orm.query.Query."
+                LOG.exception(_LE(msg))
+                raise TypeError(msg)
 
             return f(self, *args, **kwargs)
         except UnicodeEncodeError:
             raise exception.DBInvalidUnicodeParameter()
         except sqla_exc.OperationalError as e:
-            _raise_if_db_connection_lost(e, self.bind)
-            _raise_if_deadlock_error(e, self.bind.dialect.name)
+            _raise_if_db_connection_lost(e, bind)
+            _raise_if_deadlock_error(e, engine_name)
             # NOTE(comstud): A lot of code is checking for OperationalError
             # so let's not wrap it for now.
             raise
@@ -454,7 +462,7 @@ def _wrap_db_error(f):
             # instance_types) there are more than one unique constraint. This
             # means we should get names of columns, which values violate
             # unique constraint, from error message.
-            _raise_if_duplicate_entry_error(e, self.bind.dialect.name)
+            _raise_if_duplicate_entry_error(e, engine_name)
             raise exception.DBError(e)
         except Exception as e:
             LOG.exception(_LE('DB exception wrapped.'))
@@ -693,6 +701,11 @@ class Query(sqlalchemy.orm.query.Query):
                             'updated_at': literal_column('updated_at'),
                             'deleted_at': timeutils.utcnow()},
                            synchronize_session=synchronize_session)
+
+    @_wrap_db_error
+    def all(self):
+        # Note (wingwj): For deadlock protection
+        return super(Query, self).all()
 
 
 class Session(sqlalchemy.orm.session.Session):
