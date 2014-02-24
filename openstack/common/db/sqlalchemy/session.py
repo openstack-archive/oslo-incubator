@@ -629,6 +629,11 @@ class Query(sqlalchemy.orm.query.Query):
                             'deleted_at': timeutils.utcnow()},
                            synchronize_session=synchronize_session)
 
+    @_wrap_db_error
+    def all(self):
+        # Note (wingwj): For deadlock protection
+        return super(Query, self).all()
+
 
 class Session(sqlalchemy.orm.session.Session):
     """Custom Session class to avoid SqlAlchemy Session monkey patching."""
