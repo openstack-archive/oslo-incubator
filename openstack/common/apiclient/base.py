@@ -98,14 +98,39 @@ class BaseManager(HookableMixin):
         super(BaseManager, self).__init__()
         self.client = client
 
-    def _list(self, url, response_key, obj_class=None, json=None):
+    def _extract_data(self, data, response_key=None):
+        """
+        Extract the data within response_key in data.
+
+        :param data: The data to handle.
+        :param response_key: The response key to extract.
+        """
+        if len(data) == 0:
+            return data
+        return data[response_key] if response_key else data
+
+    def _make_obj(self, data, obj_class=None):
+        """
+        Make a object out of obj_class.
+
+        :param data: The data to handle.
+        :param obj_class: class for constructing the returned objects
+            (self.resource_class will be used by default)
+        """
+        cls = obj_class or self.resource_class
+        return cls(self, data, loaded=True)
+
+    def _list(self, url, response_key=None, obj_class=None, json=None,
+              return_raw=False):
         """List the collection.
 
         :param url: a partial URL, e.g., '/servers'
         :param response_key: the key to be looked up in response dictionary,
-            e.g., 'servers'
+            e.g., 'server'
         :param obj_class: class for constructing the returned objects
             (self.resource_class will be used by default)
+        :param return_raw: flag to force returning raw JSON instead of
+            Python object of self.resource_class
         :param json: data that will be encoded as JSON and passed in POST
             request (GET will be sent by default)
         """
@@ -114,28 +139,41 @@ class BaseManager(HookableMixin):
         else:
             body = self.client.get(url).json()
 
-        if obj_class is None:
-            obj_class = self.resource_class
+        data = self._extract_data(body, response_key=response_key)
 
-        data = body[response_key]
-        # NOTE(ja): keystone returns values as list as {'values': [ ... ]}
-        #           unlike other services which just return the list...
         try:
             data = data['values']
         except (KeyError, TypeError):
             pass
 
-        return [obj_class(self, res, loaded=True) for res in data if res]
+        if return_raw:
+            return data
+        else:
+            items = []
+            for i in data:
+                items.append(self._make_obj(i, obj_class=obj_class))
+            return items
 
-    def _get(self, url, response_key):
+    def _get(self, url, response_key=None, return_raw=False, obj_class=None):
         """Get an object from collection.
 
         :param url: a partial URL, e.g., '/servers'
         :param response_key: the key to be looked up in response dictionary,
             e.g., 'server'
+        :param obj_class: class for constructing the returned objects
+            (self.resource_class will be used by default)
+        :param return_raw: flag to force returning raw JSON instead of
+            Python object of self.resource_class
         """
+        # NOTE(ekarlso): If the response key is None, then we just return the
+        # body.
         body = self.client.get(url).json()
-        return self.resource_class(self, body[response_key], loaded=True)
+        data = self._extract_data(body, response_key=response_key)
+
+        if return_raw:
+            return data
+        else:
+            return self._make_obj(data, obj_class=obj_class)
 
     def _head(self, url):
         """Retrieve request headers for an object.
@@ -145,54 +183,74 @@ class BaseManager(HookableMixin):
         resp = self.client.head(url)
         return resp.status_code == 204
 
-    def _post(self, url, json, response_key, return_raw=False):
+    def _post(self, url, json, response_key=None, return_raw=False,
+              obj_class=None):
         """Create an object.
 
         :param url: a partial URL, e.g., '/servers'
         :param json: data that will be encoded as JSON and passed in POST
             request (GET will be sent by default)
         :param response_key: the key to be looked up in response dictionary,
-            e.g., 'servers'
+            e.g., 'server'
+        :param obj_class: class for constructing the returned objects
+            (self.resource_class will be used by default)
         :param return_raw: flag to force returning raw JSON instead of
             Python object of self.resource_class
         """
         body = self.client.post(url, json=json).json()
-        if return_raw:
-            return body[response_key]
-        return self.resource_class(self, body[response_key])
+        data = self._extract_data(body, response_key=response_key)
 
-    def _put(self, url, json=None, response_key=None):
+        if return_raw:
+            return data
+        else:
+            return self._make_obj(data, obj_class=obj_class)
+
+    def _put(self, url, json=None, response_key=None, return_raw=False,
+             obj_class=None):
         """Update an object with PUT method.
 
         :param url: a partial URL, e.g., '/servers'
         :param json: data that will be encoded as JSON and passed in POST
             request (GET will be sent by default)
         :param response_key: the key to be looked up in response dictionary,
-            e.g., 'servers'
+            e.g., 'server'
+        :param obj_class: class for constructing the returned objects
+            (self.resource_class will be used by default)
+        :param return_raw: flag to force returning raw JSON instead of
+            Python object of self.resource_class
         """
         resp = self.client.put(url, json=json)
         # PUT requests may not return a body
         if resp.content:
             body = resp.json()
-            if response_key is not None:
-                return self.resource_class(self, body[response_key])
-            else:
-                return self.resource_class(self, body)
+            data = self._extract_data(body, response_key=response_key)
 
-    def _patch(self, url, json=None, response_key=None):
+            if return_raw:
+                return data
+            else:
+                return self._make_obj(data, obj_class=obj_class)
+
+    def _patch(self, url, json=None, response_key=None, return_raw=False,
+               obj_class=None):
         """Update an object with PATCH method.
 
         :param url: a partial URL, e.g., '/servers'
         :param json: data that will be encoded as JSON and passed in POST
             request (GET will be sent by default)
         :param response_key: the key to be looked up in response dictionary,
-            e.g., 'servers'
+            e.g., 'server'
+        :param obj_class: class for constructing the returned objects
+            (self.resource_class will be used by default)
+        :param return_raw: flag to force returning raw JSON instead of
+            Python object of self.resource_class
         """
         body = self.client.patch(url, json=json).json()
-        if response_key is not None:
-            return self.resource_class(self, body[response_key])
+        data = self._extract_data(body, response_key=response_key)
+
+        if return_raw:
+            return data
         else:
-            return self.resource_class(self, body)
+            return self._make_obj(data, obj_class=obj_class)
 
     def _delete(self, url):
         """Delete an object.
