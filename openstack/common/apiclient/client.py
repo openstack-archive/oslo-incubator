@@ -179,7 +179,7 @@ class HTTPClient(object):
             _logger.debug(
                 "Request returned failure status: %s",
                 resp.status_code)
-            raise exceptions.from_response(resp, method, url)
+            raise exceptions.from_response(resp, method=method, url=url)
 
         return resp
 

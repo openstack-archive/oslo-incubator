@@ -37,14 +37,17 @@ class ExceptionsArgsTest(test.BaseTestCase):
             FakeResponse(status_code=status_code,
                          headers={"Content-Type": "application/json"},
                          json_data=json_data),
-            method,
-            url)
+            method=method, url=url)
+        if not isinstance(ex, ex_cls):
+            raise ex.__class__
         self.assertTrue(isinstance(ex, ex_cls))
         self.assertEqual(ex.message, json_data["error"]["message"])
-        self.assertEqual(ex.details, json_data["error"]["details"])
-        self.assertEqual(ex.method, method)
-        self.assertEqual(ex.url, url)
-        self.assertEqual(ex.http_status, status_code)
+        self.assertEqual(ex.detail.get('details'),
+                         json_data["error"]["details"])
+        self.assertEqual(ex.detail.get('method'), method)
+        self.assertEqual(ex.detail.get('url'), url)
+        ex_code = ex.detail.get('code', ex.code)
+        self.assertEqual(ex_code, status_code)
 
     def test_from_response_known(self):
         method = "GET"

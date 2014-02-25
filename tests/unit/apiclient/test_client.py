@@ -88,7 +88,8 @@ class ClientTest(test.BaseTestCase):
 
         def fake_request(method, url, **kwargs):
             if kwargs["headers"]["X-Auth-Token"] == reject_token:
-                raise exceptions.Unauthorized(method=method, url=url)
+                raise exceptions.Unauthorized(
+                    detail={'method': method, 'url': url})
             return "%s %s" % (method, url)
 
         http_client = client.HTTPClient(FakeAuthPlugin())
