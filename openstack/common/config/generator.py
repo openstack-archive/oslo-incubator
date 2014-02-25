@@ -229,7 +229,7 @@ def _sanitize_default(name, value):
         return value.replace(BASEDIR, '')
     elif value == _get_my_ip():
         return '10.0.0.1'
-    elif value == socket.gethostname() and 'host' in name:
+    elif value in (socket.gethostname(), socket.getfqdn()) and 'host' in name:
         return 'oslo'
     elif value.strip() != value:
         return '"%s"' % value
