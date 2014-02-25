@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Approved+1: Doug Hellmann <doug.hellmann@dreamhost.com>
+Code-Review+2: Doug Hellmann <doug.hellmann@dreamhost.com>
+Code-Review+2: Ben Nemec <openstack@nemebean.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 25 Feb 2014 18:42:58 +0000
+Reviewed-on: https://review.openstack.org/65424
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
