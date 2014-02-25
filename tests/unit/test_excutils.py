@@ -15,6 +15,9 @@
 import logging
 import time
 
+import six
+from webob import exc as http_exc
+
 from openstack.common import excutils
 from openstack.common.fixture import moxstubout
 from openstack.common import test
@@ -173,3 +176,55 @@ class ForeverRetryUncaughtExceptionsTest(test.BaseTestCase):
         self.exc_retrier_sequence(exc_id=1, timestamp=100, exc_count=2)
         self.exc_retrier_sequence(exc_id=2, timestamp=110, exc_count=1)
         self.exc_retrier_common_end()
+
+
+class FakeResponse(object):
+    json_data = {}
+
+    def __init__(self, **kwargs):
+        for key, value in six.iteritems(kwargs):
+            setattr(self, key, value)
+
+    def json(self):
+        return self.json_data
+
+
+class ExceptionsArgsTest(test.BaseTestCase):
+
+    def assert_exception(self, ex_cls, method, url, status_code, json_data):
+        ex = excutils.from_response(
+            FakeResponse(status_code=status_code,
+                         headers={"Content-Type": "application/json"},
+                         json_data=json_data),
+            method=method, url=url)
+        if not isinstance(ex, ex_cls):
+            raise ex.__class__
+        self.assertTrue(isinstance(ex, ex_cls))
+        self.assertEqual(ex.message, json_data["error"]["message"])
+        self.assertEqual(ex.detail.get('details'),
+                         json_data["error"]["details"])
+        self.assertEqual(ex.detail.get('method'), method)
+        self.assertEqual(ex.detail.get('url'), url)
+        ex_code = ex.detail.get('code', ex.code)
+        self.assertEqual(ex_code, status_code)
+
+    def test_from_response_known(self):
+        method = "GET"
+        url = "/fake"
+        status_code = 400
+        json_data = {"error": {"message": "fake message",
+                               "details": "fake details"}}
+        self.assert_exception(
+            http_exc.HTTPBadRequest, method, url, status_code, json_data)
+
+    def test_from_response_unknown(self):
+        method = "POST"
+        url = "/fake-unknown"
+        status_code = 499
+        json_data = {"error": {"message": "fake unknown message",
+                               "details": "fake unknown details"}}
+        self.assert_exception(
+            http_exc.HTTPClientError, method, url, status_code, json_data)
+        status_code = 600
+        self.assert_exception(
+            http_exc.HTTPError, method, url, status_code, json_data)

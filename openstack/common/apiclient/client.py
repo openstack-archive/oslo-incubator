@@ -37,6 +37,7 @@ import requests
 from webob import exc as http_exc
 
 from openstack.common.apiclient import exceptions
+from openstack.common import excutils
 from openstack.common import importutils
 
 
@@ -180,7 +181,7 @@ class HTTPClient(object):
             _logger.debug(
                 "Request returned failure status: %s",
                 resp.status_code)
-            raise exceptions.from_response(resp, method=method, url=url)
+            raise excutils.from_response(resp, method=method, url=url)
 
         return resp
 
