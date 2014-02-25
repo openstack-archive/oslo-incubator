@@ -13,9 +13,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from webob import exc as http_exc
+
 from openstack.common.apiclient import base
 from openstack.common.apiclient import client
-from openstack.common.apiclient import exceptions
 from openstack.common.apiclient import fake_client
 from openstack.common import test
 
@@ -181,7 +182,7 @@ class BaseManagerTest(test.BaseTestCase):
         self.tc.human_resources.findall(vegetable='carrot')
 
         # However, find() should raise an error
-        self.assertRaises(exceptions.NotFound,
+        self.assertRaises(http_exc.HTTPNotFound,
                           self.tc.human_resources.find,
                           vegetable='carrot')
 

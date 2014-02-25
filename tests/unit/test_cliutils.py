@@ -15,6 +15,8 @@
 import fixtures
 import mock
 
+from webob import exc as http_exc
+
 from openstack.common.apiclient import base
 from openstack.common.apiclient import exceptions
 from openstack.common import cliutils
@@ -598,7 +600,7 @@ class FakeManager(base.ManagerWithFind):
         for resource in self.resources:
             if resource.id == str(resource_id):
                 return resource
-        raise exceptions.NotFound(resource_id)
+        raise http_exc.HTTPNotFound(message=resource_id)
 
     def list(self):
         return self.resources

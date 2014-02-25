@@ -14,6 +14,7 @@
 #    under the License.
 
 import six
+from webob import exc as http_exc
 
 from openstack.common.apiclient import exceptions
 from openstack.common import test
@@ -56,7 +57,7 @@ class ExceptionsArgsTest(test.BaseTestCase):
         json_data = {"error": {"message": "fake message",
                                "details": "fake details"}}
         self.assert_exception(
-            exceptions.BadRequest, method, url, status_code, json_data)
+            http_exc.HTTPBadRequest, method, url, status_code, json_data)
 
     def test_from_response_unknown(self):
         method = "POST"
@@ -65,7 +66,7 @@ class ExceptionsArgsTest(test.BaseTestCase):
         json_data = {"error": {"message": "fake unknown message",
                                "details": "fake unknown details"}}
         self.assert_exception(
-            exceptions.HTTPClientError, method, url, status_code, json_data)
+            http_exc.HTTPClientError, method, url, status_code, json_data)
         status_code = 600
         self.assert_exception(
-            exceptions.HttpError, method, url, status_code, json_data)
+            http_exc.HTTPError, method, url, status_code, json_data)

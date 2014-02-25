@@ -17,6 +17,7 @@
 
 import mock
 import requests
+from webob import exc as http_exc
 
 from openstack.common.apiclient import auth
 from openstack.common.apiclient import client
@@ -88,7 +89,7 @@ class ClientTest(test.BaseTestCase):
 
         def fake_request(method, url, **kwargs):
             if kwargs["headers"]["X-Auth-Token"] == reject_token:
-                raise exceptions.Unauthorized(
+                raise http_exc.HTTPUnauthorized(
                     detail={'method': method, 'url': url})
             return "%s %s" % (method, url)
 
@@ -113,7 +114,7 @@ class ClientTest(test.BaseTestCase):
         mock_request.return_value.status_code = 400
         with mock.patch("requests.Session.request", mock_request):
             self.assertRaises(
-                exceptions.BadRequest, http_client.client_request,
+                http_exc.HTTPBadRequest, http_client.client_request,
                 TestClient(http_client), "GET", "/resource",
                 json={"bad": "request"})
 
@@ -142,9 +143,9 @@ class ClientTest(test.BaseTestCase):
 
             http_client = client.HTTPClient(FakeAuthPlugin())
             http_client.request = mock.MagicMock(
-                side_effect=exceptions.Unauthorized())
+                side_effect=http_exc.HTTPUnauthorized())
             self.assertRaises(
-                exceptions.Unauthorized, http_client.client_request,
+                http_exc.HTTPUnauthorized, http_client.client_request,
                 TestClient(http_client), "GET", "/resource", json={"1": "2"})
 
     def test_client_raising_unauthorized_with_equal_token_and_endpoint(self):
@@ -153,9 +154,9 @@ class ClientTest(test.BaseTestCase):
             mocked_token_and_endpoint.return_value = ('token-0', '/endpoint-0')
             http_client = client.HTTPClient(FakeAuthPlugin())
             http_client.request = mock.MagicMock(
-                side_effect=exceptions.Unauthorized())
+                side_effect=http_exc.HTTPUnauthorized)
             self.assertRaises(
-                exceptions.Unauthorized, http_client.client_request,
+                http_exc.HTTPUnauthorized, http_client.client_request,
                 TestClient(http_client), "GET", "/resource", json={"1": "2"})
 
     def test_client_raising_unauthorized_with_just_authenticated(self):
@@ -173,9 +174,9 @@ class ClientTest(test.BaseTestCase):
 
             http_client = client.HTTPClient(FakeAuthPlugin())
             http_client.request = mock.MagicMock(
-                side_effect=exceptions.Unauthorized())
+                side_effect=http_exc.HTTPUnauthorized)
             self.assertRaises(
-                exceptions.Unauthorized, http_client.client_request,
+                http_exc.HTTPUnauthorized, http_client.client_request,
                 TestClient(http_client), "GET", "/resource", json={"1": "2"})
 
 
