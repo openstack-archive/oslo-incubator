@@ -27,7 +27,7 @@
 ##############################################################################
 
 import fixtures
-from six.moves import mox  # noqa
+from six.moves import mox
 
 
 class MoxStubout(fixtures.Fixture):

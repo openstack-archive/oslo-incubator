@@ -19,7 +19,7 @@ import shutil
 import tempfile
 
 from six.moves import builtins
-from six.moves import mox  # noqa
+from six.moves import mox
 
 from openstack.common import fileutils
 from openstack.common import test
