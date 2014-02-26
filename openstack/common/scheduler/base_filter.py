@@ -17,7 +17,7 @@
 Filter support
 """
 
-from openstack.common.gettextutils import _
+from openstack.common.gettextutils import _LI
 from openstack.common import log as logging
 from openstack.common.scheduler import base_handler
 
@@ -86,10 +86,10 @@ class BaseFilterHandler(base_handler.BaseHandler):
                               {'cls_name': cls_name})
                     return
                 list_objs = list(objs)
-                msg = (_("Filter %(cls_name)s returned %(obj_len)d host(s)")
+                msg = (("Filter %(cls_name)s returned %(obj_len)d host(s)")
                        % {'cls_name': cls_name, 'obj_len': len(list_objs)})
                 if not list_objs:
-                    LOG.info(msg)
+                    LOG.info(_LI(msg))
                     break
                 LOG.debug(msg)
         return list_objs
