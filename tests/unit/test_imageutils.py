@@ -149,3 +149,18 @@ disk size: 96K
         image_info = imageutils.QemuImgInfo(example_output)
         self.assertIsNone(image_info.encrypted,
                           "encrypted status must be None")
+
+    def test_qemu_info_float_size(self):
+        example_output = """image: disk.config
+file format: raw
+virtual size: 2.0G (2147483648 bytes)
+cluster_size: 65536
+disk size: 96K
+blah BLAH: bb
+"""
+        image_info = imageutils.QemuImgInfo(example_output)
+        self.assertEqual('disk.config', image_info.image)
+        self.assertEqual('raw', image_info.file_format)
+        self.assertEqual(2147483648, image_info.virtual_size)
+        self.assertEqual(98304, image_info.disk_size)
+        self.assertEqual(65536, image_info.cluster_size)
