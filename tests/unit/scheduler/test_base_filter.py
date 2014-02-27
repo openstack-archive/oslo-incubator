@@ -161,10 +161,14 @@ class TestBaseFilterHandler(test.BaseTestCase):
         with mock.patch.object(FakeFilter5, 'filter_all',
                                return_value=filter_objs_expected
                                ) as fake5_filter_all:
-            result = self._get_filtered_objects(filter_classes, index=1)
-            self.assertEqual(filter_objs_expected, result)
-            self.assertFalse(fake5_filter_all.called)
-
             result = self._get_filtered_objects(filter_classes)
             self.assertEqual(filter_objs_expected, result)
-            self.assertTrue(fake5_filter_all.called)
+            self.assertEqual(1, fake5_filter_all.call_count)
+
+            result = self._get_filtered_objects(filter_classes, index=1)
+            self.assertEqual(filter_objs_expected, result)
+            self.assertEqual(1, fake5_filter_all.call_count)
+
+            result = self._get_filtered_objects(filter_classes, index=2)
+            self.assertEqual(filter_objs_expected, result)
+            self.assertEqual(1, fake5_filter_all.call_count)
