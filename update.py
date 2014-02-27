@@ -1,4 +1,5 @@
 # Copyright 2012 Red Hat, Inc.
+# Copyright (c) 2014 EasyStack, Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -13,8 +14,8 @@
 #    under the License.
 
 r"""
-A simple script to update openstack-common modules which have been copied
-into other projects. See:
+A simple script to update/check openstack-common modules which have been
+copied into other projects. See:
 
   https://wiki.openstack.org/wiki/Oslo#Incubation
 
@@ -334,6 +335,99 @@ def _complete_module_list(mod_list, nodeps):
     return mod_list
 
 
+def _get_modules_in_conf(path):
+    """Get module list from ${project}/openstack-common.conf."""
+
+    conf_module_list = []
+    skipped_entries = ['install_venv_common']
+
+    conf_path = os.path.join(path, 'openstack-common.conf')
+    with open(conf_path, 'r') as conf_file:
+        for line in conf_file:
+            if line.startswith('module='):
+                module_name = line.replace('module=', '').strip()
+                if module_name not in skipped_entries:
+                    conf_module_list.append(module_name)
+
+    return conf_module_list
+
+
+def _get_modules_in_directory(path, actual_list):
+    """Get non-single file modules in directory openstack/common."""
+
+    if os.path.isdir(path):
+        for i in os.listdir(path):
+            if i == '__init__.py':
+                module_directory = path.split('/openstack/common/')[1]
+                module_name = '.'.join(module_directory.split(os.sep))
+                actual_list.append(module_name)
+            if os.path.isdir(os.path.join(path, i)):
+                _get_modules_in_directory(os.path.join(path, i), actual_list)
+
+
+def _list_actual_modules(path):
+    """Get actual copied modules in directory ${project}/openstack/common.
+
+    A single file module is the one listed in directory openstack/common
+    directly, such as fileutils, imageutils. Non-single file modules are
+    the others.
+    """
+
+    actual_list = []
+    skipped_entries = ['__init__.py', 'deprecated', '__pycache__']
+
+    for i in os.listdir(path):
+        if i.endswith('.pyc') or i in skipped_entries:
+            continue
+        # For single file module
+        if i.endswith('.py'):
+            actual_list.append(i[:-3])
+        # For non-single file module
+        if os.path.isdir(os.path.join(path, i)):
+            _get_modules_in_directory(os.path.join(path, i), actual_list)
+
+    return actual_list
+
+
+def _check_synced_modules(base, dest_dir):
+    """Check integrity between actual copied modules and tracked modules.
+
+    Firstly, get the module list in file ${project}/openstack-common.conf,
+    and make sure they are in alphabetical order. Then detect actual copied
+    modules and check if they are tracked in ${project}/openstack-common.conf.
+    """
+
+    # Extract module list in file openstack-common.conf.
+    conf_module_list = _get_modules_in_conf(dest_dir)
+
+    # Check modules in alphabetical order
+    sorted_module_list = sorted(conf_module_list)
+    for i in range(len(conf_module_list)):
+        if conf_module_list[i] != sorted_module_list[i]:
+            print("### WARNING:\nModule in openstack-common.conf are not in "
+                  "alphabetical order.")
+            break
+
+    # Get actual modules in directory openstack/common
+    module_path = os.path.join(dest_dir, base, 'openstack/common')
+    actual_module_list = _list_actual_modules(module_path)
+
+    # Get the difference between tacked modules and actual synced modules.
+    tracked_module_set = set(conf_module_list)
+    actual_module_set = set(actual_module_list)
+    untracked_module = actual_module_set - tracked_module_set
+    uncopied_module = tracked_module_set - actual_module_set
+    if len(untracked_module) != 0:
+        print("### WARNING:\nupdate.py copied module %s, but there were not "
+              "explicitly listed in the openstack-common.conf.\nIf they are "
+              "used internally by oslo , please ignore the warning."
+              % list(untracked_module))
+    if len(uncopied_module) != 0:
+        print("### WARNING:\nModule %s were explicitly listed in the "
+              "openstack-common.conf, but they are not copied by update.py"
+              % list(uncopied_module))
+
+
 def main(argv):
     conf = _parse_args(argv)
 
@@ -362,6 +456,8 @@ def main(argv):
         _copy_module(mod, conf.base, dest_dir)
 
     _copy_scripts(conf.script, conf.base, dest_dir)
+
+    _check_synced_modules(conf.base, dest_dir)
 
 
 if __name__ == "__main__":
