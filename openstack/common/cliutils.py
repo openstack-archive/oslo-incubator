@@ -56,7 +56,7 @@ def validate_args(fn, *args, **kwargs):
     required_args = argspec.args[:len(argspec.args) - num_defaults]
 
     def isbound(method):
-        return getattr(method, 'im_self', None) is not None
+        return getattr(method, '__self__', None) is not None
 
     if isbound(fn):
         required_args.pop(0)
