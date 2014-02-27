@@ -14,13 +14,9 @@
 #    under the License.
 
 import datetime
-try:
-    import xmlrpclib
-except ImportError:
-    xmlrpclib = None
-
 import netaddr
 import six
+import six.moves.xmlrpc_client as xmlrpclib
 import testtools
 
 from openstack.common import gettextutils
@@ -67,7 +63,6 @@ class ToPrimitiveTestCase(test.BaseTestCase):
         x = datetime.datetime(1920, 2, 3, 4, 5, 6, 7)
         self.assertEqual(jsonutils.to_primitive(x, convert_datetime=False), x)
 
-    @testtools.skipUnless(xmlrpclib, "xmlrpclib not available")
     def test_DateTime(self):
         x = xmlrpclib.DateTime()
         x.decode("19710203T04:05:06")
