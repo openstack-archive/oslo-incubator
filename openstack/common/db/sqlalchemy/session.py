@@ -858,3 +858,36 @@ class EngineFacade(object):
                 del kwargs[arg]
 
         return self._session_maker(**kwargs)
+
+    @classmethod
+    def from_config(cls, connection_string, conf,
+                    sqlite_fk=False, mysql_sql_mode=None,
+                    autocommit=True, expire_on_commit=False):
+        """Initialize EngineFacade using oslo.config config instance options.
+
+        :param connection_string: SQLAlchemy connection string
+        :type connection_string: string
+
+        :param conf: oslo.config config instance
+        :type conf: oslo.config.cfg.ConfigOpts
+
+        :param sqlite_fk: enable foreign keys in SQLite
+        :type sqlite_fk: bool
+
+        :param mysql_sql_mode: set SQL mode in MySQL
+        :type mysql_sql_mode: string
+
+        :param autocommit: use autocommit mode for created Session instances
+        :type autocommit: bool
+
+        :param expire_on_commit: expire session objects on commit
+        :type expire_on_commit: bool
+
+        """
+
+        return cls(sql_connection=connection_string,
+                   sqlite_fk=sqlite_fk,
+                   mysql_sql_mode=mysql_sql_mode,
+                   autocommit=autocommit,
+                   expire_on_commit=expire_on_commit,
+                   **dict(conf.database.iteritems()))

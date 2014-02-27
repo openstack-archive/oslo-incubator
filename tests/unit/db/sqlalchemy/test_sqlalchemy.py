@@ -304,6 +304,39 @@ class EngineFacadeTestCase(test.BaseTestCase):
         self.assertFalse(ses.autocommit)
         self.assertTrue(ses.expire_on_commit)
 
+    @mock.patch('openstack.common.db.sqlalchemy.session.get_maker')
+    @mock.patch('openstack.common.db.sqlalchemy.session.create_engine')
+    def test_creation_from_config(self, create_engine, get_maker):
+        conf = mock.MagicMock()
+        conf.database.iteritems.return_value = [
+            ('connection_debug', 100),
+            ('max_pool_size', 10)
+        ]
+
+        session.EngineFacade.from_config('sqlite:///:memory:', conf,
+                                         autocommit=False,
+                                         expire_on_commit=True,
+                                         mysql_sql_mode='TRADITIONAL')
+
+        self.assertTrue(conf.database.iteritems.called)
+        create_engine.assert_called_once_with(
+            sql_connection='sqlite:///:memory:',
+            connection_debug=100,
+            max_pool_size=10,
+            mysql_sql_mode='TRADITIONAL',
+            sqlite_fk=False,
+            idle_timeout=mock.ANY,
+            retry_interval=mock.ANY,
+            max_retries=mock.ANY,
+            max_overflow=mock.ANY,
+            connection_trace=mock.ANY,
+            sqlite_synchronous=mock.ANY,
+            pool_timeout=mock.ANY,
+        )
+        get_maker.assert_called_once_with(engine=create_engine(),
+                                          autocommit=False,
+                                          expire_on_commit=True)
+
 
 class SetSQLModeTestCase(test_log.LogTestBase):
     def setUp(self):
