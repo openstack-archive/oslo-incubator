@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import errno
 import fcntl
 import multiprocessing
 import os
@@ -336,15 +337,6 @@ class LockTestCase(test.BaseTestCase):
             if os.path.exists(lock_dir):
                 shutil.rmtree(lock_dir, ignore_errors=True)
 
-    def test_synchronized_externally_without_lock_path(self):
-        self.config(lock_path=None)
-
-        @lockutils.synchronized('external', 'test-', external=True)
-        def foo():
-            pass
-
-        self.assertRaises(cfg.RequiredOptError, foo)
-
     def test_remove_lock_external_file(self):
         lock_name = 'mylock'
         lock_pfix = 'mypfix-remove-lock-test-'
@@ -364,6 +356,53 @@ class LockTestCase(test.BaseTestCase):
         # base64(sha1(foobar)) has a slash in it
         with lockutils.lock("foobar"):
             pass
+
+
+class BrokenLock(lockutils._FileLock):
+    def __init__(self, name, errno_code):
+        super(BrokenLock, self).__init__(name)
+        self.errno_code = errno_code
+
+    def unlock(self):
+        pass
+
+    def trylock(self):
+        err = IOError()
+        err.errno = self.errno_code
+        raise err
+
+
+class FileBasedLockingTestCase(test.BaseTestCase):
+    def setUp(self):
+        super(FileBasedLockingTestCase, self).setUp()
+        self.lock_dir = tempfile.mkdtemp()
+
+    def test_lock_file_exists(self):
+        lock_file = os.path.join(self.lock_dir, 'lock-file')
+
+        @lockutils.synchronized('lock-file', external=True,
+                                lock_path=self.lock_dir)
+        def foo():
+            self.assertTrue(os.path.exists(lock_file))
+
+        foo()
+
+    def test_bad_acquire(self):
+        lock_file = os.path.join(self.lock_dir, 'lock')
+        lock = BrokenLock(lock_file, errno.EBUSY)
+
+        self.assertRaises(threading.ThreadError, lock.acquire)
+
+    def test_no_lock_path(self):
+        lock_file = os.path.join(self.lock_dir, 'should-not-exist')
+
+        @lockutils.synchronized('should-not-exist', external=True)
+        def foo():
+            # Without lock_path explicitly passed to synchronized, we should
+            # default to using posix locks and not create a lock file.
+            self.assertFalse(os.path.exists(lock_file))
+
+        foo()
 
 
 class LockutilsModuleTestCase(test.BaseTestCase):

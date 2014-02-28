@@ -15,6 +15,7 @@
 
 import contextlib
 import errno
+import fcntl
 import functools
 import os
 import shutil
@@ -52,7 +53,7 @@ def set_defaults(lock_path):
     cfg.set_defaults(util_opts, lock_path=lock_path)
 
 
-class _WindowsLock(object):
+class _FileLock(object):
     """Lock implementation which allows multiple locks, working around
     issues like bugs.debian.org/cgi-bin/bugreport.cgi?bug=632857 and does
     not require any cleanup. Since the lock is always held on a file
@@ -89,7 +90,7 @@ class _WindowsLock(object):
                 # patched to deal with blocking locking calls.
                 # Also upon reading the MSDN docs for locking(), it seems
                 # to have a laughable 10 attempts "blocking" mechanism.
-                msvcrt.locking(self.lockfile.fileno(), msvcrt.LK_NBLCK, 1)
+                self.trylock()
                 LOG.debug('Got file lock "%s"', self.fname)
                 return True
             except IOError as e:
@@ -112,7 +113,7 @@ class _WindowsLock(object):
 
     def release(self):
         try:
-            msvcrt.locking(self.lockfile.fileno(), msvcrt.LK_UNLCK, 1)
+            self.unlock()
             self.lockfile.close()
             LOG.debug('Released file lock "%s"', self.fname)
         except IOError:
@@ -124,6 +125,28 @@ class _WindowsLock(object):
 
     def exists(self):
         return os.path.exists(self.fname)
+
+    def trylock(self):
+        raise NotImplementedError()
+
+    def unlock(self):
+        raise NotImplementedError()
+
+
+class _WindowsLock(_FileLock):
+    def trylock(self):
+        msvcrt.locking(self.lockfile.fileno(), msvcrt.LK_NBLCK, 1)
+
+    def unlock(self):
+        msvcrt.locking(self.lockfile.fileno(), msvcrt.LK_UNLCK, 1)
+
+
+class _FcntlLock(_FileLock):
+    def trylock(self):
+        fcntl.lockf(self.lockfile, fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+    def unlock(self):
+        fcntl.lockf(self.lockfile, fcntl.LOCK_UN)
 
 
 class _PosixLock(object):
@@ -169,17 +192,19 @@ class _PosixLock(object):
 if os.name == 'nt':
     import msvcrt
     InterProcessLock = _WindowsLock
+    FileLock = _WindowsLock
 else:
     import base64
     import hashlib
     import posix_ipc
     InterProcessLock = _PosixLock
+    FileLock = _FcntlLock
 
 _semaphores = weakref.WeakValueDictionary()
 _semaphores_lock = threading.Lock()
 
 
-def _get_lock_path(name, lock_file_prefix):
+def _get_lock_path(name, lock_file_prefix, lock_path=None):
     # NOTE(mikal): the lock name cannot contain directory
     # separators
     name = name.replace(os.sep, '_')
@@ -187,19 +212,30 @@ def _get_lock_path(name, lock_file_prefix):
         sep = '' if lock_file_prefix.endswith('-') else '-'
         name = '%s%s%s' % (lock_file_prefix, sep, name)
 
-    if not CONF.lock_path:
-        raise cfg.RequiredOptError('lock_path')
+    local_lock_path = lock_path or CONF.lock_path
 
-    return os.path.join(CONF.lock_path, name)
+    if not local_lock_path:
+        # NOTE(bnemec): Create a fake lock path for posix locks so we don't
+        # unnecessarily raise the RequiredOptError below.
+        if InterProcessLock is not _PosixLock:
+            raise cfg.RequiredOptError('lock_path')
+        local_lock_path = 'posixlock:/'
+
+    return os.path.join(local_lock_path, name)
 
 
-def external_lock(name, lock_file_prefix=None):
+def external_lock(name, lock_file_prefix=None, lock_path=None):
     with internal_lock(name):
         LOG.debug('Attempting to grab external lock "%(lock)s"',
                   {'lock': name})
 
-        lock_file_path = _get_lock_path(name, lock_file_prefix)
+        lock_file_path = _get_lock_path(name, lock_file_prefix, lock_path)
 
+        # NOTE(bnemec): If an explicit lock_path was passed to us then it
+        # means the caller is relying on file-based locking behavior, so
+        # we can't use posix locks for those calls.
+        if lock_path:
+            return FileLock(lock_file_path)
         return InterProcessLock(lock_file_path)
 
 
@@ -229,7 +265,7 @@ def internal_lock(name):
 
 
 @contextlib.contextmanager
-def lock(name, lock_file_prefix=None, external=False):
+def lock(name, lock_file_prefix=None, external=False, lock_path=None):
     """Context based lock
 
     This function yields a `threading.Semaphore` instance (if we don't use
@@ -245,14 +281,14 @@ def lock(name, lock_file_prefix=None, external=False):
       external=True), only one of them will execute at a time.
     """
     if external and not CONF.disable_process_locking:
-        lock = external_lock(name, lock_file_prefix)
+        lock = external_lock(name, lock_file_prefix, lock_path)
     else:
         lock = internal_lock(name)
     with lock:
         yield lock
 
 
-def synchronized(name, lock_file_prefix=None, external=False):
+def synchronized(name, lock_file_prefix=None, external=False, lock_path=None):
     """Synchronization decorator.
 
     Decorating a method like so::
@@ -280,7 +316,7 @@ def synchronized(name, lock_file_prefix=None, external=False):
         @functools.wraps(f)
         def inner(*args, **kwargs):
             try:
-                with lock(name, lock_file_prefix, external):
+                with lock(name, lock_file_prefix, external, lock_path):
                     LOG.debug('Got semaphore / lock "%(function)s"',
                               {'function': f.__name__})
                     return f(*args, **kwargs)
