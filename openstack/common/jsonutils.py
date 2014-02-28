@@ -36,15 +36,6 @@ import functools
 import inspect
 import itertools
 import json
-try:
-    import xmlrpclib
-except ImportError:
-    # NOTE(jaypipes): xmlrpclib was renamed to xmlrpc.client in Python3
-    #                 however the function and object call signatures
-    #                 remained the same. This whole try/except block should
-    #                 be removed and replaced with a call to six.moves once
-    #                 six 1.4.2 is released. See http://bit.ly/1bqrVzu
-    import xmlrpc.client as xmlrpclib
 
 import six
 
@@ -133,7 +124,7 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
         # It's not clear why xmlrpclib created their own DateTime type, but
         # for our purposes, make it a datetime type which is explicitly
         # handled
-        if isinstance(value, xmlrpclib.DateTime):
+        if isinstance(value, six.moves.xmlrpc_client.DateTime):
             value = datetime.datetime(*tuple(value.timetuple())[:6])
 
         if convert_datetime and isinstance(value, datetime.datetime):
