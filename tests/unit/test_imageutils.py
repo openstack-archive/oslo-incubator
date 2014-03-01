@@ -44,6 +44,18 @@ blah BLAH: bb
         self.assertEqual(98304, image_info.disk_size)
         self.assertEqual(65536, image_info.cluster_size)
 
+    def test_qemu_info_canon_float(self):
+        example_output = """image: disk.config
+file format: raw
+virtual size: 4.4M (4592640 bytes)
+disk size: 4.4M
+"""
+        image_info = imageutils.QemuImgInfo(example_output)
+        self.assertEqual('disk.config', image_info.image)
+        self.assertEqual('raw', image_info.file_format)
+        self.assertEqual(4592640, image_info.virtual_size)
+        self.assertEqual(4592640, image_info.disk_size)
+
     def test_qemu_info_canon2(self):
         example_output = """image: disk.config
 file format: QCOW2
