@@ -450,7 +450,7 @@ def _load_log_config(log_config_append):
         logging.config.fileConfig(log_config_append,
                                   disable_existing_loggers=False)
     except moves.configparser.Error as exc:
-        raise LogConfigError(log_config_append, str(exc))
+        raise LogConfigError(log_config_append, exc)
 
 
 def setup(product_name, version='unknown'):
