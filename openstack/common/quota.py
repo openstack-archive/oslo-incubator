@@ -84,7 +84,7 @@ class QuotaException(Exception):
 
 
 class QuotaError(QuotaException):
-    msg_fmt = _("Quota exceeded") + ": code=%(code)s"
+    msg_fmt = _("Quota exceeded: code=%(code)s")
     code = 413
     headers = {'Retry-After': 0}
     safe = True
