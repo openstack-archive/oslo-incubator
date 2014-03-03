@@ -20,6 +20,7 @@ import shutil
 import sys
 import tempfile
 import threading
+import time
 
 import eventlet
 from eventlet import greenpool
@@ -403,6 +404,45 @@ class FileBasedLockingTestCase(test.BaseTestCase):
             self.assertFalse(os.path.exists(lock_file))
 
         foo()
+
+    def test_interprocess_lock(self):
+        lock_file = os.path.join(self.lock_dir, 'processlock')
+
+        pid = os.fork()
+        if pid:
+            # Make sure the child grabs the lock
+            time.sleep(.1)
+            lock1 = lockutils.FileLock('foo')
+            lock1.lockfile = open(lock_file, 'w')
+            self.assertRaises(IOError, lock1.trylock)
+        else:
+            try:
+                lock2 = lockutils.FileLock('foo')
+                lock2.lockfile = open(lock_file, 'w')
+                lock2.trylock()
+            finally:
+                time.sleep(.5)
+                os._exit(0)
+
+    def test_interthread_external_lock(self):
+        call_list = []
+
+        @lockutils.synchronized('foo', external=True, lock_path=self.lock_dir)
+        def foo(param):
+            """Simulate a long-running threaded operation."""
+            call_list.append(param)
+            time.sleep(.5)
+            call_list.append(param)
+
+        def other(param):
+            foo(param)
+
+        thread = eventlet.spawn(other, 'other')
+        # Make sure the other thread grabs the lock
+        thread1 = eventlet.spawn_after(.1, other, 'main')
+        thread1.wait()
+        thread.wait()
+        self.assertEqual(call_list, ['other', 'other', 'main', 'main'])
 
 
 class LockutilsModuleTestCase(test.BaseTestCase):
