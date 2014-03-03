@@ -58,6 +58,8 @@ class CrudResourceManager(base.CrudManager):
     resource_class = CrudResource
     collection_key = 'crud_resources'
     key = 'crud_resource'
+    collection_response_key = 'crud_resources_wrapper'
+    response_key = 'crud_resource_wrapper'
 
     def get(self, crud_resource):
         return super(CrudResourceManager, self).get(
@@ -84,7 +86,7 @@ class FakeHTTPClient(fake_client.FakeHTTPClient):
         return (200, {}, {'human_resource': kw})
 
     def post_crud_resources(self, **kw):
-        return (200, {}, {"crud_resource": {"id": "1"}})
+        return (200, {}, {"crud_resource_wrapper": {"id": "1"}})
 
     def get_crud_resources(self, **kw):
         crud_resources = []
@@ -92,17 +94,17 @@ class FakeHTTPClient(fake_client.FakeHTTPClient):
             crud_resources = [self.crud_resource_json]
         else:
             crud_resources = []
-        return (200, {}, {"crud_resources": crud_resources})
+        return (200, {}, {"crud_resources_wrapper": crud_resources})
 
     def get_crud_resources_1(self, **kw):
-        return (200, {}, {"crud_resource": self.crud_resource_json})
+        return (200, {}, {"crud_resource_wrapper": self.crud_resource_json})
 
     def head_crud_resources_1(self, **kw):
         return (204, {}, None)
 
     def patch_crud_resources_1(self, **kw):
         self.crud_resource_json.update(kw)
-        return (200, {}, {"crud_resource": self.crud_resource_json})
+        return (200, {}, {"crud_resource_wrapper": self.crud_resource_json})
 
     def delete_crud_resources_1(self, **kw):
         return (202, {}, None)
@@ -322,3 +324,55 @@ class CrudManagerTest(test.BaseTestCase):
         ret = self.tc.crud_resources.head(
             crud_resource_id=self.crud_resource_id)
         self.assertTrue(ret)
+
+
+class CrudManagerUnitTest(test.BaseTestCase):
+    def setUp(self):
+        super(CrudManagerUnitTest, self).setUp()
+        self.request_args = {'arg1': 'val1', 'arg2': 'val2'}
+        self.request_with_id_args = self.request_args.copy()
+        self.request_with_id_args.update({'crud_resource_id': 42})
+        self.client = mock.MagicMock()
+        self.crud_manager = base.CrudManager(self.client)
+        self.crud_manager.key = 'crud_resource'
+        self.crud_manager.collection_key = 'crud_resources'
+        self.crud_manager.response_key = 'crud_resource_wrapper'
+        self.crud_manager.collection_response_key = 'crud_resources_wrapper'
+
+    def test_list(self):
+        self.crud_manager._list = mock.MagicMock()
+        self.crud_manager.list(base_url='/base_url', **self.request_args)
+        self.crud_manager._list.assert_called_with(
+            '/base_url/crud_resources?arg1=val1&arg2=val2',
+            'crud_resources_wrapper')
+
+    def test_get(self):
+        self.crud_manager._get = mock.MagicMock()
+        self.crud_manager.get(**self.request_with_id_args)
+        self.crud_manager._get.assert_called_with(
+            '/crud_resources/42',
+            'crud_resource_wrapper')
+
+    def test_create(self):
+        self.crud_manager._post = mock.MagicMock()
+        self.crud_manager.create(**self.request_args)
+        self.crud_manager._post.assert_called_with(
+            '/crud_resources',
+            {'crud_resource': {'arg1': 'val1', 'arg2': 'val2'}},
+            'crud_resource_wrapper')
+
+    def test_put(self):
+        self.crud_manager._put = mock.MagicMock()
+        self.crud_manager.put(**self.request_with_id_args)
+        self.crud_manager._put.assert_called_with(
+            '/crud_resources/42',
+            {'crud_resource': {'arg1': 'val1', 'arg2': 'val2'}},
+            'crud_resource_wrapper')
+
+    def test_update(self):
+        self.crud_manager._patch = mock.MagicMock()
+        self.crud_manager.update(**self.request_with_id_args)
+        self.crud_manager._patch.assert_called_with(
+            '/crud_resources/42',
+            {'crud_resource': {'arg1': 'val1', 'arg2': 'val2'}},
+            'crud_resource_wrapper')

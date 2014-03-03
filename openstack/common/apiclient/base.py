@@ -263,6 +263,8 @@ class CrudManager(BaseManager):
     """
     collection_key = None
     key = None
+    collection_response_key = None
+    response_key = None
 
     def build_url(self, base_url=None, **kwargs):
         """Builds a resource URL for the given kwargs.
@@ -308,13 +310,13 @@ class CrudManager(BaseManager):
         return self._post(
             self.build_url(**kwargs),
             {self.key: kwargs},
-            self.key)
+            self.response_key)
 
     def get(self, **kwargs):
         kwargs = self._filter_kwargs(kwargs)
         return self._get(
             self.build_url(**kwargs),
-            self.key)
+            self.response_key)
 
     def head(self, **kwargs):
         kwargs = self._filter_kwargs(kwargs)
@@ -332,7 +334,7 @@ class CrudManager(BaseManager):
                 'base_url': self.build_url(base_url=base_url, **kwargs),
                 'query': '?%s' % parse.urlencode(kwargs) if kwargs else '',
             },
-            self.collection_key)
+            self.collection_response_key)
 
     def put(self, base_url=None, **kwargs):
         """Update an element.
@@ -340,8 +342,13 @@ class CrudManager(BaseManager):
         :param base_url: if provided, the generated URL will be appended to it
         """
         kwargs = self._filter_kwargs(kwargs)
+        params = kwargs.copy()
+        params.pop('%s_id' % self.key)
 
-        return self._put(self.build_url(base_url=base_url, **kwargs))
+        return self._put(
+            self.build_url(base_url=base_url, **kwargs),
+            {self.key: params},
+            self.response_key)
 
     def update(self, **kwargs):
         kwargs = self._filter_kwargs(kwargs)
@@ -351,7 +358,7 @@ class CrudManager(BaseManager):
         return self._patch(
             self.build_url(**kwargs),
             {self.key: params},
-            self.key)
+            self.response_key)
 
     def delete(self, **kwargs):
         kwargs = self._filter_kwargs(kwargs)
