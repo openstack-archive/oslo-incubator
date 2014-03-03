@@ -22,11 +22,19 @@ function check_file() {
 exit_code=0
 for filename in $@
 do
-    check_file $filename
-    if [ $? -ne 0 ]
-    then
-        echo "Please list requirements in $filename in alphabetical order" 1>&2
-        exit_code=1
-    fi
+    part_num=`awk 'BEGIN{num=0;FS="\n";RS=""}{num++}{print > "file_"num}END{print num}' $filename`
+    index=1
+    while [ $index -le $part_num ]
+    do
+        part_filename="file_"$index
+        check_file $part_filename
+        if [ $? -ne 0 ]
+        then
+            echo "Please list requirements in part $index of file $filename in alphabetical order" 1>&2
+            exit_code=1
+        fi
+        index=$(($index+1))
+        rm -f $part_filename
+    done
 done
 exit $exit_code
