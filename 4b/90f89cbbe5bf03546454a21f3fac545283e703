@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Approved+1: Zhongyue Luo <zhongyue.luo@gmail.com>
+Code-Review+2: Zhongyue Luo <zhongyue.luo@gmail.com>
+Code-Review+1: ChangBo Guo(gcb) <glongwave@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 04 Mar 2014 02:29:34 +0000
+Reviewed-on: https://review.openstack.org/76054
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
