@@ -225,18 +225,17 @@ def _get_lock_path(name, lock_file_prefix, lock_path=None):
 
 
 def external_lock(name, lock_file_prefix=None, lock_path=None):
-    with internal_lock(name):
-        LOG.debug('Attempting to grab external lock "%(lock)s"',
-                  {'lock': name})
+    LOG.debug('Attempting to grab external lock "%(lock)s"',
+              {'lock': name})
 
-        lock_file_path = _get_lock_path(name, lock_file_prefix, lock_path)
+    lock_file_path = _get_lock_path(name, lock_file_prefix, lock_path)
 
-        # NOTE(bnemec): If an explicit lock_path was passed to us then it
-        # means the caller is relying on file-based locking behavior, so
-        # we can't use posix locks for those calls.
-        if lock_path:
-            return FileLock(lock_file_path)
-        return InterProcessLock(lock_file_path)
+    # NOTE(bnemec): If an explicit lock_path was passed to us then it
+    # means the caller is relying on file-based locking behavior, so
+    # we can't use posix locks for those calls.
+    if lock_path:
+        return FileLock(lock_file_path)
+    return InterProcessLock(lock_file_path)
 
 
 def remove_external_lock_file(name, lock_file_prefix=None):
@@ -280,12 +279,14 @@ def lock(name, lock_file_prefix=None, external=False, lock_path=None):
       workers both run a a method decorated with @synchronized('mylock',
       external=True), only one of them will execute at a time.
     """
-    if external and not CONF.disable_process_locking:
-        lock = external_lock(name, lock_file_prefix, lock_path)
-    else:
-        lock = internal_lock(name)
-    with lock:
-        yield lock
+    int_lock = internal_lock(name)
+    with int_lock:
+        if external and not CONF.disable_process_locking:
+            ext_lock = external_lock(name, lock_file_prefix, lock_path)
+            with ext_lock:
+                yield ext_lock
+        else:
+            yield int_lock
 
 
 def synchronized(name, lock_file_prefix=None, external=False, lock_path=None):
