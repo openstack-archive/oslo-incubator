@@ -148,6 +148,28 @@ class TestGuruMeditationReport(utils.BaseTestCase):
         os.kill(os.getpid(), signal.SIGUSR1)
         self.assertIn('Guru Meditation', sys.stderr.getvalue())
 
+    def test_dump_to(self):
+        target = six.StringIO()
+        gmr.TextGuruMeditation.setup_autorun(FakeVersionObj(), dump_to=target)
+
+        os.kill(os.getpid(), signal.SIGUSR1)
+        self.assertIn('Guru Meditation', target.getvalue())
+
+    def test_dump_with(self):
+        class Writr(object):
+            def __init__(self):
+                self.res = ''
+
+            def go(self, out):
+                self.res += out
+
+        target = Writr()
+        gmr.TextGuruMeditation.setup_autorun(FakeVersionObj(),
+                                             dump_with=target.go)
+
+        os.kill(os.getpid(), signal.SIGUSR1)
+        self.assertIn('Guru Meditation', target.res)
+
     def tearDown(self):
         super(TestGuruMeditationReport, self).tearDown()
         if self.old_stderr is not None:

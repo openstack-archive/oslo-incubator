@@ -97,43 +97,64 @@ class GuruMeditation(object):
             cls.persistent_sections = [[section_title, generator]]
 
     @classmethod
-    def setup_autorun(cls, version, signum=None):
+    def setup_autorun(cls, version, signum=None, dump_to=None, dump_with=None):
         """Set Up Auto-Run
 
         This method sets up the Guru Meditation Report to automatically
-        get dumped to stderr when the given signal is received.
+        get dumped to the desired location (defaults to stderr) when the
+        given signal is received.
 
         :param version: the version object for the current product
         :param signum: the signal to associate with running the report
+        :param dump_to: the stream to which to write the report
+                        (defaults to stderr, mutually exclusive with dump_with)
+        :param dump_with: a function to which the result of the GMR is passed
+                          (mutually exclusive with dump_to)
         """
 
         if not signum and hasattr(signal, 'SIGUSR1'):
             # SIGUSR1 is not supported on all platforms
             signum = signal.SIGUSR1
 
+        if dump_with is not None:
+            dump_func = dump_with
+        elif dump_to is not None:
+            def dump_to_stream(output):
+                print(output, file=dump_to)
+            dump_func = dump_to_stream
+        else:
+            dump_func = None
+
         if signum:
             signal.signal(signum,
-                          lambda *args: cls.handle_signal(version, *args))
+                          lambda *args: cls.handle_signal(version, dump_func,
+                                                          *args))
 
     @classmethod
-    def handle_signal(cls, version, *args):
+    def handle_signal(cls, version, dump_func=None, *args):
         """The Signal Handler
 
         This method (indirectly) handles receiving a registered signal and
-        dumping the Guru Meditation Report to stderr.  This method is designed
-        to be curried into a proper signal handler by currying out the version
-        parameter.
+        dumping the Guru Meditation Report to the target stream.  This method
+        is designed to be curried into a proper signal handler by currying out
+        the version and output_with parameters.
 
         :param version: the version object for the current product
+        :param dump_func: the function to which to pass the result
+                          (defaults to printing to stderr)
         """
+
+        if dump_func is None:
+            def print_to_stderr(res):
+                print(res, file=sys.stderr)
+            dump_func = print_to_stderr
 
         try:
             res = cls(version).run()
         except Exception:
-            print("Unable to run Guru Meditation Report!",
-                  file=sys.stderr)
+            dump_func("Unable to run Guru Meditation Report!")
         else:
-            print(res, file=sys.stderr)
+            dump_func(res)
 
     def _readd_sections(self):
         del self.sections[self.start_section_index:]
