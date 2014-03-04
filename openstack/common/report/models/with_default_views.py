@@ -35,11 +35,11 @@ class ModelWithDefaultViews(base_model.ReportModel):
     The default 'default views' are
 
     text
-        :class:`openstack.common.views.text.generic.KeyValueView`
+        :class:`openstack.common.report.views.text.generic.KeyValueView`
     xml
-        :class:`openstack.common.views.xml.generic.KeyValueView`
+        :class:`openstack.common.report.views.xml.generic.KeyValueView`
     json
-        :class:`openstack.common.views.json.generic.KeyValueView`
+        :class:`openstack.common.report.views.json.generic.KeyValueView`
 
     .. function:: to_type()
 
