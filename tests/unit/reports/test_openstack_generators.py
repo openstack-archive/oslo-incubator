@@ -16,6 +16,7 @@
 import threading
 
 import greenlet
+import mock
 from oslo.config import cfg
 from oslotest import base
 
@@ -30,18 +31,30 @@ class TestOpenstackGenerators(base.BaseTestCase):
         model = os_tgen.ThreadReportGenerator()()
         # self.assertGreaterEqual(len(model.keys()), 1)
         self.assertTrue(len(model.keys()) >= 1)
-        self.assertIsInstance(model[0], os_tmod.ThreadModel)
-        self.assertIsNotNone(model[0].stack_trace)
-
         was_ok = False
-        for tm in model.values():
-            if tm.thread_id == threading.current_thread().ident:
+        for val in model.values():
+            self.assertIsInstance(val, os_tmod.ThreadModel)
+            self.assertIsNotNone(val.stack_trace)
+            if val.thread_id == threading.current_thread().ident:
                 was_ok = True
                 break
+
         self.assertTrue(was_ok)
 
         model.set_current_view_type('text')
         self.assertIsNotNone(str(model))
+
+    def test_thread_generator_tb(self):
+        class FakeModel(object):
+            def __init__(self, thread_id, tb):
+                self.traceback = tb
+
+        with mock.patch('openstack.common.report.models'
+                        '.threading.ThreadModel', FakeModel):
+            model = os_tgen.ThreadReportGenerator("fake traceback")()
+            curr_thread = model.get(threading.current_thread().ident, None)
+            self.assertIsNotNone(curr_thread, None)
+            self.assertEqual("fake traceback", curr_thread.traceback)
 
     def test_green_thread_generator(self):
         curr_g = greenlet.getcurrent()
