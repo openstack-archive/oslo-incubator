@@ -1,0 +1,11 @@
+Verified+2: Jenkins
+Approved+1: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+1: Terry Wilson <twilson@redhat.com>
+Code-Review+2: Flavio Percoco <fpercoco@redhat.com>
+Code-Review+1: Ilya Pekelny <ipekelny@mirantis.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 04 Mar 2014 02:34:49 +0000
+Reviewed-on: https://review.openstack.org/76380
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
