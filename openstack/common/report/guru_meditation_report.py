@@ -74,8 +74,9 @@ class GuruMeditation(object):
     MRO is correct.
     """
 
-    def __init__(self, version_obj, *args, **kwargs):
+    def __init__(self, version_obj, sig_handler_tb=None, *args, **kwargs):
         self.version_obj = version_obj
+        self.traceback = sig_handler_tb
 
         super(GuruMeditation, self).__init__(*args, **kwargs)
         self.start_section_index = len(self.sections)
@@ -113,10 +114,10 @@ class GuruMeditation(object):
 
         if signum:
             signal.signal(signum,
-                          lambda *args: cls.handle_signal(version, *args))
+                          lambda sn, tb: cls.handle_signal(version, tb))
 
     @classmethod
-    def handle_signal(cls, version, *args):
+    def handle_signal(cls, version, traceback):
         """The Signal Handler
 
         This method (indirectly) handles receiving a registered signal and
@@ -128,7 +129,7 @@ class GuruMeditation(object):
         """
 
         try:
-            res = cls(version).run()
+            res = cls(version, traceback).run()
         except Exception:
             print("Unable to run Guru Meditation Report!",
                   file=sys.stderr)
@@ -142,7 +143,7 @@ class GuruMeditation(object):
                          pgen.PackageReportGenerator(self.version_obj))
 
         self.add_section('Threads',
-                         tgen.ThreadReportGenerator())
+                         tgen.ThreadReportGenerator(self.traceback))
 
         self.add_section('Green Threads',
                          tgen.GreenThreadReportGenerator())
@@ -179,8 +180,10 @@ class TextGuruMeditation(GuruMeditation, report.TextReport):
     - Configuration Options
 
     :param version_obj: the version object for the current product
+    :param traceback: an (optional) frame object providing the actual
+                      traceback for the current thread
     """
 
-    def __init__(self, version_obj):
-        super(TextGuruMeditation, self).__init__(version_obj,
+    def __init__(self, version_obj, traceback=None):
+        super(TextGuruMeditation, self).__init__(version_obj, traceback,
                                                  'Guru Meditation')

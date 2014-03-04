@@ -30,8 +30,8 @@ class TestOpenstackGenerators(utils.BaseTestCase):
         model = os_tgen.ThreadReportGenerator()()
         # self.assertGreaterEqual(len(model.keys()), 1)
         self.assertTrue(len(model.keys()) >= 1)
-        self.assertIsInstance(model[0], os_tmod.ThreadModel)
-        self.assertIsNotNone(model[0].stack_trace)
+        self.assertIsInstance(model.values()[0], os_tmod.ThreadModel)
+        self.assertIsNotNone(model.values()[0].stack_trace)
 
         was_ok = False
         for tm in model.values():
