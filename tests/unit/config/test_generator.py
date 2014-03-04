@@ -103,3 +103,7 @@ class GeneratorTestcase(test.BaseTestCase):
                                              lambda: fake_fqdn))
         result = generator._sanitize_default('host', fake_fqdn)
         self.assertEqual('oslo', result)
+
+    def test_bad_lib(self):
+        self.assertRaises(ImportError, generator.generate,
+                          ['-l', 'broken_opts_lib'])
