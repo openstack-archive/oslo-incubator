@@ -24,6 +24,8 @@ the report serialization process.
 import collections as col
 import copy
 
+import openstack.common.report.utils as rutils
+
 
 class ReportModel(col.MutableMapping):
     """A Report Data Model
@@ -37,13 +39,39 @@ class ReportModel(col.MutableMapping):
     model.  An appropriate object for a view is callable with
     a single parameter: the model to be serialized.
 
-    :param data: a dictionary of data to initially associate with the model
+    Note that the object passed in is is not copied; any changes
+    to the data via the model will be propagated back to the
+    object passed in, and any changes made to the object passed in
+    after the fact will result in changes to the model.  In the
+    case of a non-mutable sequence or mapping be passed in,
+    a copy-on-write approach will be taken; any new data added
+    to the model will mask the old data, and any deleted entries
+    will effectively mask the old data as well.
+
+    :param data: a sequence or mapping of data to associate with the model
     :param attached_view: a view object to attach to this model
     """
 
     def __init__(self, data=None, attached_view=None):
         self.attached_view = attached_view
-        self.data = data or {}
+
+        if data is not None:
+            # deal with arbitrary sequences and mappings
+            if isinstance(data, col.MutableMapping):
+                self.data = data
+            elif isinstance(data, col.Mapping):
+                self.data = rutils.COWMapping(data)
+            elif isinstance(data, col.MutableSequence):
+                self.data = rutils.MutableSequenceToMappingProxy(data)
+            elif isinstance(data, col.Sequence):
+                self.data = rutils.COWMapping(
+                        rutils.SequenceToMappingProxy(data))
+            else:
+                raise TypeError('Data for the model must be a sequence '
+                                'or mapping (must implement at least '
+                                '(__len__ and __getitem__)')
+        else:
+            self.data = {}
 
     def __str__(self):
         self_cpy = copy.deepcopy(self)
@@ -84,6 +112,9 @@ class ReportModel(col.MutableMapping):
         try:
             return self.data[attrname]
         except KeyError:
+            # - KeyError if we don't have that key in data, and the
+            #   model class doesn't have that attribute
+            # - TypeError if data is an Array
             raise AttributeError(
                 "'{cl}' object has no attribute '{an}'".format(
                     cl=type(self).__name__, an=attrname
