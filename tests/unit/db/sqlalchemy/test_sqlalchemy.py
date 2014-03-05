@@ -344,6 +344,7 @@ class SetSQLModeTestCase(test_log.LogTestBase):
         self.dbapi_mock = mock.Mock()
         self.cursor = mock.Mock()
         self.dbapi_mock.cursor.return_value = self.cursor
+        session.logged_mode_once = False  # Reset the flag so it's logged
         # Add fake logger so we can verify log messages
         self.logger = log.getLogger('openstack.common.db.sqlalchemy.session')
         self._add_handler_with_cleanup(self.logger)
