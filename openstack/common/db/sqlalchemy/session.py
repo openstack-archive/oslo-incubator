@@ -521,6 +521,9 @@ def _set_mode_traditional(dbapi_con, connection_rec, connection_proxy):
                           connection_proxy, 'TRADITIONAL')
 
 
+logged_mode_once = False
+
+
 def _set_session_sql_mode(dbapi_con, connection_rec,
                           connection_proxy, sql_mode=None):
     """Set the sql_mode session variable.
@@ -534,6 +537,8 @@ def _set_session_sql_mode(dbapi_con, connection_rec,
     server default. Passing in None (the default) makes this
     a no-op, meaning if a server-side SQL mode is set, it still applies.
     """
+    global logged_mode_once
+
     cursor = dbapi_con.cursor()
     if sql_mode is not None:
         cursor.execute("SET SESSION sql_mode = %s", [sql_mode])
@@ -547,6 +552,12 @@ def _set_session_sql_mode(dbapi_con, connection_rec,
         LOG.warning(_LW('Unable to detect effective SQL mode'))
         return
     realmode = row[1]
+
+    if logged_mode_once:
+        return
+
+    logged_mode_once = True
+
     LOG.info(_LI('MySQL server mode set to %s') % realmode)
     # 'TRADITIONAL' mode enables several other modes, so
     # we need a substring match here
