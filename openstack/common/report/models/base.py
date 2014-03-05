@@ -132,14 +132,31 @@ class ReportModel(col.MutableMapping):
 
         This method attempts to set the current view
         type for this model and all submodels by calling
-        itself recursively on all values (and ignoring the
-        ones that are not themselves models)
+        itself recursively on all values, traversing
+        intervening sequences and mappings when possible,
+        and ignoring all other objects.
 
         :param tp: the type of the view ('text', 'json', 'xml', etc)
         """
 
-        for key in self:
-            try:
-                self[key].set_current_view_type(tp)
-            except AttributeError:
+        def traverse_obj(parent_obj, obj):
+            if obj == parent_obj:
                 pass
+            elif isinstance(obj, type('')) or isinstance(obj, type(u'')):
+                pass
+            elif isinstance(obj, col.Sequence):
+                for item in obj:
+                    try:
+                        item.set_current_view_type(tp)
+                    except AttributeError:
+                        traverse_obj(obj, item)
+            elif isinstance(obj, col.Mapping):
+                for key in obj:
+                    try:
+                        obj[key].set_current_view_type(tp)
+                    except AttributeError:
+                        traverse_obj(obj, obj[key])
+            else:
+                pass
+
+        traverse_obj(None, self)
