@@ -53,7 +53,7 @@ class ImageUtilsRawTestCase(test.BaseTestCase):
                      exp_disk_size=98304)),
         ('96K_byte', dict(disk_size='963434',
                           exp_disk_size=963434)),
-        ('3.1M', dict(disk_size='3.1G',
+        ('3.1G', dict(disk_size='3.1G',
                       exp_disk_size=3328599655)),
     ]
 
@@ -86,17 +86,22 @@ class ImageUtilsRawTestCase(test.BaseTestCase):
                 'disk_size: %s' % self.disk_size)
 
     def _insert_snapshots(self, img_info):
-        img_info = img_info + ('Snapshot list:',)
-        img_info = img_info + ('ID        '
-                               'TAG                 '
-                               'VM SIZE                '
-                               'DATE       '
-                               'VM CLOCK',)
-        for i in range(self.snapshot_count):
-            img_info = img_info + ('%d        '
-                                   'd9a9784a500742a7bb95627bb3aace38    '
-                                   '0 2012-08-20 10:52:46 '
-                                   '00:00:00.000' % (i + 1),)
+        if self.garbage_before_snapshot is True:
+            img_info = img_info + ('blah BLAH: bb',)
+        if self.snapshot_count is not None:
+            img_info = img_info + ('Snapshot list:',)
+            img_info = img_info + ('ID        '
+                                   'TAG                 '
+                                   'VM SIZE                '
+                                   'DATE       '
+                                   'VM CLOCK',)
+            for i in range(self.snapshot_count):
+                img_info = img_info + ('%d        '
+                                       'd9a9784a500742a7bb95627bb3aace38    '
+                                       '0 2012-08-20 10:52:46 '
+                                       '00:00:00.000' % (i + 1),)
+        if self.garbage_before_snapshot is False:
+            img_info = img_info + ('junk stuff: bbb',)
         return img_info
 
     def _base_validation(self, image_info):
@@ -109,12 +114,7 @@ class ImageUtilsRawTestCase(test.BaseTestCase):
 
     def test_qemu_img_info(self):
         img_info = self._initialize_img_info()
-        if self.garbage_before_snapshot is True:
-            img_info = img_info + ('blah BLAH: bb',)
-        if self.snapshot_count is not None:
-            img_info = self._insert_snapshots(img_info)
-        if self.garbage_before_snapshot is False:
-            img_info = img_info + ('junk stuff: bbb',)
+        img_info = self._insert_snapshots(img_info)
         example_output = '\n'.join(img_info)
         image_info = imageutils.QemuImgInfo(example_output)
         self._base_validation(image_info)
@@ -169,12 +169,7 @@ class ImageUtilsQemuTestCase(ImageUtilsRawTestCase):
                                    self.backing_file,)
         if self.encrypted is not None:
             img_info = img_info + ('encrypted: %s' % self.encrypted,)
-        if self.garbage_before_snapshot is True:
-            img_info = img_info + ('blah BLAH: bb',)
-        if self.snapshot_count is not None:
-            img_info = self._insert_snapshots(img_info)
-        if self.garbage_before_snapshot is False:
-            img_info = img_info + ('junk stuff: bbb',)
+        img_info = self._insert_snapshots(img_info)
         example_output = '\n'.join(img_info)
         image_info = imageutils.QemuImgInfo(example_output)
         self._base_validation(image_info)
