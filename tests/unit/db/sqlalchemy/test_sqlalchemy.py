@@ -341,18 +341,19 @@ class EngineFacadeTestCase(test.BaseTestCase):
 class SetSQLModeTestCase(test_log.LogTestBase):
     def setUp(self):
         super(SetSQLModeTestCase, self).setUp()
+        self.engine_mock = mock.Mock()
         self.dbapi_mock = mock.Mock()
         self.cursor = mock.Mock()
+        self.engine_mock.pool.connect.return_value = self.dbapi_mock
         self.dbapi_mock.cursor.return_value = self.cursor
         # Add fake logger so we can verify log messages
         self.logger = log.getLogger('openstack.common.db.sqlalchemy.session')
         self._add_handler_with_cleanup(self.logger)
 
-    def _assert_calls(self, test_mode, recommended):
-        self.cursor.execute.assert_any_call("SET SESSION sql_mode = %s",
-                                            [test_mode])
-        self.cursor.execute.assert_called_with(
-            "SHOW VARIABLES LIKE 'sql_mode'")
+    def _assert_check_calls(self, test_mode, recommended):
+        if test_mode is None:
+            self.cursor.execute.assert_called_with(
+                "SHOW VARIABLES LIKE 'sql_mode'")
         self.assertIn(_LI('MySQL server mode set to %s') % test_mode,
                       self.stream.getvalue())
         if not recommended:
@@ -370,15 +371,19 @@ class SetSQLModeTestCase(test_log.LogTestBase):
     def test_set_mode_not_recommended(self):
         test_mode = 'foo'
         self._set_cursor_retval(test_mode)
-        session._set_session_sql_mode(self.dbapi_mock, None, None,
-                                      sql_mode=test_mode)
-        self._assert_calls(test_mode, recommended=False)
+        session._mysql_check_effective_sql_mode(self.engine_mock, test_mode)
+        self._assert_check_calls(test_mode, recommended=False)
 
     def test_set_mode_none(self):
         test_mode = None
         self._set_cursor_retval('')
         session._set_session_sql_mode(self.dbapi_mock, None, None,
                                       sql_mode=test_mode)
+        self.assertFalse(self.cursor.execute.called)
+
+    def test_sql_mode_blank(self):
+        self._set_cursor_retval('')
+        session._mysql_check_effective_sql_mode(self.engine_mock, None)
         self.cursor.execute.assert_called_with(
             "SHOW VARIABLES LIKE 'sql_mode'")
         self.assertIn(_LW("MySQL SQL mode is '', "
@@ -386,24 +391,23 @@ class SetSQLModeTestCase(test_log.LogTestBase):
                           "STRICT_ALL_TABLES"),
                       self.stream.getvalue())
 
-    def test_set_mode_traditional(self):
-        test_mode = 'traditional'
+    def _test_set_mode_recommended(self, test_mode):
         self._set_cursor_retval(test_mode)
+        session._mysql_check_effective_sql_mode(self.engine_mock, test_mode)
+        self._assert_check_calls(test_mode, recommended=True)
         session._set_session_sql_mode(self.dbapi_mock, None, None,
                                       sql_mode=test_mode)
-        self._assert_calls(test_mode, True)
+        self.cursor.execute.assert_any_call("SET SESSION sql_mode = %s",
+                                            [test_mode])
+
+    def test_set_mode_traditional(self):
+        self._test_set_mode_recommended('traditional')
 
     def test_set_mode_strict_all_tables(self):
-        test_mode = 'STRICT_ALL_TABLES'
-        self._set_cursor_retval(test_mode)
-        session._set_session_sql_mode(self.dbapi_mock, None, None,
-                                      sql_mode=test_mode)
-        self._assert_calls(test_mode, True)
+        self._test_set_mode_recommended('STRICT_ALL_TABLES')
 
     def test_read_mode_fail(self):
-        test_mode = None
         self.cursor.fetchone.return_value = None
-        session._set_session_sql_mode(self.dbapi_mock, None, None,
-                                      sql_mode=test_mode)
+        session._mysql_check_effective_sql_mode(self.engine_mock, None)
         self.assertIn(_LW('Unable to detect effective SQL mode'),
                       self.stream.getvalue())
