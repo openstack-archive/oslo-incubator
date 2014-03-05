@@ -24,6 +24,8 @@ the report serialization process.
 import collections as col
 import copy
 
+import six
+
 
 class ReportModel(col.MutableMapping):
     """A Report Data Model
@@ -119,19 +121,41 @@ class ReportModel(col.MutableMapping):
     def __iter__(self):
         return self.data.__iter__()
 
-    def set_current_view_type(self, tp):
+    def set_current_view_type(self, tp, memo=None):
         """Set the current view type
 
         This method attempts to set the current view
         type for this model and all submodels by calling
-        itself recursively on all values (and ignoring the
-        ones that are not themselves models)
+        itself recursively on all values, traversing
+        intervening sequences and mappings when possible,
+        and ignoring all other objects.
 
         :param tp: the type of the view ('text', 'json', 'xml', etc)
+        :param memo: a set of object ids who already had their view type set
         """
 
-        for key in self:
-            try:
-                self[key].set_current_view_type(tp)
-            except AttributeError:
-                pass
+        if memo is None:
+            memo = set()
+
+        def traverse_obj(obj):
+            oid = id(obj)
+
+            # don't die on recursive structures,
+            # and don't treat strings like sequences
+            if oid in memo or isinstance(obj, six.string_types):
+                return
+
+            memo.add(oid)
+
+            if hasattr(obj, 'set_current_view_type'):
+                obj.set_current_view_type(tp, memo=memo)
+
+            if isinstance(obj, col.Sequence):
+                for item in obj:
+                    traverse_obj(item)
+
+            elif isinstance(obj, col.Mapping):
+                for val in obj.values():
+                    traverse_obj(val)
+
+        traverse_obj(self)
