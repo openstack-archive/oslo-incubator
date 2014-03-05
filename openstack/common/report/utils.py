@@ -18,6 +18,8 @@ This module includes various utilities
 used in generating reports.
 """
 
+import collections as col
+import copy
 import gc
 
 
