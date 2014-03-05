@@ -155,21 +155,17 @@ def _is_in_group(opt, group):
 
 
 def _guess_groups(opt, mod_obj):
+    groups = []
     # is it in the DEFAULT group?
     if _is_in_group(opt, cfg.CONF):
-        return 'DEFAULT'
+        groups.append('DEFAULT')
 
     # what other groups is it in?
     for value in cfg.CONF.values():
         if isinstance(value, cfg.CONF.GroupAttr):
             if _is_in_group(opt, value._group):
-                return value._group.name
-
-    raise RuntimeError(
-        "Unable to find group for option %s, "
-        "maybe it's defined twice in the same group?"
-        % opt.name
-    )
+                groups.append(value._group.name)
+    return groups
 
 
 def _list_opts(obj):
@@ -188,7 +184,8 @@ def _list_opts(obj):
 
     ret = {}
     for opt in opts:
-        ret.setdefault(_guess_groups(opt, obj), []).append(opt)
+        for group in _guess_groups(opt, obj):
+            ret.setdefault(group, []).append(opt)
     return ret.items()
 
 
