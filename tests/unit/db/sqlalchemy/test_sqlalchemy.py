@@ -17,6 +17,8 @@
 
 """Unit tests for SQLAlchemy specific code."""
 
+import logging
+
 import _mysql_exceptions
 import mock
 import sqlalchemy
@@ -32,7 +34,6 @@ from openstack.common.db.sqlalchemy import session
 from openstack.common.db.sqlalchemy import test_base
 from openstack.common import log
 from openstack.common import test
-from openstack.common.gettextutils import _LW, _LI
 from tests.unit import test_log
 
 
@@ -379,72 +380,143 @@ class EngineFacadeTestCase(test.BaseTestCase):
                                           expire_on_commit=True)
 
 
-class SetSQLModeTestCase(test_log.LogTestBase):
-    def setUp(self):
-        super(SetSQLModeTestCase, self).setUp()
-        self.dbapi_mock = mock.Mock()
-        self.cursor = mock.Mock()
-        self.dbapi_mock.cursor.return_value = self.cursor
-        # Add fake logger so we can verify log messages
-        self.logger = log.getLogger('openstack.common.db.sqlalchemy.session')
-        self._add_handler_with_cleanup(self.logger)
+class MysqlSetCallbackTest(test_log.LogTestBase):
 
-    def _assert_calls(self, test_mode, recommended):
-        self.cursor.execute.assert_any_call("SET SESSION sql_mode = %s",
-                                            [test_mode])
-        self.cursor.execute.assert_called_with(
-            "SHOW VARIABLES LIKE 'sql_mode'")
-        self.assertIn(_LI('MySQL server mode set to %s') % test_mode,
-                      self.stream.getvalue())
-        if not recommended:
-            self.assertIn(_LW("MySQL SQL mode is '%s', "
-                              "consider enabling TRADITIONAL or "
-                              "STRICT_ALL_TABLES")
-                          % test_mode,
-                          self.stream.getvalue())
+    class FakeCursor(object):
+        def __init__(self, dbapi_con):
+            self._dbapi_con = dbapi_con
 
-    def _set_cursor_retval(self, test_mode):
-        retval = mock.MagicMock()
-        retval.__getitem__.return_value = test_mode
-        self.cursor.fetchone.return_value = retval
+        def execute(self, sql, arg):
+            self._dbapi_con.executed(sql % arg)
 
-    def test_set_mode_not_recommended(self):
-        test_mode = 'foo'
-        self._set_cursor_retval(test_mode)
-        session._set_session_sql_mode(self.dbapi_mock, None, None,
-                                      sql_mode=test_mode)
-        self._assert_calls(test_mode, recommended=False)
+    class FakeDbapiCon(object):
+        def __init__(self, engine):
+            self._engine = engine
 
-    def test_set_mode_none(self):
-        test_mode = None
-        self._set_cursor_retval('')
-        session._set_session_sql_mode(self.dbapi_mock, None, None,
-                                      sql_mode=test_mode)
-        self.cursor.execute.assert_called_with(
-            "SHOW VARIABLES LIKE 'sql_mode'")
-        self.assertIn(_LW("MySQL SQL mode is '', "
-                          "consider enabling TRADITIONAL or "
-                          "STRICT_ALL_TABLES"),
-                      self.stream.getvalue())
+        def cursor(self):
+            return MysqlSetCallbackTest.FakeCursor(self)
+
+        def executed(self, sql):
+            self._engine.executed(sql)
+
+    class FakeResultSet(object):
+        def __init__(self, realmode):
+            self._realmode = realmode
+
+        def fetchone(self):
+            return ['ignored', self._realmode]
+
+    class FakeEngine(object):
+        def __init__(self, realmode=None):
+            self._cbs = {}
+            self._execs = []
+            self._realmode = realmode
+
+        def set_callback(self, name, cb):
+            self._cbs[name] = cb
+
+        def execute(self, sql):
+            cb = self._cbs.get('checkout', lambda *x, **y: None)
+            dbapi_con = MysqlSetCallbackTest.FakeDbapiCon(self)
+            connection_rec = None  # Not used.
+            connection_proxy = None  # Not used.
+            cb(dbapi_con, connection_rec, connection_proxy)
+            self._execs.append(sql)
+            return MysqlSetCallbackTest.FakeResultSet(self._realmode)
+
+        def executed(self, sql):
+            self._execs.append(sql)
+
+    def stub_listen(engine, name, cb):
+        engine.set_callback(name, cb)
+
+    @mock.patch.object(sqlalchemy.event, 'listen', side_effect=stub_listen)
+    def _call_set_callback(self, listen_mock, sql_mode=None, realmode=None):
+        engine = MysqlSetCallbackTest.FakeEngine(realmode=realmode)
+
+        logger = log.getLogger('openstack.common.db.sqlalchemy.session')
+        self._set_log_level_with_cleanup(logger, logging.DEBUG)
+        self._add_handler_with_cleanup(logger)
+
+        session._mysql_set_mode_callback(engine, sql_mode=sql_mode)
+        return engine
 
     def test_set_mode_traditional(self):
-        test_mode = 'traditional'
-        self._set_cursor_retval(test_mode)
-        session._set_session_sql_mode(self.dbapi_mock, None, None,
-                                      sql_mode=test_mode)
-        self._assert_calls(test_mode, True)
+        # If _mysql_set_mode_callback is called with an sql_mode, then the SQL
+        # mode is set on the connection.
 
-    def test_set_mode_strict_all_tables(self):
-        test_mode = 'STRICT_ALL_TABLES'
-        self._set_cursor_retval(test_mode)
-        session._set_session_sql_mode(self.dbapi_mock, None, None,
-                                      sql_mode=test_mode)
-        self._assert_calls(test_mode, True)
+        engine = self._call_set_callback(sql_mode='TRADITIONAL')
 
-    def test_read_mode_fail(self):
-        test_mode = None
-        self.cursor.fetchone.return_value = None
-        session._set_session_sql_mode(self.dbapi_mock, None, None,
-                                      sql_mode=test_mode)
-        self.assertIn(_LW('Unable to detect effective SQL mode'),
+        exp_calls = [
+            "SET SESSION sql_mode = ['TRADITIONAL']",
+            "SHOW VARIABLES LIKE 'sql_mode'"
+        ]
+        self.assertEqual(exp_calls, engine._execs)
+
+    def test_set_mode_ansi(self):
+        # If _mysql_set_mode_callback is called with an sql_mode, then the SQL
+        # mode is set on the connection.
+
+        engine = self._call_set_callback(sql_mode='ANSI')
+
+        exp_calls = [
+            "SET SESSION sql_mode = ['ANSI']",
+            "SHOW VARIABLES LIKE 'sql_mode'"
+        ]
+        self.assertEqual(exp_calls, engine._execs)
+
+    def test_set_mode_no_mode(self):
+        # If _mysql_set_mode_callback is called with sql_mode=None, then
+        # the SQL mode is NOT set on the connection.
+
+        engine = self._call_set_callback()
+
+        exp_calls = [
+            "SHOW VARIABLES LIKE 'sql_mode'"
+        ]
+        self.assertEqual(exp_calls, engine._execs)
+
+    def test_fail_detect_mode(self):
+        # If "SHOW VARIABLES LIKE 'sql_mode'" results in no row, then
+        # we get a log indicating can't detect the mode.
+
+        self._call_set_callback()
+
+        self.assertIn('Unable to detect effective SQL mode',
                       self.stream.getvalue())
+
+    def test_logs_real_mode(self):
+        # If "SHOW VARIABLES LIKE 'sql_mode'" results in a value, then
+        # we get a log with the value.
+
+        self._call_set_callback(realmode='SOMETHING')
+
+        self.assertIn('MySQL server mode set to SOMETHING',
+                      self.stream.getvalue())
+
+    def test_warning_when_not_traditional(self):
+        # If "SHOW VARIABLES LIKE 'sql_mode'" results in a value that doesn't
+        # include 'TRADITIONAL', then a warning is logged.
+
+        self._call_set_callback(realmode='NOT_TRADIT')
+
+        self.assertIn("consider enabling TRADITIONAL or STRICT_ALL_TABLES",
+                      self.stream.getvalue())
+
+    def test_no_warning_when_traditional(self):
+        # If "SHOW VARIABLES LIKE 'sql_mode'" results in a value that includes
+        # 'TRADITIONAL', then no warning is logged.
+
+        self._call_set_callback(realmode='TRADITIONAL')
+
+        self.assertNotIn("consider enabling TRADITIONAL or STRICT_ALL_TABLES",
+                         self.stream.getvalue())
+
+    def test_no_warning_when_strict_all_tables(self):
+        # If "SHOW VARIABLES LIKE 'sql_mode'" results in a value that includes
+        # 'STRICT_ALL_TABLES', then no warning is logged.
+
+        self._call_set_callback(realmode='STRICT_ALL_TABLES')
+
+        self.assertNotIn("consider enabling TRADITIONAL or STRICT_ALL_TABLES",
+                         self.stream.getvalue())
