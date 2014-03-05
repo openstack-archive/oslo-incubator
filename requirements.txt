@@ -15,6 +15,7 @@ oslotest
 PasteDeploy>=1.5.0
 posix_ipc
 PrettyTable>=0.7,<0.8
+psutil>=1.1.1,<2.0.0
 pycadf>=0.4.1
 pycrypto>=2.6
 qpid-python
