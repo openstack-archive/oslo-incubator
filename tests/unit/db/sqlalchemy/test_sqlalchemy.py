@@ -18,7 +18,9 @@
 """Unit tests for SQLAlchemy specific code."""
 
 import _mysql_exceptions
+import logging
 import mock
+import six
 import sqlalchemy
 from sqlalchemy import Column, MetaData, Table, UniqueConstraint
 from sqlalchemy import DateTime, Integer, String
@@ -30,10 +32,8 @@ from openstack.common.db import exception as db_exc
 from openstack.common.db.sqlalchemy import models
 from openstack.common.db.sqlalchemy import session
 from openstack.common.db.sqlalchemy import test_base
-from openstack.common import log
 from openstack.common import test
 from openstack.common.gettextutils import _LW, _LI
-from tests.unit import test_log
 
 
 BASE = declarative_base()
@@ -379,15 +379,23 @@ class EngineFacadeTestCase(test.BaseTestCase):
                                           expire_on_commit=True)
 
 
-class SetSQLModeTestCase(test_log.LogTestBase):
+class SetSQLModeTestCase(test.BaseTestCase):
+
     def setUp(self):
         super(SetSQLModeTestCase, self).setUp()
         self.dbapi_mock = mock.Mock()
         self.cursor = mock.Mock()
         self.dbapi_mock.cursor.return_value = self.cursor
+
         # Add fake logger so we can verify log messages
-        self.logger = log.getLogger('openstack.common.db.sqlalchemy.session')
-        self._add_handler_with_cleanup(self.logger)
+        self.logger = logging.getLogger(
+            'openstack.common.db.sqlalchemy.session')
+        self.stream = six.StringIO()
+        handler = logging.StreamHandler
+        self.handler = handler(self.stream)
+        self.logger.addHandler(self.handler)
+
+        self.addCleanup(self.logger.removeHandler, self.handler)
 
     def _assert_calls(self, test_mode, recommended):
         self.cursor.execute.assert_any_call("SET SESSION sql_mode = %s",
