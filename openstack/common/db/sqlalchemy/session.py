@@ -510,7 +510,7 @@ def _ping_listener(engine, dbapi_conn, connection_rec, connection_proxy):
             raise
 
 
-def _set_mode_traditional(dbapi_con, connection_rec, connection_proxy):
+def _set_mode_traditional(dbapi_con, connection_rec):
     """Set engine mode to 'traditional'.
 
     Required to prevent silent truncates at insert or update operations
@@ -518,12 +518,10 @@ def _set_mode_traditional(dbapi_con, connection_rec, connection_proxy):
     than a declared field just with warning. That is fraught with data
     corruption.
     """
-    _set_session_sql_mode(dbapi_con, connection_rec,
-                          connection_proxy, 'TRADITIONAL')
+    _set_session_sql_mode(dbapi_con, connection_rec, 'TRADITIONAL')
 
 
-def _set_session_sql_mode(dbapi_con, connection_rec,
-                          connection_proxy, sql_mode=None):
+def _set_session_sql_mode(dbapi_con, connection_rec, sql_mode=None):
     """Set the sql_mode session variable.
 
     MySQL supports several server modes. The default is None, but sessions
@@ -635,7 +633,7 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
             if mysql_sql_mode:
                 mode_callback = functools.partial(_set_session_sql_mode,
                                                   sql_mode=mysql_sql_mode)
-                sqlalchemy.event.listen(engine, 'checkout', mode_callback)
+                sqlalchemy.event.listen(engine, 'connect', mode_callback)
     elif 'sqlite' in connection_dict.drivername:
         if not sqlite_synchronous:
             sqlalchemy.event.listen(engine, 'connect',

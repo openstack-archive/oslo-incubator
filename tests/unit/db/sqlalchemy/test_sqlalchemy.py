@@ -370,14 +370,14 @@ class SetSQLModeTestCase(test_log.LogTestBase):
     def test_set_mode_not_recommended(self):
         test_mode = 'foo'
         self._set_cursor_retval(test_mode)
-        session._set_session_sql_mode(self.dbapi_mock, None, None,
+        session._set_session_sql_mode(self.dbapi_mock, None,
                                       sql_mode=test_mode)
         self._assert_calls(test_mode, recommended=False)
 
     def test_set_mode_none(self):
         test_mode = None
         self._set_cursor_retval('')
-        session._set_session_sql_mode(self.dbapi_mock, None, None,
+        session._set_session_sql_mode(self.dbapi_mock, None,
                                       sql_mode=test_mode)
         self.cursor.execute.assert_called_with(
             "SHOW VARIABLES LIKE 'sql_mode'")
@@ -389,21 +389,21 @@ class SetSQLModeTestCase(test_log.LogTestBase):
     def test_set_mode_traditional(self):
         test_mode = 'traditional'
         self._set_cursor_retval(test_mode)
-        session._set_session_sql_mode(self.dbapi_mock, None, None,
+        session._set_session_sql_mode(self.dbapi_mock, None,
                                       sql_mode=test_mode)
         self._assert_calls(test_mode, True)
 
     def test_set_mode_strict_all_tables(self):
         test_mode = 'STRICT_ALL_TABLES'
         self._set_cursor_retval(test_mode)
-        session._set_session_sql_mode(self.dbapi_mock, None, None,
+        session._set_session_sql_mode(self.dbapi_mock, None,
                                       sql_mode=test_mode)
         self._assert_calls(test_mode, True)
 
     def test_read_mode_fail(self):
         test_mode = None
         self.cursor.fetchone.return_value = None
-        session._set_session_sql_mode(self.dbapi_mock, None, None,
+        session._set_session_sql_mode(self.dbapi_mock, None,
                                       sql_mode=test_mode)
         self.assertIn(_LW('Unable to detect effective SQL mode'),
                       self.stream.getvalue())
