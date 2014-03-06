@@ -774,15 +774,12 @@ class EngineFacade(object):
     """
 
     def __init__(self, sql_connection,
-                 sqlite_fk=False, mysql_sql_mode=None,
-                 autocommit=True, expire_on_commit=False, **kwargs):
+                 sqlite_fk=False, autocommit=True,
+                 expire_on_commit=False, **kwargs):
         """Initialize engine and sessionmaker instances.
 
         :param sqlite_fk: enable foreign keys in SQLite
         :type sqlite_fk: bool
-
-        :param mysql_sql_mode: set SQL mode in MySQL
-        :type mysql_sql_mode: string
 
         :param autocommit: use autocommit mode for created Session instances
         :type autocommit: bool
@@ -792,6 +789,8 @@ class EngineFacade(object):
 
         Keyword arguments:
 
+        :keyword mysql_sql_mode: the SQL mode to be used for MySQL sessions.
+                                 (defaults to TRADITIONAL)
         :keyword idle_timeout: timeout before idle sql connections are reaped
                                (defaults to 3600)
         :keyword connection_debug: verbosity of SQL debugging information.
@@ -819,7 +818,7 @@ class EngineFacade(object):
         self._engine = create_engine(
             sql_connection=sql_connection,
             sqlite_fk=sqlite_fk,
-            mysql_sql_mode=mysql_sql_mode,
+            mysql_sql_mode=kwargs.get('mysql_sql_mode', 'TRADITIONAL'),
             idle_timeout=kwargs.get('idle_timeout', 3600),
             connection_debug=kwargs.get('connection_debug', 0),
             max_pool_size=kwargs.get('max_pool_size'),
@@ -861,8 +860,7 @@ class EngineFacade(object):
 
     @classmethod
     def from_config(cls, connection_string, conf,
-                    sqlite_fk=False, mysql_sql_mode=None,
-                    autocommit=True, expire_on_commit=False):
+                    sqlite_fk=False, autocommit=True, expire_on_commit=False):
         """Initialize EngineFacade using oslo.config config instance options.
 
         :param connection_string: SQLAlchemy connection string
@@ -874,9 +872,6 @@ class EngineFacade(object):
         :param sqlite_fk: enable foreign keys in SQLite
         :type sqlite_fk: bool
 
-        :param mysql_sql_mode: set SQL mode in MySQL
-        :type mysql_sql_mode: string
-
         :param autocommit: use autocommit mode for created Session instances
         :type autocommit: bool
 
@@ -887,7 +882,6 @@ class EngineFacade(object):
 
         return cls(sql_connection=connection_string,
                    sqlite_fk=sqlite_fk,
-                   mysql_sql_mode=mysql_sql_mode,
                    autocommit=autocommit,
                    expire_on_commit=expire_on_commit,
                    **dict(conf.database.items()))
