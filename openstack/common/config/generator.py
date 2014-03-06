@@ -64,6 +64,25 @@ BASEDIR = os.path.abspath(os.path.join(os.path.dirname(__file__),
 WORDWRAP_WIDTH = 60
 
 
+def gen_opts(opts):
+    for opt in opts:
+        yield ('%s.%s' % ('0000000000', opt.dest)), \
+            ['DEFAULT', opt]
+
+
+def gen_opts_default(conf):
+    for opt in conf.CONF._opts.values():
+        yield ('%s.%s' % ('0000000000', opt['opt'].dest)), \
+            ['DEFAULT', opt['opt']]
+
+
+def gen_opts_groups(conf):
+    for group in conf.CONF._groups.values():
+        for opt in group._opts.values():
+            yield ('%s.%s' % (group.name, opt['opt'].dest)), \
+                   [group.name, opt['opt']]
+
+
 def generate(argv):
     parser = argparse.ArgumentParser(
         description='generate sample configuration file',
@@ -73,6 +92,7 @@ def generate(argv):
     parser.add_argument('srcfiles', nargs='*')
     parsed_args = parser.parse_args(argv)
 
+    my_dict = dict()
     mods_by_pkg = dict()
     for filepath in parsed_args.srcfiles:
         pkg_name = filepath.split(os.sep)[1]
@@ -84,17 +104,18 @@ def generate(argv):
     ext_names = sorted(pkg for pkg in mods_by_pkg if pkg not in pkg_names)
     pkg_names.extend(ext_names)
 
-    # opts_by_group is a mapping of group name to an options list
-    # The options list is a list of (module, options) tuples
-    opts_by_group = {'DEFAULT': []}
-
     if parsed_args.modules:
         for module_name in parsed_args.modules:
-            module = _import_module(module_name)
-            if module:
-                for group, opts in _list_opts(module):
-                    opts_by_group.setdefault(group, []).append((module_name,
-                                                                opts))
+            _import_module(module_name)
+
+    for pkg_name in pkg_names:
+        mods = mods_by_pkg.get(pkg_name)
+        mods.sort()
+        for module_name in mods:
+            if module_name.endswith('.__init__'):
+                module_name = module_name[:module_name.rfind(".")]
+
+            _import_module(module_name)
 
     # Look for entry points defined in libraries (or applications) for
     # option discovery, and include their return values in the output.
@@ -110,26 +131,27 @@ def generate(argv):
         )
         for ext in loader:
             for group, opts in ext.plugin():
-                opt_list = opts_by_group.setdefault(group or 'DEFAULT', [])
-                opt_list.append((ext.name, opts))
+                new_dict = dict(gen_opts(opts))
+                my_dict.update(new_dict)
 
-    for pkg_name in pkg_names:
-        mods = mods_by_pkg.get(pkg_name)
-        mods.sort()
-        for mod_str in mods:
-            if mod_str.endswith('.__init__'):
-                mod_str = mod_str[:mod_str.rfind(".")]
+    new_dict = dict(gen_opts_default(cfg))
+    my_dict.update(new_dict)
+    new_dict = dict(gen_opts_groups(cfg))
+    my_dict.update(new_dict)
 
-            mod_obj = _import_module(mod_str)
-            if not mod_obj:
-                raise RuntimeError("Unable to import module %s" % mod_str)
+    group_name = None
+    for key, option in sorted(my_dict.items(), key=lambda i: i[0]):
+        group, opt = option
+        if group != group_name:
+            _print_group_name(group)
+            group_name = group
 
-            for group, opts in _list_opts(mod_obj):
-                opts_by_group.setdefault(group, []).append((mod_str, opts))
+        _print_opt(opt)
 
-    print_group_opts('DEFAULT', opts_by_group.pop('DEFAULT', []))
-    for group in sorted(opts_by_group.keys()):
-        print_group_opts(group, opts_by_group[group])
+
+def _print_group_name(group):
+    print("[%s]" % group)
+    print('')
 
 
 def _import_module(mod_str):
@@ -142,67 +164,6 @@ def _import_module(mod_str):
     except Exception as e:
         sys.stderr.write("Error importing module %s: %s\n" % (mod_str, str(e)))
         return None
-
-
-def _is_in_group(opt, group):
-    "Check if opt is in group."
-    for value in group._opts.values():
-        # NOTE(llu): Temporary workaround for bug #1262148, wait until
-        # newly released oslo.config support '==' operator.
-        if not(value['opt'] != opt):
-            return True
-    return False
-
-
-def _guess_groups(opt, mod_obj):
-    # is it in the DEFAULT group?
-    if _is_in_group(opt, cfg.CONF):
-        return 'DEFAULT'
-
-    # what other groups is it in?
-    for value in cfg.CONF.values():
-        if isinstance(value, cfg.CONF.GroupAttr):
-            if _is_in_group(opt, value._group):
-                return value._group.name
-
-    raise RuntimeError(
-        "Unable to find group for option %s, "
-        "maybe it's defined twice in the same group?"
-        % opt.name
-    )
-
-
-def _list_opts(obj):
-    def is_opt(o):
-        return (isinstance(o, cfg.Opt) and
-                not isinstance(o, cfg.SubCommandOpt))
-
-    opts = list()
-    for attr_str in dir(obj):
-        attr_obj = getattr(obj, attr_str)
-        if is_opt(attr_obj):
-            opts.append(attr_obj)
-        elif (isinstance(attr_obj, list) and
-              all(map(lambda x: is_opt(x), attr_obj))):
-            opts.extend(attr_obj)
-
-    ret = {}
-    for opt in opts:
-        ret.setdefault(_guess_groups(opt, obj), []).append(opt)
-    return ret.items()
-
-
-def print_group_opts(group, opts_by_module):
-    print("[%s]" % group)
-    print('')
-    for mod, opts in opts_by_module:
-        print('#')
-        print('# Options defined in %s' % mod)
-        print('#')
-        print('')
-        for opt in opts:
-            _print_opt(opt)
-        print('')
 
 
 def _get_my_ip():
