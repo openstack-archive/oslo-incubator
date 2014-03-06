@@ -232,13 +232,12 @@ class MessageTestCase(test.BaseTestCase):
     def test_multiple_mod_with_named_parameter(self):
         msgid = ("%(description)s\nCommand: %(cmd)s\n"
                  "Exit code: %(exit_code)s\nStdout: %(stdout)r\n"
-                 "Stderr: %(stderr)r %%(something)s")
+                 "Stderr: %(stderr)r")
         params = {'description': 'test1',
                   'cmd': 'test2',
                   'exit_code': 'test3',
                   'stdout': 'test4',
-                  'stderr': 'test5',
-                  'something': 'trimmed'}
+                  'stderr': 'test5'}
 
         # Run string interpolation the first time to make a new Message
         first = self.message(msgid) % params
@@ -366,6 +365,9 @@ class MessageTestCase(test.BaseTestCase):
         expected = msgid % params
         self.assertEqual(result, expected)
         self.assertEqual(result.translate(), expected)
+
+        # Make sure unused params still there
+        self.assertEqual(result.params.keys(), params.keys())
 
     def test_mod_with_missing_named_parameters(self):
         msgid = ("Some string with params: %(param1)s %(param2)s"
