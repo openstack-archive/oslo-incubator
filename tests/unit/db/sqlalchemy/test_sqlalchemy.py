@@ -351,13 +351,13 @@ class EngineFacadeTestCase(test.BaseTestCase):
         conf = mock.MagicMock()
         conf.database.items.return_value = [
             ('connection_debug', 100),
-            ('max_pool_size', 10)
+            ('max_pool_size', 10),
+            ('mysql_sql_mode', 'TRADITIONAL'),
         ]
 
         session.EngineFacade.from_config('sqlite:///:memory:', conf,
                                          autocommit=False,
-                                         expire_on_commit=True,
-                                         mysql_sql_mode='TRADITIONAL')
+                                         expire_on_commit=True)
 
         conf.database.items.assert_called_once_with()
         create_engine.assert_called_once_with(
