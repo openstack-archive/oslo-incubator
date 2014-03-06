@@ -161,6 +161,8 @@ class StrUtilsTest(test.BaseTestCase):
         self.assertEqual(six.u('ni\xf1o'), safe_decode('ni\xc3\xb1o',
                          incoming='ascii'))
 
+        self.assertEqual(six.u('foo'), safe_decode(b'foo'))
+
     def test_safe_encode(self):
         safe_encode = strutils.safe_encode
         self.assertRaises(TypeError, safe_encode, True)
@@ -175,6 +177,7 @@ class StrUtilsTest(test.BaseTestCase):
         # Forcing incoming to ascii so it falls back to utf-8
         self.assertEqual('ni\xc3\xb1o', safe_encode('ni\xc3\xb1o',
                                                     incoming='ascii'))
+        self.assertEqual('foo', safe_encode(b'foo'))
 
     def test_slugify(self):
         to_slug = strutils.to_slug
