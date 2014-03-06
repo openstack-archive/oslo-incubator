@@ -510,18 +510,6 @@ def _ping_listener(engine, dbapi_conn, connection_rec, connection_proxy):
             raise
 
 
-def _set_mode_traditional(dbapi_con, connection_rec, connection_proxy):
-    """Set engine mode to 'traditional'.
-
-    Required to prevent silent truncates at insert or update operations
-    under MySQL. By default MySQL truncates inserted string if it longer
-    than a declared field just with warning. That is fraught with data
-    corruption.
-    """
-    _set_session_sql_mode(dbapi_con, connection_rec,
-                          connection_proxy, 'TRADITIONAL')
-
-
 def _set_session_sql_mode(dbapi_con, connection_rec,
                           connection_proxy, sql_mode=None):
     """Set the sql_mode session variable.
@@ -583,7 +571,7 @@ def _raise_if_db_connection_lost(error, engine):
 
 
 def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
-                  mysql_traditional_mode=False, idle_timeout=3600,
+                  idle_timeout=3600,
                   connection_debug=0, max_pool_size=None, max_overflow=None,
                   pool_timeout=None, sqlite_synchronous=True,
                   connection_trace=False, max_retries=10, retry_interval=10):
@@ -630,8 +618,6 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
         ping_callback = functools.partial(_ping_listener, engine)
         sqlalchemy.event.listen(engine, 'checkout', ping_callback)
         if engine.name == 'mysql':
-            if mysql_traditional_mode:
-                mysql_sql_mode = 'TRADITIONAL'
             if mysql_sql_mode:
                 mode_callback = functools.partial(_set_session_sql_mode,
                                                   sql_mode=mysql_sql_mode)
