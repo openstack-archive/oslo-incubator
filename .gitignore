@@ -3,7 +3,6 @@
 *.pyc
 *.log
 .coverage
-requirements.txt
 .venv
 .tox
 cover/
