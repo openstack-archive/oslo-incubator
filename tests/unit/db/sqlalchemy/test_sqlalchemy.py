@@ -16,8 +16,10 @@
 #    under the License.
 
 """Unit tests for SQLAlchemy specific code."""
+import logging
 
 import _mysql_exceptions
+import fixtures
 import mock
 import sqlalchemy
 from sqlalchemy import Column, MetaData, Table, UniqueConstraint
@@ -30,10 +32,8 @@ from openstack.common.db import exception as db_exc
 from openstack.common.db.sqlalchemy import models
 from openstack.common.db.sqlalchemy import session
 from openstack.common.db.sqlalchemy import test_base
-from openstack.common import log
 from openstack.common import test
 from openstack.common.gettextutils import _LW, _LI
-from tests.unit import test_log
 
 
 BASE = declarative_base()
@@ -379,15 +379,22 @@ class EngineFacadeTestCase(test.BaseTestCase):
                                           expire_on_commit=True)
 
 
-class SetSQLModeTestCase(test_log.LogTestBase):
+class SetSQLModeTestCase(test.BaseTestCase):
+
     def setUp(self):
         super(SetSQLModeTestCase, self).setUp()
         self.dbapi_mock = mock.Mock()
         self.cursor = mock.Mock()
         self.dbapi_mock.cursor.return_value = self.cursor
+
         # Add fake logger so we can verify log messages
-        self.logger = log.getLogger('openstack.common.db.sqlalchemy.session')
-        self._add_handler_with_cleanup(self.logger)
+        self.logger = self.useFixture(
+            fixtures.FakeLogger(
+                format="%(levelname)8s [%(name)s] %(message)s",
+                level=logging.DEBUG,
+                nuke_handlers=True,
+            )
+        )
 
     def _assert_calls(self, test_mode, recommended):
         self.cursor.execute.assert_any_call("SET SESSION sql_mode = %s",
@@ -395,13 +402,13 @@ class SetSQLModeTestCase(test_log.LogTestBase):
         self.cursor.execute.assert_called_with(
             "SHOW VARIABLES LIKE 'sql_mode'")
         self.assertIn(_LI('MySQL server mode set to %s') % test_mode,
-                      self.stream.getvalue())
+                      self.logger.output)
         if not recommended:
             self.assertIn(_LW("MySQL SQL mode is '%s', "
                               "consider enabling TRADITIONAL or "
                               "STRICT_ALL_TABLES")
                           % test_mode,
-                          self.stream.getvalue())
+                          self.logger.output)
 
     def _set_cursor_retval(self, test_mode):
         retval = mock.MagicMock()
@@ -425,7 +432,7 @@ class SetSQLModeTestCase(test_log.LogTestBase):
         self.assertIn(_LW("MySQL SQL mode is '', "
                           "consider enabling TRADITIONAL or "
                           "STRICT_ALL_TABLES"),
-                      self.stream.getvalue())
+                      self.logger.output)
 
     def test_set_mode_traditional(self):
         test_mode = 'traditional'
@@ -447,4 +454,4 @@ class SetSQLModeTestCase(test_log.LogTestBase):
         session._set_session_sql_mode(self.dbapi_mock, None, None,
                                       sql_mode=test_mode)
         self.assertIn(_LW('Unable to detect effective SQL mode'),
-                      self.stream.getvalue())
+                      self.logger.output)
