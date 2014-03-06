@@ -4,8 +4,8 @@ print_hint() {
     echo "Try \`${0##*/} --help' for more information." >&2
 }
 
-PARSED_OPTIONS=$(getopt -n "${0##*/}" -o hb:p:m:l:o: \
-                 --long help,base-dir:,package-name:,output-dir:,module:,library: -- "$@")
+PARSED_OPTIONS=$(getopt -n "${0##*/}" -o hb:p:m:l:o:t: \
+                 --long help,base-dir:,package-name:,output-dir:,module:,library:,use-tox-exclude: -- "$@")
 
 if [ $? != 0 ] ; then print_hint ; exit 1 ; fi
 
@@ -23,6 +23,7 @@ while true; do
             echo "-o, --output-dir=DIR      file output directory"
             echo "-m, --module=MOD          extra python module to interrogate for options"
             echo "-l, --library=LIB         extra library that registers options for discovery"
+            echo "-t, --use-tox-exclude       add find excludes for paths found in tox.ixi exclude lines"
             exit 0
             ;;
         -b|--base-dir)
@@ -50,6 +51,10 @@ while true; do
             LIBRARIES="$LIBRARIES -l $1"
             shift
             ;;
+        -t|--use-tox-exclude)
+            shift
+            USETOXEXCLUDE="yes"
+            ;;
         --)
             break
             ;;
@@ -71,8 +76,8 @@ if ! [ -d $TARGETDIR ]
 then
     echo "${0##*/}: invalid project package name" >&2 ; print_hint ; exit 1
 fi
-
 OUTPUTDIR=${OUTPUTDIR:-$BASEDIR/etc}
+
 # NOTE(bnemec): Some projects put their sample config in etc/,
 #               some in etc/$PACKAGENAME/
 if [ -d $OUTPUTDIR/$PACKAGENAME ]
@@ -86,8 +91,24 @@ fi
 
 BASEDIRESC=`echo $BASEDIR | sed -e 's/\//\\\\\//g'`
 find $TARGETDIR -type f -name "*.pyc" -delete
-FILES=$(find $TARGETDIR -type f -name "*.py" ! -path "*/tests/*" \
-        -exec grep -l "Opt(" {} + | sed -e "s/^$BASEDIRESC\///g" | sort -u)
+EXCLUDEPATHS="-not -path */tests/*"
+if [ -n $USETOXEXCLUDE ]; then
+    echo "Adding tox.ini excludes from $BASEDIR"
+    if [ -f $BASEDIR/tox.ini ]; then
+        EXCLUDELINES=`awk -F' = ' '/^exclude/ {print $2}' $BASEDIR/tox.ini`
+        for EXCLUDETMPPATH in ${EXCLUDELINES//,/ };  do
+            if [ -d $EXCLUDETMPPATH ]; then
+                 EXCLUDEPATHS+=" -not -path */$EXCLUDETMPPATH/*"
+            fi
+        done
+    else
+        echo "Unable to locate tox.ini."
+    fi
+fi
+EXCLUDEPATHS=$(echo "$EXCLUDEPATHS" | sed -e 's#/#\\/#g')
+FINDCOMMAND='find $TARGETDIR -type f -name "*.py" $EXCLUDEPATHS '
+FINDCOMMAND+='-exec grep -l "Opt(" {} + | sed -e "s/^$BASEDIRESC\///g" | sort -u'
+FILES=`eval $FINDCOMMAND`
 
 RC_FILE="`dirname $0`/oslo.config.generator.rc"
 if test -r "$RC_FILE"
@@ -110,6 +131,7 @@ OS_VARS=$(set | sed -n '/^OS_/s/=[^=]*$//gp' | xargs)
 DEFAULT_MODULEPATH=openstack.common.config.generator
 MODULEPATH=${MODULEPATH:-$DEFAULT_MODULEPATH}
 OUTPUTFILE=$OUTPUTDIR/$PACKAGENAME.conf.sample
+
 python -m $MODULEPATH $MODULES $LIBRARIES $FILES > $OUTPUTFILE
 
 # Hook to allow projects to append custom config file snippets
