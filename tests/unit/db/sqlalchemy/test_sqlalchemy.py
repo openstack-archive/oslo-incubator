@@ -367,8 +367,8 @@ class EngineFacadeTestCase(test.BaseTestCase):
             mysql_sql_mode='TRADITIONAL',
             sqlite_fk=False,
             idle_timeout=mock.ANY,
-            retry_interval=mock.ANY,
-            max_retries=mock.ANY,
+            retry_interval=10,
+            max_retries=10,
             max_overflow=mock.ANY,
             connection_trace=mock.ANY,
             sqlite_synchronous=mock.ANY,
@@ -376,6 +376,8 @@ class EngineFacadeTestCase(test.BaseTestCase):
         )
         get_maker.assert_called_once_with(engine=create_engine(),
                                           autocommit=False,
+                                          max_retries=10,
+                                          retry_interval=10,
                                           expire_on_commit=True)
 
 

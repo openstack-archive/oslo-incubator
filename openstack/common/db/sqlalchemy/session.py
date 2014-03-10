@@ -291,7 +291,7 @@ from sqlalchemy.pool import NullPool, StaticPool
 from sqlalchemy.sql.expression import literal_column
 
 from openstack.common.db import exception
-from openstack.common.gettextutils import _LE, _LW, _LI
+from openstack.common.gettextutils import _LW, _LI
 from openstack.common import timeutils
 
 
@@ -428,20 +428,53 @@ def _raise_if_deadlock_error(operational_error, engine_name):
 
 
 def _wrap_db_error(f):
+    #TODO(rpodolyaka): in a subsequent commit make this a class decorator to
+    # ensure it can only applied to either Session or Query
+    # subclasses instances (as we use Session instance bind attribute below
+    # which is different for Session and Query class  this may need to be
+    # split into a Query and Session version ) (mchalet)
     @functools.wraps(f)
     def _wrap(self, *args, **kwargs):
         try:
             assert issubclass(
-                self.__class__, sqlalchemy.orm.session.Session
+                self.__class__, (sqlalchemy.orm.session.Session,
+                                 sqlalchemy.orm.query.Query)
             ), ('_wrap_db_error() can only be applied to methods of '
-                'subclasses of sqlalchemy.orm.session.Session.')
+                'subclasses of sqlalchemy.orm.session.Session or '
+                'sqlalchemy.orm.query.Query.')
 
             return f(self, *args, **kwargs)
         except UnicodeEncodeError:
             raise exception.DBInvalidUnicodeParameter()
         except sqla_exc.OperationalError as e:
-            _raise_if_db_connection_lost(e, self.bind)
-            _raise_if_deadlock_error(e, self.bind.dialect.name)
+            if hasattr(self, 'session'):
+                session = self.session
+            else:
+                session = self
+            _raise_if_db_connection_lost(e, session.bind)
+            _raise_if_deadlock_error(e, session.bind.dialect.name)
+            # Retry the query if we are not in a transaction
+            # and autocommit is on.  TODO(mchalet) if not in a transaction
+            # but autocommit not on is it safe to retry?
+            if not _is_db_connection_error(e.args[0]) or session.transaction \
+                    or not session.autocommit:
+                LOG.warn('Transaction in progress, Cannot retry db request')
+                raise
+            remaining = session.max_retries
+            if remaining == -1:
+                remaining = 'infinite'
+            while True:
+                msg = _LW('SQL connection failed %s %s attempts left.')
+                LOG.warn(msg % (session, remaining))
+                if remaining != 'infinite':
+                    remaining -= 1
+                time.sleep(session.retry_interval)
+                try:
+                    return f(self, *args, **kwargs)
+                except sqla_exc.OperationalError as e:
+                    if (remaining != 'infinite' and remaining == 0) or \
+                            not _is_db_connection_error(e.args[0]):
+                        raise
             # NOTE(comstud): A lot of code is checking for OperationalError
             # so let's not wrap it for now.
             raise
@@ -449,16 +482,19 @@ def _wrap_db_error(f):
         # wrap it by our own DBDuplicateEntry exception. Unique constraint
         # violation is wrapped by IntegrityError.
         except sqla_exc.IntegrityError as e:
+            if hasattr(self, 'session'):
+                session = self.session
+            else:
+                session = self
             # note(boris-42): SqlAlchemy doesn't unify errors from different
             # DBs so we must do this. Also in some tables (for example
             # instance_types) there are more than one unique constraint. This
             # means we should get names of columns, which values violate
             # unique constraint, from error message.
-            _raise_if_duplicate_entry_error(e, self.bind.dialect.name)
+            _raise_if_duplicate_entry_error(e, session.bind.dialect.name)
             raise exception.DBError(e)
         except Exception as e:
-            LOG.exception(_LE('DB exception wrapped.'))
-            raise exception.DBError(e)
+            raise
     return _wrap
 
 
@@ -551,7 +587,18 @@ def _is_db_connection_error(args):
     # NOTE(adam_g): This is currently MySQL specific and needs to be extended
     #               to support Postgres and others.
     # For the db2, the error code is -30081 since the db2 is still not ready
-    conn_err_codes = ('2002', '2003', '2006', '2013', '-30081')
+    # 2002 The server is not responding
+    #  (or the local MySQL server's socket is not correctly configured)
+    # 2003 Can't connect to MySQL server on 'server' (10061)
+    # 2006 MySQL Server has gone away error
+    # 2013 Lost connection to MySQL server during query
+    # 2014 Commands out of sync; you can't run this command now
+    # 2045 Can't open shared memory; no answer from server
+    # 2055 Lost connection to MySQL server at '%s', system error: %d
+    # 1028 Sort abort - can occur if server shutdown during a sort
+    conn_err_codes = ('2002', '2003', '2006', '2013', '-30081', '2014',
+                      '2045', '2055', '1028')
+
     for err_code in conn_err_codes:
         if args.find(err_code) != -1:
             return True
@@ -664,9 +711,43 @@ class Query(sqlalchemy.orm.query.Query):
                             'deleted_at': timeutils.utcnow()},
                            synchronize_session=synchronize_session)
 
+    @_wrap_db_error
+    def all(self, *args, **kwargs):
+        return super(Query, self).all(*args, **kwargs)
+
+    @_wrap_db_error
+    def update(self, *args, **kwargs):
+        return super(Query, self).update(*args, **kwargs)
+
+    @_wrap_db_error
+    def one(self, *args, **kwargs):
+        return super(Query, self).one(*args, **kwargs)
+
+    @_wrap_db_error
+    def begin(self, *args, **kwargs):
+        return super(Query, self).begin(*args, **kwargs)
+
+    @_wrap_db_error
+    def commit(self, *args, **kwargs):
+        return super(Query, self).commit(*args, **kwargs)
+
+    @_wrap_db_error
+    def first(self, *args, **kwargs):
+        return super(Query, self).first(*args, **kwargs)
+
 
 class Session(sqlalchemy.orm.session.Session):
     """Custom Session class to avoid SqlAlchemy Session monkey patching."""
+
+    def __init__(self, *args, **kwargs):
+        self.max_retries = kwargs['max_retries']
+        self.retry_interval = kwargs['retry_interval']
+        if 'max_retries' in kwargs:
+            del kwargs['max_retries']
+        if 'retry_interval' in kwargs:
+            del kwargs['retry_interval']
+        return(super(Session, self).__init__(*args, **kwargs))
+
     @_wrap_db_error
     def query(self, *args, **kwargs):
         return super(Session, self).query(*args, **kwargs)
@@ -680,12 +761,15 @@ class Session(sqlalchemy.orm.session.Session):
         return super(Session, self).execute(*args, **kwargs)
 
 
-def get_maker(engine, autocommit=True, expire_on_commit=False):
+def get_maker(engine, autocommit=True, expire_on_commit=False,
+              max_retries=10, retry_interval=10):
     """Return a SQLAlchemy sessionmaker using the given engine."""
     return sqlalchemy.orm.sessionmaker(bind=engine,
                                        class_=Session,
                                        autocommit=autocommit,
                                        expire_on_commit=expire_on_commit,
+                                       max_retries=max_retries,
+                                       retry_interval=retry_interval,
                                        query_cls=Query)
 
 
@@ -802,7 +886,8 @@ class EngineFacade(object):
         """
 
         super(EngineFacade, self).__init__()
-
+        max_retries = kwargs.get('max_retries', 10)
+        retry_interval = kwargs.get('retry_interval', 10)
         self._engine = create_engine(
             sql_connection=sql_connection,
             sqlite_fk=sqlite_fk,
@@ -814,12 +899,14 @@ class EngineFacade(object):
             pool_timeout=kwargs.get('pool_timeout'),
             sqlite_synchronous=kwargs.get('sqlite_synchronous', True),
             connection_trace=kwargs.get('connection_trace', False),
-            max_retries=kwargs.get('max_retries', 10),
-            retry_interval=kwargs.get('retry_interval', 10))
+            max_retries=max_retries,
+            retry_interval=retry_interval)
         self._session_maker = get_maker(
             engine=self._engine,
             autocommit=autocommit,
-            expire_on_commit=expire_on_commit)
+            expire_on_commit=expire_on_commit,
+            max_retries=max_retries,
+            retry_interval=retry_interval)
 
     def get_engine(self):
         """Get the engine instance (note, that it's shared)."""
@@ -841,7 +928,8 @@ class EngineFacade(object):
         """
 
         for arg in kwargs:
-            if arg not in ('autocommit', 'expire_on_commit'):
+            if arg not in ('autocommit', 'expire_on_commit', 'max_retries',
+                           'retry_interval'):
                 del kwargs[arg]
 
         return self._session_maker(**kwargs)
