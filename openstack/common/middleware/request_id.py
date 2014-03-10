@@ -16,7 +16,8 @@
 """Middleware that ensures request ID.
 
 It ensures to assign request ID for each API request and set it to
-request environment. The request ID is also added to API response.
+request environment. Projects using this middleware can use the value
+of ENV_REQUEST_ID for the header x-openstack-request-id in the response.
 """
 
 from openstack.common import context
@@ -30,9 +31,4 @@ HTTP_RESP_HEADER_REQUEST_ID = 'x-openstack-request-id'
 class RequestIdMiddleware(base.Middleware):
 
     def process_request(self, req):
-        self.req_id = context.generate_request_id()
-        req.environ[ENV_REQUEST_ID] = self.req_id
-
-    def process_response(self, response):
-        response.headers.add(HTTP_RESP_HEADER_REQUEST_ID, self.req_id)
-        return response
+        req.environ[ENV_REQUEST_ID] = context.generate_request_id()
