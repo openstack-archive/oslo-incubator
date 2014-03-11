@@ -146,17 +146,20 @@ def _import_module(mod_str):
 
 def _is_in_group(opt, group):
     "Check if opt is in group."
-    for value in group._opts.values():
+    if group is None:
+        group = cfg.CONF
         # NOTE(llu): Temporary workaround for bug #1262148, wait until
         # newly released oslo.config support '==' operator.
-        if not(value['opt'] != opt):
-            return True
-    return False
+        equal = lambda o: not (o != opt)
+    else:
+        equal = lambda o: o is opt
+
+    return any(equal(o['opt']) for o in group._opts.itervalues())
 
 
 def _guess_groups(opt, mod_obj):
     # is it in the DEFAULT group?
-    if _is_in_group(opt, cfg.CONF):
+    if _is_in_group(opt, None):
         return 'DEFAULT'
 
     # what other groups is it in?
