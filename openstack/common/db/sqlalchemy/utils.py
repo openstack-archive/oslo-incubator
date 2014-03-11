@@ -36,7 +36,6 @@ from sqlalchemy import String
 from sqlalchemy import Table
 from sqlalchemy.types import NullType
 
-from openstack.common import context as request_context
 from openstack.common.db.sqlalchemy import models
 from openstack.common.gettextutils import _, _LI, _LW
 from openstack.common import timeutils
@@ -176,27 +175,26 @@ def _read_deleted_filter(query, db_model, read_deleted):
     return query
 
 
-def _project_filter(query, db_model, context, project_only):
-    if project_only and 'project_id' not in db_model.__table__.columns:
+def _project_filter(query, db_model, project_only, project_id):
+    if 'project_id' not in db_model.__table__.columns:
         raise ValueError(_("There is no `project_id` column in `%s` table.")
                          % db_model.__name__)
 
-    if request_context.is_user_context(context) and project_only:
-        if project_only == 'allow_none':
-            is_none = None
-            query = query.filter(or_(db_model.project_id == context.project_id,
-                                     db_model.project_id == is_none))
-        else:
-            query = query.filter(db_model.project_id == context.project_id)
+    if project_only == 'allow_none':
+        is_none = None
+        query = query.filter(or_(db_model.project_id == project_id,
+                                 db_model.project_id == is_none))
+    else:
+        query = query.filter(db_model.project_id == project_id)
 
     return query
 
 
-def model_query(context, model, session, args=None, project_only=False,
-                read_deleted=None):
-    """Query helper that accounts for context's `read_deleted` field.
+def model_query(model, session, args=None, project_filter=False,
+                project_only=False, project_id=None, read_deleted=None):
+    """Query helper for db.sqlalchemy api methods.
 
-    :param context:      context to query under
+    This accounts for `read_deleted` and `project_id` fields.
 
     :param model:        Model to query. Must be a subclass of ModelBase.
     :type model:         models.ModelBase
@@ -207,23 +205,44 @@ def model_query(context, model, session, args=None, project_only=False,
     :param args:         Arguments to query. If None - model is used.
     :type args:          tuple
 
-    :param project_only: If present and context is user-type, then restrict
+    :param project_filter: If present, allows filterinf by project id
+    :type project_filter:  bool
+
+    :param project_only: If present and project_filter == True, then restrict
                          query to match the context's project_id. If set to
                          'allow_none', restriction includes project_id = None.
     :type project_only:  bool
 
+    :param project_id:   If present, and project_only, then add to query
+                         filter by this project_id.
+    :type project_id:    model.__table__.columns.project_id.type
+
     :param read_deleted: If present, overrides context's read_deleted field.
-    :type read_deleted:   bool
+    :type read_deleted:  bool
+
 
     Usage:
 
     ..code:: python
 
-        result = (utils.model_query(context, models.Instance, session=session)
+        def model_query(context, *args, **kwargs):
+
+            kwargs['project_id'] = getattr(context, 'project_id', None)
+            kwargs['project_filter'] = (
+                kwargs['project_only'] and is_user_context(context))
+
+            kwargs['read_deleted'] = is_read_deleted(
+                kwargs.get(read_deleted, False), context)
+
+            return utils.model_query(*args, **kwargs)
+
+
+        result = (model_query(context, models.Instance, session=session)
                        .filter_by(uuid=instance_uuid)
                        .all())
 
-        query = utils.model_query(
+
+        query = model_query(
                     context, Node,
                     session=session,
                     args=(func.count(Node.id), func.sum(Node.ram))
@@ -231,20 +250,14 @@ def model_query(context, model, session, args=None, project_only=False,
 
     """
 
-    if not read_deleted:
-        if hasattr(context, 'read_deleted'):
-            # NOTE(viktors): some projects use `read_deleted` attribute in
-            # their contexts instead of `show_deleted`.
-            read_deleted = context.read_deleted
-        else:
-            read_deleted = context.show_deleted
-
     if not issubclass(model, models.ModelBase):
         raise TypeError(_("model should be a subclass of ModelBase"))
 
     query = session.query(model) if not args else session.query(*args)
-    query = _read_deleted_filter(query, model, read_deleted)
-    query = _project_filter(query, model, context, project_only)
+    if read_deleted:
+        query = _read_deleted_filter(query, model, read_deleted)
+    if project_filter:
+        query = _project_filter(query, model, project_only, project_id)
 
     return query
 
