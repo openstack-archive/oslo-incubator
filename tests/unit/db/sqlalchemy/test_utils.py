@@ -718,7 +718,7 @@ class TestModelQuery(test.BaseTestCase):
     def test_project_only_true(self):
         mock_query = utils.model_query(
             self.user_context, MyModelSoftDeletedProjectId,
-            session=self.session, project_only=True)
+            session=self.session, project_only=True, is_user_context=True)
 
         deleted_filter = mock_query.filter.call_args[0][0]
         self.assertEqual(
@@ -735,7 +735,8 @@ class TestModelQuery(test.BaseTestCase):
     def test_read_deleted_allow_none(self):
         mock_query = utils.model_query(
             self.user_context, MyModelSoftDeletedProjectId,
-            session=self.session, project_only='allow_none')
+            session=self.session, project_only='allow_none',
+            is_user_context=True)
 
         self.assertEqual(
             str(mock_query.filter.call_args[0][0]),
@@ -757,8 +758,6 @@ class TestModelQuery(test.BaseTestCase):
         self.session.query.assert_called_with(MyModel.id)
         _read_deleted_filter.assert_called_with(
             self.session.query, MyModel, user_context.show_deleted)
-        _project_filter.assert_called_with(
-            self.session.query, MyModel, user_context, False)
 
     @mock.patch.object(utils, "_read_deleted_filter")
     @mock.patch.object(utils, "_project_filter")
@@ -771,5 +770,3 @@ class TestModelQuery(test.BaseTestCase):
         self.session.query.assert_called_with(MyModel.id)
         _read_deleted_filter.assert_called_with(
             self.session.query, MyModel, self.user_context.read_deleted)
-        _project_filter.assert_called_with(
-            self.session.query, MyModel, self.user_context, False)
