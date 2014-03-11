@@ -341,6 +341,25 @@ class MessageTestCase(test.BaseTestCase):
         # translation should use the original list
         self.assertEqual(result.translate(), "Found list: [1, 2, 3]")
 
+    def test_mod_deep_copies_param_nodeep_param(self):
+        msgid = "Value: %s"
+        params = NoDeepCopyObject(5)
+        # Apply the params
+        result = self.message(msgid) % params
+        self.assertEqual(result.translate(), "Value: 5")
+
+    def test_mod_deep_copies_param_nodeep_dict(self):
+        msgid = "Values: %(val1)s %(val2)s"
+        params = {'val1': 1, 'val2': NoDeepCopyObject(2)}
+        # Apply the params
+        result = self.message(msgid) % params
+        self.assertEqual(result.translate(), "Values: 1 2")
+
+        # Apply again to make sure other path works as well
+        params = {'val1': 3, 'val2': NoDeepCopyObject(4)}
+        result = self.message(msgid) % params
+        self.assertEqual(result.translate(), "Values: 3 4")
+
     def test_mod_returns_a_copy(self):
         msgid = "Some msgid string: %(test1)s %(test2)s"
         message = self.message(msgid)
@@ -777,3 +796,15 @@ class SomeObject(object):
 
     def __unicode__(self):
         return self.message
+
+
+class NoDeepCopyObject(object):
+
+    def __init__(self, value):
+        self.value = value
+
+    def __unicode__(self):
+        return unicode(self.value)
+
+    def __deepcopy__(self, memo):
+        raise TypeError('Deep Copy not supported')
