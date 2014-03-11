@@ -22,6 +22,7 @@ import six
 
 from openstack.common.db.sqlalchemy import session
 from openstack.common.db.sqlalchemy import utils
+from openstack.common.fixture import lockutils
 from openstack.common import test
 
 
@@ -120,6 +121,9 @@ class OpportunisticTestCase(DbTestCase):
     FIXTURE = abc.abstractproperty(lambda: None)
 
     def setUp(self):
+        # TODO(bnemec): Remove this once infra is ready for
+        # https://review.openstack.org/#/c/74963/ to merge.
+        self.useFixture(lockutils.LockFixture('opportunistic-db'))
         credentials = {
             'backend': self.FIXTURE.DRIVER,
             'user': self.FIXTURE.USERNAME,
