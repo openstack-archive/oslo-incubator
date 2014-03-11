@@ -37,7 +37,6 @@ from sqlalchemy import String
 from sqlalchemy import Table
 from sqlalchemy.types import NullType
 
-from openstack.common import context as request_context
 from openstack.common.db.sqlalchemy import models
 from openstack.common.gettextutils import _, _LI, _LW
 from openstack.common import timeutils
@@ -177,16 +176,18 @@ def _read_deleted_filter(query, db_model, read_deleted):
     return query
 
 
-def _project_filter(query, db_model, context, project_only):
-    if project_only and 'project_id' not in db_model.__table__.columns:
+def _project_filter(query, db_model, context, project_only, is_user_context):
+    if 'project_id' not in db_model.__table__.columns:
         raise ValueError(_("There is no `project_id` column in `%s` table.")
                          % db_model.__name__)
 
-    if request_context.is_user_context(context) and project_only:
+    if not hasattr(is_user_context, '__call__'):
+        raise ValueError(_("is_user_context param must be callable"))
+    if is_user_context(context):
         if project_only == 'allow_none':
             is_none = None
             query = query.filter(or_(db_model.project_id == context.project_id,
-                                     db_model.project_id == is_none))
+                                 db_model.project_id == is_none))
         else:
             query = query.filter(db_model.project_id == context.project_id)
 
@@ -194,7 +195,7 @@ def _project_filter(query, db_model, context, project_only):
 
 
 def model_query(context, model, session, args=None, project_only=False,
-                read_deleted=None):
+                read_deleted=None, is_user_context=None):
     """Query helper that accounts for context's `read_deleted` field.
 
     :param context:      context to query under
@@ -214,17 +215,24 @@ def model_query(context, model, session, args=None, project_only=False,
     :type project_only:  bool
 
     :param read_deleted: If present, overrides context's read_deleted field.
-    :type read_deleted:   bool
+    :type read_deleted:  bool
+
+    :param is_user_context: Function, which indicates if the request context
+                            is a normal user.
+    :type read_deleted:  callable
 
     Usage:
 
     ..code:: python
 
-        result = (utils.model_query(context, models.Instance, session=session)
+        model_query = functools.partial(utils.model_query,
+                                       read_deleted=context.read_deleted)
+
+        result = (model_query(context, models.Instance, session=session)
                        .filter_by(uuid=instance_uuid)
                        .all())
 
-        query = utils.model_query(
+        query = model_query(
                     context, Node,
                     session=session,
                     args=(func.count(Node.id), func.sum(Node.ram))
@@ -245,7 +253,9 @@ def model_query(context, model, session, args=None, project_only=False,
 
     query = session.query(model) if not args else session.query(*args)
     query = _read_deleted_filter(query, model, read_deleted)
-    query = _project_filter(query, model, context, project_only)
+    if project_only:
+        query = _project_filter(query, model, context,
+                                project_only, is_user_context)
 
     return query
 
