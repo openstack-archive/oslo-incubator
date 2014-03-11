@@ -29,14 +29,12 @@ from sqlalchemy import func
 from sqlalchemy import Index
 from sqlalchemy import Integer
 from sqlalchemy import MetaData
-from sqlalchemy import or_
 from sqlalchemy.sql.expression import literal_column
 from sqlalchemy.sql.expression import UpdateBase
 from sqlalchemy import String
 from sqlalchemy import Table
 from sqlalchemy.types import NullType
 
-from openstack.common import context as request_context
 from openstack.common.db.sqlalchemy import models
 from openstack.common.gettextutils import _, _LI, _LW
 from openstack.common import timeutils
@@ -157,46 +155,39 @@ def paginate_query(query, model, limit, sort_keys, marker=None,
     return query
 
 
-def _read_deleted_filter(query, db_model, read_deleted):
+def _read_deleted_filter(query, db_model, deleted):
     if 'deleted' not in db_model.__table__.columns:
         raise ValueError(_("There is no `deleted` column in `%s` table. "
                            "Project doesn't use soft-deleted feature.")
                          % db_model.__name__)
 
     default_deleted_value = db_model.__table__.c.deleted.default.arg
-    if read_deleted == 'no':
+    if deleted is True:
         query = query.filter(db_model.deleted == default_deleted_value)
-    elif read_deleted == 'yes':
-        pass  # omit the filter to include deleted and active
-    elif read_deleted == 'only':
+    elif deleted is False:
         query = query.filter(db_model.deleted != default_deleted_value)
     else:
-        raise ValueError(_("Unrecognized read_deleted value '%s'")
-                         % read_deleted)
+        raise ValueError(_("Unrecognized read_deleted value '%s'") % deleted)
     return query
 
 
-def _project_filter(query, db_model, context, project_only):
-    if project_only and 'project_id' not in db_model.__table__.columns:
+def _project_filter(query, db_model, project_id):
+    if 'project_id' not in db_model.__table__.columns:
         raise ValueError(_("There is no `project_id` column in `%s` table.")
                          % db_model.__name__)
 
-    if request_context.is_user_context(context) and project_only:
-        if project_only == 'allow_none':
-            is_none = None
-            query = query.filter(or_(db_model.project_id == context.project_id,
-                                     db_model.project_id == is_none))
-        else:
-            query = query.filter(db_model.project_id == context.project_id)
+    if isinstance(project_id, (list, tuple)):
+        query = query.filter(db_model.project_id.in_(project_id))
+    else:
+        query = query.filter(db_model.project_id == project_id)
 
     return query
 
 
-def model_query(context, model, session, args=None, project_only=False,
-                read_deleted=None):
-    """Query helper that accounts for context's `read_deleted` field.
+def model_query(model, session, args=None, **kwargs):
+    """Query helper for db.sqlalchemy api methods.
 
-    :param context:      context to query under
+    This accounts for `read_deleted` and `project_id` fields.
 
     :param model:        Model to query. Must be a subclass of ModelBase.
     :type model:         models.ModelBase
@@ -207,44 +198,58 @@ def model_query(context, model, session, args=None, project_only=False,
     :param args:         Arguments to query. If None - model is used.
     :type args:          tuple
 
-    :param project_only: If present and context is user-type, then restrict
-                         query to match the context's project_id. If set to
-                         'allow_none', restriction includes project_id = None.
-    :type project_only:  bool
+    Keyword arguments:
 
-    :param read_deleted: If present, overrides context's read_deleted field.
-    :type read_deleted:   bool
+    :keyword project_id: If present, present, allows filtering by project_id(s)
+                         Can be either model.__table__.columns.project_id type,
+                         or iterable, or None. If project_id is iterable,
+                         filter returns all rows, where `project_id` value in
+                         the project_id list
+    :type project_id:    iterable,
+                         model.__table__.columns.project_id.type,
+                         None type
+
+    :keyword deleted:    If present, allows filtering by deleted field.
+    :type deleted:       bool
+
 
     Usage:
 
     ..code:: python
 
-        result = (utils.model_query(context, models.Instance, session=session)
+        def model_query(context, *args, **kwargs):
+
+            kwargs['project_id'] = getattr(context, 'project_id', None)
+            kwargs['project_filter'] = (
+                kwargs['project_only'] and is_user_context(context))
+
+            kwargs['read_deleted'] = is_read_deleted(
+                kwargs.get(read_deleted, False), context)
+
+            return utils.model_query(*args, **kwargs)
+
+
+        result = (model_query(context, models.Instance, session=session)
                        .filter_by(uuid=instance_uuid)
                        .all())
 
-        query = utils.model_query(
+
+        query = model_query(
                     context, Node,
                     session=session,
                     args=(func.count(Node.id), func.sum(Node.ram))
-                    ).filter_by(project_id=project_id)
+                    ).filter_by(uuid=node_uuid)
 
     """
-
-    if not read_deleted:
-        if hasattr(context, 'read_deleted'):
-            # NOTE(viktors): some projects use `read_deleted` attribute in
-            # their contexts instead of `show_deleted`.
-            read_deleted = context.read_deleted
-        else:
-            read_deleted = context.show_deleted
 
     if not issubclass(model, models.ModelBase):
         raise TypeError(_("model should be a subclass of ModelBase"))
 
     query = session.query(model) if not args else session.query(*args)
-    query = _read_deleted_filter(query, model, read_deleted)
-    query = _project_filter(query, model, context, project_only)
+    if 'deleted' in kwargs:
+        query = _read_deleted_filter(query, model, kwargs['deleted'])
+    if 'project_id' in kwargs:
+        query = _project_filter(query, model, kwargs['project_id'])
 
     return query
 
