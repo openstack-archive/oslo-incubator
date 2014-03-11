@@ -149,32 +149,45 @@ def _import_module(mod_str):
         return None
 
 
-def _is_in_group(opt, group):
-    "Check if opt is in group."
+def _find_in_group(opt, group):
+    "Find an equivalent opt in group."
     for value in group._opts.values():
+        o = value['opt']
+
         # NOTE(llu): Temporary workaround for bug #1262148, wait until
         # newly released oslo.config support '==' operator.
-        if not(value['opt'] != opt):
-            return True
-    return False
+        if not (o != opt):
+            return o
+
+    return None
 
 
-def _guess_groups(opt, mod_obj):
-    # is it in the DEFAULT group?
-    if _is_in_group(opt, cfg.CONF):
-        return 'DEFAULT'
+def _possible_groups():
+    yield 'DEFAULT', cfg.CONF
 
-    # what other groups is it in?
     for value in cfg.CONF.values():
         if isinstance(value, cfg.CONF.GroupAttr):
-            if _is_in_group(opt, value._group):
-                return value._group.name
+            group = value._group
+            yield group.name, group
 
-    raise RuntimeError(
-        "Unable to find group for option %s, "
-        "maybe it's defined twice in the same group?"
-        % opt.name
-    )
+
+def _guess_group(opt, mod_obj):
+    found = False
+
+    for name, group in _possible_groups():
+        found_opt = _find_in_group(opt, group)
+
+        # Return only when we find the identical object, as equivalent
+        # options may be registered multiple times, in multiple groups.
+        if found_opt is opt:
+            return name
+
+        found |= found_opt is not None
+
+    if not found:
+        raise RuntimeError("Unable to find group for option %s" % opt.name)
+
+    return None
 
 
 def _list_opts(obj):
@@ -193,7 +206,9 @@ def _list_opts(obj):
 
     ret = {}
     for opt in opts:
-        ret.setdefault(_guess_groups(opt, obj), []).append(opt)
+        group = _guess_group(opt, obj)
+        if group is not None:
+            ret.setdefault(group, []).append(opt)
     return ret.items()
 
 

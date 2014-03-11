@@ -67,6 +67,10 @@ class GeneratorTestcase(test.BaseTestCase):
         self.assertIn('#baa=<None>\n', lines)
         self.assertIn('#foo=<None>\n', lines)
         self.assertIn('#fblaa=fblaa\n', lines)
+        # Test that baa appears once in each group
+        self.assertEqual(2, lines.count('#baa=<None>\n'))
+        # Test that fblaa appears only once
+        self.assertEqual(1, lines.count('#fblaa=fblaa\n'))
 
     def test_i18n(self):
         stdout = self.useFixture(fixtures.StringStream('confstdout')).stream
