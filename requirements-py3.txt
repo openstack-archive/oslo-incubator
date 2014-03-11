@@ -18,6 +18,6 @@ requests>=1.1
 Routes>=1.12.3
 six>=1.5.2
 SQLAlchemy>=0.7.8,<=0.8.99
-sqlalchemy-migrate>=0.8.2
+sqlalchemy-migrate>=0.8.2,!=0.8.4
 stevedore>=0.14
 WebOb>=1.2.3
