@@ -36,7 +36,7 @@ TEST_VAR_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__),
 ENFORCER = policy.Enforcer()
 
 
-class TestException(Exception):
+class MyException(Exception):
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
@@ -253,9 +253,9 @@ class CheckFunctionTestCase(PolicyBaseTestCase):
 
         try:
             self.enforcer.enforce('rule', 'target', 'creds',
-                                  True, TestException, "arg1",
+                                  True, MyException, "arg1",
                                   "arg2", kw1="kwarg1", kw2="kwarg2")
-        except TestException as exc:
+        except MyException as exc:
             self.assertEqual(exc.args, ("arg1", "arg2"))
             self.assertEqual(exc.kwargs, dict(kw1="kwarg1", kw2="kwarg2"))
         else:
