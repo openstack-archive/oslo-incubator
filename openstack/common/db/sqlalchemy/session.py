@@ -291,7 +291,7 @@ from sqlalchemy.pool import NullPool, StaticPool
 from sqlalchemy.sql.expression import literal_column
 
 from openstack.common.db import exception
-from openstack.common.gettextutils import _LE, _LW, _LI
+from openstack.common.gettextutils import _LE, _LW
 from openstack.common import timeutils
 
 
@@ -520,30 +520,54 @@ def _set_session_sql_mode(dbapi_con, connection_rec,
 
     Note: passing in '' (empty string) for sql_mode clears
     the SQL mode for the session, overriding a potentially set
-    server default. Passing in None (the default) makes this
-    a no-op, meaning if a server-side SQL mode is set, it still applies.
+    server default.
     """
-    cursor = dbapi_con.cursor()
-    if sql_mode is not None:
-        cursor.execute("SET SESSION sql_mode = %s", [sql_mode])
 
-    # Check against the real effective SQL mode. Even when unset by
+    cursor = dbapi_con.cursor()
+    cursor.execute("SET SESSION sql_mode = %s", [sql_mode])
+
+
+def _mysql_get_effective_sql_mode(engine):
+    """Returns the effective SQL mode for connections from the engine pool.
+
+    Returns ``None`` if the mode isn't available, otherwise returns the mode.
+
+    """
+    # Get the real effective SQL mode. Even when unset by
     # our own config, the server may still be operating in a specific
-    # SQL mode as set by the server configuration
-    cursor.execute("SHOW VARIABLES LIKE 'sql_mode'")
-    row = cursor.fetchone()
+    # SQL mode as set by the server configuration.
+    # Also note that the checkout listener will be called on execute to
+    # set the mode if it's registered.
+    row = engine.execute("SHOW VARIABLES LIKE 'sql_mode'").fetchone()
     if row is None:
+        return
+    return row[1]
+
+
+def _mysql_check_effective_sql_mode(engine):
+    """Logs a message based on the effective SQL mode for MySQL connections."""
+    realmode = _mysql_get_effective_sql_mode(engine)
+
+    if realmode is None:
         LOG.warning(_LW('Unable to detect effective SQL mode'))
         return
-    realmode = row[1]
-    LOG.info(_LI('MySQL server mode set to %s') % realmode)
+
+    LOG.debug('MySQL server mode set to %s', realmode)
     # 'TRADITIONAL' mode enables several other modes, so
     # we need a substring match here
     if not ('TRADITIONAL' in realmode.upper() or
             'STRICT_ALL_TABLES' in realmode.upper()):
         LOG.warning(_LW("MySQL SQL mode is '%s', "
-                        "consider enabling TRADITIONAL or STRICT_ALL_TABLES")
-                    % realmode)
+                        "consider enabling TRADITIONAL or STRICT_ALL_TABLES"),
+                    realmode)
+
+
+def _mysql_set_mode_callback(engine, sql_mode):
+    if sql_mode is not None:
+        mode_callback = functools.partial(_set_session_sql_mode,
+                                          sql_mode=sql_mode)
+        sqlalchemy.event.listen(engine, 'checkout', mode_callback)
+    _mysql_check_effective_sql_mode(engine)
 
 
 def _is_db_connection_error(args):
@@ -619,9 +643,7 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
         sqlalchemy.event.listen(engine, 'checkout', ping_callback)
         if engine.name == 'mysql':
             if mysql_sql_mode:
-                mode_callback = functools.partial(_set_session_sql_mode,
-                                                  sql_mode=mysql_sql_mode)
-                sqlalchemy.event.listen(engine, 'checkout', mode_callback)
+                _mysql_set_mode_callback(engine, mysql_sql_mode)
     elif 'sqlite' in connection_dict.drivername:
         if not sqlite_synchronous:
             sqlalchemy.event.listen(engine, 'connect',
