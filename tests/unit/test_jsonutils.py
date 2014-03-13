@@ -83,6 +83,7 @@ class ToPrimitiveTestCase(test.BaseTestCase):
                     raise StopIteration
                 self.index = self.index + 1
                 return self.data[self.index - 1]
+            __next__ = next
 
         x = IterClass()
         self.assertEqual(jsonutils.to_primitive(x), [1, 2, 3, 4, 5])
@@ -133,7 +134,10 @@ class ToPrimitiveTestCase(test.BaseTestCase):
 
     def test_typeerror(self):
         x = bytearray  # Class, not instance
-        self.assertEqual(jsonutils.to_primitive(x), u"<type 'bytearray'>")
+        if six.PY3:
+            self.assertEqual(jsonutils.to_primitive(x), u"<class 'bytearray'>")
+        else:
+            self.assertEqual(jsonutils.to_primitive(x), u"<type 'bytearray'>")
 
     def test_nasties(self):
         def foo():
@@ -142,7 +146,12 @@ class ToPrimitiveTestCase(test.BaseTestCase):
         ret = jsonutils.to_primitive(x)
         self.assertEqual(len(ret), 3)
         self.assertTrue(ret[0].startswith(u"<module 'datetime' from "))
-        self.assertTrue(ret[1].startswith('<function foo at 0x'))
+        if six.PY3:
+            self.assertTrue(ret[1].startswith('<function '
+                            'ToPrimitiveTestCase.test_nasties.<locals>.foo '
+                            'at 0x'))
+        else:
+            self.assertTrue(ret[1].startswith('<function foo at 0x'))
         self.assertEqual(ret[2], '<built-in function dir>')
 
     def test_depth(self):
