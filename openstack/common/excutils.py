@@ -49,9 +49,22 @@ class save_and_reraise_exception(object):
               decide_if_need_reraise()
               if not should_be_reraised:
                   ctxt.reraise = False
+
+    Also in some cases the caller may not want to log original exception,
+    and for those circumstances this context provides a log_orig_exception
+    flag that can be used to omit logging. For example:
+
+      try:
+          res = self._get_by_id(context, model, id)
+      except NoResultFound:
+          with save_and_reraise_exception() as ctx:
+              if issubclass(model, Port):
+                  ctx.log_orig_exception = False
+                  raise PortNotFound(port_id=id)
     """
     def __init__(self):
         self.reraise = True
+        self.log_orig_exception = True
 
     def __enter__(self):
         self.type_, self.value, self.tb, = sys.exc_info()
@@ -59,10 +72,11 @@ class save_and_reraise_exception(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type is not None:
-            logging.error(_LE('Original exception being dropped: %s'),
-                          traceback.format_exception(self.type_,
-                                                     self.value,
-                                                     self.tb))
+            if self.log_orig_exception:
+                logging.error(_LE('Original exception being dropped: %s'),
+                              traceback.format_exception(self.type_,
+                                                         self.value,
+                                                         self.tb))
             return False
         if self.reraise:
             six.reraise(self.type_, self.value, self.tb)
