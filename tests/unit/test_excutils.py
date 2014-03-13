@@ -15,6 +15,8 @@
 import logging
 import time
 
+import mock
+
 from openstack.common import excutils
 from openstack.common.fixture import moxstubout
 from openstack.common import test
@@ -42,16 +44,35 @@ class SaveAndReraiseTest(test.BaseTestCase):
     def test_save_and_reraise_exception_dropped(self):
         e = None
         msg = 'second exception'
-        try:
+        with mock.patch('logging.error') as log:
             try:
-                raise Exception('dropped')
-            except Exception:
-                with excutils.save_and_reraise_exception():
-                    raise Exception(msg)
-        except Exception as _e:
-            e = _e
+                try:
+                    raise Exception('dropped')
+                except Exception:
+                    with excutils.save_and_reraise_exception():
+                        raise Exception(msg)
+            except Exception as _e:
+                e = _e
 
-        self.assertEqual(str(e), msg)
+            self.assertEqual(str(e), msg)
+            self.assertTrue(log.called)
+
+    def test_save_and_reraise_exception_no_log(self):
+        e = None
+        msg = 'second exception'
+        with mock.patch('logging.error') as log:
+            try:
+                try:
+                    raise Exception('dropped')
+                except Exception:
+                    with excutils.save_and_reraise_exception() as ctxt:
+                        ctxt.log_orig_exception = False
+                        raise Exception(msg)
+            except Exception as _e:
+                e = _e
+
+            self.assertEqual(str(e), msg)
+            self.assertFalse(log.called)
 
     def test_save_and_reraise_exception_no_reraise(self):
         """Test that suppressing the reraise works."""
