@@ -32,6 +32,6 @@ class RequestIdTest(test.BaseTestCase):
         req = webob.Request.blank('/test')
         res = req.get_response(app)
         res_req_id = res.headers.get(request_id.HTTP_RESP_HEADER_REQUEST_ID)
-        self.assertThat(res_req_id, matchers.StartsWith('req-'))
+        self.assertThat(res_req_id, matchers.StartsWith(b'req-'))
         # request-id in request environ is returned as response body
         self.assertEqual(res_req_id, res.body)
