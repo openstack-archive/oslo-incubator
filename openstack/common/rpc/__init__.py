@@ -24,6 +24,7 @@ For some wrappers that add message versioning to rpc, see:
 """
 
 from oslo.config import cfg
+import six
 
 from openstack.common import importutils
 from openstack.common import log as logging
@@ -52,7 +53,7 @@ rpc_opts = [
     cfg.ListOpt('allowed_rpc_exception_modules',
                 default=['nova.exception',
                          'cinder.exception',
-                         'exceptions',
+                         'builtins' if six.PY3 else 'exceptions',
                          ],
                 help='Modules of exceptions that are permitted to be recreated'
                      ' upon receiving exception data from an rpc call.'),
