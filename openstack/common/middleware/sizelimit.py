@@ -71,7 +71,8 @@ class RequestBodySizeLimiter(base.Middleware):
 
     @webob.dec.wsgify
     def __call__(self, req):
-        if req.content_length > CONF.max_request_body_size:
+        if (req.content_length is not None and
+            req.content_length > CONF.max_request_body_size):
             msg = _("Request is too large.")
             raise webob.exc.HTTPRequestEntityTooLarge(explanation=msg)
         if req.content_length is None and req.is_body_readable:
