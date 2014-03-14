@@ -43,6 +43,11 @@ class FakeTranslations(gettext.GNUTranslations):
     def __init__(self, translations):
         self.translations = translations
 
+    # used by Python 3
+    def gettext(self, msgid):
+        return self.translations.get(msgid, msgid)
+
+    # used by Python 2
     def ugettext(self, msgid):
         return self.translations.get(msgid, msgid)
 

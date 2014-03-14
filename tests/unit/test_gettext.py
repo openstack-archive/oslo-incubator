@@ -20,6 +20,7 @@ import logging
 from babel import localedata
 import mock
 import six
+import testtools
 
 from openstack.common.fixture import moxstubout
 from openstack.common import gettextutils
@@ -420,6 +421,7 @@ class MessageTestCase(test.BaseTestCase):
         test_me = lambda: SomeObject('test') + self.message(msgid)
         self.assertRaises(TypeError, test_me)
 
+    @testtools.skipIf(six.PY3, 'test specific to Python 2')
     def test_str_disabled(self):
         msgid = "A message"
         test_me = lambda: str(self.message(msgid))
@@ -796,6 +798,8 @@ class SomeObject(object):
 
     def __unicode__(self):
         return self.message
+    # alias for Python 3
+    __str__ = __unicode__
 
 
 class NoDeepCopyObject(object):
@@ -803,8 +807,12 @@ class NoDeepCopyObject(object):
     def __init__(self, value):
         self.value = value
 
-    def __unicode__(self):
-        return unicode(self.value)
+    if six.PY3:
+        def __str__(self):
+            return str(self.value)
+    else:
+        def __unicode__(self):
+            return unicode(self.value)
 
     def __deepcopy__(self, memo):
         raise TypeError('Deep Copy not supported')
