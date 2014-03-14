@@ -24,6 +24,7 @@ import mock
 import sqlalchemy
 from sqlalchemy import Column, MetaData, Table, UniqueConstraint
 from sqlalchemy import DateTime, Integer, String
+from sqlalchemy.engine import reflection
 from sqlalchemy import exc as sqla_exc
 from sqlalchemy.exc import DataError
 from sqlalchemy.ext.declarative import declarative_base
@@ -514,3 +515,40 @@ class MysqlSetCallbackTest(test_log.LogTestBase):
 
         self.assertNotIn("consider enabling TRADITIONAL or STRICT_ALL_TABLES",
                          self.stream.getvalue())
+
+
+class TestSchemaNamingConventions(test_base.DbTestCase):
+    def setUp(self):
+        super(TestSchemaNamingConventions, self).setUp()
+        self.meta = MetaData()
+        self.meta.bind = self.engine
+        self.inspector = reflection.Inspector.from_engine(self.meta.bind)
+
+        if not hasattr(self.inspector, 'get_unique_constraints'):
+            self.skipTest("Class Inspector doesn't support method "
+                          "'get_unique_constraints' in this library version")
+
+    def test_creating_constraint_with_wrong_name_force(self):
+        test_table = Table(_TABLE_NAME, self.meta,
+                           Column('id', Integer, primary_key=True),
+                           Column('foo', Integer),
+                           UniqueConstraint('foo', name='wrong_name'))
+        test_table.create()
+        self.addCleanup(test_table.drop)
+
+        constraints = self.inspector.get_unique_constraints(_TABLE_NAME)
+        self.assertEqual(1, len(constraints))
+        self.assertEqual('wrong_name', constraints[0]['name'])
+
+        session.apply_naming_conventions(force=True)
+        test_table2 = Table(_TABLE_NAME + '2_', self.meta,
+                            Column('id', Integer, primary_key=True),
+                            Column('foo', Integer),
+                            UniqueConstraint('foo', name='wrong_name'))
+        self.addCleanup(test_table2.drop)
+        test_table2.create()
+
+        constraints = self.inspector.get_unique_constraints(_TABLE_NAME + '2_')
+        self.assertEqual(1, len(constraints))
+        self.assertEqual('uniq___tmp__test__tmp__2_0foo',
+                         constraints[0]['name'])
