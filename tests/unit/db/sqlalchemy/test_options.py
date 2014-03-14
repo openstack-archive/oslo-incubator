@@ -30,7 +30,7 @@ class DbApiOptionsTestCase(test_utils.BaseTestCase):
         self.config = config_fixture.config
 
     def test_deprecated_session_parameters(self):
-        path = self.create_tempfiles([["tmp", """[DEFAULT]
+        path = self.create_tempfiles([["tmp", b"""[DEFAULT]
 sql_connection=x://y.z
 sql_min_pool_size=10
 sql_max_pool_size=20
@@ -51,7 +51,7 @@ sql_connection_trace=True
         self.assertEqual(self.conf.database.connection_trace, True)
 
     def test_session_parameters(self):
-        path = self.create_tempfiles([["tmp", """[database]
+        path = self.create_tempfiles([["tmp", b"""[database]
 connection=x://y.z
 min_pool_size=10
 max_pool_size=20
@@ -74,15 +74,15 @@ pool_timeout=7
         self.assertEqual(self.conf.database.pool_timeout, 7)
 
     def test_dbapi_database_deprecated_parameters(self):
-        path = self.create_tempfiles([['tmp', '[DATABASE]\n'
-                                      'sql_connection=fake_connection\n'
-                                      'sql_idle_timeout=100\n'
-                                      'sql_min_pool_size=99\n'
-                                      'sql_max_pool_size=199\n'
-                                      'sql_max_retries=22\n'
-                                      'reconnect_interval=17\n'
-                                      'sqlalchemy_max_overflow=101\n'
-                                      'sqlalchemy_pool_timeout=5\n'
+        path = self.create_tempfiles([['tmp', b'[DATABASE]\n'
+                                      b'sql_connection=fake_connection\n'
+                                      b'sql_idle_timeout=100\n'
+                                      b'sql_min_pool_size=99\n'
+                                      b'sql_max_pool_size=199\n'
+                                      b'sql_max_retries=22\n'
+                                      b'reconnect_interval=17\n'
+                                      b'sqlalchemy_max_overflow=101\n'
+                                      b'sqlalchemy_pool_timeout=5\n'
                                        ]])[0]
         self.conf(['--config-file', path])
         self.assertEqual(self.conf.database.connection, 'fake_connection')
@@ -95,25 +95,25 @@ pool_timeout=7
         self.assertEqual(self.conf.database.pool_timeout, 5)
 
     def test_dbapi_database_deprecated_parameters_sql(self):
-        path = self.create_tempfiles([['tmp', '[sql]\n'
-                                      'connection=test_sql_connection\n'
-                                      'idle_timeout=99\n'
+        path = self.create_tempfiles([['tmp', b'[sql]\n'
+                                      b'connection=test_sql_connection\n'
+                                      b'idle_timeout=99\n'
                                        ]])[0]
         self.conf(['--config-file', path])
         self.assertEqual(self.conf.database.connection, 'test_sql_connection')
         self.assertEqual(self.conf.database.idle_timeout, 99)
 
     def test_deprecated_dbapi_parameters(self):
-        path = self.create_tempfiles([['tmp', '[DEFAULT]\n'
-                                      'db_backend=test_123\n'
+        path = self.create_tempfiles([['tmp', b'[DEFAULT]\n'
+                                      b'db_backend=test_123\n'
                                        ]])[0]
 
         self.conf(['--config-file', path])
         self.assertEqual(self.conf.database.backend, 'test_123')
 
     def test_dbapi_parameters(self):
-        path = self.create_tempfiles([['tmp', '[database]\n'
-                                      'backend=test_123\n'
+        path = self.create_tempfiles([['tmp', b'[database]\n'
+                                      b'backend=test_123\n'
                                        ]])[0]
 
         self.conf(['--config-file', path])
