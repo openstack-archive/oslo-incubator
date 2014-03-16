@@ -731,18 +731,41 @@ def _multi_send(method, context, topic, msg, timeout=None,
         # this exception and a timeout isn't too big a lie.
         raise rpc_common.Timeout(_("No match from matchmaker."))
 
-    # This supports brokerless fanout (addresses > 1)
-    for queue in queues:
-        (_topic, ip_addr) = queue
+    if len(queues) == 1:
+        # This supports one-message processing (addresses = 1)
+        _topic, ip_addr = queues[0]
         _addr = "tcp://%s:%s" % (ip_addr, conf.rpc_zmq_port)
 
         if method.__name__ == '_cast':
             eventlet.spawn_n(method, _addr, context,
                              _topic, msg, timeout, envelope,
                              _msg_id)
-            return
-        return method(_addr, context, _topic, msg, timeout,
-                      envelope)
+            return None
+        else:
+            msg = method(_addr, context,
+                         _topic, msg, timeout, envelope)
+            return msg
+
+    # This supports brokerless fanout (addresses > 1)
+    if method.__name__ == '_cast':
+        for queue in queues:
+            _topic, ip_addr = queue
+            _addr = "tcp://%s:%s" % (ip_addr, conf.rpc_zmq_port)
+
+            eventlet.spawn_n(method, _addr, context,
+                             _topic, msg, timeout, envelope,
+                             _msg_id)
+        return None
+    else:
+        reply = []
+        for queue in queues:
+            _topic, ip_addr = queue
+            _addr = "tcp://%s:%s" % (ip_addr, conf.rpc_zmq_port)
+            msg = method(_addr, context,
+                         _topic, msg, timeout, envelope)
+            reply.append(msg)
+
+        return reply
 
 
 def create_connection(conf, new=True):
@@ -757,7 +780,10 @@ def multicall(conf, *args, **kwargs):
 def call(conf, *args, **kwargs):
     """Send a message, expect a response."""
     data = _multi_send(_call, *args, **kwargs)
-    return data[-1]
+    if data:
+        return data[-1]
+    else:
+        return None
 
 
 def cast(conf, *args, **kwargs):
