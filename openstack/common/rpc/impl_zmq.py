@@ -732,17 +732,22 @@ def _multi_send(method, context, topic, msg, timeout=None,
         raise rpc_common.Timeout(_("No match from matchmaker."))
 
     # This supports brokerless fanout (addresses > 1)
-    for queue in queues:
-        (_topic, ip_addr) = queue
-        _addr = "tcp://%s:%s" % (ip_addr, conf.rpc_zmq_port)
+    if method.__name__ == '_cast':
+        for queue in queues:
+            _topic, ip_addr = queue
+            _addr = "tcp://%s:%s" % (ip_addr, conf.rpc_zmq_port)
 
-        if method.__name__ == '_cast':
             eventlet.spawn_n(method, _addr, context,
                              _topic, msg, timeout, envelope,
                              _msg_id)
-            return
-        return method(_addr, context, _topic, msg, timeout,
-                      envelope)
+        return None
+    else:
+        for queue in queues:
+            _topic, ip_addr = queue
+            _addr = "tcp://%s:%s" % (ip_addr, conf.rpc_zmq_port)
+            res = method(_addr, context,
+                         _topic, msg, timeout, envelope)
+        return res
 
 
 def create_connection(conf, new=True):
@@ -757,7 +762,10 @@ def multicall(conf, *args, **kwargs):
 def call(conf, *args, **kwargs):
     """Send a message, expect a response."""
     data = _multi_send(_call, *args, **kwargs)
-    return data[-1]
+    if data:
+        return data[-1]
+    else:
+        return None
 
 
 def cast(conf, *args, **kwargs):
