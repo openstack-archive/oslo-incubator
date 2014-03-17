@@ -15,6 +15,7 @@
 #    under the License.
 
 import mock
+import unittest
 
 from openstack.common.db.sqlalchemy import test_migrations as migrate
 from openstack.common import test
@@ -152,3 +153,17 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
             mock.call(self.engine, v, with_data=True) for v in versions
         ]
         self.assertEqual(upgraded, self._migrate_up.call_args_list)
+
+    def test_decorator_skip_ifnot_sqlite(self):
+        this = mock.MagicMock()
+        this.skipTest = self.skipTest
+
+        @migrate.skip_ifnot_sqlite
+        def test_sqllite(this):
+            return True
+
+        this.engines = {}
+        self.assertRaises(unittest.SkipTest, test_sqllite, this)
+
+        this.engines = {'sqllite': '<0xff>'}
+        self.assertTrue(test_sqllite, this)
