@@ -68,6 +68,16 @@ def _set_db_lock(lock_path=None, lock_prefix=None):
     return decorator
 
 
+def skip_ifnot_sqlite(f):
+    """Decorator that help to skip test that needs sqlite."""
+    @functools.wraps(f)
+    def wrapper(self, *args, **kwargs):
+        if 'sqlite' not in self.engines:
+            self.skipTest('sqlite is not configured')
+        return f(self, *args, **kwargs)
+    return wrapper
+
+
 class BaseMigrationTestCase(test.BaseTestCase):
     """Base class fort testing of migration utils."""
 
