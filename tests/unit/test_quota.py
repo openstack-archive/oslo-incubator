@@ -44,13 +44,13 @@ class ExceptionTestCase(test.BaseTestCase):
             msg_fmt = "Test format %(string)s"
 
         e = self._get_raised_exception(TestException)
-        self.assertEqual(e.message, e.msg_fmt)
+        self.assertEqual(str(e), e.msg_fmt)
 
         e = self._get_raised_exception(TestException, number=42)
-        self.assertEqual(e.message, e.msg_fmt)
+        self.assertEqual(str(e), e.msg_fmt)
 
         e = self._get_raised_exception(TestException, string="test")
-        self.assertEqual(e.message, e.msg_fmt % {"string": "test"})
+        self.assertEqual(str(e), e.msg_fmt % {"string": "test"})
 
 
 class DbQuotaDriverTestCase(test.BaseTestCase):
