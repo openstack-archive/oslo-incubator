@@ -505,6 +505,14 @@ def _ping_listener(engine, dbapi_conn, connection_rec, connection_proxy):
         if engine.dialect.is_disconnect(ex, dbapi_conn, cursor):
             msg = _LW('Database server has gone away: %s') % ex
             LOG.warning(msg)
+
+            # if the database server has hone away, all connections in the pool
+            # have become invalid and we can safely close all of them here,
+            # rather than waste time on checking of every single connection
+            engine.dispose()
+
+            # this will be handled by SQLAlchemy and will force it to create
+            # a new connection and retry the original action
             raise sqla_exc.DisconnectionError(msg)
         else:
             raise

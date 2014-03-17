@@ -209,6 +209,9 @@ class FakeDB2Engine(object):
     dialect = Dialect()
     name = 'ibm_db_sa'
 
+    def dispose(self):
+        pass
+
 
 class TestDBDisconnected(test.BaseTestCase):
 
@@ -219,11 +222,12 @@ class TestDBDisconnected(test.BaseTestCase):
             'convert_unicode': True}
 
         engine = sqlalchemy.create_engine(connection, **engine_args)
-
-        self.assertRaises(sqlalchemy.exc.DisconnectionError,
-                          session._ping_listener, engine,
-                          FakeDBAPIConnection(), FakeConnectionRec(),
-                          FakeConnectionProxy())
+        with mock.patch.object(engine, 'dispose') as dispose_mock:
+            self.assertRaises(sqlalchemy.exc.DisconnectionError,
+                              session._ping_listener, engine,
+                              FakeDBAPIConnection(), FakeConnectionRec(),
+                              FakeConnectionProxy())
+            dispose_mock.assert_called_once_with()
 
     def test_mysql_ping_listener_disconnected(self):
         def fake_execute(sql):
