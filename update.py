@@ -41,14 +41,20 @@ configuration file, or:
   $> python update.py --config-file ../myproj/myproj/openstack/common.conf
                       --dest-dir ../myproj
 
-Where ../myproject is a project directory, but the configuration file is
+Where ../myproj is a project directory, but the configuration file is
 stored in a sub-directory, or:
 
   $> python update.py --modules wsgi,utils --base myproj ../myproj
   $> python update.py --modules wsgi,utils --base myproj --dest-dir ../myproj
 
-Where ../myproject is a project directory, but we explicitly specify
+Where ../myproj is a project directory, but we explicitly specify
 the modules to copy and the base destination module
+
+  $> python update.py --modules wsgi,utils --nodeps --base myproj ../myproj
+
+Where ../myproj is a project directory, but we explicitly specify
+the modules to copy, the base destination module, and do not want to
+automatically copy the dependencies of the specified modules
 
 Obviously, the first way is the easiest!
 """
