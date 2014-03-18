@@ -18,8 +18,12 @@
 
 from oslo.config import cfg
 
+from nova.openstack.common.gettextutils import _
+from openstack.common import log as logging
 from openstack.common import timeutils
 
+
+LOG = logging.getLogger(__name__)
 memcache_opts = [
     cfg.ListOpt('memcached_servers',
                 default=None,
@@ -35,12 +39,14 @@ def get_client(memcached_servers=None):
 
     if not memcached_servers:
         memcached_servers = CONF.memcached_servers
+
     if memcached_servers:
         try:
             import memcache
             client_cls = memcache.Client
         except ImportError:
-            pass
+            LOG.warn(_("Could not import the memcache python module. "
+                       "Falling back to the in process cache"))
 
     return client_cls(memcached_servers, debug=0)
 
