@@ -30,11 +30,11 @@ CONF = cfg.CONF
 CONF.register_opts(memcache_opts)
 
 
-def get_client(memcached_servers=None):
+def get_client(memcached_servers=None, conf=CONF):
     client_cls = Client
 
     if not memcached_servers:
-        memcached_servers = CONF.memcached_servers
+        memcached_servers = conf.memcached_servers
     if memcached_servers:
         try:
             import memcache
