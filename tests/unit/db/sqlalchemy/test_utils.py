@@ -41,6 +41,9 @@ from openstack.common import test
 from tests import utils as test_utils
 
 
+SA_VERSION = tuple(map(int, sqlalchemy.__version__.split('.')))
+
+
 class TestSanitizeDbUrl(test.BaseTestCase):
 
     def test_url_with_cred(self):
@@ -349,18 +352,22 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
                       Column('deleted', Boolean))
         table.create()
 
-        self.assertRaises(utils.ColumnError,
-                          utils.change_deleted_column_type_to_id_type,
-                          engine, table_name)
+        # reflection of custom types has been fixed upstream
+        if SA_VERSION < (0, 9, 0):
+            self.assertRaises(utils.ColumnError,
+                              utils.change_deleted_column_type_to_id_type,
+                              engine, table_name)
 
         fooColumn = Column('foo', CustomType())
         utils.change_deleted_column_type_to_id_type(engine, table_name,
                                                     foo=fooColumn)
 
         table = utils.get_table(engine, table_name)
-        # NOTE(boris-42): There is no way to check has foo type CustomType.
-        #                 but sqlalchemy will set it to NullType.
-        self.assertTrue(isinstance(table.c.foo.type, NullType))
+        # note(boris-42): there is no way to check has foo type CustomType.
+        #                 but sqlalchemy will set it to NullType. This has
+        #                 been fixed upstream in recent SA versions
+        if SA_VERSION < (0, 9, 0):
+            self.assertTrue(isinstance(table.c.foo.type, NullType))
         self.assertTrue(isinstance(table.c.deleted.type, Integer))
 
     def test_change_deleted_column_type_to_boolean(self):
@@ -415,18 +422,22 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
                       Column('deleted', Integer))
         table.create()
 
-        self.assertRaises(utils.ColumnError,
-                          utils.change_deleted_column_type_to_boolean,
-                          engine, table_name)
+        # reflection of custom types has been fixed upstream
+        if SA_VERSION < (0, 9, 0):
+            self.assertRaises(utils.ColumnError,
+                              utils.change_deleted_column_type_to_boolean,
+                              engine, table_name)
 
         fooColumn = Column('foo', CustomType())
         utils.change_deleted_column_type_to_boolean(engine, table_name,
                                                     foo=fooColumn)
 
         table = utils.get_table(engine, table_name)
-        # NOTE(boris-42): There is no way to check has foo type CustomType.
-        #                 but sqlalchemy will set it to NullType.
-        self.assertTrue(isinstance(table.c.foo.type, NullType))
+        # note(boris-42): there is no way to check has foo type CustomType.
+        #                 but sqlalchemy will set it to NullType. This has
+        #                 been fixed upstream in recent SA versions
+        if SA_VERSION < (0, 9, 0):
+            self.assertTrue(isinstance(table.c.foo.type, NullType))
         self.assertTrue(isinstance(table.c.deleted.type, Boolean))
 
     def test_utils_drop_unique_constraint(self):
@@ -496,17 +507,21 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
 
         engine.execute(test_table.insert(), values)
         warnings.simplefilter("ignore", SAWarning)
-        # NOTE(boris-42): Missing info about column `foo` that has
-        #                 unsupported type CustomType.
-        self.assertRaises(utils.ColumnError,
-                          utils.drop_unique_constraint,
-                          engine, table_name, uc_name, 'foo')
 
-        # NOTE(boris-42): Wrong type of foo instance. it should be
-        #                 instance of sqlalchemy.Column.
-        self.assertRaises(utils.ColumnError,
-                          utils.drop_unique_constraint,
-                          engine, table_name, uc_name, 'foo', foo=Integer())
+        # reflection of custom types has been fixed upstream
+        if SA_VERSION < (0, 9, 0):
+            # NOTE(boris-42): Missing info about column `foo` that has
+            #                 unsupported type CustomType.
+            self.assertRaises(utils.ColumnError,
+                              utils.drop_unique_constraint,
+                              engine, table_name, uc_name, 'foo')
+
+            # NOTE(boris-42): Wrong type of foo instance. it should be
+            #                 instance of sqlalchemy.Column.
+            self.assertRaises(utils.ColumnError,
+                              utils.drop_unique_constraint,
+                              engine, table_name, uc_name, 'foo',
+                              foo=Integer())
 
         foo = Column('foo', CustomType, default=0)
         utils.drop_unique_constraint(
