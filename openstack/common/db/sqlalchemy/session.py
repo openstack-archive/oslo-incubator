@@ -518,8 +518,7 @@ def _ping_listener(engine, dbapi_conn, connection_rec, connection_proxy):
             raise
 
 
-def _set_session_sql_mode(dbapi_con, connection_rec,
-                          connection_proxy, sql_mode=None):
+def _set_session_sql_mode(dbapi_con, connection_rec, sql_mode=None):
     """Set the sql_mode session variable.
 
     MySQL supports several server modes. The default is None, but sessions
@@ -574,7 +573,7 @@ def _mysql_set_mode_callback(engine, sql_mode):
     if sql_mode is not None:
         mode_callback = functools.partial(_set_session_sql_mode,
                                           sql_mode=sql_mode)
-        sqlalchemy.event.listen(engine, 'checkout', mode_callback)
+        sqlalchemy.event.listen(engine, 'connect', mode_callback)
     _mysql_check_effective_sql_mode(engine)
 
 

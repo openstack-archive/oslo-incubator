@@ -412,16 +412,21 @@ class MysqlSetCallbackTest(test_log.LogTestBase):
             self._cbs = {}
             self._execs = []
             self._realmode = realmode
+            self._connected = False
 
         def set_callback(self, name, cb):
             self._cbs[name] = cb
 
-        def execute(self, sql):
-            cb = self._cbs.get('checkout', lambda *x, **y: None)
+        def connect(self, **kwargs):
+            cb = self._cbs.get('connect', lambda *x, **y: None)
             dbapi_con = MysqlSetCallbackTest.FakeDbapiCon(self._execs)
             connection_rec = None  # Not used.
-            connection_proxy = None  # Not used.
-            cb(dbapi_con, connection_rec, connection_proxy)
+            cb(dbapi_con, connection_rec)
+
+        def execute(self, sql):
+            if not self._connected:
+                self.connect()
+                self._connected = True
             self._execs.append(sql)
             return MysqlSetCallbackTest.FakeResultSet(self._realmode)
 
@@ -518,3 +523,20 @@ class MysqlSetCallbackTest(test_log.LogTestBase):
 
         self.assertNotIn("consider enabling TRADITIONAL or STRICT_ALL_TABLES",
                          self.stream.getvalue())
+
+    def test_multiple_executes(self):
+        # We should only set the sql_mode on a connection once.
+
+        engine = self._call_set_callback(sql_mode='TRADITIONAL',
+                                         realmode='TRADITIONAL')
+
+        engine.execute('SELECT * FROM foo')
+        engine.execute('SELECT * FROM bar')
+
+        exp_calls = [
+            "SET SESSION sql_mode = ['TRADITIONAL']",
+            "SHOW VARIABLES LIKE 'sql_mode'",
+            "SELECT * FROM foo",
+            "SELECT * FROM bar",
+        ]
+        self.assertEqual(exp_calls, engine._execs)
