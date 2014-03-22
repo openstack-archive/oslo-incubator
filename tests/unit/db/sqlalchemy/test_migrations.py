@@ -83,11 +83,11 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
             None, self.REPOSITORY)
 
         versions = range(self.INIT_VERSION + 1, self.REPOSITORY.latest + 1)
-        upgraded = [mock.call(None, v, with_data=True) for v in versions]
-        self.assertEqual(self._migrate_up.call_args_list, upgraded)
+        self._migrate_up.assert_has_calls([
+            mock.call(None, v, with_data=True) for v in versions])
 
-        downgraded = [mock.call(None, v - 1) for v in reversed(versions)]
-        self.assertEqual(self._migrate_down.call_args_list, downgraded)
+        self._migrate_down.assert_has_calls([
+            mock.call(None, v - 1) for v in reversed(versions)])
 
     @mock.patch.object(migrate.WalkVersionsMixin, '_migrate_up')
     @mock.patch.object(migrate.WalkVersionsMixin, '_migrate_down')
@@ -105,7 +105,7 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
         upgraded.extend(
             [mock.call(self.engine, v) for v in reversed(versions)]
         )
-        self.assertEqual(upgraded, self._migrate_up.call_args_list)
+        self._migrate_up.assert_has_calls(upgraded)
 
         downgraded_1 = [
             mock.call(self.engine, v - 1, with_data=True) for v in versions
@@ -115,7 +115,7 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
             downgraded_2.append(mock.call(self.engine, v - 1))
             downgraded_2.append(mock.call(self.engine, v - 1))
         downgraded = downgraded_1 + downgraded_2
-        self.assertEqual(self._migrate_down.call_args_list, downgraded)
+        self._migrate_down.assert_has_calls(downgraded)
 
     @mock.patch.object(migrate.WalkVersionsMixin, '_migrate_up')
     @mock.patch.object(migrate.WalkVersionsMixin, '_migrate_down')
@@ -131,12 +131,10 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
         for v in versions:
             upgraded.append(mock.call(self.engine, v, with_data=True))
             upgraded.append(mock.call(self.engine, v))
-        self.assertEqual(upgraded, self._migrate_up.call_args_list)
+        self._migrate_up.assert_has_calls(upgraded)
 
-        downgraded = [
-            mock.call(self.engine, v - 1, with_data=True) for v in versions
-        ]
-        self.assertEqual(self._migrate_down.call_args_list, downgraded)
+        self._migrate_down.assert_has_calls([
+            mock.call(self.engine, v - 1, with_data=True) for v in versions])
 
     @mock.patch.object(migrate.WalkVersionsMixin, '_migrate_up')
     @mock.patch.object(migrate.WalkVersionsMixin, '_migrate_down')
@@ -148,7 +146,5 @@ class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
 
         versions = range(self.INIT_VERSION + 1, self.REPOSITORY.latest + 1)
 
-        upgraded = [
-            mock.call(self.engine, v, with_data=True) for v in versions
-        ]
-        self.assertEqual(upgraded, self._migrate_up.call_args_list)
+        self._migrate_up.assert_has_calls([
+            mock.call(self.engine, v, with_data=True) for v in versions])

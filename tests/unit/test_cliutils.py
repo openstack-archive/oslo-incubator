@@ -455,10 +455,10 @@ class PrintResultTestCase(test.BaseTestCase):
 
         cliutils.print_list(objs, ["Name", "Value"], sortby_index=0)
 
-        self.assertEqual(self.mock_add_row.call_args_list,
-                         [mock.call(["k1", 1]),
-                          mock.call(["k3", 2]),
-                          mock.call(["k2", 3])])
+        self.mock_add_row.assert_has_calls([
+            mock.call(["k1", 1]),
+            mock.call(["k3", 2]),
+            mock.call(["k2", 3])])
         self.mock_get_string.assert_called_with(sortby="Name")
 
     def test_print_list_sort_by_integer(self):
@@ -468,10 +468,10 @@ class PrintResultTestCase(test.BaseTestCase):
 
         cliutils.print_list(objs, ["Name", "Value"], sortby_index=1)
 
-        self.assertEqual(self.mock_add_row.call_args_list,
-                         [mock.call(["k1", 1]),
-                          mock.call(["k2", 3]),
-                          mock.call(["k3", 2])])
+        self.mock_add_row.assert_has_calls([
+            mock.call(["k1", 1]),
+            mock.call(["k2", 3]),
+            mock.call(["k3", 2])])
         self.mock_get_string.assert_called_with(sortby="Value")
 
     def test_print_list_sort_by_none(self):
@@ -481,21 +481,21 @@ class PrintResultTestCase(test.BaseTestCase):
 
         cliutils.print_list(objs, ["Name", "Value"], sortby_index=None)
 
-        self.assertEqual(self.mock_add_row.call_args_list,
-                         [mock.call(["k1", 1]),
-                          mock.call(["k3", 3]),
-                          mock.call(["k2", 2])])
+        self.mock_add_row.assert_has_calls([
+            mock.call(["k1", 1]),
+            mock.call(["k3", 3]),
+            mock.call(["k2", 2])])
         self.mock_get_string.assert_called_with()
 
     def test_print_dict(self):
         cliutils.print_dict({"K": "k", "Key": "Value"})
         cliutils.print_dict({"K": "k", "Key": "Long\\nValue"})
-        self.assertEqual(self.mock_add_row.call_args_list,
-                         [mock.call(["K", "k"]),
-                          mock.call(["Key", "Value"]),
-                          mock.call(["K", "k"]),
-                          mock.call(["Key", "Long"]),
-                          mock.call(["", "Value"])])
+        self.mock_add_row.assert_has_calls([
+            mock.call(["K", "k"]),
+            mock.call(["Key", "Value"]),
+            mock.call(["K", "k"]),
+            mock.call(["Key", "Long"]),
+            mock.call(["", "Value"])])
 
 
 class DecoratorsTestCase(test.BaseTestCase):
