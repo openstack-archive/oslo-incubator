@@ -163,6 +163,8 @@ log_opts = [
                     'qpid=WARN',
                     'sqlalchemy=WARN',
                     'suds=INFO',
+                    'oslo.messaging=INFO',
+                    'oslo.openstack=INFO',
                     'iso8601=WARN',
                     'requests.packages.urllib3.connectionpool=WARN'
                 ],
