@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Approved+1: Alan Pevec <apevec@gmail.com>
+Code-Review+2: Alan Pevec <apevec@gmail.com>
+Code-Review+2: Doug Hellmann <doug.hellmann@dreamhost.com>
+Code-Review+1: Ihar Hrachyshka <ihrachys@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 25 Mar 2014 10:44:40 +0000
+Reviewed-on: https://review.openstack.org/80967
+Project: openstack/oslo-incubator
+Branch: refs/heads/stable/havana
