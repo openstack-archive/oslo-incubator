@@ -55,3 +55,39 @@ class NetworkUtilsTest(test.BaseTestCase):
         self.assertEqual(result.path, '/mypath')
         self.assertEqual(result.query, 'someparam#somefragment')
         self.assertEqual(result.fragment, '')
+
+        result = network_utils.urlsplit(
+            'rpc://user:pass@myhost/mypath?someparam#somefragment',
+            allow_fragments=False)
+        self.assertEqual(result.scheme, 'rpc')
+        self.assertEqual(result.netloc, 'user:pass@myhost')
+        self.assertEqual(result.path, '/mypath')
+        self.assertEqual(result.query, 'someparam#somefragment')
+        self.assertEqual(result.fragment, '')
+
+    def test_urlsplit_ipv6(self):
+        ipv6_url = 'http://[::1]:443/v2.0/'
+        result = network_utils.urlsplit(ipv6_url)
+        self.assertEqual(result.scheme, 'http')
+        self.assertEqual(result.netloc, '[::1]:443')
+        self.assertEqual(result.path, '/v2.0/')
+        self.assertEqual(result.hostname, '::1')
+        self.assertEqual(result.port, 443)
+
+        ipv6_url = 'http://user:pass@[::1]/v2.0/'
+        result = network_utils.urlsplit(ipv6_url)
+        self.assertEqual(result.scheme, 'http')
+        self.assertEqual(result.netloc, 'user:pass@[::1]')
+        self.assertEqual(result.path, '/v2.0/')
+        self.assertEqual(result.hostname, '::1')
+        self.assertEqual(result.port, None)
+
+        ipv6_url = 'https://[2001:db8:85a3::8a2e:370:7334]:1234/v2.0/xy?ab#12'
+        result = network_utils.urlsplit(ipv6_url)
+        self.assertEqual(result.scheme, 'https')
+        self.assertEqual(result.netloc, '[2001:db8:85a3::8a2e:370:7334]:1234')
+        self.assertEqual(result.path, '/v2.0/xy')
+        self.assertEqual(result.hostname, '2001:db8:85a3::8a2e:370:7334')
+        self.assertEqual(result.port, 1234)
+        self.assertEqual(result.query, 'ab')
+        self.assertEqual(result.fragment, '12')

@@ -74,6 +74,24 @@ def parse_host_port(address, default_port=None):
     return (host, None if port is None else int(port))
 
 
+class ModifiedSplitResult(SplitResult):
+    """Split results class for urlsplit."""
+
+    # NOTE(dims): The functions below are needed for Python 2.6.x.
+    # We can remove these when we drop support for 2.6.x.
+    @property
+    def hostname(self):
+        netloc = self.netloc.split('@', 1)[-1]
+        host, port = parse_host_port(netloc)
+        return host
+
+    @property
+    def port(self):
+        netloc = self.netloc.split('@', 1)[-1]
+        host, port = parse_host_port(netloc)
+        return port
+
+
 def urlsplit(url, scheme='', allow_fragments=True):
     """Parse a URL using urlparse.urlsplit(), splitting query and fragments.
     This function papers over Python issue9374 when needed.
@@ -86,4 +104,5 @@ def urlsplit(url, scheme='', allow_fragments=True):
         path, fragment = path.split('#', 1)
     if '?' in path:
         path, query = path.split('?', 1)
-    return SplitResult(scheme, netloc, path, query, fragment)
+    return ModifiedSplitResult(*SplitResult(scheme, netloc,
+                                            path, query, fragment))
