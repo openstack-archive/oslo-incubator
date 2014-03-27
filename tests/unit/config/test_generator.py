@@ -104,6 +104,10 @@ class GeneratorTestcase(test.BaseTestCase):
         result = generator._sanitize_default('host', fake_fqdn)
         self.assertEqual('oslo', result)
 
+        result = generator._sanitize_default('neutron_id',
+                                             'id-%s' % fake_fqdn)
+        self.assertEqual('id-oslo', result)
+
     def test_bad_lib(self):
         self.assertRaises(ImportError, generator.generate,
                           ['-l', 'broken_opts_lib'])
