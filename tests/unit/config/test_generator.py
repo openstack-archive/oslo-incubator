@@ -104,6 +104,13 @@ class GeneratorTestcase(test.BaseTestCase):
         result = generator._sanitize_default('host', fake_fqdn)
         self.assertEqual('oslo', result)
 
+    def test_sanitize_value_matches_hostname(self):
+        fake_hostname = 'foo'
+        self.useFixture(fixtures.MonkeyPatch('socket.gethostname',
+                                             lambda: fake_hostname))
+        result = generator._sanitize_default('something', fake_hostname)
+        self.assertEqual(result, fake_hostname)
+
     def test_bad_lib(self):
         self.assertRaises(ImportError, generator.generate,
                           ['-l', 'broken_opts_lib'])
