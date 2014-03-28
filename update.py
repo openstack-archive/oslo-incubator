@@ -112,7 +112,14 @@ def _parse_args(argv):
             config_file = def_config_file(conf.configfile_or_destdir)
 
         if config_file:
-            conf(argv + ['--config-file', config_file])
+            if not (conf.module or conf.modules):
+                conf(argv + ['--config-file', config_file])
+            elif os.path.isdir(conf.configfile_or_destdir):
+                conf(argv + ['--dest-dir', conf.configfile_or_destdir])
+            else:
+                print('Specifying a config file and a list of modules to '
+                      'sync will not work correctly', file=sys.stderr)
+                sys.exit(1)
 
     return conf
 
