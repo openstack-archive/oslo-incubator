@@ -51,6 +51,7 @@ where stderr is logged for that given service.
 
 from __future__ import print_function
 
+import os
 import signal
 import sys
 
@@ -58,6 +59,7 @@ from openstack.common.report.generators import conf as cgen
 from openstack.common.report.generators import threading as tgen
 from openstack.common.report.generators import version as pgen
 from openstack.common.report import report
+from openstack.common import timeutils
 
 
 class GuruMeditation(object):
@@ -73,6 +75,8 @@ class GuruMeditation(object):
     always come first in the class list to ensure the
     MRO is correct.
     """
+
+    timestamp_fmt = "%Y%m%d%H%M%S"
 
     def __init__(self, version_obj, *args, **kwargs):
         self.version_obj = version_obj
@@ -97,7 +101,8 @@ class GuruMeditation(object):
             cls.persistent_sections = [[section_title, generator]]
 
     @classmethod
-    def setup_autorun(cls, version, signum=None):
+    def setup_autorun(cls, version, service_name=None,
+                      log_dir=None, signum=None):
         """Set Up Auto-Run
 
         This method sets up the Guru Meditation Report to automatically
@@ -113,10 +118,11 @@ class GuruMeditation(object):
 
         if signum:
             signal.signal(signum,
-                          lambda *args: cls.handle_signal(version, *args))
+                          lambda *args: cls.handle_signal(
+                              version, service_name, log_dir, *args))
 
     @classmethod
-    def handle_signal(cls, version, *args):
+    def handle_signal(cls, version, service_name, log_dir, *args):
         """The Signal Handler
 
         This method (indirectly) handles receiving a registered signal and
@@ -133,7 +139,20 @@ class GuruMeditation(object):
             print("Unable to run Guru Meditation Report!",
                   file=sys.stderr)
         else:
-            print(res, file=sys.stderr)
+            if log_dir:
+                service_name = service_name or os.path.basename(
+                        inspect.stack()[-1][1])
+                filename = "%s_gurumeditation_%s" % (
+                    service_name, timeutils.strtime(fmt=cls.timestamp_fmt))
+                filepath = os.path.join(log_dir, filename)
+                try:
+                    with open(filepath, "w") as dumpfile:
+                        dumpfile.write(res)
+                except Exception:
+                    print("Unable to dump Guru Meditation Report to file %s" %
+                          (filepath,), file=sys.stderr)
+            else:
+                print(res, file=sys.stderr)
 
     def _readd_sections(self):
         del self.sections[self.start_section_index:]
