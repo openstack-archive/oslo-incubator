@@ -16,11 +16,14 @@ from __future__ import print_function
 
 import os
 import re
+import shutil
 import signal
 import sys
+import tempfile
 
 # needed to get greenthreads
 import greenlet
+import mock
 import six
 
 from openstack.common.report import guru_meditation_report as gmr
@@ -57,6 +60,7 @@ class TestGuruMeditationReport(utils.BaseTestCase):
         self.report = gmr.TextGuruMeditation(FakeVersionObj())
 
         self.old_stderr = None
+        self.fake_log_dir = tempfile.mkdtemp()
 
     def test_basic_report(self):
         report_lines = self.report.run().split('\n')
@@ -148,7 +152,18 @@ class TestGuruMeditationReport(utils.BaseTestCase):
         os.kill(os.getpid(), signal.SIGUSR1)
         self.assertIn('Guru Meditation', sys.stderr.getvalue())
 
+    @mock.patch('openstack.common.timeutils.strtime', return_value="NOW")
+    def test_register_autorun_log_dir(self, mock_strtime):
+        gmr.TextGuruMeditation.setup_autorun(
+                FakeVersionObj(), "fake-service", self.fake_log_dir)
+
+        os.kill(os.getpid(), signal.SIGUSR1)
+        with open(os.path.join(
+                self.fake_log_dir, "fake-service_gurumeditation_NOW")) as df:
+            self.assertIn('Guru Meditation', df.read())
+
     def tearDown(self):
         super(TestGuruMeditationReport, self).tearDown()
         if self.old_stderr is not None:
             sys.stderr = self.old_stderr
+        shutil.rmtree(self.fake_log_dir)
