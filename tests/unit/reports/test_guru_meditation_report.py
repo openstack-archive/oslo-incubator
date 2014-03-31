@@ -20,7 +20,9 @@ import signal
 import sys
 
 # needed to get greenthreads
+import fixtures
 import greenlet
+import mock
 import six
 
 from openstack.common.report import guru_meditation_report as gmr
@@ -147,6 +149,17 @@ class TestGuruMeditationReport(utils.BaseTestCase):
 
         os.kill(os.getpid(), signal.SIGUSR1)
         self.assertIn('Guru Meditation', sys.stderr.getvalue())
+
+    @mock.patch('openstack.common.timeutils.strtime', return_value="NOW")
+    def test_register_autorun_log_dir(self, mock_strtime):
+        log_dir = self.useFixture(fixtures.TempDir()).path
+        gmr.TextGuruMeditation.setup_autorun(
+            FakeVersionObj(), "fake-service", log_dir)
+
+        os.kill(os.getpid(), signal.SIGUSR1)
+        with open(os.path.join(
+                log_dir, "fake-service_gurumeditation_NOW")) as df:
+            self.assertIn('Guru Meditation', df.read())
 
     def tearDown(self):
         super(TestGuruMeditationReport, self).tearDown()
