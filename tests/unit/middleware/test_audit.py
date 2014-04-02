@@ -17,10 +17,11 @@
 
 import mock
 import os
+import sys
+
 import webob
 
 from oslo.config import cfg
-import pycadf
 from pycadf.audit import api as cadf_api
 
 from openstack.common.middleware import audit
@@ -66,8 +67,7 @@ class AuditMiddlewareTest(utils.BaseTestCase):
 
     def setUp(self):
         super(AuditMiddlewareTest, self).setUp()
-        CONF(args=['--config-dir', os.path.abspath(os.path.join(
-            os.path.dirname(pycadf.__file__), '..', 'etc'))])
+        CONF(args=['--config-dir', os.path.join(sys.prefix, 'etc')])
 
     def test_api_request(self):
         middleware = audit.AuditMiddleware(FakeApp())
