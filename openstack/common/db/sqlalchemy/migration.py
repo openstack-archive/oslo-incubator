@@ -49,6 +49,8 @@ from migrate.versioning import api as versioning_api
 from migrate.versioning.repository import Repository
 import sqlalchemy
 from sqlalchemy.schema import UniqueConstraint
+from sqlalchemy.sql import literal_column
+from sqlalchemy.sql import select
 
 from openstack.common.db import exception
 from openstack.common.gettextutils import _
@@ -208,20 +210,18 @@ def _db_schema_sanity_check(engine):
     """
 
     if engine.name == 'mysql':
-        onlyutf8_sql = ('SELECT TABLE_NAME,TABLE_COLLATION '
-                        'from information_schema.TABLES '
-                        'where TABLE_SCHEMA=%s and '
-                        'TABLE_COLLATION NOT LIKE "%%utf8%%"')
-
         # NOTE(morganfainberg): exclude the sqlalchemy-migrate and alembic
         # versioning tables from the tables we need to verify utf8 status on.
         # Non-standard table names are not supported.
         EXCLUDED_TABLES = ['migrate_version', 'alembic_version']
 
-        table_names = [res[0] for res in
-                       engine.execute(onlyutf8_sql, engine.url.database) if
-                       res[0] not in EXCLUDED_TABLES]
+        qry = select(['TABLE_NAME'],
+                     ((literal_column('TABLE_SCHEMA') == engine.url.database) &
+                      (~literal_column('TABLE_COLLATION').like("%%utf8%%")) &
+                      (~literal_column('TABLE_NAME').in_(EXCLUDED_TABLES))),
+                     ['information_schema.TABLES'])
 
+        table_names = [res[0] for res in engine.execute(qry)]
         if len(table_names) > 0:
             raise ValueError(_('Tables "%s" have non utf8 collation, '
                                'please make sure all tables are CHARSET=utf8'

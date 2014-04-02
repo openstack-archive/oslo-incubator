@@ -198,9 +198,13 @@ class TestMigrationCommon(test_base.DbTestCase):
                               mock_eng)
 
     def test_db_sanity_table_not_utf8_exclude_migrate_tables(self):
+        def _execute_checker(qry):
+            self.assertTrue(str(qry).endswith(
+                'AND TABLE_NAME NOT IN (:TABLE_NAME_1, :TABLE_NAME_2)'))
+            return []
+
         with mock.patch.object(self, 'engine') as mock_eng:
             type(mock_eng).name = mock.PropertyMock(return_value='mysql')
-            mock_eng.execute.return_value = [['migrate_version', 'latin1'],
-                                             ['alembic_version', 'latin1']]
+            mock_eng.execute.side_effect = _execute_checker
 
             migration._db_schema_sanity_check(mock_eng)
