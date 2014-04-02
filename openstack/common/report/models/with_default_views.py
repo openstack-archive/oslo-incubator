@@ -14,10 +14,10 @@
 
 import copy
 
-import openstack.common.report.models.base as base_model
-import openstack.common.report.views.json.generic as jsonviews
-import openstack.common.report.views.text.generic as textviews
-import openstack.common.report.views.xml.generic as xmlviews
+from openstack.common.report.models import base as base_model
+from openstack.common.report.views.json import generic as jsonviews
+from openstack.common.report.views.text import generic as textviews
+from openstack.common.report.views.xml import generic as xmlviews
 
 
 class ModelWithDefaultViews(base_model.ReportModel):

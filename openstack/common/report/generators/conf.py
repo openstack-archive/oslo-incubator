@@ -21,7 +21,7 @@ generators for generating the model in
 
 from oslo.config import cfg
 
-import openstack.common.report.models.conf as cm
+from openstack.common.report.models import conf as cm
 
 
 class ConfigReportGenerator(object):

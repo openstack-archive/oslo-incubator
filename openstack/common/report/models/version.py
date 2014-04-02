@@ -18,8 +18,8 @@ This module defines a class representing the data
 model for OpenStack package and version information
 """
 
-import openstack.common.report.models.with_default_views as mwdv
-import openstack.common.report.views.text.generic as generic_text_views
+from openstack.common.report.models import with_default_views as mwdv
+from openstack.common.report.views.text import generic as generic_text_views
 
 
 class PackageModel(mwdv.ModelWithDefaultViews):
