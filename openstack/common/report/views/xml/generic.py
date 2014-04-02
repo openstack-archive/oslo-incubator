@@ -29,7 +29,7 @@ import xml.etree.ElementTree as ET
 
 import six
 
-import openstack.common.report.utils as utils
+from openstack.common.report import utils as utils
 
 
 class KeyValueView(object):

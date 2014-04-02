@@ -23,10 +23,10 @@ import sys
 
 import greenlet
 
-import openstack.common.report.models.threading as tm
+from openstack.common.report.models import threading as tm
 from openstack.common.report.models import with_default_views as mwdv
-import openstack.common.report.utils as rutils
-import openstack.common.report.views.text.generic as text_views
+from openstack.common.report import utils as rutils
+from openstack.common.report.views.text import generic as text_views
 
 
 class ThreadReportGenerator(object):
