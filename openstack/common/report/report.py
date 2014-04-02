@@ -19,7 +19,7 @@ reports and report sections.  All reports take the
 form of a report class containing various report sections.
 """
 
-import openstack.common.report.views.text.header as header_views
+from openstack.common.report.views.text import header as header_views
 
 
 class BasicReport(object):
