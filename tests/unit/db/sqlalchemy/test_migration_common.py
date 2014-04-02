@@ -196,3 +196,16 @@ class TestMigrationCommon(test_base.DbTestCase):
 
             self.assertRaises(ValueError, migration._db_schema_sanity_check,
                               mock_eng)
+
+    def test_db_sanity_table_not_utf8_exclude_migrate_tables(self):
+        with mock.patch.object(self, 'engine') as mock_eng:
+            type(mock_eng).name = mock.PropertyMock(return_value='mysql')
+            # NOTE(morganfainberg): Check both lower and upper case versions
+            # of the migration table names (validate case insensitivity in
+            # the sanity check.
+            mock_eng.execute.return_value = [['migrate_version', 'latin1'],
+                                             ['alembic_version', 'latin1'],
+                                             ['MIGRATE_VERSION', 'latin1'],
+                                             ['ALEMBIC_VERSION', 'latin1']]
+
+            migration._db_schema_sanity_check(mock_eng)
