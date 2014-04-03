@@ -27,7 +27,9 @@ Where ../myproj is a project directory containing openstack-common.conf which
 might look like:
 
   [DEFAULT]
-  modules = wsgi,utils
+  module = wsgi
+  module = utils
+  script = tools/run_cross_tests.sh
   base = myproj
 
 Or:
@@ -56,6 +58,11 @@ Where ../myproj is a project directory, but we explicitly specify
 the modules to copy, the base destination module, and do not want to
 automatically copy the dependencies of the specified modules
 
+  $> python update.py --script tools/run_cross_tests.sh ../myproj
+
+Where ../myproj is a project directory, and we explicitly specify
+the scripts to copy.
+
 Obviously, the first way is the easiest!
 """
 
@@ -79,6 +86,10 @@ opts = [
     cfg.MultiStrOpt('module',
                     default=[],
                     help='The list of modules to copy from oslo-incubator'),
+    cfg.MultiStrOpt(
+        'script',
+        default=[],
+        help='The list of stand-alone scripts to copy from oslo-incubator'),
     cfg.StrOpt('base',
                default=None,
                help='The base module to hold the copy of openstack.common'),
@@ -182,6 +193,13 @@ def _copy_file(path, dest, base):
 
 def _copy_pyfile(path, base, dest_dir):
     _copy_file(path, _dest_path(path, base, dest_dir), base)
+
+
+def _copy_scripts(scripts, base, dest_dir):
+    for scr in scripts:
+        dest = os.path.join(dest_dir, scr)
+        print("Copying script %s to %s" % (scr, dest))
+        _copy_file(scr, dest, base)
 
 
 def _copy_module(mod, base, dest_dir):
@@ -299,19 +317,23 @@ def main(argv):
         print("A valid destination dir is required", file=sys.stderr)
         sys.exit(1)
 
-    if not conf.module and not conf.modules:
-        print("A list of modules to copy is required", file=sys.stderr)
+    if not conf.module and not conf.modules and not conf.script:
+        print("A list of modules or scripts to copy is required",
+              file=sys.stderr)
         sys.exit(1)
 
     if not conf.base:
         print("A destination base module is required", file=sys.stderr)
         sys.exit(1)
 
-    _create_module_init(conf.base, dest_dir)
-    _create_module_init(conf.base, dest_dir, 'common')
+    if conf.module + conf.modules:
+        _create_module_init(conf.base, dest_dir)
+        _create_module_init(conf.base, dest_dir, 'common')
 
     for mod in _complete_module_list(conf.module + conf.modules, conf.nodeps):
         _copy_module(mod, conf.base, dest_dir)
+
+    _copy_scripts(conf.script, conf.base, dest_dir)
 
 
 if __name__ == "__main__":
