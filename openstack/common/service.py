@@ -38,7 +38,7 @@ from eventlet import event
 from oslo.config import cfg
 
 from openstack.common import eventlet_backdoor
-from openstack.common.gettextutils import _LE, _LI, _LW
+from openstack.common import gettextutils
 from openstack.common import importutils
 from openstack.common import log as logging
 from openstack.common import systemd
@@ -173,7 +173,7 @@ class ServiceLauncher(Launcher):
             super(ServiceLauncher, self).wait()
         except SignalExit as exc:
             signame = _signo_to_signame(exc.signo)
-            LOG.info(_LI('Caught %s, exiting'), signame)
+            LOG.info(gettextutils._LI('Caught %s, exiting'), signame)
             status = exc.code
             signo = exc.signo
         except SystemExit as exc:
@@ -185,7 +185,8 @@ class ServiceLauncher(Launcher):
                     rpc.cleanup()
                 except Exception:
                     # We're shutting down, so it doesn't matter at this point.
-                    LOG.exception(_LE('Exception during rpc cleanup.'))
+                    LOG.exception(
+                        gettextutils._LE('Exception during rpc cleanup.'))
 
         return status, signo
 
@@ -236,7 +237,8 @@ class ProcessLauncher(object):
         # dies unexpectedly
         self.readpipe.read()
 
-        LOG.info(_LI('Parent process has died unexpectedly, exiting'))
+        LOG.info(
+            gettextutils._LI('Parent process has died unexpectedly, exiting'))
 
         sys.exit(1)
 
@@ -267,13 +269,13 @@ class ProcessLauncher(object):
             launcher.wait()
         except SignalExit as exc:
             signame = _signo_to_signame(exc.signo)
-            LOG.info(_LI('Caught %s, exiting'), signame)
+            LOG.info(gettextutils._LI('Caught %s, exiting'), signame)
             status = exc.code
             signo = exc.signo
         except SystemExit as exc:
             status = exc.code
         except BaseException:
-            LOG.exception(_LE('Unhandled exception'))
+            LOG.exception(gettextutils._LE('Unhandled exception'))
             status = 2
         finally:
             launcher.stop()
@@ -306,7 +308,7 @@ class ProcessLauncher(object):
             # start up quickly but ensure we don't fork off children that
             # die instantly too quickly.
             if time.time() - wrap.forktimes[0] < wrap.workers:
-                LOG.info(_LI('Forking too fast, sleeping'))
+                LOG.info(gettextutils._LI('Forking too fast, sleeping'))
                 time.sleep(1)
 
             wrap.forktimes.pop(0)
@@ -325,7 +327,7 @@ class ProcessLauncher(object):
 
             os._exit(status)
 
-        LOG.info(_LI('Started child %d'), pid)
+        LOG.info(gettextutils._LI('Started child %d'), pid)
 
         wrap.children.add(pid)
         self.children[pid] = wrap
@@ -335,7 +337,7 @@ class ProcessLauncher(object):
     def launch_service(self, service, workers=1):
         wrap = ServiceWrapper(service, workers)
 
-        LOG.info(_LI('Starting %d workers'), wrap.workers)
+        LOG.info(gettextutils._LI('Starting %d workers'), wrap.workers)
         while self.running and len(wrap.children) < wrap.workers:
             self._start_child(wrap)
 
@@ -352,15 +354,17 @@ class ProcessLauncher(object):
 
         if os.WIFSIGNALED(status):
             sig = os.WTERMSIG(status)
-            LOG.info(_LI('Child %(pid)d killed by signal %(sig)d'),
-                     dict(pid=pid, sig=sig))
+            LOG.info(
+                gettextutils._LI('Child %(pid)d killed by signal %(sig)d'),
+                dict(pid=pid, sig=sig))
         else:
             code = os.WEXITSTATUS(status)
-            LOG.info(_LI('Child %(pid)s exited with status %(code)d'),
-                     dict(pid=pid, code=code))
+            LOG.info(
+                gettextutils._LI('Child %(pid)s exited with status %(code)d'),
+                dict(pid=pid, code=code))
 
         if pid not in self.children:
-            LOG.warning(_LW('pid %d not in child list'), pid)
+            LOG.warning(gettextutils._LW('pid %d not in child list'), pid)
             return None
 
         wrap = self.children.pop(pid)
@@ -391,7 +395,9 @@ class ProcessLauncher(object):
                 self._respawn_children()
                 if self.sigcaught:
                     signame = _signo_to_signame(self.sigcaught)
-                    LOG.info(_LI('Caught %s, stopping children'), signame)
+                    LOG.info(
+                        gettextutils._LI('Caught %s, stopping children'),
+                        signame)
                 if not _is_sighup_and_daemon(self.sigcaught):
                     break
 
@@ -400,7 +406,8 @@ class ProcessLauncher(object):
                 self.running = True
                 self.sigcaught = None
         except eventlet.greenlet.GreenletExit:
-            LOG.info(_LI("Wait called after thread killed.  Cleaning up."))
+            LOG.info(gettextutils._LI(
+                "Wait called after thread killed.  Cleaning up."))
 
         for pid in self.children:
             try:
@@ -411,7 +418,9 @@ class ProcessLauncher(object):
 
         # Wait for children to die
         if self.children:
-            LOG.info(_LI('Waiting on %d children to exit'), len(self.children))
+            LOG.info(
+                gettextutils._LI('Waiting on %d children to exit'),
+                len(self.children))
             while self.children:
                 self._wait_child()
 
