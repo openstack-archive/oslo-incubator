@@ -50,8 +50,8 @@ kombu_opts = [
                help='SSL cert file (valid only if SSL enabled)'),
     cfg.StrOpt('kombu_ssl_ca_certs',
                default='',
-               help=('SSL certification authority file '
-                     '(valid only if SSL enabled)')),
+               help='SSL certification authority file '
+                    '(valid only if SSL enabled)'),
     cfg.StrOpt('rabbit_host',
                default='localhost',
                help='The RabbitMQ broker address where a single node is used'),
