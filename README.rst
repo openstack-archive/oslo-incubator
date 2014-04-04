@@ -20,17 +20,17 @@ For more information, see our wiki page:
 Running Tests
 -------------
 
-To run tests in virtualenvs (preferred):
+To run tests in virtualenvs (preferred)::
 
   sudo pip install tox
   tox
 
-To run tests in the current environment:
+To run tests in the current environment::
 
   sudo pip install -r requirements.txt
   nosetests
 
-To run tests using MySQL or PostgreSQL as a DB backend do:
+To run tests using MySQL or PostgreSQL as a DB backend do::
 
   OS_TEST_DBAPI_ADMIN_CONNECTION=mysql://user:password@host/database tox -e py27
 
