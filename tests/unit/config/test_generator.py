@@ -103,6 +103,9 @@ class GeneratorTestcase(test.BaseTestCase):
                                              lambda: fake_fqdn))
         result = generator._sanitize_default('host', fake_fqdn)
         self.assertEqual('oslo', result)
+        result = generator._sanitize_default('neutron_id',
+                                             'id-%s' % fake_fqdn)
+        self.assertEqual('id-oslo', result)
 
     def test_sanitize_value_matches_hostname(self):
         fake_hostname = 'foo'
@@ -110,6 +113,9 @@ class GeneratorTestcase(test.BaseTestCase):
                                              lambda: fake_hostname))
         result = generator._sanitize_default('something', fake_hostname)
         self.assertEqual(result, fake_hostname)
+        result = generator._sanitize_default('neutron_id',
+                                             'id-%s' % fake_hostname)
+        self.assertEqual('id-oslo', result)
 
     def test_bad_lib(self):
         self.assertRaises(ImportError, generator.generate,
