@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Approved+1: Zhongyue Luo <zhongyue.luo@gmail.com>
+Code-Review+2: Doug Hellmann <doug.hellmann@dreamhost.com>
+Code-Review+1: ChangBo Guo(gcb) <glongwave@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Sun, 06 Apr 2014 11:17:10 +0000
+Reviewed-on: https://review.openstack.org/85429
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
