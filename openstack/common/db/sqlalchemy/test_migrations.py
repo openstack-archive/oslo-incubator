@@ -18,6 +18,7 @@ import functools
 import logging
 import os
 import subprocess
+import tempfile
 
 import lockfile
 from six import moves
@@ -53,6 +54,10 @@ def _have_postgresql(user, passwd, database):
 
 
 def _set_db_lock(lock_path=None, lock_prefix=None):
+    if lock_path is None:
+        lock_path = tempfile.mkdtemp()
+        os.environ['OSLO_LOCK_PATH'] = lock_path
+
     def decorator(f):
         @functools.wraps(f)
         def wrapper(*args, **kwargs):
