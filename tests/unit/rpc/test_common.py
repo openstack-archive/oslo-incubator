@@ -49,7 +49,7 @@ class RpcCommonTestCase(test.BaseTestCase):
     def test_serialize_remote_exception(self):
         expected = {
             'class': 'Exception',
-            'module': 'exceptions',
+            'module': 'builtins' if six.PY3 else 'exceptions',
             'message': 'test',
         }
 
@@ -117,7 +117,7 @@ class RpcCommonTestCase(test.BaseTestCase):
     def test_deserialize_remote_exception(self):
         failure = {
             'class': 'NotImplementedError',
-            'module': 'exceptions',
+            'module': 'builtins' if six.PY3 else 'exceptions',
             'message': '',
             'tb': ['raise NotImplementedError'],
         }
@@ -241,8 +241,8 @@ class RpcCommonTestCase(test.BaseTestCase):
                 raise ValueError()
             except Exception:
                 raise rpc_common.ClientException()
-        except rpc_common.ClientException as e:
-            pass
+        except rpc_common.ClientException as exc:
+            e = exc
 
         self.assertTrue(isinstance(e, rpc_common.ClientException))
         self.assertTrue(isinstance(e._exc_info[1], ValueError))
@@ -254,8 +254,8 @@ class RpcCommonTestCase(test.BaseTestCase):
         e = None
         try:
             rpc_common.catch_client_exception([ValueError], naughty, 'a')
-        except rpc_common.ClientException as e:
-            pass
+        except rpc_common.ClientException as exc:
+            e = exc
 
         self.assertTrue(isinstance(e, rpc_common.ClientException))
         self.assertTrue(isinstance(e._exc_info[1], ValueError))
