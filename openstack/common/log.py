@@ -141,15 +141,16 @@ generic_log_opts = [
 log_opts = [
     cfg.StrOpt('logging_context_format_string',
                default='%(asctime)s.%(msecs)03d %(process)d %(levelname)s '
-                       '%(name)s [%(request_id)s %(user_identity)s] '
+                       '%(name)s:%(funcName) '
+                       '[%(request_id)s %(user_identity)s] '
                        '%(instance)s%(message)s',
                help='Format string to use for log messages with context'),
     cfg.StrOpt('logging_default_format_string',
                default='%(asctime)s.%(msecs)03d %(process)d %(levelname)s '
-                       '%(name)s [-] %(instance)s%(message)s',
+                       '%(name)s:%(funcName)s [-] %(instance)s%(message)s',
                help='Format string to use for log messages without context'),
     cfg.StrOpt('logging_debug_format_suffix',
-               default='%(funcName)s %(pathname)s:%(lineno)d',
+               default='%(pathname)s:%(lineno)d',
                help='Data to append to log format when level is DEBUG'),
     cfg.StrOpt('logging_exception_prefix',
                default='%(asctime)s.%(msecs)03d %(process)d TRACE %(name)s '
