@@ -53,15 +53,19 @@ def _have_postgresql(user, passwd, database):
 
 
 def _set_db_lock(lock_path=None, lock_prefix=None):
+    if lock_path is None:
+        lock_path = os.environ.get("OSLO_LOCK_PATH")
+
     def decorator(f):
         @functools.wraps(f)
-        def wrapper(*args, **kwargs):
+        def wrapper(self, *args, **kwargs):
             try:
-                path = lock_path or os.environ.get("OSLO_LOCK_PATH")
-                lock = lockfile.FileLock(os.path.join(path, lock_prefix))
+                if lock_path is None:
+                    self.fail("OSLO_LOCK_PATH unset")
+                lock = lockfile.FileLock(os.path.join(lock_path, lock_prefix))
                 with lock:
                     LOG.debug('Got lock "%s"' % f.__name__)
-                    return f(*args, **kwargs)
+                    return f(self, *args, **kwargs)
             finally:
                 LOG.debug('Lock released "%s"' % f.__name__)
         return wrapper
