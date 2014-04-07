@@ -146,19 +146,22 @@ class StrUtilsTest(test.BaseTestCase):
     def test_safe_decode(self):
         safe_decode = strutils.safe_decode
         self.assertRaises(TypeError, safe_decode, True)
-        self.assertEqual(six.u('ni\xf1o'), safe_decode("ni\xc3\xb1o",
+        self.assertEqual(six.u('ni\xf1o'), safe_decode(six.b("ni\xc3\xb1o"),
                          incoming="utf-8"))
-        self.assertEqual(six.u("test"), safe_decode("dGVzdA==",
-                         incoming='base64'))
+        if six.PY2:
+            # In Python 3, bytes.decode() doesn't support anymore
+            # bytes => bytes encodings like base64
+            self.assertEqual(six.u("test"), safe_decode("dGVzdA==",
+                             incoming='base64'))
 
-        self.assertEqual(six.u("strange"), safe_decode('\x80strange',
+        self.assertEqual(six.u("strange"), safe_decode(six.b('\x80strange'),
                          errors='ignore'))
 
-        self.assertEqual(six.u('\xc0'), safe_decode('\xc0',
+        self.assertEqual(six.u('\xc0'), safe_decode(six.b('\xc0'),
                          incoming='iso-8859-1'))
 
         # Forcing incoming to ascii so it falls back to utf-8
-        self.assertEqual(six.u('ni\xf1o'), safe_decode('ni\xc3\xb1o',
+        self.assertEqual(six.u('ni\xf1o'), safe_decode(six.b('ni\xc3\xb1o'),
                          incoming='ascii'))
 
         self.assertEqual(six.u('foo'), safe_decode(b'foo'))
@@ -193,7 +196,7 @@ class StrUtilsTest(test.BaseTestCase):
         self.assertEqual(six.u("ampserand"), to_slug("&ampser$and"))
         self.assertEqual(six.u("ju5tnum8er"), to_slug("ju5tnum8er"))
         self.assertEqual(six.u("strip-"), to_slug(" strip - "))
-        self.assertEqual(six.u("perche"), to_slug("perch\xc3\xa9"))
+        self.assertEqual(six.u("perche"), to_slug(six.b("perch\xc3\xa9")))
         self.assertEqual(six.u("strange"),
                          to_slug("\x80strange", errors="ignore"))
 
