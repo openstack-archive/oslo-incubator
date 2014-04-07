@@ -338,3 +338,28 @@ class TestIso8601Time(test.BaseTestCase):
         dtn = datetime.datetime(2011, 2, 14, 19, 53, 7)
         naive = timeutils.normalize_time(dtn)
         self.assertTrue(naive < dt)
+
+
+class TestTimeMonotonic(test.BaseTestCase):
+    def test_time_monotonic(self):
+        # monotonic() should not go backward
+        times = [timeutils.time_monotonic() for n in range(100)]
+        t1 = times[0]
+        for t2 in times[1:]:
+            self.assertGreaterEqual(t2, t1, "times=%s" % times)
+            t1 = t2
+
+        # monotonic() includes time elapsed during a sleep
+        t1 = timeutils.time_monotonic()
+        time.sleep(0.5)
+        t2 = timeutils.time_monotonic()
+        dt = t2 - t1
+        self.assertGreater(t2, t1)
+        # Use 1 second for the higher bound to avoid false postive
+        # on very slow systems
+        self.assertTrue(0.45 <= dt <= 1.0, dt)
+
+    def test_time_monotonic_resolution(self):
+        self.assertEqual(type(timeutils.time_monotonic_resolution), float)
+        self.assertGreater(timeutils.time_monotonic_resolution, 0.0)
+        self.assertLess(timeutils.time_monotonic_resolution, 1.0)
