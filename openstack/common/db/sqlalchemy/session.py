@@ -645,7 +645,7 @@ def create_engine(sql_connection, sqlite_fk=False, mysql_sql_mode=None,
 
     sqlalchemy.event.listen(engine, 'checkin', _thread_yield)
 
-    if engine.name in ['mysql', 'ibm_db_sa']:
+    if engine.name in ('ibm_db_sa', 'mysql', 'postgresql'):
         ping_callback = functools.partial(_ping_listener, engine)
         sqlalchemy.event.listen(engine, 'checkout', ping_callback)
         if engine.name == 'mysql':
