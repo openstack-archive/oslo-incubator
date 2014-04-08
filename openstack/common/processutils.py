@@ -90,6 +90,9 @@ def execute(*cmd, **kwargs):
     :type cmd:              string
     :param process_input:   Send to opened process.
     :type process_input:    string
+    :param env_variables:   Environment variables and their values that
+                            will be set for the process.
+    :type env_variables:    dict, or convertable to dict
     :param check_exit_code: Single bool, int, or list of allowed exit
                             codes.  Defaults to [0].  Raise
                             :class:`ProcessExecutionError` unless
@@ -120,6 +123,7 @@ def execute(*cmd, **kwargs):
     """
 
     process_input = kwargs.pop('process_input', None)
+    env_variables = kwargs.pop('env_variables', {})
     check_exit_code = kwargs.pop('check_exit_code', [0])
     ignore_exit_code = False
     delay_on_retry = kwargs.pop('delay_on_retry', True)
@@ -147,6 +151,8 @@ def execute(*cmd, **kwargs):
         cmd = shlex.split(root_helper) + list(cmd)
 
     cmd = map(str, cmd)
+    process_env = os.environ.copy()
+    process_env.update(dict(env_variables))
 
     while attempts > 0:
         attempts -= 1
@@ -168,7 +174,8 @@ def execute(*cmd, **kwargs):
                                    stderr=_PIPE,
                                    close_fds=close_fds,
                                    preexec_fn=preexec_fn,
-                                   shell=shell)
+                                   shell=shell,
+                                   env=process_env)
             result = None
             for _i in six.moves.range(20):
                 # NOTE(russellb) 20 is an arbitrary number of retries to

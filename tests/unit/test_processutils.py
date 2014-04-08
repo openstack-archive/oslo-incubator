@@ -198,6 +198,16 @@ grep foo
 
         self.assertTrue(self.called)
 
+    def test_with_env_variables(self):
+        var_name = 'SUPER_UNIQUE_VAR'
+        var_value = 'The answer is 42'
+        env_vars = {var_name: var_value}
+
+        out, err = processutils.execute('/usr/bin/env', env_variables=env_vars)
+
+        self.assertIn(var_value, out)
+        self.assertIn(var_name, out)
+
 
 def fake_execute(*cmd, **kwargs):
     return 'stdout', 'stderr'
