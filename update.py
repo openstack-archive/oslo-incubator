@@ -136,13 +136,15 @@ def _dest_path(path, base, dest_dir):
     return os.path.join(dest_dir, _mod_to_path(base), path)
 
 
-def _replace(path, pattern, replacement):
+def _replace(path, replacements):
     with open(path, "rb+") as f:
         lines = f.readlines()
         f.seek(0)
         f.truncate()
         for line in lines:
-            f.write(re.sub(pattern, replacement, line))
+            for pattern, replacement in replacements:
+                line = re.sub(pattern, replacement, line)
+            f.write(line)
 
 
 def _make_dirs(path):
@@ -157,9 +159,11 @@ def _copy_file(path, dest, base):
 
     shutil.copy2(path, dest)
 
+    replacements = []
+
     if 'rpc/' not in dest:
-        _replace(dest, 'oslo', base)
-        _replace(dest, 'OSLO', base.upper())
+        replacements.append(('oslo', base))
+        replacements.append(('OSLO', base.upper()))
 
     # Restore the imports for modules that are part of the oslo
     # namespace package. We can't just do something like 'oslo\..+'
@@ -167,28 +171,25 @@ def _copy_file(path, dest, base):
     # "oslo.sqlite" that we want to have changed to "nova.sqlite" by
     # the above call.
     for oslo_module in ['config', 'messaging']:
-        _replace(dest, base + '.' + oslo_module,
-                 'oslo.' + oslo_module)
+        replacements.append((base + '.' + oslo_module,
+                             'oslo.' + oslo_module))
 
-    _replace(dest,
-             '^( *)from openstack.common',
-             r'\1from ' + base + '.openstack.common')
+    replacements.append(('^( *)from openstack.common',
+                         r'\1from ' + base + '.openstack.common'))
 
-    _replace(dest,
-             '\'openstack\.common',
-             '\'' + base + '.openstack.common')
+    replacements.append(('\'openstack\.common',
+                         '\'' + base + '.openstack.common'))
 
-    _replace(dest,
-             '\"openstack\.common',
-             '\"' + base + '.openstack.common')
+    replacements.append(('\"openstack\.common',
+                         '\"' + base + '.openstack.common'))
 
-    _replace(dest,
-             '=openstack\.common',
-             '=' + base + '.openstack.common')
+    replacements.append(('=openstack\.common',
+                         '=' + base + '.openstack.common'))
 
-    _replace(dest,
-             'possible_topdir, "oslo",$',
-             'possible_topdir, "' + base + '",')
+    replacements.append(('possible_topdir, "oslo",$',
+                         'possible_topdir, "' + base + '",'))
+
+    _replace(dest, replacements)
 
 
 def _copy_pyfile(path, base, dest_dir):
