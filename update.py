@@ -175,6 +175,10 @@ def _copy_file(path, dest, base):
              r'\1from ' + base + '.openstack.common')
 
     _replace(dest,
+             '^( *)import openstack.common',
+             r'\1import ' + base + '.openstack.common')
+
+    _replace(dest,
              '\'openstack\.common',
              '\'' + base + '.openstack.common')
 
