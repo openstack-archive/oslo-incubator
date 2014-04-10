@@ -1,0 +1,11 @@
+Verified+2: Jenkins
+Approved+1: Doug Hellmann <doug.hellmann@dreamhost.com>
+Code-Review+2: Doug Hellmann <doug.hellmann@dreamhost.com>
+Code-Review+1: gordon chung <chungg@ca.ibm.com>
+Code-Review+1: Ben Nemec <openstack@nemebean.com>
+Code-Review+1: ChangBo Guo(gcb) <glongwave@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Thu, 10 Apr 2014 22:06:15 +0000
+Reviewed-on: https://review.openstack.org/86388
+Project: openstack/oslo-incubator
+Branch: refs/heads/stable/havana
