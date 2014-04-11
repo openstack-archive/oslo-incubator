@@ -23,8 +23,8 @@ from openstack.common import log as logging
 periodic_opts = [
     cfg.BoolOpt('run_external_periodic_tasks',
                 default=True,
-                help=('Some periodic tasks can be run in a separate process. '
-                      'Should we run them here?')),
+                help='Some periodic tasks can be run in a separate process. '
+                     'Should we run them here?'),
 ]
 
 CONF = cfg.CONF
