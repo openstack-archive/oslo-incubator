@@ -423,12 +423,17 @@ def from_response(response, method, url):
     :param method: HTTP method used for request
     :param url: URL used for request
     """
+
+    req_id = response.headers.get("x-openstack-request-id")
+    #NOTE(hdd) true for older versions of nova and cinder
+    if not req_id:
+        req_id = response.headers.get("x-compute-request-id")
     kwargs = {
         "http_status": response.status_code,
         "response": response,
         "method": method,
         "url": url,
-        "request_id": response.headers.get("x-compute-request-id"),
+        "request_id": req_id,
     }
     if "retry-after" in response.headers:
         kwargs["retry_after"] = response.headers["retry-after"]
