@@ -211,9 +211,30 @@ class FakeDB2Engine(object):
         pass
 
 
+class FakePsqlEngine(object):
+
+    class Dialect():
+
+        def is_disconnect(self, e, *args):
+            return False
+
+    class Connection():
+
+        def closed(self):
+            return True
+
+    dialect = Dialect()
+    name = 'postgresql'
+
+    def dispose(self):
+        pass
+
+
 class TestDBDisconnected(oslo_test.BaseTestCase):
 
-    def _test_ping_listener_disconnected(self, connection):
+    def _test_ping_listener_disconnected(self,
+                                         connection,
+                                         dbapi_conn=FakeDBAPIConnection()):
         engine_args = {
             'pool_recycle': 3600,
             'echo': False,
@@ -223,7 +244,7 @@ class TestDBDisconnected(oslo_test.BaseTestCase):
         with mock.patch.object(engine, 'dispose') as dispose_mock:
             self.assertRaises(sqlalchemy.exc.DisconnectionError,
                               session._ping_listener, engine,
-                              FakeDBAPIConnection(), FakeConnectionRec(),
+                              dbapi_conn, FakeConnectionRec(),
                               FakeConnectionProxy())
             dispose_mock.assert_called_once_with()
 
@@ -256,6 +277,25 @@ class TestDBDisconnected(oslo_test.BaseTestCase):
                 connection = ('ibm_db_sa://db2inst1:openstack@fakehost:50000'
                               '/fakedab')
                 self._test_ping_listener_disconnected(connection)
+
+    def test_psql_2ping_listener_disconnected(self):
+
+        def fake_execute(sql):
+            raise OperationalError('unknown error')
+        with mock.patch.object(FakeCursor, 'execute',
+                               side_effect=fake_execute):
+            # TODO(dmueller): Need a fake engine for postgresql since psycopg2
+            # is not in requirements. Change this code to use real psycopg2
+            # once it is available.
+            fake_create_engine = lambda *args, **kargs: FakePsqlEngine()
+            with mock.patch.object(sqlalchemy, 'create_engine',
+                                   side_effect=fake_create_engine):
+                connection = ('postgresql://root:openstack@fakehost:50000'
+                              '/fakedab')
+                dbapi_conn = FakeDBAPIConnection()
+                dbapi_conn.closed = True
+                self._test_ping_listener_disconnected(
+                    connection, dbapi_conn)
 
 
 class MySQLModeTestCase(test_base.MySQLOpportunisticTestCase):
