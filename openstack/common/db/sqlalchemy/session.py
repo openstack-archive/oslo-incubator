@@ -502,7 +502,9 @@ def _ping_listener(engine, dbapi_conn, connection_rec, connection_proxy):
             ping_sql = 'select 1 from (values (1)) AS t1'
         cursor.execute(ping_sql)
     except Exception as ex:
-        if engine.dialect.is_disconnect(ex, dbapi_conn, cursor):
+        if (engine.dialect.is_disconnect(ex, dbapi_conn, cursor) or
+            ('unknown error' in str(ex).partition('\n')[0] and
+             getattr(dbapi_conn, 'closed', False))):
             msg = _LW('Database server has gone away: %s') % ex
             LOG.warning(msg)
 
