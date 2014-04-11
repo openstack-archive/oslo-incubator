@@ -52,8 +52,12 @@ def parse_host_port(address, default_port=None):
     ('::1', 1234)
     >>> parse_host_port('2001:db8:85a3::8a2e:370:7334', default_port=1234)
     ('2001:db8:85a3::8a2e:370:7334', 1234)
-
+    >>> parse_host_port(None)
+    (None, None)
     """
+    if not address:
+        return (None, None)
+
     if address[0] == '[':
         # Escaped ipv6
         _host, _port = address[1:].split(']')

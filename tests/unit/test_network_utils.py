@@ -19,6 +19,13 @@ from openstack.common import test
 
 class NetworkUtilsTest(test.BaseTestCase):
 
+    def test_no_host(self):
+        result = network_utils.urlsplit('http://')
+        self.assertEqual('', result.netloc)
+        self.assertEqual(None, result.port)
+        self.assertEqual(None, result.hostname)
+        self.assertEqual('http', result.scheme)
+
     def test_parse_host_port(self):
         self.assertEqual(('server01', 80),
                          network_utils.parse_host_port('server01:80'))
