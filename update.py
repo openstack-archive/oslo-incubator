@@ -68,6 +68,7 @@ Obviously, the first way is the easiest!
 
 from __future__ import print_function
 
+import fnmatch
 import functools
 import glob
 import os
@@ -77,6 +78,8 @@ import shutil
 import sys
 
 from oslo.config import cfg
+
+_OBSOLETE_LIST = None
 
 opts = [
     cfg.ListOpt('modules',
@@ -150,7 +153,31 @@ def _make_dirs(path):
         os.makedirs(os.path.dirname(path))
 
 
+def _check_obsolete(path):
+    global _OBSOLETE_LIST
+    if _OBSOLETE_LIST is None:
+        _OBSOLETE_LIST = []
+        with open('obsolete.txt', 'r') as f:
+            for num, line in enumerate(f):
+                line = line.strip()
+                if line.startswith('#') or not line:
+                    continue
+                try:
+                    pattern, replacement = line.split()
+                except Exception as e:
+                    print('ERROR: Could not parse obsolete.txt line %s %r: %s' %
+                          (num, line, e))
+                else:
+                    _OBSOLETE_LIST.append((pattern, replacement))
+    for pattern, replacement in _OBSOLETE_LIST:
+        if fnmatch.fnmatch(path, pattern):
+            print('### WARNING: %s is an obsolete module, see %s' %
+                  (path, replacement))
+
+
 def _copy_file(path, dest, base):
+    _check_obsolete(path)
+
     _make_dirs(dest)
     if not os.path.isdir(os.path.dirname(dest)):
         os.makedirs(os.path.dirname(dest))
