@@ -496,10 +496,10 @@ def _find_facility_from_conf():
 class RFCSysLogHandler(logging.handlers.SysLogHandler):
     def __init__(self, *args, **kwargs):
         self.binary_name = _get_binary_name()
-        super(RFCSysLogHandler, self).__init__(*args, **kwargs)
+        logging.handlers.SysLogHandler.__init__(self, *args, **kwargs)
 
     def format(self, record):
-        msg = super(RFCSysLogHandler, self).format(record)
+        msg = logging.handlers.SysLogHandler.format(self, record)
         msg = self.binary_name + ' ' + msg
         return msg
 
