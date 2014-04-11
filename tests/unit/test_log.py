@@ -178,6 +178,36 @@ class LogHandlerTestCase(test.BaseTestCase):
         self.assertEqual(log._get_log_file_path(binary='foo-bar'),
                          '/some/path/foo-bar.log')
 
+class RFCSysLogHandlerTestCase(test.BaseTestCase):
+    """Test for RFC compliant Syslog Handler"""
+    def setUp(self):
+        super(RFCSysLogHandlerTestCase, self).setUp()
+        self.facility = logging.handlers.SysLogHandler.LOG_USER
+        self.rfclogger = log.RFCSysLogHandler (
+                        address='/dev/log', facility=self.facility)
+        self.rfclogger.binary_name = 'Foo_application'
+
+    def test_format(self):
+        logrecord = logging.LogRecord('name', 'WARN', '/tmp', 1,
+                                      'Message', None, None)
+        expected = logging.LogRecord('name', 'WARN', '/tmp', 1,
+                                      'Foo_application Message', None, None)
+        self.assertEqual(self.rfclogger.format(logrecord), 'Foo_application Message')
+
+class SysLogHandlerTestCase(test.BaseTestCase):
+    """Test for standard Syslog Handler"""
+    def setUp(self):
+        super(SysLogHandlerTestCase, self).setUp()
+        self.facility = logging.handlers.SysLogHandler.LOG_USER
+        self.logger = logging.handlers.SysLogHandler (
+                        address='/dev/log', facility=self.facility)
+        self.logger.binary_name = 'Foo_application'
+
+    def test_format(self):
+        logrecord = logging.LogRecord('name', 'WARN', '/tmp', 1,
+                                      'Message', None, None)
+        expected = logrecord
+        self.assertEqual(self.logger.format(logrecord), 'Message')
 
 class PublishErrorsHandlerTestCase(test.BaseTestCase):
     """Tests for log.PublishErrorsHandler"""
