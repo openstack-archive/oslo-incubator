@@ -85,7 +85,7 @@ class ThreadGroup(object):
     def thread_done(self, thread):
         self.threads.remove(thread)
 
-    def stop(self):
+    def stop_threads(self):
         current = threading.current_thread()
 
         # Iterate over a copy of self.threads so thread_done doesn't
@@ -99,12 +99,17 @@ class ThreadGroup(object):
             except Exception as ex:
                 LOG.exception(ex)
 
+    def stop_timers(self):
         for x in self.timers:
             try:
                 x.stop()
             except Exception as ex:
                 LOG.exception(ex)
         self.timers = []
+
+    def stop(self):
+        self.stop_threads()
+        self.stop_timers()
 
     def wait(self):
         for x in self.timers:
