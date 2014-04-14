@@ -52,30 +52,6 @@ class GettextTest(test.BaseTestCase):
         # assert now enabled
         self.assertTrue(gettextutils.USE_LAZY)
 
-    def test_underscore_non_lazy(self):
-        # set lazy off
-        gettextutils.USE_LAZY = False
-
-        if six.PY3:
-            self.mox.StubOutWithMock(gettextutils._t, 'gettext')
-            gettextutils._t.gettext('blah').AndReturn('translated blah')
-        else:
-            self.mox.StubOutWithMock(gettextutils._t, 'ugettext')
-            gettextutils._t.ugettext('blah').AndReturn('translated blah')
-        self.mox.ReplayAll()
-
-        result = gettextutils._('blah')
-        self.assertEqual('translated blah', result)
-
-    def test_underscore_lazy(self):
-        # set lazy off
-        gettextutils.USE_LAZY = False
-
-        gettextutils.enable_lazy()
-        result = gettextutils._('blah')
-        self.assertIsInstance(result, gettextutils.Message)
-        self.assertEqual('oslo', result.domain)
-
     def test_gettext_does_not_blow_up(self):
         LOG.info(gettextutils._('test'))
 
@@ -740,6 +716,44 @@ class TranslationHandlerTestCase(test.BaseTestCase):
         self.assertIn(translation, self.stream.getvalue())
 
 
+class TranslatorFactoryTest(test.BaseTestCase):
+
+    def test_lazy(self):
+        with mock.patch.object(gettextutils, 'Message') as msg:
+            tf = gettextutils.TranslatorFactory('domain', lazy=True)
+            tf.primary('some text')
+            msg.assert_called_with('some text', domain='domain')
+
+    def test_py2(self):
+        with mock.patch.object(six, 'PY3', False):
+            with mock.patch('gettext.translation') as translation:
+                trans = mock.Mock()
+                translation.return_value = trans
+                trans.gettext.side_effect = AssertionError(
+                    'should have called ugettext')
+                tf = gettextutils.TranslatorFactory('domain', lazy=False)
+                tf.primary('some text')
+                trans.ugettext.assert_called_with('some text')
+
+    def test_py3(self):
+        with mock.patch.object(six, 'PY3', True):
+            with mock.patch('gettext.translation') as translation:
+                trans = mock.Mock()
+                translation.return_value = trans
+                trans.ugettext.side_effect = AssertionError(
+                    'should have called gettext')
+                tf = gettextutils.TranslatorFactory('domain', lazy=False)
+                tf.primary('some text')
+                trans.gettext.assert_called_with('some text')
+
+    def test_log_level_domain_name(self):
+        with mock.patch.object(gettextutils.TranslatorFactory,
+                               '_make_translation_func') as mtf:
+            tf = gettextutils.TranslatorFactory('domain', lazy=False)
+            tf._make_log_translation_func('mylevel')
+            mtf.assert_called_with('domain-log-mylevel')
+
+
 class LogLevelTranslationsTest(test.BaseTestCase):
 
     scenarios = [
@@ -748,47 +762,12 @@ class LogLevelTranslationsTest(test.BaseTestCase):
         ['info', 'warning', 'error', 'critical']
     ]
 
-    def setUp(self):
-        super(LogLevelTranslationsTest, self).setUp()
-        moxfixture = self.useFixture(moxstubout.MoxStubout())
-        self.stubs = moxfixture.stubs
-        self.mox = moxfixture.mox
-        # remember so we can reset to it later
-        self._USE_LAZY = gettextutils.USE_LAZY
-        # Stub out the appropriate translation logger
-        if six.PY3:
-            self.mox.StubOutWithMock(gettextutils._t_log_levels[self.level],
-                                     'gettext')
-            self.trans_func = gettextutils._t_log_levels[self.level].gettext
-        else:
-            self.mox.StubOutWithMock(gettextutils._t_log_levels[self.level],
-                                     'ugettext')
-            self.trans_func = gettextutils._t_log_levels[self.level].ugettext
-        # Look up the translator function for the log level we are testing
-        translator_name = '_L' + self.level[0].upper()
-        self.translator = getattr(gettextutils, translator_name)
-
-    def tearDown(self):
-        # reset to value before test
-        gettextutils.USE_LAZY = self._USE_LAZY
-        super(LogLevelTranslationsTest, self).tearDown()
-
-    def test_non_lazy(self):
-        # set lazy off
-        gettextutils.USE_LAZY = False
-
-        self.trans_func('blah').AndReturn('translated blah ' + self.level)
-        self.mox.ReplayAll()
-
-        result = self.translator('blah')
-        self.assertEqual('translated blah ' + self.level, result)
-
-    def test_lazy(self):
-        # set lazy on
-        gettextutils.enable_lazy()
-        result = self.translator('blah')
-        self.assertIsInstance(result, gettextutils.Message)
-        self.assertEqual('oslo-log-' + self.level, result.domain)
+    def test(self):
+        with mock.patch.object(gettextutils.TranslatorFactory,
+                               '_make_translation_func') as mtf:
+            tf = gettextutils.TranslatorFactory('domain', lazy=False)
+            getattr(tf, 'log_%s' % self.level)
+            mtf.assert_called_with('domain-log-%s' % self.level)
 
 
 class SomeObject(object):
