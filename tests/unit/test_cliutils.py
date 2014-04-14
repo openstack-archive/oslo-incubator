@@ -490,12 +490,12 @@ class PrintResultTestCase(test.BaseTestCase):
     def test_print_dict(self):
         cliutils.print_dict({"K": "k", "Key": "Value"})
         cliutils.print_dict({"K": "k", "Key": "Long\\nValue"})
-        self.assertEqual(self.mock_add_row.call_args_list,
-                         [mock.call(["K", "k"]),
-                          mock.call(["Key", "Value"]),
-                          mock.call(["K", "k"]),
-                          mock.call(["Key", "Long"]),
-                          mock.call(["", "Value"])])
+        self.assertEqual(sorted(self.mock_add_row.call_args_list),
+                         sorted([mock.call(["K", "k"]),
+                                 mock.call(["Key", "Value"]),
+                                 mock.call(["K", "k"]),
+                                 mock.call(["Key", "Long"]),
+                                 mock.call(["", "Value"])]))
 
 
 class DecoratorsTestCase(test.BaseTestCase):
