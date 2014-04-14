@@ -20,6 +20,8 @@ thread, and stack trace data models
 
 import traceback
 
+import six
+
 import openstack.common.report.models.with_default_views as mwdv
 import openstack.common.report.views.text.threading as text_views
 
@@ -42,12 +44,11 @@ class StackTraceModel(mwdv.ModelWithDefaultViews):
                 {'filename': fn, 'line': ln, 'name': nm, 'code': cd}
                 for fn, ln, nm, cd in traceback.extract_stack(stack_state)
             ]
-
-            if stack_state.f_exc_type is not None:
+            if getattr(stack_state, 'f_exc_type', None) is not None:
                 self['root_exception'] = {
                     'type': stack_state.f_exc_type,
                     'value': stack_state.f_exc_value
-                }
+                    }
             else:
                 self['root_exception'] = None
         else:
