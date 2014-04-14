@@ -571,6 +571,8 @@ class TestMigrationUtils(test_migrations.BaseMigrationTestCase):
         self.assertEqual(f_key['referred_table'], 'table0')
         self.assertEqual(f_key['referred_columns'], ['id'])
         self.assertEqual(f_key['constrained_columns'], ['bar'])
+        table.drop()
+        parent_table.drop()
 
     def test_insert_from_select(self):
         insert_table_name = "__test_insert_to_table__"

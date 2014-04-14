@@ -19,6 +19,7 @@
 import logging
 import re
 
+from migrate.changeset import UniqueConstraint, ForeignKeyConstraint
 import sqlalchemy
 from sqlalchemy import Boolean
 from sqlalchemy import CheckConstraint
@@ -30,6 +31,7 @@ from sqlalchemy import Index
 from sqlalchemy import Integer
 from sqlalchemy import MetaData
 from sqlalchemy import or_
+from sqlalchemy import schema
 from sqlalchemy.sql.expression import literal_column
 from sqlalchemy.sql.expression import UpdateBase
 from sqlalchemy import String
@@ -304,19 +306,93 @@ def _get_not_supported_column(col_name_col_instance, column_name):
     return column
 
 
+def _get_unique_constraints_in_sqlite(migrate_engine, table_name):
+    regexp = "CONSTRAINT (\w+) UNIQUE \(([^\)]+)\)"
+
+    meta = MetaData(bind=migrate_engine)
+    table = Table(table_name, meta, autoload=True)
+
+    sql_data = migrate_engine.execute(
+        """
+            SELECT sql
+            FROM
+                sqlite_master
+            WHERE
+                type = 'table' AND
+                name = :table_name;
+        """,
+        table_name=table_name
+    ).fetchone()[0]
+
+    uniques = set([
+        schema.UniqueConstraint(
+            *[getattr(table.c, c.strip(' "'))
+              for c in cols.split(",")], name=name
+        )
+        for name, cols in re.findall(regexp, sql_data)
+    ])
+
+    return uniques
+
+
+def _drop_unique_constraint_in_sqlite(migrate_engine, table_name, uc_name,
+                                      **col_name_col_instance):
+    insp = reflection.Inspector.from_engine(migrate_engine)
+    meta = MetaData(bind=migrate_engine)
+
+    table = Table(table_name, meta, autoload=True)
+    columns = []
+    for column in table.columns:
+        if isinstance(column.type, NullType):
+            new_column = _get_not_supported_column(col_name_col_instance,
+                                                   column.name)
+            columns.append(new_column)
+        else:
+            columns.append(column.copy())
+
+    uniques = _get_unique_constraints_in_sqlite(migrate_engine, table_name)
+    table.constraints.update(uniques)
+
+    constraints = [constraint for constraint in table.constraints
+                   if not constraint.name == uc_name and
+                   not isinstance(constraint, schema.ForeignKeyConstraint)]
+
+    new_table = Table(table_name + "__tmp__", meta, *(columns + constraints))
+    new_table.create()
+
+    indexes = []
+    for index in insp.get_indexes(table_name):
+        column_names = [new_table.c[c] for c in index['column_names']]
+        indexes.append(Index(index["name"],
+                             *column_names,
+                             unique=index["unique"]))
+    f_keys = []
+    for fk in insp.get_foreign_keys(table_name):
+        refcolumns = [fk['referred_table'] + '.' + col
+                      for col in fk['referred_columns']]
+        f_keys.append(ForeignKeyConstraint(fk['constrained_columns'],
+                      refcolumns, table=new_table, name=fk['name']))
+
+    ins = InsertFromSelect(new_table, table.select())
+    migrate_engine.execute(ins)
+    table.drop()
+
+    [index.create(migrate_engine) for index in indexes]
+    for fkey in f_keys:
+        fkey.create()
+    new_table.rename(table_name)
+
+
 def drop_unique_constraint(migrate_engine, table_name, uc_name, *columns,
                            **col_name_col_instance):
-    """Drop unique constraint from table.
-
-    DEPRECATED: this function is deprecated and will be removed from oslo.db
-    in a few releases. Please use UniqueConstraint.drop() method directly for
-    sqlalchemy-migrate migration scripts.
-
-    This method drops UC from table and works for mysql, postgresql and sqlite.
-    In mysql and postgresql we are able to use "alter table" construction.
-    Sqlalchemy doesn't support some sqlite column types and replaces their
-    type with NullType in metadata. We process these columns and replace
-    NullType with the correct column type.
+    """This method drops UC from table and works for mysql, postgresql and
+    sqlite. In mysql and postgresql we are able to use "alter table"
+    construction. In sqlite is only one way to drop UC:
+        1) Create new table with same columns, indexes and constraints
+           (except one that we want to drop).
+        2) Copy data from old table to new.
+        3) Drop old table.
+        4) Rename new table to the name of old table.
 
     :param migrate_engine: sqlalchemy engine
     :param table_name:     name of table that contains uniq constraint.
@@ -327,24 +403,15 @@ def drop_unique_constraint(migrate_engine, table_name, uc_name, *columns,
                             are required only for columns that have unsupported
                             types by sqlite. For example BigInteger.
     """
-
-    from migrate.changeset import UniqueConstraint
-
-    meta = MetaData()
-    meta.bind = migrate_engine
-    t = Table(table_name, meta, autoload=True)
-
     if migrate_engine.name == "sqlite":
-        override_cols = [
-            _get_not_supported_column(col_name_col_instance, col.name)
-            for col in t.columns
-            if isinstance(col.type, NullType)
-        ]
-        for col in override_cols:
-            t.columns.replace(col)
-
-    uc = UniqueConstraint(*columns, table=t, name=uc_name)
-    uc.drop()
+        _drop_unique_constraint_in_sqlite(migrate_engine, table_name, uc_name,
+                                          **col_name_col_instance)
+    else:
+        meta = MetaData()
+        meta.bind = migrate_engine
+        t = Table(table_name, meta, autoload=True)
+        uc = UniqueConstraint(*columns, table=t, name=uc_name)
+        uc.drop()
 
 
 def drop_old_duplicate_entries_from_table(migrate_engine, table_name,
