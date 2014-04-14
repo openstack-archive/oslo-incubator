@@ -85,6 +85,9 @@ class GuruMeditation(object):
         super(GuruMeditation, self).__init__(*args, **kwargs)
         self.start_section_index = len(self.sections)
 
+    def __reduce__(self):
+        return (self.__class__, (self.version_obj, self.args, self.kwargs))
+
     @classmethod
     def register_section(cls, section_title, generator):
         """Register a New Section
