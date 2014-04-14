@@ -22,7 +22,10 @@ import sys
 # needed to get greenthreads
 import fixtures
 import greenlet
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock
 import six
 
 from openstack.common.report import guru_meditation_report as gmr

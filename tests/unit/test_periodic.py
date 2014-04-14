@@ -18,7 +18,10 @@
 Unit Tests for periodic_task decorator and PeriodicTasks class.
 """
 
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock
 
 from openstack.common.fixture import config
 from openstack.common import periodic_task

@@ -15,7 +15,10 @@
 
 import uuid
 
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock
 
 from openstack.common.fixture import moxstubout
 from openstack.common.middleware import correlation_id

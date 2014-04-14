@@ -15,7 +15,10 @@
 
 import socket
 
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock
 
 from openstack.common import context
 from openstack.common.fixture import config

@@ -19,7 +19,10 @@ import os
 import sys
 import tempfile
 
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock
 from oslo.config import cfg
 import six
 

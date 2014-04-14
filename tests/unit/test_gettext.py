@@ -18,7 +18,10 @@ import gettext
 import logging
 
 from babel import localedata
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock
 import six
 import testtools
 

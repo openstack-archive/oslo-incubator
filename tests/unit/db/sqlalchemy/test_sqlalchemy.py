@@ -20,7 +20,10 @@
 import logging
 
 import _mysql_exceptions
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock
 import sqlalchemy
 from sqlalchemy import Column, MetaData, Table, UniqueConstraint
 from sqlalchemy import DateTime, Integer, String
