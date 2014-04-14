@@ -416,7 +416,7 @@ class RpcQpidTestCase(tests.utils.BaseTestCase):
                                  server_params['password'])
                 self.assertEqual(myself.brokers,
                                  [server_params['hostname'] + ':' +
-                                 str(server_params['port'])])
+                                  str(server_params['port'])])
 
         MyConnection.pool = rpc_amqp.Pool(self.FLAGS, MyConnection)
         self.stubs.Set(impl_qpid, 'Connection', MyConnection)

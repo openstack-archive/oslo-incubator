@@ -18,7 +18,7 @@ import six
 @six.add_metaclass(abc.ABCMeta)
 class MigrationExtensionBase(object):
 
-    #used to sort migration in logical order
+    # used to sort migration in logical order
     order = 0
 
     @property

@@ -93,7 +93,7 @@ class GlobalFunctionsTest(test.BaseTestCase):
         self.useFixture(fixtures.MonkeyPatch(
             "os.environ",
             {"OS_TENANT_NAME": "fake-project",
-            "OS_USERNAME": "fake-username"}))
+             "OS_USERNAME": "fake-username"}))
         parser = argparse.ArgumentParser()
         auth.load_auth_system_opts(parser)
         options = parser.parse_args(

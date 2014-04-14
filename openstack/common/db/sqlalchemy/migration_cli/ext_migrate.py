@@ -49,7 +49,7 @@ class MigrateExtension(ext_base.MigrationExtensionBase):
 
     def downgrade(self, version):
         try:
-            #version for migrate should be valid int - else skip
+            # version for migrate should be valid int - else skip
             if version in ('base', None):
                 version = self.init_version
             version = int(version)
