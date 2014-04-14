@@ -104,8 +104,7 @@ class _FileLock(object):
                                                   " %(exception)s") %
                                                 {
                                                     'filename': self.fname,
-                                                    'exception': e,
-                                                })
+                                                    'exception': e})
 
     def __enter__(self):
         self.acquire()
