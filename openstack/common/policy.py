@@ -243,17 +243,15 @@ class Enforcer(object):
     def _get_policy_path(self):
         """Locate the policy json data file.
 
-        :param policy_file: Custom policy file to locate.
-
         :returns: The policy path
 
         :raises: ConfigFilesNotFoundError if the file couldn't
                  be located.
         """
-        policy_file = CONF.find_file(self.policy_file)
+        policy_path = CONF.find_file(self.policy_file)
 
-        if policy_file:
-            return policy_file
+        if policy_path:
+            return policy_path
 
         raise cfg.ConfigFilesNotFoundError((self.policy_file,))
 
