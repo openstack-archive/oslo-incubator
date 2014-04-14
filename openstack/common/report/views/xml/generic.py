@@ -79,7 +79,9 @@ class KeyValueView(object):
 
             return res
 
-        res = utils.StringWithAttrs(ET.tostring(serialize(cpy,
-                                                          self.wrapper_name)))
+        str_ = ET.tostring(serialize(cpy,
+                                     self.wrapper_name),
+                           encoding="utf-8").decode("utf-8")
+        res = utils.StringWithAttrs(str_)
         res.__is_xml__ = True
         return res
