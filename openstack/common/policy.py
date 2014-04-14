@@ -231,7 +231,7 @@ class Enforcer(object):
 
         if self.use_conf:
             if not self.policy_path:
-                self.policy_path = self._get_policy_path()
+                self.policy_path = self._get_policy_path(self.policy_file)
 
             reloaded, data = fileutils.read_cached_file(
                 self.policy_path, force_reload=force_reload)
@@ -240,7 +240,7 @@ class Enforcer(object):
                 self.set_rules(rules)
                 LOG.debug("Rules successfully reloaded")
 
-    def _get_policy_path(self):
+    def _get_policy_path(self, policy_file):
         """Locate the policy json data file.
 
         :param policy_file: Custom policy file to locate.
@@ -250,10 +250,10 @@ class Enforcer(object):
         :raises: ConfigFilesNotFoundError if the file couldn't
                  be located.
         """
-        policy_file = CONF.find_file(self.policy_file)
+        policy_path = CONF.find_file(policy_file)
 
-        if policy_file:
-            return policy_file
+        if policy_path:
+            return policy_path
 
         raise cfg.ConfigFilesNotFoundError((self.policy_file,))
 
