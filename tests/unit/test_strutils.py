@@ -17,7 +17,10 @@
 
 import math
 
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock
 import six
 import testscenarios
 

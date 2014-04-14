@@ -13,10 +13,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock
 
 from openstack.common.fixture import config
-from openstack.common.fixture import mockpatch
+from openstack.common.fixture try:
+    import mock
+except ImportError:
+    import unittest.mockpatch
 from openstack.common import log as logging
 from openstack.common import test
 

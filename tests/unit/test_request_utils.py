@@ -13,7 +13,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock
 
 from openstack.common import request_utils
 from openstack.common import test

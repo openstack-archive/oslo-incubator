@@ -15,7 +15,10 @@
 
 import time
 
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock
 
 from openstack.common import memorycache
 from openstack.common import test

@@ -12,7 +12,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock
 
 from openstack.common.report.models import base as base_model
 from openstack.common.report.models import with_default_views as mwdf

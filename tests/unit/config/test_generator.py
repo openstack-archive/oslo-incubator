@@ -19,7 +19,10 @@
 import fixtures
 
 from openstack.common.config import generator
-from openstack.common.fixture import mockpatch
+from openstack.common.fixture try:
+    import mock
+except ImportError:
+    import unittest.mockpatch
 from openstack.common import test
 
 

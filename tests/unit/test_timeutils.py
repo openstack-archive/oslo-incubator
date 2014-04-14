@@ -18,7 +18,10 @@ import datetime
 import time
 
 import iso8601
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock
 from testtools import matchers
 
 from openstack.common import test

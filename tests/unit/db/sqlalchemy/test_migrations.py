@@ -14,7 +14,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock
 
 from openstack.common.db.sqlalchemy import test_migrations as migrate
 from openstack.common import test

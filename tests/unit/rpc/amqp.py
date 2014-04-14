@@ -21,7 +21,10 @@ Unit Tests for AMQP-based remote procedure calls
 import logging
 
 from eventlet import greenthread
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock
 from oslo.config import cfg
 
 from openstack.common.rpc import amqp as rpc_amqp

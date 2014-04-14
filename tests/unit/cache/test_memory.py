@@ -14,7 +14,10 @@
 
 import time
 
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock
 
 from tests.unit.cache import base
 

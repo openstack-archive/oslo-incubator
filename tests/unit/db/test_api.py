@@ -15,7 +15,10 @@
 
 """Unit tests for DB API."""
 
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock
 
 from openstack.common.db import api
 from openstack.common.db import exception
