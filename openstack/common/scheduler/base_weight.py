@@ -19,6 +19,8 @@ Pluggable Weighing support
 
 import abc
 
+import six
+
 from openstack.common.scheduler import base_handler
 
 
@@ -61,7 +63,7 @@ class WeighedObject(object):
         return "<WeighedObject '%s': %s>" % (self.obj, self.weight)
 
 
-class BaseWeigher(object):
+class BaseWeigher(six.with_metaclass(abc.ABCMeta, object)):
     """Base class for pluggable weighers.
 
     The attributes maxval and minval can be specified to set up the maximum
@@ -69,8 +71,6 @@ class BaseWeigher(object):
     taken into account in the normalization step, instead of taking the values
     from the calculated weights.
     """
-
-    __metaclass__ = abc.ABCMeta
 
     minval = None
     maxval = None
