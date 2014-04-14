@@ -81,6 +81,8 @@ class ReportModel(col.MutableMapping):
         return self.data.__contains__(key)
 
     def __getattr__(self, attrname):
+        if attrname.startswith('__'):
+            raise AttributeError(attrname)
         try:
             return self.data[attrname]
         except KeyError:
