@@ -45,6 +45,11 @@ class ReportModel(col.MutableMapping):
         self.attached_view = attached_view
         self.data = data or {}
 
+    # Needed for deepcopy in Python3. That will avoid an infinite loop
+    # in __getattr__ .
+    def __reduce__(self):
+        return (self.__class__, (self.data, self.attached_view))
+
     def __str__(self):
         self_cpy = copy.deepcopy(self)
         for key in self_cpy:

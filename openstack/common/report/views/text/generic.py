@@ -172,7 +172,7 @@ class TableView(object):
         self.table_prop_name = table_prop_name
         self.column_names = column_names
         self.column_values = column_values
-        self.column_width = (72 - len(column_names) + 1) / len(column_names)
+        self.column_width = (72 - len(column_names) + 1) // len(column_names)
 
         column_headers = "|".join(
             "{ch[" + str(n) + "]: ^" + str(self.column_width) + "}"
