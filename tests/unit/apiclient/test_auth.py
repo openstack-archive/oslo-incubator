@@ -16,7 +16,10 @@
 import argparse
 
 import fixtures
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock as mock
 import requests
 from stevedore import extension
 

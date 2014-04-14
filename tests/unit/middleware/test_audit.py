@@ -16,7 +16,10 @@
 import os
 import sys
 
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock as mock
 from oslo.config import cfg
 from pycadf.audit import api as cadf_api
 import webob

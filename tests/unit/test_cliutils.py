@@ -13,7 +13,10 @@
 #    under the License.
 
 import fixtures
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock as mock
 
 from openstack.common.apiclient import base
 from openstack.common.apiclient import exceptions

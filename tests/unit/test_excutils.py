@@ -15,7 +15,10 @@
 import logging
 import time
 
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock as mock
 
 from openstack.common import excutils
 from openstack.common.fixture import moxstubout

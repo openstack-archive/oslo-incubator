@@ -28,7 +28,10 @@ import time
 import weakref
 
 import fixtures
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock as mock
 import six
 
 from openstack.common.fixture import config

@@ -17,7 +17,10 @@ import uuid
 import warnings
 
 from migrate.changeset import UniqueConstraint
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock as mock
 import six
 from six import moves
 from six.moves.urllib import parse

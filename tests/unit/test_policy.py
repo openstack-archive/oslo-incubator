@@ -17,7 +17,10 @@
 
 import os
 
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock as mock
 from oslo.config import cfg
 import six
 import six.moves.urllib.parse as urlparse

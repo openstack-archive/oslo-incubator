@@ -26,7 +26,10 @@ import time
 import uuid
 
 import fixtures
-import mock
+try:
+    import mock
+except ImportError:
+    import unittest.mock as mock
 import mox
 
 from openstack.common import context
