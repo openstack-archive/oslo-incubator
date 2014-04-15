@@ -16,8 +16,8 @@ import os
 import socket
 
 from oslotest import base as test_base
+from oslotest import moxstubout
 
-from openstack.common.fixture import moxstubout
 from openstack.common import systemd
 
 
