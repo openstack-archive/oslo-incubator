@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Approved+1: Alan Pevec <apevec@gmail.com>
+Code-Review+2: Alan Pevec <apevec@gmail.com>
+Code-Review+2: Flavio Percoco <fpercoco@redhat.com>
+Code-Review+1: ChangBo Guo(gcb) <glongwave@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 15 Apr 2014 11:47:45 +0000
+Reviewed-on: https://review.openstack.org/86371
+Project: openstack/oslo-incubator
+Branch: refs/heads/stable/havana
