@@ -17,9 +17,9 @@ Unit Tests for rpc.dispatcher
 """
 
 from oslotest import base as test_base
+from oslotest import moxstubout
 
 from openstack.common import context
-from openstack.common.fixture import moxstubout
 from openstack.common.rpc import common as rpc_common
 from openstack.common.rpc import dispatcher
 from openstack.common.rpc import serializer as rpc_serializer
