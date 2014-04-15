@@ -17,9 +17,9 @@ import time
 
 import mock
 from oslotest import base as test_base
+from oslotest import moxstubout
 
 from openstack.common import excutils
-from openstack.common.fixture import moxstubout
 
 
 mox = moxstubout.mox
