@@ -21,6 +21,7 @@ import tempfile
 
 import mock
 from oslo.config import cfg
+from oslotest import base as test_base
 import six
 
 from openstack.common import context
@@ -33,7 +34,6 @@ from openstack.common import local
 from openstack.common import log
 from openstack.common import log_handler
 from openstack.common.notifier import api as notifier
-from openstack.common import test
 
 
 def _fake_context():
@@ -98,19 +98,19 @@ class CommonLoggerTestsMixIn(object):
             self.assertRaises(AttributeError, getattr, log, func)
 
 
-class LoggerTestCase(CommonLoggerTestsMixIn, test.BaseTestCase):
+class LoggerTestCase(CommonLoggerTestsMixIn, test_base.BaseTestCase):
     def setUp(self):
         super(LoggerTestCase, self).setUp()
         self.log = log.getLogger(None)
 
 
-class LazyLoggerTestCase(CommonLoggerTestsMixIn, test.BaseTestCase):
+class LazyLoggerTestCase(CommonLoggerTestsMixIn, test_base.BaseTestCase):
     def setUp(self):
         super(LazyLoggerTestCase, self).setUp()
         self.log = log.getLazyLogger(None)
 
 
-class LogTestBase(test.BaseTestCase):
+class LogTestBase(test_base.BaseTestCase):
     """Base test class that provides some convenience functions."""
     def _add_handler_with_cleanup(self, log_instance, handler=None,
                                   formatter=None):
@@ -152,7 +152,7 @@ class LogTestBase(test.BaseTestCase):
         self.addCleanup(log_instance.logger.setLevel, self.level)
 
 
-class LogHandlerTestCase(test.BaseTestCase):
+class LogHandlerTestCase(test_base.BaseTestCase):
 
     def setUp(self):
         super(LogHandlerTestCase, self).setUp()
@@ -179,7 +179,7 @@ class LogHandlerTestCase(test.BaseTestCase):
                          '/some/path/foo-bar.log')
 
 
-class PublishErrorsHandlerTestCase(test.BaseTestCase):
+class PublishErrorsHandlerTestCase(test_base.BaseTestCase):
     """Tests for log.PublishErrorsHandler"""
     def setUp(self):
         super(PublishErrorsHandlerTestCase, self).setUp()
@@ -222,7 +222,7 @@ class PublishErrorsHandlerTestCase(test.BaseTestCase):
         self.assertEqual(self.emit_payload, expect_payload)
 
 
-class LogLevelTestCase(test.BaseTestCase):
+class LogLevelTestCase(test_base.BaseTestCase):
     def setUp(self):
         super(LogLevelTestCase, self).setUp()
         self.CONF = self.useFixture(config.Config()).conf
@@ -488,7 +488,7 @@ class DomainTestCase(LogTestBase):
                                    (ctxt.request_id, user_identity)))
 
 
-class SetDefaultsTestCase(test.BaseTestCase):
+class SetDefaultsTestCase(test_base.BaseTestCase):
     class TestConfigOpts(cfg.ConfigOpts):
         def __call__(self, args=None):
             return cfg.ConfigOpts.__call__(self,
@@ -517,7 +517,7 @@ class SetDefaultsTestCase(test.BaseTestCase):
         self.assertEqual(self.conf.logging_context_format_string, my_default)
 
 
-class LogConfigOptsTestCase(test.BaseTestCase):
+class LogConfigOptsTestCase(test_base.BaseTestCase):
 
     def setUp(self):
         super(LogConfigOptsTestCase, self).setUp()
@@ -598,7 +598,7 @@ class LogConfigOptsTestCase(test.BaseTestCase):
             self.assertTrue(isinstance(formatter, log.ContextFormatter))
 
 
-class LogConfigTestCase(test.BaseTestCase):
+class LogConfigTestCase(test_base.BaseTestCase):
 
     minimal_config = """[loggers]
 keys=root
@@ -657,7 +657,7 @@ handlers=
                                            disable_existing_loggers=False)
 
 
-class MaskPasswordTestCase(test.BaseTestCase):
+class MaskPasswordTestCase(test_base.BaseTestCase):
 
     def test_json(self):
         # Test 'adminPass' w/o spaces

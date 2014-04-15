@@ -20,13 +20,13 @@ import os
 import tempfile
 
 import fixtures
+from oslotest import base as test_base
 import six
 
 from openstack.common import processutils
-from openstack.common import test
 
 
-class UtilsTest(test.BaseTestCase):
+class UtilsTest(test_base.BaseTestCase):
     # NOTE(jkoelker) Moar tests from nova need to be ported. But they
     #                need to be mock'd out. Currently they requre actually
     #                running code.
@@ -36,7 +36,7 @@ class UtilsTest(test.BaseTestCase):
                           hozer=True)
 
 
-class ProcessExecutionErrorTest(test.BaseTestCase):
+class ProcessExecutionErrorTest(test_base.BaseTestCase):
 
     def test_defaults(self):
         err = processutils.ProcessExecutionError()
@@ -211,7 +211,7 @@ def fake_execute_raises(*cmd, **kwargs):
                                                   'command'])
 
 
-class TryCmdTestCase(test.BaseTestCase):
+class TryCmdTestCase(test_base.BaseTestCase):
     def test_keep_warnings(self):
         self.useFixture(fixtures.MonkeyPatch(
             'openstack.common.processutils.execute', fake_execute))
@@ -261,7 +261,7 @@ class FakeSshConnection(object):
                 six.StringIO('stderr'))
 
 
-class SshExecuteTestCase(test.BaseTestCase):
+class SshExecuteTestCase(test_base.BaseTestCase):
     def test_invalid_addl_env(self):
         self.assertRaises(processutils.InvalidArgumentError,
                           processutils.ssh_execute,

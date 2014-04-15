@@ -13,11 +13,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from openstack.common import test
+from oslotest import base as test_base
+
 from openstack.common import units
 
 
-class UnitTest(test.BaseTestCase):
+class UnitTest(test_base.BaseTestCase):
     def test_binary_unit(self):
         self.assertEqual(units.Ki, 1024)
         self.assertEqual(units.Mi, 1024 ** 2)

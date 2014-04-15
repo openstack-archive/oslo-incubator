@@ -21,14 +21,14 @@ import errno
 import socket
 
 import eventlet
+from oslotest import base as test_base
 
 from openstack.common import eventlet_backdoor
 from openstack.common.fixture import config
 from openstack.common.fixture import moxstubout
-from openstack.common import test
 
 
-class BackdoorPortTest(test.BaseTestCase):
+class BackdoorPortTest(test_base.BaseTestCase):
 
     def setUp(self):
         super(BackdoorPortTest, self).setUp()

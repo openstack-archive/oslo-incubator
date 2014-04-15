@@ -18,12 +18,12 @@ import functools
 import os
 
 import fixtures
+from oslotest import base as test_base
 import six
 
 from openstack.common.db.sqlalchemy import session
 from openstack.common.db.sqlalchemy import utils
 from openstack.common.fixture import lockutils
-from openstack.common import test
 
 
 class DbFixture(fixtures.Fixture):
@@ -51,7 +51,7 @@ class DbFixture(fixtures.Fixture):
         self.addCleanup(self.test.engine.dispose)
 
 
-class DbTestCase(test.BaseTestCase):
+class DbTestCase(test_base.BaseTestCase):
     """Base class for testing of DB code.
 
     Using `DbFixture`. Intended to be the main database test case to use all

@@ -26,15 +26,15 @@ import eventlet
 from eventlet import greenpool
 from eventlet import greenthread
 from oslo.config import cfg
+from oslotest import base as test_base
 from six import moves
 
 from openstack.common.fixture import config
 from openstack.common.fixture import lockutils as fixtures
 from openstack.common import lockutils
-from openstack.common import test
 
 
-class TestFileLocks(test.BaseTestCase):
+class TestFileLocks(test_base.BaseTestCase):
 
     def test_concurrent_green_lock_succeeds(self):
         """Verify spawn_n greenthreads with two locks run concurrently."""
@@ -70,7 +70,7 @@ class TestFileLocks(test.BaseTestCase):
                 shutil.rmtree(tmpdir)
 
 
-class LockTestCase(test.BaseTestCase):
+class LockTestCase(test_base.BaseTestCase):
 
     def setUp(self):
         super(LockTestCase, self).setUp()
@@ -373,7 +373,7 @@ class BrokenLock(lockutils._FileLock):
         raise err
 
 
-class FileBasedLockingTestCase(test.BaseTestCase):
+class FileBasedLockingTestCase(test_base.BaseTestCase):
     def setUp(self):
         super(FileBasedLockingTestCase, self).setUp()
         self.lock_dir = tempfile.mkdtemp()
@@ -460,7 +460,7 @@ class FileBasedLockingTestCase(test.BaseTestCase):
         self.assertEqual(call_list, ['other', 'other', 'main', 'main'])
 
 
-class LockutilsModuleTestCase(test.BaseTestCase):
+class LockutilsModuleTestCase(test_base.BaseTestCase):
 
     def setUp(self):
         super(LockutilsModuleTestCase, self).setUp()
@@ -494,7 +494,7 @@ class LockutilsModuleTestCase(test.BaseTestCase):
         self.assertEqual(retval, 0, "Bad OSLO_LOCK_PATH has been set")
 
 
-class TestLockFixture(test.BaseTestCase):
+class TestLockFixture(test_base.BaseTestCase):
 
     def setUp(self):
         super(TestLockFixture, self).setUp()

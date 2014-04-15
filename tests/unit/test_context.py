@@ -13,11 +13,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslotest import base as test_base
+
 from openstack.common import context
-from openstack.common import test
 
 
-class ContextTest(test.BaseTestCase):
+class ContextTest(test_base.BaseTestCase):
 
     def test_context(self):
         ctx = context.RequestContext()

@@ -14,12 +14,12 @@
 #    under the License.
 
 from oslo.config import cfg
+from oslotest import base as test_base
 
 from openstack.common.fixture import moxstubout
-from openstack.common import test
 
 
-class BaseTestCase(test.BaseTestCase):
+class BaseTestCase(test_base.BaseTestCase):
     def setUp(self, conf=cfg.CONF):
         super(BaseTestCase, self).setUp()
         moxfixture = self.useFixture(moxstubout.MoxStubout())

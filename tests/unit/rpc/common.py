@@ -23,12 +23,12 @@ import logging
 import time
 
 import eventlet
+from oslotest import base as test_base
 
 from openstack.common.fixture import config
 from openstack.common.gettextutils import _
 from openstack.common.rpc import common as rpc_common
 from openstack.common.rpc import dispatcher as rpc_dispatcher
-from openstack.common import test
 
 
 LOG = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ class ApiError(Exception):
         super(ApiError, self).__init__('%s: %s' % (code, message))
 
 
-class BaseRpcTestCase(test.BaseTestCase):
+class BaseRpcTestCase(test_base.BaseTestCase):
 
     def setUp(self, supports_timeouts=True, topic='test',
               topic_nested='nested'):

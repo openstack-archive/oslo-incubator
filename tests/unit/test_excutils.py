@@ -16,16 +16,16 @@ import logging
 import time
 
 import mock
+from oslotest import base as test_base
 
 from openstack.common import excutils
 from openstack.common.fixture import moxstubout
-from openstack.common import test
 
 
 mox = moxstubout.mox
 
 
-class SaveAndReraiseTest(test.BaseTestCase):
+class SaveAndReraiseTest(test_base.BaseTestCase):
 
     def test_save_and_reraise_exception(self):
         e = None
@@ -82,7 +82,7 @@ class SaveAndReraiseTest(test.BaseTestCase):
             self.assertFalse(log.called)
 
 
-class ForeverRetryUncaughtExceptionsTest(test.BaseTestCase):
+class ForeverRetryUncaughtExceptionsTest(test_base.BaseTestCase):
 
     def setUp(self):
         super(ForeverRetryUncaughtExceptionsTest, self).setUp()

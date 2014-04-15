@@ -17,13 +17,13 @@
 
 import functools
 
+from oslotest import base as test_base
 import six
 
 from openstack.common import funcutils
-from openstack.common import test
 
 
-class FuncutilsTestCase(test.BaseTestCase):
+class FuncutilsTestCase(test_base.BaseTestCase):
     def _test_func(self, instance, red=None, blue=None):
         pass
 

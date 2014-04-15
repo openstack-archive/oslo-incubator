@@ -13,12 +13,12 @@
 #    under the License.
 
 from oslo.config import cfg
+from oslotest import base as test_base
 
 from openstack.common import cfgfilter
-from openstack.common import test
 
 
-class ConfigFilterTestCase(test.BaseTestCase):
+class ConfigFilterTestCase(test_base.BaseTestCase):
 
     def setUp(self):
         super(ConfigFilterTestCase, self).setUp()

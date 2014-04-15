@@ -14,11 +14,11 @@
 import datetime
 
 import mock
+from oslotest import base as test_base
 
 from openstack.common.fixture import config
 from openstack.common.fixture import moxstubout
 from openstack.common import quota
-from openstack.common import test
 
 
 class FakeContext(object):
@@ -30,7 +30,7 @@ class FakeContext(object):
         return self
 
 
-class ExceptionTestCase(test.BaseTestCase):
+class ExceptionTestCase(test_base.BaseTestCase):
 
     def _get_raised_exception(self, exception, *args, **kwargs):
         try:
@@ -53,7 +53,7 @@ class ExceptionTestCase(test.BaseTestCase):
         self.assertEqual(str(e), e.msg_fmt % {"string": "test"})
 
 
-class DbQuotaDriverTestCase(test.BaseTestCase):
+class DbQuotaDriverTestCase(test_base.BaseTestCase):
 
     def setUp(self):
         self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
@@ -305,7 +305,7 @@ class DbQuotaDriverTestCase(test.BaseTestCase):
         self.driver.db.reservation_expire.assert_called_once_with(self.ctxt)
 
 
-class BaseResourceTestCase(test.BaseTestCase):
+class BaseResourceTestCase(test_base.BaseTestCase):
 
     def setUp(self):
         self.ctxt = FakeContext()
@@ -344,7 +344,7 @@ class BaseResourceTestCase(test.BaseTestCase):
         self.assertEqual(1, resource.quota(self.driver, self.ctxt))
 
 
-class CountableResourceTestCase(test.BaseTestCase):
+class CountableResourceTestCase(test_base.BaseTestCase):
 
     def test_init(self):
         resource = quota.CountableResource('r1', 42)
@@ -352,7 +352,7 @@ class CountableResourceTestCase(test.BaseTestCase):
         self.assertEqual(42, resource.count)
 
 
-class QuotaEngineTestCase(test.BaseTestCase):
+class QuotaEngineTestCase(test_base.BaseTestCase):
 
     def setUp(self):
         self.ctxt = FakeContext()

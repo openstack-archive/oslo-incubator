@@ -12,15 +12,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslotest import base as test_base
 import six
 import webob
 
 from openstack.common.fixture import config
 from openstack.common.middleware import sizelimit
-from openstack.common import test
 
 
-class TestLimitingReader(test.BaseTestCase):
+class TestLimitingReader(test_base.BaseTestCase):
 
     def test_limiting_reader(self):
         BYTES = 1024
@@ -66,7 +66,7 @@ class TestLimitingReader(test.BaseTestCase):
                           _consume_all_read)
 
 
-class TestRequestBodySizeLimiter(test.BaseTestCase):
+class TestRequestBodySizeLimiter(test_base.BaseTestCase):
 
     def setUp(self):
         super(TestRequestBodySizeLimiter, self).setUp()

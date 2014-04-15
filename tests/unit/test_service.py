@@ -32,6 +32,7 @@ import eventlet
 from eventlet import event
 import mock
 import mox
+from oslotest import base as test_base
 
 from openstack.common import eventlet_backdoor
 from openstack.common.fixture import config
@@ -39,7 +40,6 @@ from openstack.common.fixture import moxstubout
 from openstack.common import log as logging
 from openstack.common.notifier import api as notifier_api
 from openstack.common import service
-from openstack.common import test
 
 
 LOG = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ class ExtendedService(service.Service):
         return 'service'
 
 
-class ServiceManagerTestCase(test.BaseTestCase):
+class ServiceManagerTestCase(test_base.BaseTestCase):
     """Test cases for Services."""
     def test_override_manager_method(self):
         serv = ExtendedService()
@@ -68,7 +68,7 @@ class ServiceWithTimer(service.Service):
         self.timer_fired = self.timer_fired + 1
 
 
-class ServiceTestBase(test.BaseTestCase):
+class ServiceTestBase(test_base.BaseTestCase):
     """A base class for ServiceLauncherTest and ServiceRestartTest."""
 
     def _wait(self, cond, timeout):
@@ -285,7 +285,7 @@ class _Service(service.Service):
         super(_Service, self).stop()
 
 
-class LauncherTest(test.BaseTestCase):
+class LauncherTest(test_base.BaseTestCase):
 
     def setUp(self):
         super(LauncherTest, self).setUp()

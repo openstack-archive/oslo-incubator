@@ -18,6 +18,7 @@ Unit Tests for rpc.proxy
 
 import copy
 
+from oslotest import base as test_base
 import six
 
 from openstack.common import context
@@ -27,10 +28,9 @@ from openstack.common import rpc
 from openstack.common.rpc import common as rpc_common
 from openstack.common.rpc import proxy
 from openstack.common.rpc import serializer as rpc_serializer
-from openstack.common import test
 
 
-class RpcProxyTestCase(test.BaseTestCase):
+class RpcProxyTestCase(test_base.BaseTestCase):
 
     def setUp(self):
         super(RpcProxyTestCase, self).setUp()

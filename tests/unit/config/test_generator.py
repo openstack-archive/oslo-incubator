@@ -17,13 +17,13 @@
 # under the License.
 
 import fixtures
+from oslotest import base as test_base
 
 from openstack.common.config import generator
 from openstack.common.fixture import mockpatch
-from openstack.common import test
 
 
-class GeneratorTestcase(test.BaseTestCase):
+class GeneratorTestcase(test_base.BaseTestCase):
     # The .py suffix left out for file fblaa_opt, to trigger the ext_names
     # code snippet in generator.generate()
     conffiles = ["tests/testmods/baar_baa_opt.py",

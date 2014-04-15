@@ -15,11 +15,12 @@
 
 import uuid
 
-from openstack.common import test
+from oslotest import base as test_base
+
 from openstack.common import uuidutils
 
 
-class UUIDUtilsTest(test.BaseTestCase):
+class UUIDUtilsTest(test_base.BaseTestCase):
 
     def test_generate_uuid(self):
         uuid_string = uuidutils.generate_uuid()

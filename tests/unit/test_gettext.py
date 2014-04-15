@@ -19,18 +19,18 @@ import logging
 
 from babel import localedata
 import mock
+from oslotest import base as test_base
 import six
 import testtools
 
 from openstack.common.fixture import moxstubout
 from openstack.common import gettextutils
-from openstack.common import test
 from tests.unit import fakes
 
 LOG = logging.getLogger(__name__)
 
 
-class GettextTest(test.BaseTestCase):
+class GettextTest(test_base.BaseTestCase):
 
     def setUp(self):
         super(GettextTest, self).setUp()
@@ -169,7 +169,7 @@ class GettextTest(test.BaseTestCase):
         self.assertEqual(es_translation, gettextutils.translate(obj, 'es'))
 
 
-class MessageTestCase(test.BaseTestCase):
+class MessageTestCase(test_base.BaseTestCase):
     """Unit tests for locale Message class."""
 
     @staticmethod
@@ -661,7 +661,7 @@ class MessageTestCase(test.BaseTestCase):
         self.assertEqual(fr_translation, msg.translate('fr'))
 
 
-class TranslationHandlerTestCase(test.BaseTestCase):
+class TranslationHandlerTestCase(test_base.BaseTestCase):
 
     def setUp(self):
         super(TranslationHandlerTestCase, self).setUp()
@@ -740,7 +740,7 @@ class TranslationHandlerTestCase(test.BaseTestCase):
         self.assertIn(translation, self.stream.getvalue())
 
 
-class LogLevelTranslationsTest(test.BaseTestCase):
+class LogLevelTranslationsTest(test_base.BaseTestCase):
 
     scenarios = [
         (level, {'level': level})

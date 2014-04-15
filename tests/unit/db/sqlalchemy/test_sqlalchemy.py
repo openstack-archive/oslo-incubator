@@ -21,6 +21,7 @@ import logging
 
 import _mysql_exceptions
 import mock
+from oslotest import base as oslo_test
 import sqlalchemy
 from sqlalchemy import Column, MetaData, Table, UniqueConstraint
 from sqlalchemy import DateTime, Integer, String
@@ -33,7 +34,6 @@ from openstack.common.db.sqlalchemy import models
 from openstack.common.db.sqlalchemy import session
 from openstack.common.db.sqlalchemy import test_base
 from openstack.common import log
-from openstack.common import test
 from tests.unit import test_log
 
 
@@ -213,7 +213,7 @@ class FakeDB2Engine(object):
         pass
 
 
-class TestDBDisconnected(test.BaseTestCase):
+class TestDBDisconnected(oslo_test.BaseTestCase):
 
     def _test_ping_listener_disconnected(self, connection):
         engine_args = {
@@ -326,7 +326,7 @@ class MySQLTraditionalModeTestCase(MySQLStrictAllTablesModeTestCase):
         self.mysql_mode = 'TRADITIONAL'
 
 
-class EngineFacadeTestCase(test.BaseTestCase):
+class EngineFacadeTestCase(oslo_test.BaseTestCase):
     def setUp(self):
         super(EngineFacadeTestCase, self).setUp()
 
