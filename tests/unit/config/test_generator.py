@@ -18,9 +18,9 @@
 
 import fixtures
 from oslotest import base as test_base
+from oslotest import mockpatch
 
 from openstack.common.config import generator
-from openstack.common.fixture import mockpatch
 
 
 class GeneratorTestcase(test_base.BaseTestCase):

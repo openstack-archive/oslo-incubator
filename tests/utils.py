@@ -15,8 +15,7 @@
 
 from oslo.config import cfg
 from oslotest import base as test_base
-
-from openstack.common.fixture import moxstubout
+from oslotest import moxstubout
 
 
 class BaseTestCase(test_base.BaseTestCase):

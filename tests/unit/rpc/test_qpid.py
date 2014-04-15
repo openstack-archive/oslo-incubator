@@ -28,10 +28,10 @@ import uuid
 import fixtures
 import mock
 import mox
+from oslotest import moxstubout
 
 from openstack.common import context
 from openstack.common.fixture import config
-from openstack.common.fixture import moxstubout
 from openstack.common import jsonutils
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
