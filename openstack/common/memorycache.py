@@ -40,7 +40,7 @@ def get_client(memcached_servers=None):
             import memcache
             client_cls = memcache.Client
         except ImportError:
-            pass
+            raise Exception("Failed to import memcache")
 
     return client_cls(memcached_servers, debug=0)
 
