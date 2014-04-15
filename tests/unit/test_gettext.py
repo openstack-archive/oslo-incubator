@@ -20,10 +20,10 @@ import logging
 from babel import localedata
 import mock
 from oslotest import base as test_base
+from oslotest import moxstubout
 import six
 import testtools
 
-from openstack.common.fixture import moxstubout
 from openstack.common import gettextutils
 from tests.unit import fakes
 
