@@ -25,10 +25,10 @@ import os
 import socket
 
 import fixtures
+from oslotest import moxstubout
 from six import moves
 
 from openstack.common.fixture import config
-from openstack.common.fixture import moxstubout
 from openstack.common.gettextutils import _
 from tests.unit.rpc import common
 

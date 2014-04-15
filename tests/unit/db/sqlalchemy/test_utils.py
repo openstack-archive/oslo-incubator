@@ -19,6 +19,7 @@ import warnings
 from migrate.changeset import UniqueConstraint
 import mock
 from oslotest import base as test_base
+from oslotest import moxstubout
 import six
 from six import moves
 from six.moves.urllib import parse
@@ -38,7 +39,6 @@ from openstack.common.db.sqlalchemy import models
 from openstack.common.db.sqlalchemy import session
 from openstack.common.db.sqlalchemy import test_migrations
 from openstack.common.db.sqlalchemy import utils
-from openstack.common.fixture import moxstubout
 from tests import utils as test_utils
 
 

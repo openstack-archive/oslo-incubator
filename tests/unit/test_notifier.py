@@ -17,10 +17,10 @@ import socket
 
 import mock
 from oslotest import base as test_base
+from oslotest import moxstubout
 
 from openstack.common import context
 from openstack.common.fixture import config
-from openstack.common.fixture import moxstubout
 from openstack.common import log
 from openstack.common.notifier import api as notifier_api
 from openstack.common.notifier import log_notifier
