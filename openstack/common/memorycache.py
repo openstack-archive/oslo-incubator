@@ -18,6 +18,8 @@
 
 from oslo.config import cfg
 
+from openstack.common.gettextutils import _LW
+from openstack.common import log as logging
 from openstack.common import timeutils
 
 memcache_opts = [
@@ -28,6 +30,8 @@ memcache_opts = [
 
 CONF = cfg.CONF
 CONF.register_opts(memcache_opts)
+
+LOG = logging.getLogger(__name__)
 
 
 def get_client(memcached_servers=None):
@@ -40,7 +44,7 @@ def get_client(memcached_servers=None):
             import memcache
             client_cls = memcache.Client
         except ImportError:
-            pass
+            raise Exception("Failed to import memcache")
 
     return client_cls(memcached_servers, debug=0)
 
