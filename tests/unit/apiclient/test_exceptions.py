@@ -13,10 +13,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslotest import base as test_base
 import six
 
 from openstack.common.apiclient import exceptions
-from openstack.common import test
 
 
 class FakeResponse(object):
@@ -30,7 +30,7 @@ class FakeResponse(object):
         return self.json_data
 
 
-class ExceptionsArgsTest(test.BaseTestCase):
+class ExceptionsArgsTest(test_base.BaseTestCase):
 
     def assert_exception(self, ex_cls, method, url, status_code, json_data):
         ex = exceptions.from_response(

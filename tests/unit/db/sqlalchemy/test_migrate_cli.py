@@ -11,11 +11,11 @@
 #    under the License.
 
 import mock
+from oslotest import base as test_base
 
 from openstack.common.db.sqlalchemy.migration_cli import ext_alembic
 from openstack.common.db.sqlalchemy.migration_cli import ext_migrate
 from openstack.common.db.sqlalchemy.migration_cli import manager
-from openstack.common import test
 
 
 class MockWithCmp(mock.MagicMock):
@@ -28,7 +28,7 @@ class MockWithCmp(mock.MagicMock):
 
 @mock.patch(('openstack.common.db.sqlalchemy.migration_cli.'
              'ext_alembic.alembic.command'))
-class TestAlembicExtension(test.BaseTestCase):
+class TestAlembicExtension(test_base.BaseTestCase):
 
     def setUp(self):
         self.migration_config = {'alembic_ini_path': '.',
@@ -88,7 +88,7 @@ class TestAlembicExtension(test.BaseTestCase):
 
 @mock.patch(('openstack.common.db.sqlalchemy.migration_cli.'
              'ext_migrate.migration'))
-class TestMigrateExtension(test.BaseTestCase):
+class TestMigrateExtension(test_base.BaseTestCase):
 
     def setUp(self):
         self.migration_config = {'migration_repo_path': '.',
@@ -147,7 +147,7 @@ class TestMigrateExtension(test.BaseTestCase):
             init_version=self.migration_config['init_version'])
 
 
-class TestMigrationManager(test.BaseTestCase):
+class TestMigrationManager(test_base.BaseTestCase):
 
     def setUp(self):
         self.migration_config = {'alembic_ini_path': '.',
@@ -188,7 +188,7 @@ class TestMigrationManager(test.BaseTestCase):
         self.ext.obj.stamp.assert_called_once_with('stamp')
 
 
-class TestMigrationRightOrder(test.BaseTestCase):
+class TestMigrationRightOrder(test_base.BaseTestCase):
 
     def setUp(self):
         self.migration_config = {'alembic_ini_path': '.',

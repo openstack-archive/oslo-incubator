@@ -14,14 +14,14 @@
 
 import fixtures
 import mock
+from oslotest import base as test_base
 
 from openstack.common.apiclient import base
 from openstack.common.apiclient import exceptions
 from openstack.common import cliutils
-from openstack.common import test
 
 
-class ValidateArgsTest(test.BaseTestCase):
+class ValidateArgsTest(test_base.BaseTestCase):
 
     def test_lambda_no_args(self):
         cliutils.validate_args(lambda: None)
@@ -435,7 +435,7 @@ class _FakeResult(object):
         self.value = value
 
 
-class PrintResultTestCase(test.BaseTestCase):
+class PrintResultTestCase(test_base.BaseTestCase):
 
     def setUp(self):
         super(PrintResultTestCase, self).setUp()
@@ -498,7 +498,7 @@ class PrintResultTestCase(test.BaseTestCase):
                           mock.call(["", "Value"])])
 
 
-class DecoratorsTestCase(test.BaseTestCase):
+class DecoratorsTestCase(test_base.BaseTestCase):
 
     def test_arg(self):
         func_args = [("--image", ), ("--flavor", )]
@@ -526,7 +526,7 @@ class DecoratorsTestCase(test.BaseTestCase):
         self.assertTrue(cliutils.isunauthenticated(dummy_func))
 
 
-class EnvTestCase(test.BaseTestCase):
+class EnvTestCase(test_base.BaseTestCase):
 
     def test_env(self):
         env = {"alpha": "a", "beta": "b"}
@@ -539,7 +539,7 @@ class EnvTestCase(test.BaseTestCase):
         self.assertEqual(cliutils.env("gamma", default="c"), "c")
 
 
-class GetPasswordTestCase(test.BaseTestCase):
+class GetPasswordTestCase(test_base.BaseTestCase):
 
     def setUp(self):
         super(GetPasswordTestCase, self).setUp()
@@ -624,7 +624,7 @@ class FakeDisplayManager(FakeManager):
     ]
 
 
-class FindResourceTestCase(test.BaseTestCase):
+class FindResourceTestCase(test_base.BaseTestCase):
 
     def setUp(self):
         super(FindResourceTestCase, self).setUp()

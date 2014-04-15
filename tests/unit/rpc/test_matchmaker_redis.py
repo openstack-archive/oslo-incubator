@@ -15,12 +15,12 @@
 import logging
 
 import eventlet
+from oslotest import base as test_base
 from six import moves
 
 from openstack.common.fixture import config
 from openstack.common import importutils
 from openstack.common.rpc import matchmaker_redis as matchmaker
-from openstack.common import test
 from tests.unit.rpc import matchmaker_common as common
 
 redis = importutils.try_import('redis')
@@ -28,7 +28,7 @@ redis = importutils.try_import('redis')
 LOG = logging.getLogger(__name__)
 
 
-class MatchMakerRedisLookupTestCase(test.BaseTestCase,
+class MatchMakerRedisLookupTestCase(test_base.BaseTestCase,
                                     common._MatchMakerTestCase):
     """Test lookups against the Redis matchmaker"""
     def setUp(self):
@@ -67,7 +67,7 @@ class MatchMakerRedisLookupTestCase(test.BaseTestCase,
         self.driver.stop_heartbeat()
 
 
-class MatchMakerRedisHeartbeatTestCase(test.BaseTestCase,
+class MatchMakerRedisHeartbeatTestCase(test_base.BaseTestCase,
                                        common._MatchMakerDynRegTestCase):
     """Test the ability to register and perform heartbeats."""
     def setUp(self):
@@ -124,7 +124,7 @@ class MatchMakerRedisHeartbeatTestCase(test.BaseTestCase,
         self.assertEqual(self.driver.queues(self.topic), [])
 
 
-class MatchMakerRedisTestCase(test.BaseTestCase):
+class MatchMakerRedisTestCase(test_base.BaseTestCase):
     """Generic tests that do not require a Redis server."""
     def test_redis_import_exception(self):
         """Try initializing an object without redis."""

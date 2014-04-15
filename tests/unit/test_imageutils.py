@@ -13,15 +13,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslotest import base as test_base
 import testscenarios
 
 from openstack.common import imageutils
-from openstack.common import test
 
 load_tests = testscenarios.load_tests_apply_scenarios
 
 
-class ImageUtilsRawTestCase(test.BaseTestCase):
+class ImageUtilsRawTestCase(test_base.BaseTestCase):
 
     _image_name = [
         ('disk_config', dict(image_name='disk.config')),
@@ -188,7 +188,7 @@ class ImageUtilsQemuTestCase(ImageUtilsRawTestCase):
 ImageUtilsQemuTestCase.generate_scenarios()
 
 
-class ImageUtilsBlankTestCase(test.BaseTestCase):
+class ImageUtilsBlankTestCase(test_base.BaseTestCase):
     def test_qemu_img_info_blank(self):
         example_output = '\n'.join(['image: None', 'file_format: None',
                                     'virtual_size: None', 'disk_size: None',

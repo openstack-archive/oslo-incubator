@@ -16,13 +16,13 @@
 import uuid
 
 import mock
+from oslotest import base as test_base
 
 from openstack.common.fixture import moxstubout
 from openstack.common.middleware import correlation_id
-from openstack.common import test
 
 
-class CorrelationIdMiddlewareTest(test.BaseTestCase):
+class CorrelationIdMiddlewareTest(test_base.BaseTestCase):
 
     def setUp(self):
         super(CorrelationIdMiddlewareTest, self).setUp()

@@ -15,14 +15,14 @@
 import datetime
 
 from eventlet import greenthread
+from oslotest import base as test_base
 from six.moves import mox
 
 from openstack.common import loopingcall
-from openstack.common import test
 from openstack.common import timeutils
 
 
-class LoopingCallTestCase(test.BaseTestCase):
+class LoopingCallTestCase(test_base.BaseTestCase):
 
     def setUp(self):
         super(LoopingCallTestCase, self).setUp()

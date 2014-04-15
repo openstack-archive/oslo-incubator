@@ -19,10 +19,10 @@ Unit Tests for periodic_task decorator and PeriodicTasks class.
 """
 
 import mock
+from oslotest import base as test_base
 
 from openstack.common.fixture import config
 from openstack.common import periodic_task
-from openstack.common import test
 from testtools import matchers
 
 
@@ -54,7 +54,7 @@ class AService(periodic_task.PeriodicTasks):
         self.called['tocks'] += 1
 
 
-class PeriodicTasksTestCase(test.BaseTestCase):
+class PeriodicTasksTestCase(test_base.BaseTestCase):
     """Test cases for PeriodicTasks."""
 
     @mock.patch('time.time')
@@ -92,7 +92,7 @@ class PeriodicTasksTestCase(test.BaseTestCase):
                           None, raise_on_error=True)
 
 
-class ManagerMetaTestCase(test.BaseTestCase):
+class ManagerMetaTestCase(test_base.BaseTestCase):
     """Tests for the meta class which manages the creation of periodic tasks.
     """
 
@@ -119,7 +119,7 @@ class ManagerMetaTestCase(test.BaseTestCase):
             m._periodic_spacing, matchers.Not(matchers.Contains('baz')))
 
 
-class ManagerTestCase(test.BaseTestCase):
+class ManagerTestCase(test_base.BaseTestCase):
     """Tests the periodic tasks portion of the manager class."""
     def setUp(self):
         super(ManagerTestCase, self).setUp()

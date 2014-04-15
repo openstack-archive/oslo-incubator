@@ -18,6 +18,7 @@ import warnings
 
 from migrate.changeset import UniqueConstraint
 import mock
+from oslotest import base as test_base
 import six
 from six import moves
 from six.moves.urllib import parse
@@ -38,14 +39,13 @@ from openstack.common.db.sqlalchemy import session
 from openstack.common.db.sqlalchemy import test_migrations
 from openstack.common.db.sqlalchemy import utils
 from openstack.common.fixture import moxstubout
-from openstack.common import test
 from tests import utils as test_utils
 
 
 SA_VERSION = tuple(map(int, sqlalchemy.__version__.split('.')))
 
 
-class TestSanitizeDbUrl(test.BaseTestCase):
+class TestSanitizeDbUrl(test_base.BaseTestCase):
 
     def test_url_with_cred(self):
         db_url = 'myproto://johndoe:secret@localhost/myschema'
@@ -86,7 +86,7 @@ class FakeModel(object):
         return '<FakeModel: %s>' % self.values
 
 
-class TestPaginateQuery(test.BaseTestCase):
+class TestPaginateQuery(test_base.BaseTestCase):
     def setUp(self):
         super(TestPaginateQuery, self).setUp()
         mox_fixture = self.useFixture(moxstubout.MoxStubout())
@@ -663,7 +663,7 @@ class TestConnectionUtils(test_utils.BaseTestCase):
                          ('dude', 'pass', 'test', 'localhost'))
 
 
-class TestRaiseDuplicateEntryError(test.BaseTestCase):
+class TestRaiseDuplicateEntryError(test_base.BaseTestCase):
     def _test_impl(self, engine_name, error_msg):
         try:
             error = sqlalchemy.exc.IntegrityError('test', 'test', error_msg)
@@ -725,7 +725,7 @@ class MyModelSoftDeleted(declarative_base(), models.ModelBase,
     id = Column(Integer, primary_key=True)
 
 
-class TestModelQuery(test.BaseTestCase):
+class TestModelQuery(test_base.BaseTestCase):
 
     def setUp(self):
         super(TestModelQuery, self).setUp()

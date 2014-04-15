@@ -14,9 +14,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslotest import base as test_base
+
 from openstack.common.fixture import config
 from openstack.common.rpc import service
-from openstack.common import test
 
 
 class FakeService(service.Service):
@@ -41,7 +42,7 @@ class FakeHookService(FakeService):
         return self.hooked
 
 
-class RpcServiceManagerTestCase(test.BaseTestCase):
+class RpcServiceManagerTestCase(test_base.BaseTestCase):
     """Test cases for Services."""
     def setUp(self):
         super(RpcServiceManagerTestCase, self).setUp()

@@ -12,13 +12,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslotest import base as test_base
 from xml.dom import minidom
 
-from openstack.common import test
 from openstack.common import xmlutils
 
 
-class XMLUtilsTestCase(test.BaseTestCase):
+class XMLUtilsTestCase(test_base.BaseTestCase):
     def test_safe_parse_xml(self):
 
         normal_body = ("""
@@ -53,7 +53,7 @@ class XMLUtilsTestCase(test.BaseTestCase):
                           killer_body())
 
 
-class SafeParserTestCase(test.BaseTestCase):
+class SafeParserTestCase(test_base.BaseTestCase):
     def test_external_dtd(self):
         xml_string = ("""<?xml version="1.0" encoding="utf-8"?>
                 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"

@@ -16,15 +16,15 @@
 import datetime
 
 import netaddr
+from oslotest import base as test_base
 import six
 import six.moves.xmlrpc_client as xmlrpclib
 
 from openstack.common import gettextutils
 from openstack.common import jsonutils
-from openstack.common import test
 
 
-class JSONUtilsTestCase(test.BaseTestCase):
+class JSONUtilsTestCase(test_base.BaseTestCase):
 
     def test_dumps(self):
         self.assertEqual(jsonutils.dumps({'a': 'b'}), '{"a": "b"}')
@@ -37,7 +37,7 @@ class JSONUtilsTestCase(test.BaseTestCase):
         self.assertEqual(jsonutils.load(x), {'a': 'b'})
 
 
-class ToPrimitiveTestCase(test.BaseTestCase):
+class ToPrimitiveTestCase(test_base.BaseTestCase):
     def test_list(self):
         self.assertEqual(jsonutils.to_primitive([1, 2, 3]), [1, 2, 3])
 

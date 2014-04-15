@@ -13,13 +13,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslotest import base as oslo_test
 from sqlalchemy import Column
 from sqlalchemy import Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 
 from openstack.common.db.sqlalchemy import models
 from openstack.common.db.sqlalchemy import test_base
-from openstack.common import test
 
 
 BASE = declarative_base()
@@ -111,7 +111,7 @@ class ExtraKeysModel(BASE, models.ModelBase):
         return ['name']
 
 
-class TimestampMixinTest(test.BaseTestCase):
+class TimestampMixinTest(oslo_test.BaseTestCase):
 
     def test_timestampmixin_attr(self):
 

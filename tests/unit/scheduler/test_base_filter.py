@@ -14,13 +14,13 @@
 # limitations under the License.
 
 import mock
+from oslotest import base as test_base
 
 from openstack.common.fixture import moxstubout
 from openstack.common.scheduler import base_filter
-from openstack.common import test
 
 
-class TestBaseFilter(test.BaseTestCase):
+class TestBaseFilter(test_base.BaseTestCase):
 
     def setUp(self):
         super(TestBaseFilter, self).setUp()
@@ -104,7 +104,7 @@ class FakeExtensionManager(list):
         self.namespace = namespace
 
 
-class TestBaseFilterHandler(test.BaseTestCase):
+class TestBaseFilterHandler(test_base.BaseTestCase):
 
     def setUp(self):
         super(TestBaseFilterHandler, self).setUp()

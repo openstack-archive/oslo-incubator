@@ -29,13 +29,13 @@ import weakref
 
 import fixtures
 import mock
+from oslotest import base as test_base
 import six
 
 from openstack.common.fixture import config
 from openstack.common.fixture import moxstubout
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
-from openstack.common import test as test_base
 from tests.unit.rpc import amqp
 from tests.unit.rpc import common
 

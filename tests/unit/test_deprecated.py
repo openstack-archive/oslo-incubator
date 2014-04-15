@@ -14,16 +14,16 @@
 #    under the License.
 
 import mock
+from oslotest import base as test_base
 
 from openstack.common.fixture import config
 from openstack.common.fixture import mockpatch
 from openstack.common import log as logging
-from openstack.common import test
 
 LOG = logging.getLogger(__name__)
 
 
-class DeprecatedConfigTestCase(test.BaseTestCase):
+class DeprecatedConfigTestCase(test_base.BaseTestCase):
     def setUp(self):
         super(DeprecatedConfigTestCase, self).setUp()
 

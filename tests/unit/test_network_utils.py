@@ -13,11 +13,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslotest import base as test_base
+
 from openstack.common import network_utils
-from openstack.common import test
 
 
-class NetworkUtilsTest(test.BaseTestCase):
+class NetworkUtilsTest(test_base.BaseTestCase):
 
     def test_parse_host_port(self):
         self.assertEqual(('server01', 80),

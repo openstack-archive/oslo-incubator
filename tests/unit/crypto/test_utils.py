@@ -16,11 +16,12 @@
 Unit Tests for crypto utils.
 """
 
+from oslotest import base as test_base
+
 from openstack.common.crypto import utils as cryptoutils
-from openstack.common import test
 
 
-class CryptoUtilsTestCase(test.BaseTestCase):
+class CryptoUtilsTestCase(test_base.BaseTestCase):
 
     # Uses Tests from RFC5869
     def _test_HKDF(self, ikm, prk, okm, length,

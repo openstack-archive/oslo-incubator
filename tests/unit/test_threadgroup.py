@@ -17,11 +17,12 @@
 Unit Tests for thread groups
 """
 
-from openstack.common import test
+from oslotest import base as test_base
+
 from openstack.common import threadgroup
 
 
-class ThreadGroupTestCase(test.BaseTestCase):
+class ThreadGroupTestCase(test_base.BaseTestCase):
     """Test cases for thread group."""
     def setUp(self):
         super(ThreadGroupTestCase, self).setUp()

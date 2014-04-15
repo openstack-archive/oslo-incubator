@@ -14,14 +14,14 @@
 #    under the License.
 
 import mock
+from oslotest import base as test_base
 import webob.dec
 import webob.exc
 
 from openstack.common.middleware import catch_errors
-from openstack.common import test
 
 
-class CatchErrorsTest(test.BaseTestCase):
+class CatchErrorsTest(test_base.BaseTestCase):
 
     def _test_has_request_id(self, application, expected_code=None):
         app = catch_errors.CatchErrorsMiddleware(application)

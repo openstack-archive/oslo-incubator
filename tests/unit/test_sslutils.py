@@ -14,11 +14,12 @@
 
 import ssl
 
+from oslotest import base as test_base
+
 from openstack.common import sslutils
-from openstack.common import test
 
 
-class SSLUtilsTest(test.BaseTestCase):
+class SSLUtilsTest(test_base.BaseTestCase):
     def test_valid_versions(self):
         self.assertEqual(sslutils.validate_ssl_version("SSLv3"),
                          ssl.PROTOCOL_SSLv3)

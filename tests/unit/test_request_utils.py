@@ -14,12 +14,12 @@
 #    under the License.
 
 import mock
+from oslotest import base as test_base
 
 from openstack.common import request_utils
-from openstack.common import test
 
 
-class RequestUtilsTestCase(test.BaseTestCase):
+class RequestUtilsTestCase(test_base.BaseTestCase):
     def setUp(self):
         super(RequestUtilsTestCase, self).setUp()
         self.notifier = mock.MagicMock()

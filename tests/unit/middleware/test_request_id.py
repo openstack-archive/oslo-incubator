@@ -14,15 +14,15 @@
 #    under the License.
 
 
+from oslotest import base as test_base
 from testtools import matchers
 import webob
 import webob.dec
 
 from openstack.common.middleware import request_id
-from openstack.common import test
 
 
-class RequestIdTest(test.BaseTestCase):
+class RequestIdTest(test_base.BaseTestCase):
     def test_generate_request_id(self):
         @webob.dec.wsgify
         def application(req):

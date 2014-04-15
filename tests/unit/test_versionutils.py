@@ -14,13 +14,13 @@
 #    under the License.
 
 import mock
+from oslotest import base as test_base
 from testtools import matchers
 
-from openstack.common import test
 from openstack.common import versionutils
 
 
-class DeprecatedTestCase(test.BaseTestCase):
+class DeprecatedTestCase(test_base.BaseTestCase):
     def assert_deprecated(self, mock_log, **expected_details):
         decorator = versionutils.deprecated
         if 'in_favor_of' in expected_details:
@@ -147,7 +147,7 @@ class DeprecatedTestCase(test.BaseTestCase):
                                remove_in='J')
 
 
-class IsCompatibleTestCase(test.BaseTestCase):
+class IsCompatibleTestCase(test_base.BaseTestCase):
     def test_same_version(self):
         self.assertTrue(versionutils.is_compatible('1', '1'))
         self.assertTrue(versionutils.is_compatible('1.0', '1.0'))

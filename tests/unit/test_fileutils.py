@@ -18,14 +18,14 @@ import os
 import shutil
 import tempfile
 
+from oslotest import base as test_base
 from six.moves import builtins
 from six.moves import mox
 
 from openstack.common import fileutils
-from openstack.common import test
 
 
-class EnsureTree(test.BaseTestCase):
+class EnsureTree(test_base.BaseTestCase):
     def test_ensure_tree(self):
         tmpdir = tempfile.mkdtemp()
         try:
@@ -38,7 +38,7 @@ class EnsureTree(test.BaseTestCase):
                 shutil.rmtree(tmpdir)
 
 
-class TestCachedFile(test.BaseTestCase):
+class TestCachedFile(test_base.BaseTestCase):
 
     def setUp(self):
         super(TestCachedFile, self).setUp()
@@ -84,7 +84,7 @@ class TestCachedFile(test.BaseTestCase):
         self.assertTrue(fresh)
 
 
-class DeleteIfExists(test.BaseTestCase):
+class DeleteIfExists(test_base.BaseTestCase):
     def test_file_present(self):
         tmpfile = tempfile.mktemp()
 
@@ -116,7 +116,7 @@ class DeleteIfExists(test.BaseTestCase):
         os.unlink(tmpfile)
 
 
-class RemovePathOnError(test.BaseTestCase):
+class RemovePathOnError(test_base.BaseTestCase):
     def test_error(self):
         tmpfile = tempfile.mktemp()
         open(tmpfile, 'w')
@@ -160,7 +160,7 @@ class RemovePathOnError(test.BaseTestCase):
             self.assertFalse(os.path.exists(tmpdir))
 
 
-class UtilsTestCase(test.BaseTestCase):
+class UtilsTestCase(test_base.BaseTestCase):
     def test_file_open(self):
         dst_fd, dst_path = tempfile.mkstemp()
         try:
@@ -173,7 +173,7 @@ class UtilsTestCase(test.BaseTestCase):
             os.unlink(dst_path)
 
 
-class WriteToTempfileTestCase(test.BaseTestCase):
+class WriteToTempfileTestCase(test_base.BaseTestCase):
     def setUp(self):
         super(WriteToTempfileTestCase, self).setUp()
         self.content = 'testing123'

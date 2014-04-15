@@ -18,17 +18,17 @@
 import math
 
 import mock
+from oslotest import base as test_base
 import six
 import testscenarios
 
 from openstack.common import strutils
-from openstack.common import test
 from openstack.common import units
 
 load_tests = testscenarios.load_tests_apply_scenarios
 
 
-class StrUtilsTest(test.BaseTestCase):
+class StrUtilsTest(test_base.BaseTestCase):
 
     def test_bool_bool_from_string(self):
         self.assertTrue(strutils.bool_from_string(True))
@@ -201,7 +201,7 @@ class StrUtilsTest(test.BaseTestCase):
                          to_slug("\x80strange", errors="ignore"))
 
 
-class StringToBytesTest(test.BaseTestCase):
+class StringToBytesTest(test_base.BaseTestCase):
 
     _unit_system = [
         ('si', dict(unit_system='SI')),

@@ -22,9 +22,9 @@ import ssl
 
 import eventlet
 eventlet.monkey_patch()
+from oslotest import base as test_base
 
 from openstack.common.fixture import config
-from openstack.common import test
 
 
 try:
@@ -42,7 +42,7 @@ SSL_CA_CERT = "/tmp/cert.ca.blah.blah"
 SSL_KEYFILE = "/tmp/keyfile.blah.blah"
 
 
-class RpcKombuSslTestCase(test.BaseTestCase):
+class RpcKombuSslTestCase(test_base.BaseTestCase):
 
     def setUp(self):
         super(RpcKombuSslTestCase, self).setUp()
@@ -74,7 +74,7 @@ class RpcKombuSslTestCase(test.BaseTestCase):
         #Into python ssl creation...
 
 
-class RpcKombuSslBadVersionTestCase(test.BaseTestCase):
+class RpcKombuSslBadVersionTestCase(test_base.BaseTestCase):
 
     def setUp(self):
         super(RpcKombuSslBadVersionTestCase, self).setUp()

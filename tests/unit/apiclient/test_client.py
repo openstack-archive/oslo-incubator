@@ -16,13 +16,13 @@
 #    under the License.
 
 import mock
+from oslotest import base as test_base
 import requests
 
 from openstack.common.apiclient import auth
 from openstack.common.apiclient import client
 from openstack.common.apiclient import exceptions
 from openstack.common.apiclient import fake_client
-from openstack.common import test
 
 
 class TestClient(client.BaseClient):
@@ -41,7 +41,7 @@ class FakeAuthPlugin(auth.BaseAuthPlugin):
         return ("token-%s" % self.attempt, "/endpoint-%s" % self.attempt)
 
 
-class ClientTest(test.BaseTestCase):
+class ClientTest(test_base.BaseTestCase):
 
     def test_client_with_timeout(self):
         http_client = client.HTTPClient(None, timeout=2)
@@ -178,7 +178,7 @@ class ClientTest(test.BaseTestCase):
                 TestClient(http_client), "GET", "/resource", json={"1": "2"})
 
 
-class FakeClientTest(test.BaseTestCase):
+class FakeClientTest(test_base.BaseTestCase):
 
     def setUp(self):
         super(FakeClientTest, self).setUp()
@@ -217,7 +217,7 @@ class FakeClient21(object):
     pass
 
 
-class GetClientClassTestCase(test.BaseTestCase):
+class GetClientClassTestCase(test_base.BaseTestCase):
     version_map = {
         "1": "%s.FakeClient1" % __name__,
         "2.1": "%s.FakeClient21" % __name__,

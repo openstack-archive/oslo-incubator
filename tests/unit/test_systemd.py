@@ -15,12 +15,13 @@
 import os
 import socket
 
+from oslotest import base as test_base
+
 from openstack.common.fixture import moxstubout
 from openstack.common import systemd
-from openstack.common import test
 
 
-class SystemdTestCase(test.BaseTestCase):
+class SystemdTestCase(test_base.BaseTestCase):
     """Test case for Systemd service readiness."""
     def setUp(self):
         super(SystemdTestCase, self).setUp()
