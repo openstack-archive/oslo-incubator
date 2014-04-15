@@ -373,31 +373,33 @@ def drop_old_duplicate_entries_from_table(migrate_engine, table_name,
         columns_for_select, group_by=columns_for_group_by,
         having=func.count(table.c.id) > 1)
 
-    for row in migrate_engine.execute(duplicated_rows_select):
-        # NOTE(boris-42): Do not remove row that has the biggest ID.
-        delete_condition = table.c.id != row[0]
-        is_none = None  # workaround for pyflakes
-        delete_condition &= table.c.deleted_at == is_none
-        for name in uc_column_names:
-            delete_condition &= table.c[name] == row[name]
+    with migrate_engine.begin() as conn:
+        for row in conn.execute(duplicated_rows_select):
+            # NOTE(boris-42): Do not remove row that has the biggest ID.
+            delete_condition = table.c.id != row[0]
+            is_none = None  # workaround for pyflakes
+            delete_condition &= table.c.deleted_at == is_none
+            for name in uc_column_names:
+                delete_condition &= table.c[name] == row[name]
 
-        rows_to_delete_select = sqlalchemy.sql.select(
-            [table.c.id]).where(delete_condition)
-        for row in migrate_engine.execute(rows_to_delete_select).fetchall():
-            LOG.info(_LI("Deleting duplicated row with id: %(id)s from table: "
-                         "%(table)s") % dict(id=row[0], table=table_name))
+            rows_to_delete_select = sqlalchemy.sql.select(
+                [table.c.id]).where(delete_condition)
+            for row in conn.execute(rows_to_delete_select):
+                LOG.info(_LI(
+                    "Deleting duplicated row with id: %(id)s from table: "
+                    "%(table)s") % dict(id=row[0], table=table_name))
 
-        if use_soft_delete:
-            delete_statement = table.update().\
-                where(delete_condition).\
-                values({
-                    'deleted': literal_column('id'),
-                    'updated_at': literal_column('updated_at'),
-                    'deleted_at': timeutils.utcnow()
-                })
-        else:
-            delete_statement = table.delete().where(delete_condition)
-        migrate_engine.execute(delete_statement)
+            if use_soft_delete:
+                delete_statement = table.update().\
+                    where(delete_condition).\
+                    values({
+                        'deleted': literal_column('id'),
+                        'updated_at': literal_column('updated_at'),
+                        'deleted_at': timeutils.utcnow()
+                    })
+            else:
+                delete_statement = table.delete().where(delete_condition)
+            conn.execute(delete_statement)
 
 
 def _get_default_deleted_value(table):
