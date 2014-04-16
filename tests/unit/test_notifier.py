@@ -16,6 +16,7 @@
 import socket
 
 import mock
+from oslotest import base as test_base
 
 from openstack.common import context
 from openstack.common.fixture import config
@@ -26,14 +27,13 @@ from openstack.common.notifier import log_notifier
 from openstack.common.notifier import no_op_notifier
 from openstack.common.notifier import proxy
 from openstack.common import rpc
-from openstack.common import test
 
 
 ctxt = context.get_admin_context()
 ctxt2 = context.get_admin_context()
 
 
-class NotifierTestCase(test.BaseTestCase):
+class NotifierTestCase(test_base.BaseTestCase):
     """Test case for notifications."""
     def setUp(self):
         super(NotifierTestCase, self).setUp()
@@ -210,7 +210,7 @@ class NotifierTestCase(test.BaseTestCase):
         self.assertIsNone(self.context_arg)
 
 
-class MultiNotifierTestCase(test.BaseTestCase):
+class MultiNotifierTestCase(test_base.BaseTestCase):
     """Test case for notifications."""
 
     def setUp(self):
@@ -291,7 +291,7 @@ class MultiNotifierTestCase(test.BaseTestCase):
                          'foobar.baz')
 
 
-class NotifierProxyTestCase(test.BaseTestCase):
+class NotifierProxyTestCase(test_base.BaseTestCase):
     def setUp(self):
         super(NotifierProxyTestCase, self).setUp()
         self.proxy = proxy.get_notifier(service='service', host='my')

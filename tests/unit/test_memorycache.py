@@ -16,12 +16,12 @@
 import time
 
 import mock
+from oslotest import base as test_base
 
 from openstack.common import memorycache
-from openstack.common import test
 
 
-class MemorycacheTest(test.BaseTestCase):
+class MemorycacheTest(test_base.BaseTestCase):
     def setUp(self):
         self.client = memorycache.get_client()
         super(MemorycacheTest, self).setUp()

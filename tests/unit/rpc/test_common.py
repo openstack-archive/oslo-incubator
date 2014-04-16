@@ -19,6 +19,7 @@ Unit Tests for 'common' functons used through rpc code.
 import logging
 import sys
 
+from oslotest import base as test_base
 import six
 
 from openstack.common.fixture import config
@@ -26,7 +27,6 @@ from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import rpc
 from openstack.common.rpc import common as rpc_common
-from openstack.common import test
 
 
 LOG = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ class FakeUserDefinedException(Exception):
         self.kwargs = kwargs
 
 
-class RpcCommonTestCase(test.BaseTestCase):
+class RpcCommonTestCase(test_base.BaseTestCase):
 
     def setUp(self):
         super(RpcCommonTestCase, self).setUp()

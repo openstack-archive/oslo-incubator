@@ -15,12 +15,12 @@
 #    under the License.
 
 import mock
+from oslotest import base as test_base
 
 from openstack.common.db.sqlalchemy import test_migrations as migrate
-from openstack.common import test
 
 
-class TestWalkVersions(test.BaseTestCase, migrate.WalkVersionsMixin):
+class TestWalkVersions(test_base.BaseTestCase, migrate.WalkVersionsMixin):
     def setUp(self):
         super(TestWalkVersions, self).setUp()
         self.migration_api = mock.MagicMock()

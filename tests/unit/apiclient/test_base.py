@@ -13,11 +13,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslotest import base as test_base
+
 from openstack.common.apiclient import base
 from openstack.common.apiclient import client
 from openstack.common.apiclient import exceptions
 from openstack.common.apiclient import fake_client
-from openstack.common import test
 
 
 class HumanResource(base.Resource):
@@ -118,7 +119,7 @@ class TestClient(client.BaseClient):
         self.crud_resources = CrudResourceManager(self)
 
 
-class ResourceTest(test.BaseTestCase):
+class ResourceTest(test_base.BaseTestCase):
 
     def test_resource_repr(self):
         r = base.Resource(None, dict(foo="bar", baz="spam"))
@@ -136,7 +137,7 @@ class ResourceTest(test.BaseTestCase):
         self.assertEqual(r.human_id, "1")
 
 
-class BaseManagerTest(test.BaseTestCase):
+class BaseManagerTest(test_base.BaseTestCase):
 
     def setUp(self):
         super(BaseManagerTest, self).setUp()
@@ -184,7 +185,7 @@ class BaseManagerTest(test.BaseTestCase):
         self.assertEqual(human_resource.name, name)
 
 
-class CrudManagerTest(test.BaseTestCase):
+class CrudManagerTest(test_base.BaseTestCase):
 
     domain_id = "my-domain"
     crud_resource_id = "1"
