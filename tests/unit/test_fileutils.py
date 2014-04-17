@@ -18,8 +18,9 @@ import os
 import shutil
 import tempfile
 
+import mock
 from oslotest import base as test_base
-from six.moves import builtins
+import six
 from six.moves import mox
 
 from openstack.common import fileutils
@@ -57,29 +58,19 @@ class TestCachedFile(test_base.BaseTestCase):
         fdata = fileutils._FILE_CACHE['/this/is/a/fake']["data"]
         self.assertEqual(fdata, data)
 
-    def test_read_modified_cached_file(self):
-        self.mox.StubOutWithMock(os.path, "getmtime")
-        self.mox.StubOutWithMock(builtins, 'open')
-        os.path.getmtime(mox.IgnoreArg()).AndReturn(2)
+    @mock.patch('os.path.getmtime', return_value=2)
+    def test_read_modified_cached_file(self, getmtime):
 
-        fake_contents = "lorem ipsum"
-        fake_file = self.mox.CreateMockAnything()
-        fake_file.read().AndReturn(fake_contents)
-        fake_context_manager = self.mox.CreateMockAnything()
-        fake_context_manager.__enter__().AndReturn(fake_file)
-        fake_context_manager.__exit__(mox.IgnoreArg(),
-                                      mox.IgnoreArg(),
-                                      mox.IgnoreArg())
-
-        builtins.open(mox.IgnoreArg()).AndReturn(
-            fake_context_manager)
-
-        self.mox.ReplayAll()
         fileutils._FILE_CACHE = {
             '/this/is/a/fake': {"data": 1123, "mtime": 1}
         }
 
-        fresh, data = fileutils.read_cached_file("/this/is/a/fake")
+        fake_contents = "lorem ipsum"
+
+        with mock.patch('six.moves.builtins.open',
+                        mock.mock_open(read_data=fake_contents)):
+            fresh, data = fileutils.read_cached_file("/this/is/a/fake")
+
         self.assertEqual(data, fake_contents)
         self.assertTrue(fresh)
 
@@ -176,12 +167,12 @@ class UtilsTestCase(test_base.BaseTestCase):
 class WriteToTempfileTestCase(test_base.BaseTestCase):
     def setUp(self):
         super(WriteToTempfileTestCase, self).setUp()
-        self.content = 'testing123'
+        self.content = 'testing123'.encode('ascii')
 
     def check_file_content(self, path):
         with open(path, 'r') as fd:
             ans = fd.read()
-            self.assertEqual(self.content, ans)
+            self.assertEqual(self.content, six.b(ans))
 
     def test_file_without_path_and_suffix(self):
         res = fileutils.write_to_tempfile(self.content)
