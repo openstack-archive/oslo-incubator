@@ -179,6 +179,36 @@ class LogHandlerTestCase(test_base.BaseTestCase):
                          '/some/path/foo-bar.log')
 
 
+class SysLogHandlersTestCase(test_base.BaseTestCase):
+    """Test for standard and RFC compliant Syslog handlers."""
+    def setUp(self):
+        super(SysLogHandlersTestCase, self).setUp()
+        self.facility = logging.handlers.SysLogHandler.LOG_USER
+        self.rfclogger = log.RFCSysLogHandler(address='/dev/log',
+                                              facility=self.facility)
+        self.rfclogger.binary_name = 'Foo_application'
+        self.logger = logging.handlers.SysLogHandler(address='/dev/log',
+                                                     facility=self.facility)
+        self.logger.binary_name = 'Foo_application'
+
+    def test_rfc_format(self):
+        """Ensure syslog msg contains APP-NAME for RFC wrapped handler"""
+        logrecord = logging.LogRecord('name', 'WARN', '/tmp', 1,
+                                      'Message', None, None)
+        expected = logging.LogRecord('name', 'WARN', '/tmp', 1,
+                                     'Foo_application Message', None, None)
+        self.assertEqual(self.rfclogger.format(logrecord),
+                         expected.getMessage())
+
+    def test_standard_format(self):
+        """Ensure syslog msg isn't modified for standard handler"""
+        logrecord = logging.LogRecord('name', 'WARN', '/tmp', 1,
+                                      'Message', None, None)
+        expected = logrecord
+        self.assertEqual(self.logger.format(logrecord),
+                         expected.getMessage())
+
+
 class PublishErrorsHandlerTestCase(test_base.BaseTestCase):
     """Tests for log.PublishErrorsHandler"""
     def setUp(self):
