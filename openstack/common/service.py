@@ -268,7 +268,7 @@ class ProcessLauncher(object):
             launcher.wait()
         except SignalExit as exc:
             signame = _signo_to_signame(exc.signo)
-            LOG.info(_LI('Caught %s, exiting'), signame)
+            LOG.info(_LI('Child caught %s, exiting'), signame)
             status = exc.code
             signo = exc.signo
         except SystemExit as exc:
