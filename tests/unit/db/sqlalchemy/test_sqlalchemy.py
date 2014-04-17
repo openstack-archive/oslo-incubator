@@ -16,10 +16,10 @@
 #    under the License.
 
 """Unit tests for SQLAlchemy specific code."""
-
 import logging
 
 import _mysql_exceptions
+import fixtures
 import mock
 from oslotest import base as oslo_test
 import sqlalchemy
@@ -33,8 +33,6 @@ from openstack.common.db import exception as db_exc
 from openstack.common.db.sqlalchemy import models
 from openstack.common.db.sqlalchemy import session
 from openstack.common.db.sqlalchemy import test_base
-from openstack.common import log
-from tests.unit import test_log
 
 
 BASE = declarative_base()
@@ -384,7 +382,7 @@ class EngineFacadeTestCase(oslo_test.BaseTestCase):
                                           expire_on_commit=True)
 
 
-class MysqlSetCallbackTest(test_log.LogTestBase):
+class MysqlSetCallbackTest(oslo_test.BaseTestCase):
 
     class FakeCursor(object):
         def __init__(self, execs):
@@ -437,9 +435,11 @@ class MysqlSetCallbackTest(test_log.LogTestBase):
     def _call_set_callback(self, listen_mock, sql_mode=None, realmode=None):
         engine = self.FakeEngine(realmode=realmode)
 
-        logger = log.getLogger('openstack.common.db.sqlalchemy.session')
-        self._set_log_level_with_cleanup(logger, logging.DEBUG)
-        self._add_handler_with_cleanup(logger)
+        self.stream = self.useFixture(fixtures.FakeLogger(
+            format="%(levelname)8s [%(name)s] %(message)s",
+            level=logging.DEBUG,
+            nuke_handlers=True
+        ))
 
         session._mysql_set_mode_callback(engine, sql_mode=sql_mode)
         return engine
@@ -486,7 +486,7 @@ class MysqlSetCallbackTest(test_log.LogTestBase):
         self._call_set_callback()
 
         self.assertIn('Unable to detect effective SQL mode',
-                      self.stream.getvalue())
+                      self.stream.output)
 
     def test_logs_real_mode(self):
         # If "SHOW VARIABLES LIKE 'sql_mode'" results in a value, then
@@ -495,7 +495,7 @@ class MysqlSetCallbackTest(test_log.LogTestBase):
         self._call_set_callback(realmode='SOMETHING')
 
         self.assertIn('MySQL server mode set to SOMETHING',
-                      self.stream.getvalue())
+                      self.stream.output)
 
     def test_warning_when_not_traditional(self):
         # If "SHOW VARIABLES LIKE 'sql_mode'" results in a value that doesn't
@@ -504,7 +504,7 @@ class MysqlSetCallbackTest(test_log.LogTestBase):
         self._call_set_callback(realmode='NOT_TRADIT')
 
         self.assertIn("consider enabling TRADITIONAL or STRICT_ALL_TABLES",
-                      self.stream.getvalue())
+                      self.stream.output)
 
     def test_no_warning_when_traditional(self):
         # If "SHOW VARIABLES LIKE 'sql_mode'" results in a value that includes
@@ -513,7 +513,7 @@ class MysqlSetCallbackTest(test_log.LogTestBase):
         self._call_set_callback(realmode='TRADITIONAL')
 
         self.assertNotIn("consider enabling TRADITIONAL or STRICT_ALL_TABLES",
-                         self.stream.getvalue())
+                         self.stream.output)
 
     def test_no_warning_when_strict_all_tables(self):
         # If "SHOW VARIABLES LIKE 'sql_mode'" results in a value that includes
@@ -522,7 +522,7 @@ class MysqlSetCallbackTest(test_log.LogTestBase):
         self._call_set_callback(realmode='STRICT_ALL_TABLES')
 
         self.assertNotIn("consider enabling TRADITIONAL or STRICT_ALL_TABLES",
-                         self.stream.getvalue())
+                         self.stream.output)
 
     def test_multiple_executes(self):
         # We should only set the sql_mode on a connection once.
