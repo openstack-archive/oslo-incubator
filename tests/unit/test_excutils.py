@@ -193,3 +193,66 @@ class ForeverRetryUncaughtExceptionsTest(test_base.BaseTestCase):
         self.exc_retrier_sequence(exc_id=1, timestamp=100, exc_count=2)
         self.exc_retrier_sequence(exc_id=2, timestamp=110, exc_count=1)
         self.exc_retrier_common_end()
+
+
+class RetryTest(test_base.BaseTestCase):
+
+    class _Exception(Exception):
+        pass
+
+    def test_retry(self):
+        result = "RESULT"
+
+        @excutils.Retry()
+        def func(*args, **kwargs):
+            return result
+
+        self.assertEqual(result, func())
+
+        def func2(*args, **kwargs):
+            return result
+
+        retry = excutils.Retry()
+        self.assertEqual(result, retry(func2)())
+        self.assertEqual(0, retry._retry_count)
+
+    def test_retry_with_expected_exceptions(self):
+        result = "RESULT"
+        responses = [self._Exception(None), self._Exception(None), result]
+
+        def func(*args, **kwargs):
+            response = responses.pop(0)
+            if isinstance(response, Exception):
+                raise response
+            return response
+
+        sleep_time_incr = 0.01
+        retry_count = 2
+        retry = excutils.Retry(10, sleep_time_incr, 10,
+                               (self._Exception,))
+        self.assertEqual(result, retry(func)())
+        self.assertEqual(retry_count, retry._retry_count)
+        self.assertEqual(retry_count * sleep_time_incr, retry._sleep_time)
+
+    def test_retry_with_max_retries(self):
+        responses = [self._Exception(None), self._Exception(None),
+                     self._Exception(None)]
+
+        def func(*args, **kwargs):
+            response = responses.pop(0)
+            if isinstance(response, Exception):
+                raise response
+            return response
+
+        retry = excutils.Retry(2, 0, 0, (self._Exception,))
+        self.assertRaises(self._Exception, retry(func))
+        self.assertEqual(2, retry._retry_count)
+
+    def test_retry_with_unexpected_exception(self):
+
+        def func(*args, **kwargs):
+            raise self._Exception(None)
+
+        retry = excutils.Retry()
+        self.assertRaises(self._Exception, retry(func))
+        self.assertEqual(0, retry._retry_count)
