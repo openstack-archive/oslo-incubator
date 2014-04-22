@@ -381,3 +381,25 @@ class LauncherTest(test_base.BaseTestCase):
         svc = service.Service()
         service.launch(svc, workers=3)
         mock_launch.assert_called_with(svc, workers=3)
+
+
+class ProcessLauncherTest(test_base.BaseTestCase):
+
+    def setUp(self):
+        super(ProcessLauncherTest, self).setUp()
+
+    def test_stop(self):
+        launcher = service.ProcessLauncher()
+        self.assertTrue(launcher.running)
+
+        launcher.children = [22, 222]
+        with mock.patch('openstack.common.service.os.kill') as mock_kill:
+            with mock.patch.object(launcher, '_wait_child') as _wait_child:
+                _wait_child.side_effect = lambda: launcher.children.pop()
+                launcher.stop()
+
+        self.assertFalse(launcher.running)
+        self.assertFalse(launcher.children)
+        self.assertEqual([mock.call(22, signal.SIGTERM),
+                          mock.call(222, signal.SIGTERM)],
+                         mock_kill.mock_calls)
