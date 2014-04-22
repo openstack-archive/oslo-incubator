@@ -25,7 +25,7 @@
 ##############################################################################
 
 
-import mock
+from six.moves import mock  # noqa
 
 from openstack.common.fixture import mockpatch
 from tests import utils

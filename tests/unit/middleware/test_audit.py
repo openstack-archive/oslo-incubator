@@ -16,9 +16,9 @@
 import os
 import sys
 
-import mock
 from oslo.config import cfg
 from pycadf.audit import api as cadf_api
+from six.moves import mock  # noqa
 import webob
 
 from openstack.common.middleware import audit

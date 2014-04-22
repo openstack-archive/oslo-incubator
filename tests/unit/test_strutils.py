@@ -17,9 +17,9 @@
 
 import math
 
-import mock
 from oslotest import base as test_base
 import six
+from six.moves import mock  # noqa
 import testscenarios
 
 from openstack.common import strutils

@@ -16,9 +16,9 @@
 import argparse
 
 import fixtures
-import mock
 from oslotest import base as test_base
 import requests
+from six.moves import mock  # noqa
 from stevedore import extension
 
 try:

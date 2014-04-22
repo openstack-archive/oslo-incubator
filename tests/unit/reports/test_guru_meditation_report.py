@@ -22,8 +22,8 @@ import sys
 # needed to get greenthreads
 import fixtures
 import greenlet
-import mock
 import six
+from six.moves import mock  # noqa
 
 from openstack.common.report import guru_meditation_report as gmr
 from openstack.common.report.models import with_default_views as mwdv

@@ -18,8 +18,8 @@
 Unit Tests for periodic_task decorator and PeriodicTasks class.
 """
 
-import mock
 from oslotest import base as test_base
+from six.moves import mock  # noqa
 
 from openstack.common.fixture import config
 from openstack.common import periodic_task

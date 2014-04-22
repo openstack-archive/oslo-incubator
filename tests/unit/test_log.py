@@ -19,10 +19,10 @@ import os
 import sys
 import tempfile
 
-import mock
 from oslo.config import cfg
 from oslotest import base as test_base
 import six
+from six.moves import mock  # noqa
 
 from openstack.common import context
 from openstack.common import fileutils

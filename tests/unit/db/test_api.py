@@ -15,7 +15,7 @@
 
 """Unit tests for DB API."""
 
-import mock
+from six.moves import mock  # noqa
 
 from openstack.common.db import api
 from openstack.common.db import exception

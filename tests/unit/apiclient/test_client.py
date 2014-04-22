@@ -15,9 +15,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import mock
 from oslotest import base as test_base
 import requests
+from six.moves import mock  # noqa
 
 from openstack.common.apiclient import auth
 from openstack.common.apiclient import client

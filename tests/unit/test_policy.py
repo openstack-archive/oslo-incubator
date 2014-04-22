@@ -17,10 +17,10 @@
 
 import os
 
-import mock
 from oslo.config import cfg
 from oslotest import base as test_base
 import six
+from six.moves import mock  # noqa
 import six.moves.urllib.parse as urlparse
 import six.moves.urllib.request as urlrequest
 
