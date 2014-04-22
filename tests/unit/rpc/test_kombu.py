@@ -28,9 +28,9 @@ import time
 import weakref
 
 import fixtures
-import mock
 from oslotest import base as test_base
 import six
+from six.moves import mock
 
 from openstack.common.fixture import config
 from openstack.common.fixture import moxstubout

@@ -18,8 +18,8 @@ import datetime
 import time
 
 import iso8601
-import mock
 from oslotest import base as test_base
+from six.moves import mock
 from testtools import matchers
 
 from openstack.common import timeutils

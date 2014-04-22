@@ -15,8 +15,8 @@
 
 import uuid
 
-import mock
 from oslotest import base as test_base
+from six.moves import mock
 
 from openstack.common.fixture import moxstubout
 from openstack.common.middleware import correlation_id
