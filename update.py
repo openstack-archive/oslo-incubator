@@ -192,6 +192,9 @@ def _copy_file(path, dest, base):
         replacements.append(('oslo', base))
         replacements.append(('OSLO', base.upper()))
 
+        replacements.append(('from %stest import' % base,
+                             'from oslotest import'))
+
     # Restore the imports for modules that are part of the oslo
     # namespace package. We can't just do something like 'oslo\..+'
     # because there are default configuration settings like
