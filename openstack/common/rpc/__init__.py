@@ -68,9 +68,8 @@ CONF = cfg.CONF
 CONF.register_opts(rpc_opts)
 
 
-def set_defaults(control_exchange):
-    cfg.set_defaults(rpc_opts,
-                     control_exchange=control_exchange)
+def set_defaults(**kwargs):
+    cfg.set_defaults(rpc_opts, **kwargs)
 
 
 def create_connection(new=True):
