@@ -13,9 +13,9 @@
 
 import datetime
 
-import mock
 from oslotest import base as test_base
 from oslotest import moxstubout
+from six.moves import mock
 
 from openstack.common.fixture import config
 from openstack.common import quota

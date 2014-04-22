@@ -16,11 +16,11 @@
 import datetime
 import json
 
-import mock
 import netaddr
 from oslotest import base as test_base
 import simplejson
 import six
+from six.moves import mock
 import six.moves.xmlrpc_client as xmlrpclib
 
 from openstack.common import gettextutils
