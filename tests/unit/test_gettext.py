@@ -18,9 +18,9 @@ import gettext
 import logging
 
 from babel import localedata
-import mock
 from oslotest import base as test_base
 import six
+from six.moves import mock
 import testtools
 
 from openstack.common.fixture import moxstubout
@@ -57,10 +57,10 @@ class GettextTest(test_base.BaseTestCase):
 
     def test_gettextutils_install(self):
         gettextutils.install('blaa')
-        self.assertTrue(isinstance(_('A String'), six.text_type))  # noqa
+        self.assertTrue(isinstance(_('A String'), six.text_type))
 
         gettextutils.install('blaa', lazy=True)
-        self.assertTrue(isinstance(_('A Message'),  # noqa
+        self.assertTrue(isinstance(_('A Message'),
                                    gettextutils.Message))
 
     def test_gettext_install_looks_up_localedir(self):
