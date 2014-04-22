@@ -18,10 +18,10 @@ import gettext
 import logging
 
 from babel import localedata
-import mock
 from oslotest import base as test_base
 from oslotest import moxstubout
 import six
+from six.moves import mock
 import testtools
 
 from openstack.common import gettextutils
