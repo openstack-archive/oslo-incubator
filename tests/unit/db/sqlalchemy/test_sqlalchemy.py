@@ -20,8 +20,8 @@ import logging
 
 import _mysql_exceptions
 import fixtures
-import mock
 from oslotest import base as oslo_test
+from six.moves import mock
 import sqlalchemy
 from sqlalchemy import Column, MetaData, Table, UniqueConstraint
 from sqlalchemy import DateTime, Integer, String

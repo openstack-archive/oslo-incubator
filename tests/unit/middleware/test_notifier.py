@@ -14,12 +14,13 @@
 #    under the License.
 
 import uuid
-
-import mock
 import webob
+
+from six.moves import mock
 
 from openstack.common.middleware import notifier
 from openstack.common.notifier import api
+
 from tests import utils
 
 
