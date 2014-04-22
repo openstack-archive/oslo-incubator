@@ -13,8 +13,8 @@
 #    under the License.
 
 import fixtures
-import mock
 from oslotest import base as test_base
+from six.moves import mock
 
 from openstack.common.apiclient import base
 from openstack.common.apiclient import exceptions
