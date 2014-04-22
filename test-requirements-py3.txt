@@ -3,6 +3,7 @@ discover
 fixtures>=0.3.14
 hacking>=0.9.1,<0.10
 oslotest
+mox3>=0.7.0
 pyzmq==2.2.0.1
 redis
 simplejson>=2.0.9
