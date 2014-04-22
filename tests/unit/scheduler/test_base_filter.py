@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import mock
 from oslotest import base as test_base
 from oslotest import moxstubout
+from six.moves import mock
 
 from openstack.common.scheduler import base_filter
 

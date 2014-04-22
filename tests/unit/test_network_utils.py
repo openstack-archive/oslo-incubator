@@ -15,8 +15,8 @@
 
 import socket
 
-import mock
 from oslotest import base as test_base
+from six.moves import mock
 
 from openstack.common import network_utils
 
