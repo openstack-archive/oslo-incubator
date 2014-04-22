@@ -30,10 +30,10 @@ import traceback
 
 import eventlet
 from eventlet import event
-import mock
 import mox
 from oslotest import base as test_base
 from oslotest import moxstubout
+from six.moves import mock
 
 from openstack.common import eventlet_backdoor
 from openstack.common.fixture import config

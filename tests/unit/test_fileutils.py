@@ -18,9 +18,9 @@ import os
 import shutil
 import tempfile
 
-import mock
 from oslotest import base as test_base
 import six
+from six.moves import mock
 from six.moves import mox
 
 from openstack.common import fileutils
