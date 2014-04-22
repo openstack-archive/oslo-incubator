@@ -17,11 +17,11 @@ import uuid
 import warnings
 
 from migrate.changeset import UniqueConstraint
-import mock
 from oslotest import base as test_base
 from oslotest import moxstubout
 import six
 from six import moves
+from six.moves import mock
 from six.moves.urllib import parse
 import sqlalchemy
 from sqlalchemy.dialects import mysql

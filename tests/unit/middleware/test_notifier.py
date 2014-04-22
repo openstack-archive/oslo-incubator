@@ -15,7 +15,7 @@
 
 import uuid
 
-import mock
+from six.moves import mock
 import webob
 
 from openstack.common.middleware import notifier

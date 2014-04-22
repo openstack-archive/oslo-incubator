@@ -14,7 +14,7 @@
 
 import time
 
-import mock
+from six.moves import mock
 
 from tests.unit.cache import base
 
