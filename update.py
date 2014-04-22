@@ -189,7 +189,7 @@ def _copy_file(path, dest, base):
     replacements = []
 
     if 'rpc/' not in dest:
-        replacements.append(('oslo', base))
+        replacements.append(('oslo(?!test)', base))
         replacements.append(('OSLO', base.upper()))
 
     # Restore the imports for modules that are part of the oslo
