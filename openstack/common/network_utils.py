@@ -17,16 +17,6 @@
 Network-related utilities and helper functions.
 """
 
-# TODO(jd) Use six.moves once
-# https://bitbucket.org/gutworth/six/pull-request/28
-# is merged
-try:
-    import urllib.parse
-    SplitResult = urllib.parse.SplitResult
-except ImportError:
-    import urlparse
-    SplitResult = urlparse.SplitResult
-
 from six.moves.urllib import parse
 
 
@@ -74,7 +64,7 @@ def parse_host_port(address, default_port=None):
     return (host, None if port is None else int(port))
 
 
-class ModifiedSplitResult(SplitResult):
+class ModifiedSplitResult(parse.SplitResult):
     """Split results class for urlsplit."""
 
     # NOTE(dims): The functions below are needed for Python 2.6.x.
