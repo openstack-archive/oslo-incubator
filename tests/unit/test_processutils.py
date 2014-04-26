@@ -28,7 +28,7 @@ from openstack.common import processutils
 
 class UtilsTest(test_base.BaseTestCase):
     # NOTE(jkoelker) Moar tests from nova need to be ported. But they
-    #                need to be mock'd out. Currently they requre actually
+    #                need to be mock'd out. Currently they require actually
     #                running code.
     def test_execute_unknown_kwargs(self):
         self.assertRaises(processutils.UnknownArgumentError,

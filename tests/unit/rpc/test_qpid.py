@@ -589,7 +589,7 @@ class RpcQpidTestCase(tests.utils.BaseTestCase):
         on the vine due to a TTL. A string test that actually involved qpid
         would be excellent, but this at least verifies that the exceptions flow
         like they should.  TODO(beagles): is this really necessary or is
-        the the case for qpid at least the basic timeout test is
+        the case for qpid at least the basic timeout test is
         sufficient.
         """
         self._test_call_with_timeout(timeout=5, expect_failure=False)
