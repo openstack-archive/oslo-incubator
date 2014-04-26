@@ -293,7 +293,7 @@ def _get_not_supported_column(col_name_col_instance, column_name):
     except KeyError:
         msg = _("Please specify column %s in col_name_col_instance "
                 "param. It is required because column has unsupported "
-                "type by sqlite).")
+                "type by sqlite.")
         raise ColumnError(msg % column_name)
 
     if not isinstance(column, Column):
