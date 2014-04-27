@@ -197,7 +197,7 @@ def _copy_file(path, dest, base):
     # because there are default configuration settings like
     # "oslo.sqlite" that we want to have changed to "nova.sqlite" by
     # the above call.
-    for oslo_module in ['config', 'messaging']:
+    for oslo_module in ['config', 'i18n', 'messaging',]:
         replacements.append((base + '.' + oslo_module,
                              'oslo.' + oslo_module))
 
