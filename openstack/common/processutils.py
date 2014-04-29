@@ -224,7 +224,7 @@ def trycmd(*args, **kwargs):
         out, err = execute(*args, **kwargs)
         failed = False
     except ProcessExecutionError as exn:
-        out, err = '', str(exn)
+        out, err = '', six.text_type(exn)
         failed = True
 
     if not failed and discard_warnings and err:
