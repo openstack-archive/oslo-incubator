@@ -138,7 +138,7 @@ F: funcutils.py
 == gettextutils ==
 
 M: Mark McLoughlin <markmc@redhat.com>
-S: Maintained
+S: Graduating
 F: gettextutils.py
 
 == hooks ==
