@@ -17,7 +17,14 @@
 Network-related utilities and helper functions.
 """
 
+import socket
+
 from six.moves.urllib import parse
+
+from openstack.common.gettextutils import _LE
+from openstack.common import log as logging
+
+LOG = logging.getLogger(__name__)
 
 
 def parse_host_port(address, default_port=None):
@@ -96,3 +103,41 @@ def urlsplit(url, scheme='', allow_fragments=True):
         path, query = path.split('?', 1)
     return ModifiedSplitResult(scheme, netloc,
                                path, query, fragment)
+
+
+def set_tcp_keepalive(sock, tcp_keepalive=True,
+                      tcp_keepidle=None,
+                      tcp_keepalive_interval=None,
+                      tcp_keepalive_count=None):
+    """Set values for tcp keepalive parameters."""
+
+    if not tcp_keepalive:
+        return
+
+    # NOTE(praneshp): Despite keepalive being a tcp concept, the level is
+    # still SOL_SOCKET. This is a quirk.
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, tcp_keepalive)
+
+    # These options aren't available in the OS X version of eventlet,
+    # Idle + Count * Interval effectively gives you the total timeout.
+    if tcp_keepidle:
+        if hasattr(socket, 'TCP_KEEPIDLE'):
+            sock.setsockopt(socket.IPPROTO_TCP,
+                            socket.TCP_KEEPIDLE,
+                            tcp_keepidle)
+        else:
+            LOG.warning(_LE('tcp_keepidle not available on your system'))
+    if tcp_keepalive_interval:
+        if hasattr(socket, 'TCP_KEEPINTVL'):
+            sock.setsockopt(socket.IPPROTO_TCP,
+                            socket.TCP_KEEPINTVL,
+                            tcp_keepalive_interval)
+        else:
+            LOG.warning(_LE('tcp_keepintvl not available on your system'))
+    if tcp_keepalive_count:
+        if hasattr(socket, 'TCP_KEEPCNT'):
+            sock.setsockopt(socket.IPPROTO_TCP,
+                            socket.TCP_KEEPCNT,
+                            tcp_keepalive_count)
+        else:
+            LOG.warning(_LE('tcp_keepknt not available on your system'))
