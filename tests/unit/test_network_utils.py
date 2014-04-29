@@ -92,3 +92,15 @@ class NetworkUtilsTest(test_base.BaseTestCase):
         self.assertEqual(result.port, 1234)
         self.assertEqual(result.query, 'ab')
         self.assertEqual(result.fragment, '12')
+
+    def test_configure_tcp_keepalive(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect("http://my.host", 80)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        network_utils.configure_tcp_keepalive(s, 100, 10, 5)
+        keepidle = s.getsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE)
+        self.assertEqual(keepidle, 100)
+        keepintvl = s.getsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL)
+        self.assertEqual(keepintvl, 10)
+        keepcnt = s.getsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT)
+        self.assertEqual(keepcnt, 5)
