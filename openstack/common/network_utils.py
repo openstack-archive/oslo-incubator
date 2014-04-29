@@ -18,6 +18,7 @@ Network-related utilities and helper functions.
 """
 
 from six.moves.urllib import parse
+import socket
 
 
 def parse_host_port(address, default_port=None):
@@ -96,3 +97,27 @@ def urlsplit(url, scheme='', allow_fragments=True):
         path, query = path.split('?', 1)
     return ModifiedSplitResult(scheme, netloc,
                                path, query, fragment)
+
+
+def configure_tcp_keepalive(socket, tcp_keepidle, tcp_keepalive_interval, 
+                            tcp_keepalive_count):
+    """ Set values for tcp keepalive parameters. """
+
+    # NOTE(praneshp): Despite keepalive being a tcp concept, the level is 
+    # still SOL_SOCKET. This is a quirk.
+    socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+
+    # These options aren't available in the OS X version of eventlet,
+    # Idle + Count * Interval effectively gives you the total timeout.
+    if hasattr(socket, 'TCP_KEEPIDLE'):
+        socket.setsockopt(socket.IPPROTO_TCP, 
+                                socket.TCP_KEEPIDLE,
+                                tcp_keepidle)
+    if hasattr(socket, 'TCP_KEEPINTVL'):
+        socket.setsockopt(socket.IPPROTO_TCP,
+                                socket.TCP_KEEPINTVL,
+                                tcp_keepalive_interval)
+    if hasattr(socket, 'TCP_KEEPCNT'):
+        socket.setsockopt(socket.IPPROTO_TCP,
+                                socket.TCP_KEEPCNT,
+                                tcp_keepalive_count)
