@@ -13,6 +13,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import socket
+
+import mock
 from oslotest import base as test_base
 
 from openstack.common import network_utils
@@ -92,3 +95,18 @@ class NetworkUtilsTest(test_base.BaseTestCase):
         self.assertEqual(result.port, 1234)
         self.assertEqual(result.query, 'ab')
         self.assertEqual(result.fragment, '12')
+
+    def test_set_tcp_keepalive(self):
+        mock_sock = mock.Mock()
+        network_utils.set_tcp_keepalive(mock_sock, True, 100, 10, 5)
+        calls = [
+            mock.call.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, True),
+            mock.call.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 100),
+            mock.call.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 10),
+            mock.call.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 5)
+        ]
+        mock_sock.assert_has_calls(calls)
+
+        mock_sock.reset_mock()
+        network_utils.set_tcp_keepalive(mock_sock, False)
+        self.assertEqual(1, len(mock_sock.mock_calls))
