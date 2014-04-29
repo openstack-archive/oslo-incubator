@@ -132,9 +132,10 @@ oslo.${new_lib} library
 EOF
 rsync -a --verbose --ignore-existing $tmpdir/oslo.${new_lib}/ .
 
-# Stage everything that we have changed so far, but do not commit
-# because we don't know if it works.
+# Commit the work we have done so far. Changes to make
+# it work will be applied on top.
 git add .
+git commit -m "exported from oslo-incubator by graduate.sh"
 
 echo "The scratch files and logs from the export are in: $tmpdir"
 echo "The next step is to make the tests work."
