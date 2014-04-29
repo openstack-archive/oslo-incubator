@@ -187,7 +187,7 @@ class RpcCommonTestCase(test_base.BaseTestCase):
     def test_deserialize_remote_exception_cannot_recreate(self):
         """Ensure a RemoteError is returned on initialization failure.
 
-        If an exception cannot be recreated with it's original class then a
+        If an exception cannot be recreated with its original class then a
         RemoteError with the exception informations should still be returned.
 
         """
