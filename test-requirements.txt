@@ -11,6 +11,7 @@ pyflakes==0.7.2
 pylint==0.25.2
 pyzmq==2.2.0.1
 redis
+simplejson>=2.0.9
 sphinx>=1.1.2,<1.2
 testrepository>=0.0.17
 testtools>=0.9.32
