@@ -14,9 +14,12 @@
 #    under the License.
 
 import datetime
+import json
 
+import mock
 import netaddr
 from oslotest import base as test_base
+import simplejson
 import six
 import six.moves.xmlrpc_client as xmlrpclib
 
@@ -24,17 +27,57 @@ from openstack.common import gettextutils
 from openstack.common import jsonutils
 
 
-class JSONUtilsTestCase(test_base.BaseTestCase):
+class JSONUtilsTestMixin(object):
+
+    json_impl = None
+
+    def setUp(self):
+        super(JSONUtilsTestMixin, self).setUp()
+        self.json_patcher = mock.patch.object(
+            jsonutils, 'json', self.json_impl)
+        self.json_impl_mock = self.json_patcher.start()
+
+    def tearDown(self):
+        self.json_patcher.stop()
+        super(JSONUtilsTestMixin, self).tearDown()
 
     def test_dumps(self):
-        self.assertEqual(jsonutils.dumps({'a': 'b'}), '{"a": "b"}')
+        self.assertEqual('{"a": "b"}', jsonutils.dumps({'a': 'b'}))
 
     def test_loads(self):
-        self.assertEqual(jsonutils.loads('{"a": "b"}'), {'a': 'b'})
+        self.assertEqual({'a': 'b'}, jsonutils.loads('{"a": "b"}'))
+
+    def test_loads_unicode(self):
+        self.assertIsInstance(jsonutils.loads(b'"foo"'), six.text_type)
+        self.assertIsInstance(jsonutils.loads(u'"foo"'), six.text_type)
+
+        # 'test' in Ukrainian
+        i18n_str_unicode = u'"\u0442\u0435\u0441\u0442"'
+        self.assertIsInstance(jsonutils.loads(i18n_str_unicode), six.text_type)
+
+        i18n_str = i18n_str_unicode.encode('utf-8')
+        self.assertIsInstance(jsonutils.loads(i18n_str), six.text_type)
 
     def test_load(self):
-        x = six.StringIO('{"a": "b"}')
-        self.assertEqual(jsonutils.load(x), {'a': 'b'})
+
+        jsontext = u'{"a": "\u0442\u044d\u0441\u0442"}'
+        expected = {u'a': u'\u0442\u044d\u0441\u0442'}
+
+        for encoding in ('utf-8', 'cp1251'):
+            fp = six.BytesIO(jsontext.encode(encoding))
+            result = jsonutils.load(fp, encoding=encoding)
+            self.assertEqual(expected, result)
+            for key, val in result.items():
+                self.assertIsInstance(key, six.text_type)
+                self.assertIsInstance(val, six.text_type)
+
+
+class JSONUtilsTestJson(JSONUtilsTestMixin, test_base.BaseTestCase):
+    json_impl = json
+
+
+class JSONUtilsTestSimpleJson(JSONUtilsTestMixin, test_base.BaseTestCase):
+    json_impl = simplejson
 
 
 class ToPrimitiveTestCase(test_base.BaseTestCase):
