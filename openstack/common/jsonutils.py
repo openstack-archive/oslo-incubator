@@ -166,8 +166,8 @@ def loads(s):
     return json.loads(s)
 
 
-def load(s):
-    return json.load(s)
+def load(fp):
+    return json.load(fp)
 
 
 try:
