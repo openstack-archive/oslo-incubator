@@ -33,6 +33,7 @@ This module provides a few things:
 '''
 
 
+import codecs
 import datetime
 import functools
 import inspect
@@ -48,6 +49,7 @@ import six
 
 from openstack.common import gettextutils
 from openstack.common import importutils
+from openstack.common import strutils
 from openstack.common import timeutils
 
 netaddr = importutils.try_import("netaddr")
@@ -162,12 +164,12 @@ def dumps(value, default=to_primitive, **kwargs):
     return json.dumps(value, default=default, **kwargs)
 
 
-def loads(s):
-    return json.loads(s)
+def loads(s, encoding='utf-8'):
+    return json.loads(strutils.safe_decode(s, encoding))
 
 
-def load(fp):
-    return json.load(fp)
+def load(fp, encoding='utf-8'):
+    return json.load(codecs.getreader(encoding)(fp))
 
 
 try:
