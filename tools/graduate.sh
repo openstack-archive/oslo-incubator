@@ -65,7 +65,7 @@ cookiecutter=$venv/bin/cookiecutter
 
 # Build the grep pattern for ignoring files that we want to keep, so
 # the prune script does not list them and cause them to be deleted.
-keep_pattern="./\(.git\|$(echo $files_to_keep | sed -e 's/ /\\|/g')\)"
+keep_pattern="./\(.git/\|$(echo $files_to_keep | sed -e 's/ /\\|/g')\)"
 
 pruner="$tmpdir/pruner.sh"
 cat >$pruner <<EOF
@@ -136,4 +136,5 @@ rsync -a --verbose --ignore-existing $tmpdir/oslo.${new_lib}/ .
 # because we don't know if it works.
 git add .
 
-echo "Now, you need to make the tests work and commit the results by hand."
+echo "The scratch files and logs from the export are in: $tmpdir"
+echo "The next step is to make the tests work."
