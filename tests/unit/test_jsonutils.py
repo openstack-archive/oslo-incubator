@@ -14,27 +14,80 @@
 #    under the License.
 
 import datetime
+import inspect
+import json
 
+import mock
 import netaddr
 from oslotest import base as test_base
+import simplejson
 import six
 import six.moves.xmlrpc_client as xmlrpclib
 
 from openstack.common import gettextutils
 from openstack.common import jsonutils
+from openstack.common import strutils
 
 
+JSON_IMPLEMENTATIONS = (json, simplejson)
+
+
+def check_implementations(cls):
+    '''Creates test cases for each json library implementation tested.'''
+
+    def pred(obj):
+        return inspect.ismethod(obj) and obj.__name__.startswith('_test_')
+
+    for name, func in inspect.getmembers(cls, predicate=pred):
+        for impl in JSON_IMPLEMENTATIONS:
+            case_name = 'test_%s%s' % (impl.__name__, name)
+            patched_func = mock.patch.object(jsonutils, 'json', impl)(func)
+            setattr(cls, case_name, patched_func)
+
+    return cls
+
+
+@check_implementations
 class JSONUtilsTestCase(test_base.BaseTestCase):
 
-    def test_dumps(self):
-        self.assertEqual(jsonutils.dumps({'a': 'b'}), '{"a": "b"}')
+    def _test_dumps(self):
+        self.assertEqual('{"a": "b"}', jsonutils.dumps({'a': 'b'}))
 
-    def test_loads(self):
-        self.assertEqual(jsonutils.loads('{"a": "b"}'), {'a': 'b'})
+    def _test_loads(self):
+        self.assertEqual({'a': 'b'}, jsonutils.loads('{"a": "b"}'))
 
-    def test_load(self):
-        x = six.StringIO('{"a": "b"}')
-        self.assertEqual(jsonutils.load(x), {'a': 'b'})
+    def _test_loads_unicode(self):
+        self.assertIsInstance(jsonutils.loads('"foo"'), six.text_type)
+        self.assertIsInstance(jsonutils.loads(u'"foo"'), six.text_type)
+
+        # 'test' in Ukrainian, UTF-8
+        i18n_str = '"\xd1\x82\xd0\xb5\xd1\x81\xd1\x82"'
+        self.assertIsInstance(jsonutils.loads(i18n_str), six.text_type)
+
+        i18n_str_unicode = strutils.safe_decode(i18n_str)
+        self.assertIsInstance(jsonutils.loads(i18n_str_unicode), six.text_type)
+
+    def _test_load_cp1251(self):
+        # 'test' in Belarusian, CP1251
+        x = six.StringIO('{"a": "\xf2\xfd\xf1\xf2"}')
+        json_result = jsonutils.load(x, encoding='cp1251')
+
+        expected = {u'a': u'\u0442\u044d\u0441\u0442'}
+        self.assertEqual(expected, json_result)
+        for key, val in json_result.iteritems():
+            self.assertIsInstance(key, unicode)
+            self.assertIsInstance(val, unicode)
+
+    def _test_load_utf8(self):
+        # 'test' in Ukrainian, UTF-8
+        x = six.StringIO('{"a": "\xd1\x82\xd0\xb5\xd1\x81\xd1\x82"}')
+        json_result = jsonutils.load(x)
+
+        expected = {u'a': u'\u0442\u0435\u0441\u0442'}
+        self.assertEqual(expected, json_result)
+        for key, val in json_result.iteritems():
+            self.assertIsInstance(key, unicode)
+            self.assertIsInstance(val, unicode)
 
 
 class ToPrimitiveTestCase(test_base.BaseTestCase):
