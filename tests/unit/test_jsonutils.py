@@ -15,8 +15,11 @@
 
 import datetime
 
+import json
+import mock
 import netaddr
 from oslotest import base as test_base
+import simplejson
 import six
 import six.moves.xmlrpc_client as xmlrpclib
 
@@ -31,6 +34,18 @@ class JSONUtilsTestCase(test_base.BaseTestCase):
 
     def test_loads(self):
         self.assertEqual(jsonutils.loads('{"a": "b"}'), {'a': 'b'})
+
+    def _test_loads_unicode(self):
+        self.assertEqual(type(jsonutils.loads('"foo"')), unicode)
+        self.assertEqual(type(jsonutils.loads(u'"foo"')), unicode)
+
+    @mock.patch.object(jsonutils, 'json', simplejson)
+    def test_loads_unicode_simplejson(self):
+        self._test_loads_unicode()
+
+    @mock.patch.object(jsonutils, 'json', json)
+    def test_loads_unicode_json(self):
+        self._test_loads_unicode()
 
     def test_load(self):
         x = six.StringIO('{"a": "b"}')

@@ -167,7 +167,7 @@ def dumps(value, default=to_primitive, **kwargs):
 
 
 def loads(s):
-    return json.loads(s)
+    return json.loads(six.text_type(s))
 
 
 def load(s):
