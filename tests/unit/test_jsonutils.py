@@ -14,27 +14,65 @@
 #    under the License.
 
 import datetime
+import inspect
+import json
 
+import mock
 import netaddr
 from oslotest import base as test_base
+import simplejson
 import six
 import six.moves.xmlrpc_client as xmlrpclib
 
 from openstack.common import gettextutils
 from openstack.common import jsonutils
+from openstack.common import strutils
 
 
+JSON_IMPLEMENTATIONS = (json, simplejson)
+
+
+def check_implementations(cls):
+    ''' Creates test cases for each json library implementation tested.  '''
+
+    def pred(obj):
+        return inspect.ismethod(obj) and obj.__name__.startswith('_test_')
+
+    for name, func in inspect.getmembers(cls, predicate=pred):
+        for impl in JSON_IMPLEMENTATIONS:
+            case_name = 'test_%s%s' % (impl.__name__, name)
+            patched_func = mock.patch.object(jsonutils, 'json', impl)(func)
+            setattr(cls, case_name, patched_func)
+
+    return cls
+
+
+@check_implementations
 class JSONUtilsTestCase(test_base.BaseTestCase):
 
-    def test_dumps(self):
+    def _test_dumps(self):
         self.assertEqual(jsonutils.dumps({'a': 'b'}), '{"a": "b"}')
 
-    def test_loads(self):
+    def _test_loads(self):
         self.assertEqual(jsonutils.loads('{"a": "b"}'), {'a': 'b'})
 
-    def test_load(self):
+    def _test_loads_unicode(self):
+        self.assertIsInstance(jsonutils.loads('"foo"'), six.text_type)
+        self.assertIsInstance(jsonutils.loads(u'"foo"'), six.text_type)
+
+        i18n_str = '"\xd1\x82\xd0\xb5\xd1\x81\xd1\x82"'
+        self.assertIsInstance(jsonutils.loads(i18n_str), six.text_type)
+
+        i18n_str_unicode = strutils.safe_decode(i18n_str)
+        self.assertIsInstance(jsonutils.loads(i18n_str_unicode), six.text_type)
+
+    def _test_load(self):
         x = six.StringIO('{"a": "b"}')
-        self.assertEqual(jsonutils.load(x), {'a': 'b'})
+        json_result = jsonutils.load(x)
+        self.assertEqual(json_result, {'a': 'b'})
+        for key, val in json_result.iteritems():
+            self.assertIsInstance(key, unicode)
+            self.assertIsInstance(val, unicode)
 
 
 class ToPrimitiveTestCase(test_base.BaseTestCase):
