@@ -14,27 +14,76 @@
 #    under the License.
 
 import datetime
+import json
 
+import mock
 import netaddr
 from oslotest import base as test_base
+import simplejson
 import six
 import six.moves.xmlrpc_client as xmlrpclib
 
 from openstack.common import gettextutils
 from openstack.common import jsonutils
+from openstack.common import strutils
 
 
-class JSONUtilsTestCase(test_base.BaseTestCase):
+class JSONUtilsTestMixin(object):
+
+    json_impl = None
+
+    def setUp(self):
+        super(JSONUtilsTestMixin, self).setUp()
+        self.json_patcher = mock.patch.object(
+            jsonutils, 'json', self.json_impl)
+        self.json_impl_mock = self.json_patcher.start()
 
     def test_dumps(self):
-        self.assertEqual(jsonutils.dumps({'a': 'b'}), '{"a": "b"}')
+        self.assertEqual('{"a": "b"}', jsonutils.dumps({'a': 'b'}))
 
     def test_loads(self):
-        self.assertEqual(jsonutils.loads('{"a": "b"}'), {'a': 'b'})
+        self.assertEqual({'a': 'b'}, jsonutils.loads('{"a": "b"}'))
 
-    def test_load(self):
-        x = six.StringIO('{"a": "b"}')
-        self.assertEqual(jsonutils.load(x), {'a': 'b'})
+    def test_loads_unicode(self):
+        self.assertIsInstance(jsonutils.loads('"foo"'), six.text_type)
+        self.assertIsInstance(jsonutils.loads(u'"foo"'), six.text_type)
+
+        # 'test' in Ukrainian, UTF-8
+        i18n_str = b'"\xd1\x82\xd0\xb5\xd1\x81\xd1\x82"'
+        self.assertIsInstance(jsonutils.loads(i18n_str), six.text_type)
+
+        i18n_str_unicode = strutils.safe_decode(i18n_str, 'utf-8')
+        self.assertIsInstance(jsonutils.loads(i18n_str_unicode), six.text_type)
+
+    def test_load_cp1251(self):
+        # 'test' in Belarusian, CP1251
+        x = six.BytesIO(b'{"a": "\xf2\xfd\xf1\xf2"}')
+        json_result = jsonutils.load(x, encoding='cp1251')
+
+        expected = {u'a': u'\u0442\u044d\u0441\u0442'}
+        self.assertEqual(expected, json_result)
+        for key, val in json_result.items():
+            self.assertIsInstance(key, six.text_type)
+            self.assertIsInstance(val, six.text_type)
+
+    def test_load_utf8(self):
+        # 'test' in Ukrainian, UTF-8
+        x = six.BytesIO(b'{"a": "\xd1\x82\xd0\xb5\xd1\x81\xd1\x82"}')
+        json_result = jsonutils.load(x)
+
+        expected = {u'a': u'\u0442\u0435\u0441\u0442'}
+        self.assertEqual(expected, json_result)
+        for key, val in json_result.items():
+            self.assertIsInstance(key, six.text_type)
+            self.assertIsInstance(val, six.text_type)
+
+
+class JSONUtilsTestJson(JSONUtilsTestMixin, test_base.BaseTestCase):
+    json_impl = json
+
+
+class JSONUtilsTestSimpleJson(JSONUtilsTestMixin, test_base.BaseTestCase):
+    json_impl = simplejson
 
 
 class ToPrimitiveTestCase(test_base.BaseTestCase):
