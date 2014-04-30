@@ -65,7 +65,7 @@ cookiecutter=$venv/bin/cookiecutter
 
 # Build the grep pattern for ignoring files that we want to keep, so
 # the prune script does not list them and cause them to be deleted.
-keep_pattern="./\(.git\|$(echo $files_to_keep | sed -e 's/ /\\|/g')\)"
+keep_pattern="./\(^.git$$\|$(echo $files_to_keep | sed -e 's/ /\\|/g')\)"
 
 pruner="$tmpdir/pruner.sh"
 cat >$pruner <<EOF
