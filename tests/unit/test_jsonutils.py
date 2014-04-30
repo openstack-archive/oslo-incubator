@@ -14,14 +14,18 @@
 #    under the License.
 
 import datetime
+import json
 
+import mock
 import netaddr
 from oslotest import base as test_base
+import simplejson
 import six
 import six.moves.xmlrpc_client as xmlrpclib
 
 from openstack.common import gettextutils
 from openstack.common import jsonutils
+from openstack.common import strutils
 
 
 class JSONUtilsTestCase(test_base.BaseTestCase):
@@ -31,6 +35,24 @@ class JSONUtilsTestCase(test_base.BaseTestCase):
 
     def test_loads(self):
         self.assertEqual(jsonutils.loads('{"a": "b"}'), {'a': 'b'})
+
+    def _test_loads_unicode(self):
+        self.assertIsInstance(jsonutils.loads('"foo"'), six.text_type)
+        self.assertIsInstance(jsonutils.loads(u'"foo"'), six.text_type)
+
+        i18n_str = '"\xd1\x82\xd0\xb5\xd1\x81\xd1\x82"'
+        self.assertIsInstance(jsonutils.loads(i18n_str), six.text_type)
+
+        i18n_str_unicode = strutils.safe_decode(i18n_str)
+        self.assertIsInstance(jsonutils.loads(i18n_str_unicode), six.text_type)
+
+    @mock.patch.object(jsonutils, 'json', simplejson)
+    def test_loads_unicode_simplejson(self):
+        self._test_loads_unicode()
+
+    @mock.patch.object(jsonutils, 'json', json)
+    def test_loads_unicode_json(self):
+        self._test_loads_unicode()
 
     def test_load(self):
         x = six.StringIO('{"a": "b"}')

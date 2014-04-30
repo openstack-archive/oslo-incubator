@@ -52,6 +52,7 @@ import six.moves.xmlrpc_client as xmlrpclib
 
 from openstack.common import gettextutils
 from openstack.common import importutils
+from openstack.common import strutils
 from openstack.common import timeutils
 
 netaddr = importutils.try_import("netaddr")
@@ -167,7 +168,7 @@ def dumps(value, default=to_primitive, **kwargs):
 
 
 def loads(s):
-    return json.loads(s)
+    return json.loads(strutils.safe_decode(s))
 
 
 def load(s):
