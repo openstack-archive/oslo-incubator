@@ -1,0 +1,12 @@
+Verified+2: Jenkins
+Code-Review+1: Diane Fleming <diane.fleming@rackspace.com>
+Code-Review+2: Doug Hellmann <doug.hellmann@dreamhost.com>
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Workflow+1: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+1: Ilya Pekelny <ipekelny@mirantis.com>
+Code-Review+1: ChangBo Guo(gcb) <glongwave@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Thu, 01 May 2014 16:39:24 +0000
+Reviewed-on: https://review.openstack.org/71992
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
