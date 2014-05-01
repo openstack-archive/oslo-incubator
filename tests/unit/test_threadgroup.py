@@ -69,3 +69,12 @@ class ThreadGroupTestCase(test.BaseTestCase):
 
         self.assertEqual(0, len(self.tg.threads))
         self.assertTrue(end_time - start_time >= 1)
+
+    def test_stop_timers(self):
+
+        def foo(*args, **kwargs):
+            pass
+        self.tg.add_timer('1234', foo)
+        self.assertEqual(1, len(self.tg.timers))
+        self.tg.stop_timers()
+        self.assertEqual(0, len(self.tg.timers))
