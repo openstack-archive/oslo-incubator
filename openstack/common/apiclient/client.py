@@ -47,18 +47,20 @@ class HTTPClient(object):
     """This client handles sending HTTP requests to OpenStack servers.
 
     Features:
-    - share authentication information between several clients to different
+
+    * share authentication information between several clients to different
       services (e.g., for compute and image clients);
-    - reissue authentication request for expired tokens;
-    - encode/decode JSON bodies;
-    - raise exceptions on HTTP errors;
-    - pluggable authentication;
-    - store authentication information in a keyring;
-    - store time spent for requests;
-    - register clients for particular services, so one can use
+    * reissue authentication request for expired tokens;
+    * encode/decode JSON bodies;
+    * raise exceptions on HTTP errors;
+    * pluggable authentication;
+    * store authentication information in a keyring;
+    * store time spent for requests;
+    * register clients for particular services, so one can use
       `http_client.identity` or `http_client.compute`;
-    - log requests and responses in a format that is easy to copy-and-paste
+    * log requests and responses in a format that is easy to copy-and-paste
       into terminal and send the same request with curl.
+
     """
 
     user_agent = "openstack.common.apiclient"
@@ -152,8 +154,8 @@ class HTTPClient(object):
         :param method: method of HTTP request
         :param url: URL of HTTP request
         :param kwargs: any other parameter that can be passed to
-'            requests.Session.request (such as `headers`) or `json`
-             that will be encoded as JSON and used as `data` argument
+                       requests.Session.request (such as `headers`) or `json`
+                       that will be encoded as JSON and used as `data` argument
         """
         kwargs.setdefault("headers", kwargs.get("headers", {}))
         kwargs["headers"]["User-Agent"] = self.user_agent
@@ -207,7 +209,7 @@ class HTTPClient(object):
         :param method: method of HTTP request
         :param url: URL of HTTP request
         :param kwargs: any other parameter that can be passed to
-'            `HTTPClient.request`
+                       `HTTPClient.request`
         """
 
         filter_args = {
