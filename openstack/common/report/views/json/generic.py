@@ -26,7 +26,7 @@ such strings specially)
 import copy
 
 from openstack.common import jsonutils as json
-import openstack.common.report.utils as utils
+from openstack.common.report import utils as utils
 
 
 class BasicKeyValueView(object):

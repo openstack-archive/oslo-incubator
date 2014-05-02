@@ -20,8 +20,8 @@ thread, and stack trace data models
 
 import traceback
 
-import openstack.common.report.models.with_default_views as mwdv
-import openstack.common.report.views.text.threading as text_views
+from openstack.common.report.models import with_default_views as mwdv
+from openstack.common.report.views.text import threading as text_views
 
 
 class StackTraceModel(mwdv.ModelWithDefaultViews):
