@@ -47,7 +47,7 @@ from openstack.common import jsonutils
 from openstack.common import local
 
 
-_DEFAULT_LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+_DEFAULT_LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%(msecs)03d"
 
 _SANITIZE_KEYS = ['adminPass', 'admin_pass', 'password', 'admin_password']
 
@@ -138,19 +138,19 @@ generic_log_opts = [
 
 log_opts = [
     cfg.StrOpt('logging_context_format_string',
-               default='%(asctime)s.%(msecs)03d %(process)d %(levelname)s '
+               default='%(asctime)s %(process)d %(levelname)s '
                        '%(name)s [%(request_id)s %(user_identity)s] '
                        '%(instance)s%(message)s',
                help='Format string to use for log messages with context.'),
     cfg.StrOpt('logging_default_format_string',
-               default='%(asctime)s.%(msecs)03d %(process)d %(levelname)s '
+               default='%(asctime)s %(process)d %(levelname)s '
                        '%(name)s [-] %(instance)s%(message)s',
                help='Format string to use for log messages without context.'),
     cfg.StrOpt('logging_debug_format_suffix',
                default='%(funcName)s %(pathname)s:%(lineno)d',
                help='Data to append to log format when level is DEBUG.'),
     cfg.StrOpt('logging_exception_prefix',
-               default='%(asctime)s.%(msecs)03d %(process)d TRACE %(name)s '
+               default='%(asctime)s %(process)d TRACE %(name)s '
                '%(instance)s',
                help='Prefix each line of exception output with this format.'),
     cfg.ListOpt('default_log_levels',
@@ -419,6 +419,11 @@ class JSONFormatter(logging.Formatter):
 
         return jsonutils.dumps(message)
 
+    def formatTime(self, record, datefmt=None):
+        """Format time and replace msecs with ``record.msecs``."""
+        t = super(JSONFormatter, self).formatTime(record, datefmt)
+        return t % {'msecs': record.msecs}
+
 
 def _create_logging_excepthook(product_name):
     def logging_excepthook(exc_type, value, tb):
@@ -551,6 +556,10 @@ def _setup_logging_from_conf(project, version):
         # NOTE(alaski): CONF.log_format overrides everything currently.  This
         # should be deprecated in favor of context aware formatting.
         if CONF.log_format:
+            if datefmt.endswith('.%(msecs)03d'):
+                # NOTE(morganfainberg): Standard formatter doesn't convert
+                # the %(msecs)03d. Strip it off.
+                datefmt = datefmt[:-12]
             handler.setFormatter(logging.Formatter(fmt=CONF.log_format,
                                                    datefmt=datefmt))
             log_root.info('Deprecated: log_format is now deprecated and will '
@@ -693,6 +702,11 @@ class ContextFormatter(logging.Formatter):
             fl = '%s%s' % (pl, line)
             formatted_lines.append(fl)
         return '\n'.join(formatted_lines)
+
+    def formatTime(self, record, datefmt=None):
+        """Format time and replace msecs with ``record.msecs``."""
+        t = super(ContextFormatter, self).formatTime(record, datefmt)
+        return t % {'msecs': record.msecs}
 
 
 class ColorHandler(logging.StreamHandler):
