@@ -77,7 +77,7 @@ class AuthPluginOptionsMissing(AuthorizationFailure):
 
 
 class AuthSystemNotFound(AuthorizationFailure):
-    """User has specified a AuthSystem that is not installed."""
+    """User has specified an AuthSystem that is not installed."""
     def __init__(self, auth_system):
         super(AuthSystemNotFound, self).__init__(
             _("AuthSystemNotFound: %s") % repr(auth_system))

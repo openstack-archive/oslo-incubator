@@ -28,8 +28,8 @@ class ModelWithDefaultViews(base_model.ReportModel):
     when a submodel should have an attached view, but the view
     differs depending on the serialization format
 
-    Parameters are as the superclass, with the exception
-    of any parameters ending in '_view': these parameters
+    Parameters are as the superclass, except for any
+    parameters ending in '_view': these parameters
     get stored as default views.
 
     The default 'default views' are

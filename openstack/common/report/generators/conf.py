@@ -28,7 +28,7 @@ class ConfigReportGenerator(object):
     """A Configuration Data Generator
 
     This generator returns
-    :class:`openstack.common.report.models.conf.ConfigModel` ,
+    :class:`openstack.common.report.models.conf.ConfigModel`,
     by default using the configuration options stored
     in :attr:`oslo.config.cfg.CONF`, which is where
     OpenStack stores everything.
