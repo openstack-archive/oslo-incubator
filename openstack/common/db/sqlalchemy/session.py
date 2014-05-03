@@ -481,7 +481,7 @@ def _thread_yield(dbapi_con, con_record):
 
     If we use eventlet.monkey_patch(), eventlet.greenthread.sleep(0) will
     execute instead of time.sleep(0).
-    Force a context switch. With common database backends (eg MySQLdb and
+    Force a context switch. With common database backends (e.g. MySQLdb and
     sqlite), there is no implicit yield caused by network I/O since they are
     implemented by C libraries that eventlet cannot monkey patch.
     """

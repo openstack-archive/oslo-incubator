@@ -62,7 +62,7 @@ class QemuImgInfo(object):
         # Standardize on underscores/lc/no dash and no spaces
         # since qemu seems to have mixed outputs here... and
         # this format allows for better integration with python
-        # - ie for usage in kwargs and such...
+        # - i.e. for usage in kwargs and such...
         field = field.lower().strip()
         for c in (" ", "-"):
             field = field.replace(c, '_')

@@ -194,7 +194,7 @@ class ConsumerBase(object):
         try:
             self.queue.cancel(self.tag)
         except KeyError as e:
-            # NOTE(comstud): Kludge to get around a amqplib bug
+            # NOTE(comstud): Kludge to get around an amqplib bug
             if str(e) != "u'%s'" % self.tag:
                 raise
         self.queue = None
