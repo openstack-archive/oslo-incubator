@@ -1,3 +1,4 @@
+pbr>=0.6,!=0.7,<1.0
 alembic>=0.4.1
 anyjson>=0.3.3
 argparse
@@ -12,7 +13,6 @@ netaddr>=0.7.6
 oslo.config>=1.2.0
 oslotest
 PasteDeploy>=1.5.0
-pbr>=0.6,!=0.7,<1.0
 posix_ipc
 PrettyTable>=0.7,<0.8
 pycadf>=0.4.1
