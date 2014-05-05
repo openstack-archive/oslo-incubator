@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import copy
+
 import mock
 
 from openstack.common.report.models import base as base_model
@@ -380,3 +382,9 @@ class TestJinjaView(utils.BaseTestCase):
         self.model.attached_view = TmpJinjaView()
 
         self.assertEqual('int is 1, string is value', str(self.model))
+
+    def test_is_deepcopiable(self):
+        view_orig = jv.JinjaView(text=self.TEMPL_STR)
+        view_cpy = copy.deepcopy(view_orig)
+
+        self.assertIsNot(view_orig, view_cpy)
