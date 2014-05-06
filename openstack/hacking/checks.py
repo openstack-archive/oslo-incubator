@@ -16,6 +16,10 @@ import re
 
 
 import_style_re = re.compile(r"^( *)import openstack.common")
+assert_equal_end_with_none_re = re.compile(
+    r"(.)*assertEqual\((\w|\.|\'|\"|\[|\])+, None\)")
+assert_equal_start_with_none_re = re.compile(
+    r"(.)*assertEqual\(None, (\w|\.|\'|\"|\[|\])+\)")
 
 
 def no_import_from(logical_line):
@@ -30,5 +34,19 @@ def no_import_from(logical_line):
         yield (0, msg)
 
 
+def assert_equal_none(logical_line):
+    """Check for assertEqual(A, None) or assertEqual(None, A) sentences
+
+    O102: assertEqual(A, None) or assertEqual(None, A)sentences not allowed.
+    """
+
+    res = (assert_equal_start_with_none_re.match(logical_line) or
+           assert_equal_end_with_none_re.match(logical_line))
+    if res:
+        yield (0, "O102: assertEqual(A, None) or assertEqual(None, A) "
+               "sentences not allowed")
+
+
 def factory(register):
     register(no_import_from)
+    register(assert_equal_none)

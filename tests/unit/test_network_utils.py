@@ -84,7 +84,7 @@ class NetworkUtilsTest(test_base.BaseTestCase):
         self.assertEqual(result.netloc, 'user:pass@[::1]')
         self.assertEqual(result.path, '/v2.0/')
         self.assertEqual(result.hostname, '::1')
-        self.assertEqual(result.port, None)
+        self.assertIsNone(result.port)
 
         ipv6_url = 'https://[2001:db8:85a3::8a2e:370:7334]:1234/v2.0/xy?ab#12'
         result = network_utils.urlsplit(ipv6_url)
