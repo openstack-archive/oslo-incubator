@@ -209,7 +209,7 @@ class BaseRpcTestCase(test_base.BaseTestCase):
             @staticmethod
             def echo(context, queue, value):
                 """Calls echo in the passed queue."""
-                LOG.debug(_("Nested received %(queue)s, %(value)s")
+                LOG.debug("Nested received %(queue)s, %(value)s"
                           % {'queue': queue, 'value': value})
                 # TODO(comstud):
                 # so, it will replay the context and use the same REQID?
@@ -218,7 +218,7 @@ class BaseRpcTestCase(test_base.BaseTestCase):
                                     queue,
                                     {"method": "echo",
                                      "args": {"value": value}})
-                LOG.debug(_("Nested return %s"), ret)
+                LOG.debug("Nested return %s", ret)
                 return value
 
         nested = Nested()
@@ -386,13 +386,13 @@ class TestReceiver(object):
     @staticmethod
     def echo(context, value):
         """Simply returns whatever value is sent in."""
-        LOG.debug(_("Received %s"), value)
+        LOG.debug("Received %s", value)
         return value
 
     @staticmethod
     def synced_echo(context, value, callid):
         """Waits on the event identified by callid."""
-        LOG.debug(_("Received %s"), value)
+        LOG.debug("Received %s", value)
         global synced_echo_call
         synced_echo_call.wait(callid)
         return value
@@ -405,7 +405,7 @@ class TestReceiver(object):
     @staticmethod
     def context(context, value):
         """Returns dictionary version of context."""
-        LOG.debug(_("Received %s"), context)
+        LOG.debug("Received %s", context)
         return context.to_dict()
 
     @staticmethod
