@@ -36,5 +36,23 @@ def no_import_from(logical_line):
         yield (0, msg)
 
 
+def check_longest_base_name(physical_line):
+    """Check import style.
+
+    O102: Make sure the line length won't exceed 80 characters while replacing
+    oslo with longest base name.
+    """
+    # Note(gcb): update longgest_base_name if we have in the future.
+    longest_base_name = "openstack_dashboard"
+    msg = ("O102: 'the line will exceed 80 characters while replacing oslo "
+           "with base name %s " % longest_base_name)
+    exceptions = ['oslotest']
+    find_exceptions = [physical_line.find(item) == -1 for item in exceptions]
+    if physical_line.find('oslo') != -1 and all(find_exceptions):
+        length = len(physical_line) + len(longest_base_name) + 2 - len('oslo')
+        if length > 79:
+            yield (0, msg)
+
+
 def factory(register):
     register(no_import_from)
