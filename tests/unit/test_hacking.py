@@ -28,3 +28,17 @@ class HackingTestCase(test_base.BaseTestCase):
 
         self.assertEqual(1, len(list(checks.no_import_from(
             "import openstack.common.report.generators.conf as cgen"))))
+
+    def test_check_longest_base_name(self):
+
+        long_line_with_oslo = ("    def __new__(cls, msgid, msgtext=None,"
+                               " params=None, domain='oslo', *args):")
+        self.assertTrue(len(long_line_with_oslo) < 80)
+        self.assertEqual(1, len(list(
+            checks.check_longest_base_name(long_line_with_oslo))))
+
+        long_line_with_oslotest = ("  def __new__(cls, msgid, msgtext=None,"
+                                   " params=None, domain='oslotest', *args):")
+        self.assertTrue(len(long_line_with_oslotest) < 80)
+        self.assertEqual([], list(checks.check_longest_base_name(
+            long_line_with_oslotest)))
