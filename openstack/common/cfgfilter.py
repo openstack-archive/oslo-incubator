@@ -1,4 +1,4 @@
-# Copyright 2013 Red Hat, Inc.
+# Copyright 2014 Red Hat, Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -13,6 +13,18 @@
 #    under the License.
 
 r"""
+There are two use cases for the ConfigFilter class:
+
+1. Help enforce that a given module does not access options registered
+   by another module, without first declaring those cross-module
+   dependencies using import_opt().
+
+2. Prevent private configuration opts from being visible to modules
+   other than the one which registered it.
+
+Cross-Module Option Depencies
+-----------------------------
+
 When using the global cfg.CONF object, it is quite common for a module
 to require the existence of configuration options registered by other
 modules.
@@ -48,6 +60,42 @@ import_opt() e.g. with:
   print(CONF.blaa)
 
 no other options other than 'blaa' are available via CONF.
+
+Private Configuration Options
+-----------------------------
+
+Libraries which register configuration options typically do not want
+users of the library API to access those configuration options. If
+API users do access private configuration options, those users will
+be disrupted if and when a configuration option is renamed. In other
+words, one does not typically wish for the name of the private config
+options to be part of the public API.
+
+The ConfigFilter class provides a way for a library to register
+options such that they are not visible via the ConfigOpts instance
+which the API user supplies to the library. For example::
+
+  from __future__ import print_function
+
+  from oslo.config.cfg import *
+  from openstack.common.cfgfilter import *
+
+  class Widget(object):
+
+      def __init__(self, conf):
+          self.conf = conf
+          self._private_conf = ConfigFilter(self.conf)
+          self._private_conf.register_opt(StrOpt('foo'))
+
+      @property
+      def foo(self):
+          return self._private_conf.foo
+
+  conf = ConfigOpts()
+  widget = Widget(conf)
+  print(widget.foo)
+  print(conf.foo)  # raises NoSuchOptError
+
 """
 
 import collections
@@ -61,17 +109,35 @@ class ConfigFilter(collections.Mapping):
     """A helper class which wraps a ConfigOpts object.
 
     ConfigFilter enforces the explicit declaration of dependencies on external
-    options.
+    options and allows private options which are not registered with the
+    wrapped Configopts object.
     """
 
-    def __init__(self, conf):
+    THIS_USES_PRIVATE_CFG_IMPL_DETAILS = object()
+
+    def __init__(self, conf, warning=None):
         """Construct a ConfigFilter object.
 
         :param conf: a ConfigOpts object
         """
+        if warning is not self.THIS_USES_PRIVATE_CFG_IMPL_DETAILS:
+            raise Exception("Do not use this API until it has been included "
+                            "in oslo.config proper. It uses private "
+                            "implementation details of oslo.config that are "
+                            "liable to change at any time")
+
         self._conf = conf
-        self._opts = set()
-        self._groups = dict()
+        self._fconf = cfg.ConfigOpts()
+        self._sync()
+
+        self._imported_opts = set()
+        self._imported_groups = dict()
+
+    def _sync(self):
+        if self._fconf._namespace is not self._conf._namespace:
+            self._fconf.clear()
+            self._fconf._namespace = self._conf._namespace
+            self._fconf._args = self._conf._args
 
     def __getattr__(self, name):
         """Look up an option value.
@@ -80,11 +146,13 @@ class ConfigFilter(collections.Mapping):
         :returns: the option value (after string subsititution) or a GroupAttr
         :raises: NoSuchOptError,ConfigFileValueError,TemplateSubstitutionError
         """
-        if name in self._groups:
-            return self._groups[name]
-        if name not in self._opts:
-            raise cfg.NoSuchOptError(name)
-        return getattr(self._conf, name)
+        if name in self._imported_groups:
+            return self._imported_groups[name]
+        elif name in self._imported_opts:
+            return getattr(self._conf, name)
+        else:
+            self._sync()
+            return getattr(self._fconf, name)
 
     def __getitem__(self, key):
         """Look up an option value."""
@@ -92,15 +160,21 @@ class ConfigFilter(collections.Mapping):
 
     def __contains__(self, key):
         """Return True if key is the name of a registered opt or group."""
-        return key in self._opts or key in self._groups
+        return (key in self._fconf or
+                key in self._imported_opts or
+                key in self._imported_groups)
 
     def __iter__(self):
         """Iterate over all registered opt and group names."""
-        return itertools.chain(self._opts, self._groups.keys())
+        return itertools.chain(self._fconf.keys(),
+                               self._imported_opts,
+                               self._imported_groups.keys())
 
     def __len__(self):
         """Return the number of options and option groups."""
-        return len(self._opts) + len(self._groups)
+        return (len(self._fconf) +
+                len(self._imported_opts) +
+                len(self._imported_groups))
 
     def register_opt(self, opt, group=None):
         """Register an option schema.
@@ -110,16 +184,11 @@ class ConfigFilter(collections.Mapping):
         :return: False if the opt was already registered, True otherwise
         :raises: DuplicateOptError
         """
-        if not self._conf.register_opt(opt, group):
-            return False
-
-        self._register_opt(opt.dest, group)
-        return True
+        return self._fconf.register_opt(opt, group)
 
     def register_opts(self, opts, group=None):
         """Register multiple option schemas at once."""
-        for opt in opts:
-            self.register_opt(opt, group)
+        return self._fconf.register_opts(opts, group)
 
     def register_cli_opt(self, opt, group=None):
         """Register a CLI option schema.
@@ -129,24 +198,18 @@ class ConfigFilter(collections.Mapping):
         :return: False if the opt was already register, True otherwise
         :raises: DuplicateOptError, ArgsAlreadyParsedError
         """
-        if not self._conf.register_cli_opt(opt, group):
-            return False
-
-        self._register_opt(opt.dest, group)
-        return True
+        return self._fconf.register_cli_opt(opt, group)
 
     def register_cli_opts(self, opts, group=None):
         """Register multiple CLI option schemas at once."""
-        for opt in opts:
-            self.register_cli_opt(opt, group)
+        return self._fconf.register_cli_opts(opts, group)
 
     def register_group(self, group):
         """Register an option group.
 
         :param group: an OptGroup object
         """
-        self._conf.register_group(group)
-        self._get_group(group.name)
+        self._fconf.register_group(group)
 
     def import_opt(self, opt_name, module_str, group=None):
         """Import an option definition from a module.
@@ -157,7 +220,7 @@ class ConfigFilter(collections.Mapping):
         :raises: NoSuchOptError, NoSuchGroupError
         """
         self._conf.import_opt(opt_name, module_str, group)
-        self._register_opt(opt_name, group)
+        self._import_opt(opt_name, group)
 
     def import_group(self, group, module_str):
         """Import an option group from a module.
@@ -171,28 +234,28 @@ class ConfigFilter(collections.Mapping):
         :raises: ImportError, NoSuchGroupError
         """
         self._conf.import_group(group, module_str)
-        group = self._get_group(group)
+        group = self._import_group(group)
         group._all_opts = True
 
-    def _register_opt(self, opt_name, group):
+    def _import_opt(self, opt_name, group):
         if group is None:
-            self._opts.add(opt_name)
+            self._imported_opts.add(opt_name)
             return True
         else:
-            group = self._get_group(group)
-            return group._register_opt(opt_name)
+            group = self._import_group(group)
+            return group._import_opt(opt_name)
 
-    def _get_group(self, group_or_name):
+    def _import_group(self, group_or_name):
         if isinstance(group_or_name, cfg.OptGroup):
             group_name = group_or_name.name
         else:
             group_name = group_or_name
 
-        if group_name in self._groups:
-            return self._groups[group_name]
+        if group_name in self._imported_groups:
+            return self._imported_groups[group_name]
         else:
             group = self.GroupAttr(self._conf, group_name)
-            self._groups[group_name] = group
+            self._imported_groups[group_name] = group
             return group
 
     class GroupAttr(collections.Mapping):
@@ -210,12 +273,12 @@ class ConfigFilter(collections.Mapping):
             """
             self._conf = conf
             self._group = group
-            self._opts = set()
+            self._imported_opts = set()
             self._all_opts = False
 
         def __getattr__(self, name):
             """Look up an option value."""
-            if not self._all_opts and name not in self._opts:
+            if not self._all_opts and name not in self._imported_opts:
                 raise cfg.NoSuchOptError(name)
             return getattr(self._conf[self._group], name)
 
@@ -225,16 +288,16 @@ class ConfigFilter(collections.Mapping):
 
         def __contains__(self, key):
             """Return True if key is the name of a registered opt or group."""
-            return key in self._opts
+            return key in self._imported_opts
 
         def __iter__(self):
             """Iterate over all registered opt and group names."""
-            for key in self._opts:
+            for key in self._imported_opts:
                 yield key
 
         def __len__(self):
             """Return the number of options and option groups."""
-            return len(self._opts)
+            return len(self._imported_opts)
 
-        def _register_opt(self, opt_name):
-            self._opts.add(opt_name)
+        def _import_opt(self, opt_name):
+            self._imported_opts.add(opt_name)
