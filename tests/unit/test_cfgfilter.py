@@ -82,6 +82,37 @@ class ConfigFilterTestCase(test_base.BaseTestCase):
         self.assertEqual(len(self.fconf), 1)
         self.assertEqual(len(self.fconf.blaa), 1)
 
+    def test_register_opts(self):
+        self.fconf.register_opts([cfg.StrOpt('foo'),
+                                  cfg.StrOpt('bar')])
+        self.assertTrue('foo' in self.fconf)
+        self.assertTrue('bar' in self.fconf)
+
+    def test_register_cli_opt(self):
+        self.fconf.register_cli_opt(cfg.StrOpt('foo'))
+        self.assertTrue('foo' in self.fconf)
+
+    def test_register_cli_opts(self):
+        self.fconf.register_cli_opts([cfg.StrOpt('foo'), cfg.StrOpt('bar')])
+        self.assertTrue('foo' in self.fconf)
+        self.assertTrue('bar' in self.fconf)
+
+    def test_register_opts_grouped(self):
+        self.fconf.register_opts([cfg.StrOpt('foo'), cfg.StrOpt('bar')],
+                                 group='blaa')
+        self.assertTrue('foo' in self.fconf.blaa)
+        self.assertTrue('bar' in self.fconf.blaa)
+
+    def test_register_cli_opt_grouped(self):
+        self.fconf.register_cli_opt(cfg.StrOpt('foo'), group='blaa')
+        self.assertTrue('foo' in self.fconf.blaa)
+
+    def test_register_cli_opts_grouped(self):
+        self.fconf.register_cli_opts([cfg.StrOpt('foo'), cfg.StrOpt('bar')],
+                                     group='blaa')
+        self.assertTrue('foo' in self.fconf.blaa)
+        self.assertTrue('bar' in self.fconf.blaa)
+
     def test_unknown_opt(self):
         self.assertFalse('foo' in self.fconf)
         self.assertEqual(len(self.fconf), 0)
