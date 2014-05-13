@@ -1,0 +1,14 @@
+Verified+2: Jenkins
+Code-Review+2: Doug Hellmann <doug.hellmann@dreamhost.com>
+Workflow+1: Doug Hellmann <doug.hellmann@dreamhost.com>
+Code-Review+1: Victor Sergeyev <vsergeyev@mirantis.com>
+Code-Review+1: Cyril Roelandt <cyril.roelandt@enovance.com>
+Code-Review+2: Victor Stinner <victor.stinner@enovance.com>
+Code-Review+1: Andrey Kurilin <akurilin@mirantis.com>
+Code-Review+1: ChangBo Guo(gcb) <glongwave@gmail.com>
+Code-Review+1: Emilio Recio <emilio.recio@intel.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 13 May 2014 13:21:26 +0000
+Reviewed-on: https://review.openstack.org/74433
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
