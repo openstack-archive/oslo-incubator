@@ -135,6 +135,8 @@ class ResourceTest(test_base.BaseTestCase):
         self.assertIsNone(r.human_id)
         r = HumanResource(None, {"name": "1"})
         self.assertEqual(r.human_id, "1")
+        r = HumanResource(None, {"name": None})
+        self.assertIsNone(r.human_id)
 
 
 class BaseManagerTest(test_base.BaseTestCase):
