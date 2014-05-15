@@ -2,6 +2,7 @@ coverage>=3.6
 discover
 fixtures>=0.3.14
 hacking>=0.8.0,<0.9
+mox3>=0.7.0
 MySQL-python
 oslotest
 pylint==0.25.2
