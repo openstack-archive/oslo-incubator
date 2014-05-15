@@ -95,8 +95,11 @@ class PeriodicTasksTestCase(test_base.BaseTestCase):
 class ManagerMetaTestCase(test_base.BaseTestCase):
     """Tests for the meta class which manages the creation of periodic tasks.
     """
+    def setUp(self):
+        super(ManagerMetaTestCase, self).setUp()
+        self.config = self.useFixture(config.Config()).config
 
-    def test_meta(self):
+    def _test_meta(self, expected_spacing):
         class Manager(periodic_task.PeriodicTasks):
 
             @periodic_task.periodic_task
@@ -113,10 +116,18 @@ class ManagerMetaTestCase(test_base.BaseTestCase):
 
         m = Manager()
         self.assertThat(m._periodic_tasks, matchers.HasLength(2))
-        self.assertIsNone(m._periodic_spacing['foo'])
+        self.assertEqual(expected_spacing,
+                         m._periodic_spacing['foo'])
         self.assertEqual(4, m._periodic_spacing['bar'])
         self.assertThat(
             m._periodic_spacing, matchers.Not(matchers.Contains('baz')))
+
+    def test_meta_default(self):
+        self._test_meta(expected_spacing=None)
+
+    def test_meta_non_default_spacing(self):
+        self.config(default_spacing=periodic_task.DEFAULT_INTERVAL)
+        self._test_meta(expected_spacing=periodic_task.DEFAULT_INTERVAL)
 
 
 class ManagerTestCase(test_base.BaseTestCase):
