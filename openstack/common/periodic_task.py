@@ -44,8 +44,8 @@ def periodic_task(*args, **kwargs):
 
     This decorator can be used in two ways:
 
-        1. Without arguments '@periodic_task', this will be run on every cycle
-           of the periodic scheduler.
+        1. Without arguments '@periodic_task', this will be run on the default
+           interval of 60 seconds.
 
         2. With arguments:
            @periodic_task(spacing=N [, run_immediately=[True|False]])
@@ -133,9 +133,10 @@ class _PeriodicTasksMeta(type):
                     continue
 
                 # A periodic spacing of zero indicates that this task should
-                # be run every pass
+                # be run on the default interval to avoid running too
+                # frequently.
                 if task._periodic_spacing == 0:
-                    task._periodic_spacing = None
+                    task._periodic_spacing = DEFAULT_INTERVAL
 
                 cls._periodic_tasks.append((name, task))
                 cls._periodic_spacing[name] = task._periodic_spacing
@@ -159,13 +160,12 @@ class PeriodicTasks(object):
             last_run = self._periodic_last_run[task_name]
 
             # If a periodic task is _nearly_ due, then we'll run it early
-            if spacing is not None:
-                idle_for = min(idle_for, spacing)
-                if last_run is not None:
-                    delta = last_run + spacing - time.time()
-                    if delta > 0.2:
-                        idle_for = min(idle_for, delta)
-                        continue
+            idle_for = min(idle_for, spacing)
+            if last_run is not None:
+                delta = last_run + spacing - time.time()
+                if delta > 0.2:
+                    idle_for = min(idle_for, delta)
+                    continue
 
             LOG.debug("Running periodic task %(full_task_name)s",
                       {"full_task_name": full_task_name})

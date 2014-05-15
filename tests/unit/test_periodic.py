@@ -45,11 +45,12 @@ class AService(periodic_task.PeriodicTasks):
         self.called['urg'] += 1
         raise AnException('urg')
 
-    @periodic_task.periodic_task(spacing=10, run_immediately=True)
+    @periodic_task.periodic_task(spacing=10 + periodic_task.DEFAULT_INTERVAL,
+                                 run_immediately=True)
     def doit_with_ticks(self, context):
         self.called['ticks'] += 1
 
-    @periodic_task.periodic_task(spacing=10)
+    @periodic_task.periodic_task(spacing=10 + periodic_task.DEFAULT_INTERVAL)
     def doit_with_tocks(self, context):
         self.called['tocks'] += 1
 
@@ -62,31 +63,41 @@ class PeriodicTasksTestCase(test_base.BaseTestCase):
         serv = AService()
         now = serv._periodic_last_run['doit_with_tocks']
 
-        mock_time.return_value = now
+        time = now + periodic_task.DEFAULT_INTERVAL
+        mock_time.return_value = time
         serv.run_periodic_tasks(None)
         self.assertEqual(serv.called['doit'], 1)
         self.assertEqual(serv.called['urg'], 1)
         self.assertEqual(serv.called['ticks'], 1)
         self.assertEqual(serv.called['tocks'], 0)
 
-        mock_time.return_value = now + 9
+        time = time + 9 + periodic_task.DEFAULT_INTERVAL
+        mock_time.return_value = time
         serv.run_periodic_tasks(None)
         self.assertEqual(serv.called['doit'], 2)
         self.assertEqual(serv.called['urg'], 2)
         # doit_with_ticks will only be called the first time because its
         # spacing time interval will not have elapsed between the calls.
         self.assertEqual(serv.called['ticks'], 1)
-        self.assertEqual(serv.called['tocks'], 0)
+        # doit_with_tocks will run since idle_for is equal to DEFAULT_INTERVAL
+        # and the task processor will pick the minimum of those two to
+        # determine when to run, and the idle time will have passed.
+        self.assertEqual(serv.called['tocks'], 1)
 
-        mock_time.return_value = now + 10
+        time = time + 10 + periodic_task.DEFAULT_INTERVAL
+        mock_time.return_value = time
         serv.run_periodic_tasks(None)
         self.assertEqual(serv.called['doit'], 3)
         self.assertEqual(serv.called['urg'], 3)
         self.assertEqual(serv.called['ticks'], 2)
-        self.assertEqual(serv.called['tocks'], 1)
+        self.assertEqual(serv.called['tocks'], 2)
 
-    def test_raises(self):
+    @mock.patch('time.time')
+    def test_raises(self, mock_time):
         serv = AService()
+        now = serv._periodic_last_run['crashit']
+
+        mock_time.return_value = now + periodic_task.DEFAULT_INTERVAL
         self.assertRaises(AnException,
                           serv.run_periodic_tasks,
                           None, raise_on_error=True)
@@ -113,7 +124,8 @@ class ManagerMetaTestCase(test_base.BaseTestCase):
 
         m = Manager()
         self.assertThat(m._periodic_tasks, matchers.HasLength(2))
-        self.assertIsNone(m._periodic_spacing['foo'])
+        self.assertEqual(periodic_task.DEFAULT_INTERVAL,
+                         m._periodic_spacing['foo'])
         self.assertEqual(4, m._periodic_spacing['bar'])
         self.assertThat(
             m._periodic_spacing, matchers.Not(matchers.Contains('baz')))
