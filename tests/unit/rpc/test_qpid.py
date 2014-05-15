@@ -27,7 +27,7 @@ import uuid
 
 import fixtures
 import mock
-import mox
+from mox3 import mox
 
 from openstack.common import context
 from openstack.common.fixture import config
