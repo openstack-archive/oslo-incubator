@@ -25,6 +25,16 @@ periodic_opts = [
                 default=True,
                 help='Some periodic tasks can be run in a separate process. '
                      'Should we run them here?'),
+    cfg.FloatOpt('default_spacing',
+                 default=0,
+                 help='If spacing is not specified, this controls how tasks '
+                      'should be spaced out. By default, a task will be run '
+                      'on every cycle of the periodic scheduler. '
+                      'By specifying a value greater than 0, tasks without '
+                      'specific spacing defined will be spaced to the given '
+                      'value. For example, one may wish to space tasks out '
+                      'every 60 seconds to match the default scheduler '
+                      'interval.')
 ]
 
 CONF = cfg.CONF
@@ -71,7 +81,7 @@ def periodic_task(*args, **kwargs):
             f._periodic_enabled = kwargs.pop('enabled', True)
 
         # Control frequency
-        f._periodic_spacing = kwargs.pop('spacing', 0)
+        f._periodic_spacing = kwargs.pop('spacing', CONF.default_spacing)
         f._periodic_immediate = kwargs.pop('run_immediately', False)
         if f._periodic_immediate:
             f._periodic_last_run = None
