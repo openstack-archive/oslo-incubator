@@ -133,9 +133,10 @@ class _PeriodicTasksMeta(type):
                     continue
 
                 # A periodic spacing of zero indicates that this task should
-                # be run every pass
+                # be run on the default interval to avoid running too
+                # frequently.
                 if task._periodic_spacing == 0:
-                    task._periodic_spacing = None
+                    task._periodic_spacing = DEFAULT_INTERVAL
 
                 cls._periodic_tasks.append((name, task))
                 cls._periodic_spacing[name] = task._periodic_spacing
