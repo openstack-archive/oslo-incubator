@@ -31,7 +31,7 @@ import traceback
 import eventlet
 from eventlet import event
 import mock
-import mox
+from mox3 import mox
 from oslotest import base as test_base
 
 from openstack.common import eventlet_backdoor
