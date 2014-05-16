@@ -538,6 +538,12 @@ class SetDefaultsTestCase(test_base.BaseTestCase):
         self.conf([])
         self.assertIsNone(self.conf.logging_context_format_string)
 
+    def test_default_log_level_to_none(self):
+        log.set_defaults(logging_context_format_string=None,
+                         default_log_levels=None)
+        self.conf([])
+        self.assertEqual(log.DEFAULT_LOG_LEVELS, self.conf.default_log_levels)
+
     def test_change_default(self):
         my_default = '%(asctime)s %(levelname)s %(name)s [%(request_id)s '\
                      '%(user_id)s %(project)s] %(instance)s'\
@@ -545,6 +551,12 @@ class SetDefaultsTestCase(test_base.BaseTestCase):
         log.set_defaults(logging_context_format_string=my_default)
         self.conf([])
         self.assertEqual(self.conf.logging_context_format_string, my_default)
+
+    def test_change_default_log_level(self):
+        log.set_defaults(logging_context_format_string=None,
+                         default_log_levels=['foo=bar'])
+        self.conf([])
+        self.assertEqual(['foo=bar'], self.conf.default_log_levels)
 
 
 class LogConfigOptsTestCase(test_base.BaseTestCase):
