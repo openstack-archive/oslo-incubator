@@ -136,6 +136,11 @@ generic_log_opts = [
                 help='Log output to standard error.')
 ]
 
+_DEFAULT_LOG_LEVELS = ['amqp=WARN', 'amqplib=WARN', 'boto=WARN',
+                      'qpid=WARN', 'sqlalchemy=WARN', 'suds=INFO',
+                      'oslo.messaging=INFO', 'iso8601=WARN',
+                      'requests.packages.urllib3.connectionpool=WARN']
+
 log_opts = [
     cfg.StrOpt('logging_context_format_string',
                default='%(asctime)s.%(msecs)03d %(process)d %(levelname)s '
@@ -154,17 +159,7 @@ log_opts = [
                '%(instance)s',
                help='Prefix each line of exception output with this format.'),
     cfg.ListOpt('default_log_levels',
-                default=[
-                    'amqp=WARN',
-                    'amqplib=WARN',
-                    'boto=WARN',
-                    'qpid=WARN',
-                    'sqlalchemy=WARN',
-                    'suds=INFO',
-                    'oslo.messaging=INFO',
-                    'iso8601=WARN',
-                    'requests.packages.urllib3.connectionpool=WARN'
-                ],
+                default=_DEFAULT_LOG_LEVELS,
                 help='List of logger=LEVEL pairs.'),
     cfg.BoolOpt('publish_errors',
                 default=False,
@@ -461,10 +456,18 @@ def setup(product_name, version='unknown'):
     sys.excepthook = _create_logging_excepthook(product_name)
 
 
-def set_defaults(logging_context_format_string):
+def set_defaults(logging_context_format_string,
+                 default_log_levels=None):
+    # Just in case the caller is not setting the
+    # default_log_level. This is insurance because
+    # we introduced the default_log_level parameter
+    # later in a backwards in-compatible change
+    if not default_log_levels:
+        default_log_levels = _DEFAULT_LOG_LEVELS
     cfg.set_defaults(log_opts,
                      logging_context_format_string=
-                     logging_context_format_string)
+                     logging_context_format_string,
+                     default_log_levels=default_log_levels)
 
 
 def _find_facility_from_conf():
