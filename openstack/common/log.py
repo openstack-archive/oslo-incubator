@@ -569,9 +569,15 @@ def _setup_logging_from_conf(project, version):
 
     for pair in CONF.default_log_levels:
         mod, _sep, level_name = pair.partition('=')
-        level = logging.getLevelName(level_name)
         logger = logging.getLogger(mod)
-        logger.setLevel(level)
+        # NOTE(AAzza) in python2.6 Logger.setLevel doesn't convert string name
+        # to integer code.
+        if sys.version_info < (2, 7):
+            level = logging.getLevelName(level_name)
+            logger.setLevel(level)
+        else:
+            logger.setLevel(level_name)
+
 
 _loggers = {}
 
