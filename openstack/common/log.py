@@ -569,9 +569,8 @@ def _setup_logging_from_conf(project, version):
 
     for pair in CONF.default_log_levels:
         mod, _sep, level_name = pair.partition('=')
-        level = logging.getLevelName(level_name)
         logger = logging.getLogger(mod)
-        logger.setLevel(level)
+        logger.setLevel(level_name)
 
 _loggers = {}
 
