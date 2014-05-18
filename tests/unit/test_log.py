@@ -894,3 +894,25 @@ class MaskPasswordTestCase(test_base.BaseTestCase):
         payload = six.text_type(payload)
         expected = """{'adminPass':'***'}"""
         self.assertEqual(expected, log.mask_password(payload))
+
+        payload = ("test = 'node.session.auth.password','-v','mypassword',"
+                   "'nomask'")
+        expected = ("test = 'node.session.auth.password','-v','***',"
+                    "'nomask'")
+        self.assertEqual(expected, log.mask_password(payload))
+
+        payload = ("test = 'node.session.auth.password', '--password', "
+                   "'mypassword', 'nomask'")
+        expected = ("test = 'node.session.auth.password', '--password', "
+                    "'***', 'nomask'")
+        self.assertEqual(expected, log.mask_password(payload))
+
+        payload = "test = node.session.auth.password -v mypassword nomask"
+        expected = "test = node.session.auth.password -v *** nomask"
+        self.assertEqual(expected, log.mask_password(payload))
+
+        payload = ("test = node.session.auth.password --password mypassword "
+                   "nomask")
+        expected = ("test = node.session.auth.password --password *** "
+                    "nomask")
+        self.assertEqual(expected, log.mask_password(payload))
