@@ -59,7 +59,8 @@ _SANITIZE_PATTERNS = []
 _FORMAT_PATTERNS = [r'(%(key)s\s*[=]\s*[\"\']).*?([\"\'])',
                     r'(<%(key)s>).*?(</%(key)s>)',
                     r'([\"\']%(key)s[\"\']\s*:\s*[\"\']).*?([\"\'])',
-                    r'([\'"].*?%(key)s[\'"]\s*:\s*u?[\'"]).*?([\'"])']
+                    r'([\'"].*?%(key)s[\'"]\s*:\s*u?[\'"]).*?([\'"])',
+                    r'(%(key)s\s*--?[A-z]+\s*).*?([\s])']
 
 for key in _SANITIZE_KEYS:
     for pattern in _FORMAT_PATTERNS:
