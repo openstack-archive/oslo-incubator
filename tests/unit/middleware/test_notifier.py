@@ -16,6 +16,7 @@
 #    under the License.
 
 import mock
+import uuid
 import webob
 
 from openstack.common.middleware import notifier
@@ -43,7 +44,8 @@ class NotifierMiddlewareTest(utils.BaseTestCase):
     def test_notification(self):
         middleware = notifier.RequestNotifier(FakeApp())
         req = webob.Request.blank('/foo/bar',
-                                  environ={'REQUEST_METHOD': 'GET'})
+                                  environ={'REQUEST_METHOD': 'GET',
+                                           'HTTP_X_AUTH_TOKEN': uuid.uuid4()})
         with mock.patch('openstack.common.notifier.api.notify') as notify:
             middleware(req)
             # Check first notification with only 'request'
@@ -57,6 +59,7 @@ class NotifierMiddlewareTest(utils.BaseTestCase):
             self.assertEqual(request['PATH_INFO'], '/foo/bar')
             self.assertEqual(request['REQUEST_METHOD'], 'GET')
             self.assertIn('HTTP_X_SERVICE_NAME', request)
+            self.assertNotIn('HTTP_X_AUTH_TOKEN', request)
             self.assertFalse(any(map(lambda s: s.startswith('wsgi.'),
                                      request.keys())),
                              "WSGI fields are filtered out")
@@ -72,6 +75,7 @@ class NotifierMiddlewareTest(utils.BaseTestCase):
             self.assertEqual(request['PATH_INFO'], '/foo/bar')
             self.assertEqual(request['REQUEST_METHOD'], 'GET')
             self.assertIn('HTTP_X_SERVICE_NAME', request)
+            self.assertNotIn('HTTP_X_AUTH_TOKEN', request)
             self.assertFalse(any(map(lambda s: s.startswith('wsgi.'),
                                      request.keys())),
                              "WSGI fields are filtered out")
@@ -83,7 +87,8 @@ class NotifierMiddlewareTest(utils.BaseTestCase):
     def test_notification_response_failure(self):
         middleware = notifier.RequestNotifier(FakeFailingApp())
         req = webob.Request.blank('/foo/bar',
-                                  environ={'REQUEST_METHOD': 'GET'})
+                                  environ={'REQUEST_METHOD': 'GET',
+                                           'HTTP_X_AUTH_TOKEN': uuid.uuid4()})
         with mock.patch('openstack.common.notifier.api.notify') as notify:
             try:
                 middleware(req)
@@ -101,6 +106,7 @@ class NotifierMiddlewareTest(utils.BaseTestCase):
             self.assertEqual(request['PATH_INFO'], '/foo/bar')
             self.assertEqual(request['REQUEST_METHOD'], 'GET')
             self.assertIn('HTTP_X_SERVICE_NAME', request)
+            self.assertNotIn('HTTP_X_AUTH_TOKEN', request)
             self.assertFalse(any(map(lambda s: s.startswith('wsgi.'),
                                      request.keys())),
                              "WSGI fields are filtered out")
@@ -116,6 +122,7 @@ class NotifierMiddlewareTest(utils.BaseTestCase):
             self.assertEqual(request['PATH_INFO'], '/foo/bar')
             self.assertEqual(request['REQUEST_METHOD'], 'GET')
             self.assertIn('HTTP_X_SERVICE_NAME', request)
+            self.assertNotIn('HTTP_X_AUTH_TOKEN', request)
             self.assertFalse(any(map(lambda s: s.startswith('wsgi.'),
                                      request.keys())),
                              "WSGI fields are filtered out")
