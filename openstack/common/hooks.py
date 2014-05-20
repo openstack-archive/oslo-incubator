@@ -83,7 +83,7 @@ class HookManager(object):
             obj = extension.obj
             hook_method = getattr(obj, method_type, None)
             if hook_method:
-                msg = (_("Running %(name)s %(type)s-hook: %(obj)s") %
+                msg = ("Running %(name)s %(type)s-hook: %(obj)s" %
                        {'name': name, 'type': method_type, 'obj': obj})
                 LOG.debug(msg)
                 try:
