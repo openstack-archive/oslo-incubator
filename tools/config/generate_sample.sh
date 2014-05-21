@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 
+# Generate sample configuration for your project.
+#
+# Aside from the command line flags, it also respects a config file which
+# should be named oslo.config.generator.rc and be placed in the same directory.
+#
+# You can then export the following variables:
+# OSLO_CONFIG_GENERATOR_EXTRA_MODULES: list of modules to interrogate for options.
+# OSLO_CONFIG_GENERATOR_EXTRA_LIBRARIES: list of libraries to discover.
+# OSLO_CONFIG_GENERATOR_EXCLUDED_FILES: list of files to remove from automatic listing.
+
 print_hint() {
     echo "Try \`${0##*/} --help' for more information." >&2
 }
