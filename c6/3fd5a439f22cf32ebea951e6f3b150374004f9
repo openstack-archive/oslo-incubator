@@ -1,0 +1,13 @@
+Verified+2: Jenkins
+Code-Review+1: Joe Gordon <joe.gordon0@gmail.com>
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+2: Ben Nemec <openstack@nemebean.com>
+Workflow+1: Ben Nemec <openstack@nemebean.com>
+Code-Review+1: Paul Murray <pmurray@hp.com>
+Code-Review+1: Matthew Gilliard <matthew.gilliard@hp.com>
+Code-Review+1: ChangBo Guo(gcb) <glongwave@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Thu, 22 May 2014 22:46:55 +0000
+Reviewed-on: https://review.openstack.org/93767
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
