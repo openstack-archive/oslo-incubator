@@ -15,6 +15,7 @@
 
 import mock
 from oslotest import base as test_base
+from testtools import matchers
 
 from openstack.common.apiclient import base
 from openstack.common.apiclient import client
@@ -334,3 +335,14 @@ class CrudManagerTest(test_base.BaseTestCase):
         ret = self.tc.crud_resources.head(
             crud_resource_id=self.crud_resource_id)
         self.assertTrue(ret)
+
+    def test_find(self):
+        ret = self.tc.crud_resources.find(domain_id=self.domain_id)
+        self.assertTrue(ret)
+
+    def test_find_receives_a_NotFound_error(self):
+        e = self.assertRaises(exceptions.NotFound,
+                              self.tc.crud_resources.find,
+                              resource_id=self.crud_resource_id)
+        self.assertThat(str(e),
+                        matchers.StartsWith('No CrudResource matching '))
