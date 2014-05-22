@@ -381,7 +381,7 @@ class CrudManager(BaseManager):
                 'name': self.resource_class.__name__,
                 'args': kwargs
             }
-            raise exceptions.NotFound(404, msg)
+            raise exceptions.NotFound(msg)
         elif num > 1:
             raise exceptions.NoUniqueMatch
         else:
