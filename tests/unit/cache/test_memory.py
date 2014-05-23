@@ -82,3 +82,33 @@ class MemorycacheTest(base.CacheBaseTest):
             self.assertIsNone(self.client.get('fooo'))
             self.assertIsNone(self.client.get('foooo'))
             self.assertEqual(self.client.get('fooooo'), 'bar')
+
+    def test_unset_keys_expires(self):
+            # NOTE(kgriffs): The only way to verify the
+            # side-effects of deleting a cache entry is
+            # to use a white-box test. This test was
+            # added to verify a fix for a bug that was
+            # preventing keys from being removed from
+            # _keys_expires when the value for the
+            # key was deleted.
+
+            # NOTE(kgriffs): _keys_expires is only used
+            # to track entries with a non-zero TTL.
+            ttl = 5
+
+            now = int(time.time())
+            expiration = now + ttl
+
+            with mock.patch('time.time') as time_mock:
+                time_mock.return_value = now
+                self.client.set('foo', 'bar', ttl=ttl)
+
+                expiration = now + 5
+
+                keyset = self.client._keys_expires[expiration]
+                self.assertEqual(len(keyset), 1)
+
+                del self.client['foo']
+
+                keyset = self.client._keys_expires[expiration]
+                self.assertEqual(len(keyset), 0)
