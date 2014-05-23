@@ -79,6 +79,13 @@ M:
 S: Orphan
 F: cliutils.py
 
+== concurrency ==
+M: Andrey Kurilin <akurilin@mirantis.com>
+M: Roman Podolyaka <rpodolyaka@mirantis.com>
+M: Victor Sergeyev <vsergeyev@mirantis.com>
+S: Maintained
+F: concurrency.py
+
 == context ==
 
 M:
