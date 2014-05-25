@@ -64,7 +64,6 @@ database_opts = [
                help='Minimum number of SQL connections to keep open in a '
                     'pool'),
     cfg.IntOpt('max_pool_size',
-               default=None,
                deprecated_opts=[cfg.DeprecatedOpt('sql_max_pool_size',
                                                   group='DEFAULT'),
                                 cfg.DeprecatedOpt('sql_max_pool_size',
@@ -87,7 +86,6 @@ database_opts = [
                                                   group='DATABASE')],
                help='Interval between retries of opening a sql connection'),
     cfg.IntOpt('max_overflow',
-               default=None,
                deprecated_opts=[cfg.DeprecatedOpt('sql_max_overflow',
                                                   group='DEFAULT'),
                                 cfg.DeprecatedOpt('sqlalchemy_max_overflow',
@@ -105,7 +103,6 @@ database_opts = [
                                                    group='DEFAULT')],
                 help='Add python stack traces to SQL as comment strings'),
     cfg.IntOpt('pool_timeout',
-               default=None,
                deprecated_opts=[cfg.DeprecatedOpt('sqlalchemy_pool_timeout',
                                                   group='DATABASE')],
                help='If set, use this value for pool_timeout with sqlalchemy'),
