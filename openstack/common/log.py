@@ -638,7 +638,6 @@ class ContextFormatter(logging.Formatter):
 
         self.project = kwargs.pop('project', 'unknown')
         self.version = kwargs.pop('version', 'unknown')
-
         logging.Formatter.__init__(self, *args, **kwargs)
 
     def format(self, record):
@@ -663,14 +662,18 @@ class ContextFormatter(logging.Formatter):
                 record.__dict__[key] = ''
 
         if record.__dict__.get('request_id'):
-            self._fmt = CONF.logging_context_format_string
+            fmt = CONF.logging_context_format_string
         else:
-            self._fmt = CONF.logging_default_format_string
+            fmt = CONF.logging_default_format_string
 
         if (record.levelno == logging.DEBUG and
                 CONF.logging_debug_format_suffix):
-            self._fmt += " " + CONF.logging_debug_format_suffix
+            fmt += " " + CONF.logging_debug_format_suffix
 
+        if six.PY2:
+            self._fmt = fmt
+        else:
+            self._style = logging.PercentStyle(fmt)
         # Cache this on the record, Logger will respect our formatted copy
         if record.exc_info:
             record.exc_text = self.formatException(record.exc_info, record)
