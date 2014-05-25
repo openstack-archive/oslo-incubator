@@ -92,7 +92,6 @@ logging_cli_opts = [
                     'files. For details about logging configuration files, '
                     'see the Python logging module documentation.'),
     cfg.StrOpt('log-format',
-               default=None,
                metavar='FORMAT',
                help='DEPRECATED. '
                     'A logging.Formatter log message format string which may '
