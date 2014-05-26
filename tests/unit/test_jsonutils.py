@@ -39,10 +39,6 @@ class JSONUtilsTestMixin(object):
             is_simplejson=self.json_impl is simplejson)
         self.json_impl_mock = self.json_patcher.start()
 
-    def tearDown(self):
-        self.json_patcher.stop()
-        super(JSONUtilsTestMixin, self).tearDown()
-
     def test_dumps(self):
         self.assertEqual('{"a": "b"}', jsonutils.dumps({'a': 'b'}))
 
