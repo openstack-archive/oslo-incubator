@@ -13,6 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import mock
+
 from oslo.config import cfg
 from oslotest import base as test_base
 from oslotest import moxstubout
@@ -26,3 +28,4 @@ class BaseTestCase(test_base.BaseTestCase):
         self.stubs = moxfixture.stubs
         self.conf = conf
         self.addCleanup(self.conf.reset)
+        self.addCleanup(mock.patch.stopall)
