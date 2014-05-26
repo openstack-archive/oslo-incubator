@@ -50,8 +50,6 @@ class TestMigrationCommon(test_base.DbTestCase):
 
     def tearDown(self):
         os.rmdir(self.path)
-        self.mock_api_db.stop()
-        self.patcher_repo.stop()
         super(TestMigrationCommon, self).tearDown()
 
     def test_find_migrate_repo_path_not_found(self):
