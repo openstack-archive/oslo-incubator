@@ -143,7 +143,7 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
         elif isinstance(value, gettextutils.Message):
             return value.data
         elif hasattr(value, 'iteritems'):
-            return recursive(dict(value.iteritems()), level=level + 1)
+            return recursive(dict(six.iteritems(value)), level=level + 1)
         elif hasattr(value, '__iter__'):
             return recursive(list(value))
         elif convert_instances and hasattr(value, '__dict__'):
