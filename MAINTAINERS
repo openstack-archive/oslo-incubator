@@ -232,6 +232,7 @@ M: Flavio Percoco <flavio@redhat.com>
 M: Adam Young <ayoung@redhat.com>
 S: Maintained
 F: policy.py
+F: policy_parser.py
 
 == processutils ==
 
