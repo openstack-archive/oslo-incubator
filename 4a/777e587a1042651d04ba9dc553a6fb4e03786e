@@ -1,0 +1,16 @@
+Verified+2: Jenkins
+Code-Review+1: ayoung <ayoung@redhat.com>
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Workflow+1: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+1: David Ripton <dripton@redhat.com>
+Code-Review+1: Steve Martinelli <stevemar@ca.ibm.com>
+Code-Review+2: Ben Nemec <openstack@nemebean.com>
+Code-Review+1: Victor Sergeyev <vsergeyev@mirantis.com>
+Code-Review+1: David Stanek <dstanek@dstanek.com>
+Code-Review+1: Petr Blaho <pblaho@redhat.com>
+Code-Review+1: ChangBo Guo(gcb) <glongwave@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 27 May 2014 17:30:25 +0000
+Reviewed-on: https://review.openstack.org/73879
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
