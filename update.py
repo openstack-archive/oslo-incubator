@@ -206,6 +206,9 @@ def _copy_file(path, dest, base):
     replacements.append(('^( *)from openstack.common',
                          r'\1from ' + base + '.openstack.common'))
 
+    replacements.append(('^( *)import openstack.common',
+                         r'\1import ' + base + '.openstack.common'))
+
     replacements.append(('\'openstack\.common',
                          '\'' + base + '.openstack.common'))
 
