@@ -1,0 +1,12 @@
+Verified+2: Jenkins
+Code-Review+1: Tom Fifield <tom@openstack.org>
+Code-Review+1: Kevin L. Mitchell <kevin.mitchell@rackspace.com>
+Code-Review+2: Mark McLoughlin <markmc@redhat.com>
+Workflow+1: Mark McLoughlin <markmc@redhat.com>
+Code-Review+2: Doug Hellmann <doug.hellmann@dreamhost.com>
+Code-Review+1: Morgan Fainberg <m@metacloud.com>
+Submitted-by: Jenkins
+Submitted-at: Thu, 29 May 2014 10:50:39 +0000
+Reviewed-on: https://review.openstack.org/95860
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
