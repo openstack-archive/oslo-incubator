@@ -20,6 +20,8 @@ from oslo.config import cfg
 
 from openstack.common import timeutils
 
+from heapq import heappush
+
 memcache_opts = [
     cfg.ListOpt('memcached_servers',
                 help='Memcached servers or None for in process cache.'),
@@ -47,19 +49,23 @@ class Client(object):
     def __init__(self, *args, **kwargs):
         """Ignores the passed in args."""
         self.cache = {}
+        self.priority_queue = []
+
+    def _clean_expired_items(self):
+        """Removes items which have passed their timeout."""
+        now = timeutils.utcnow_ts()
+        # smallest first in heap
+        print now
+        print self.priority_queue
+        for timeout, key in self.priority_queue:
+            if now < timeout:
+                break
+            del self.cache[key]
+            self.priority_queue.remove((timeout, key))
 
     def get(self, key):
-        """Retrieves the value for a key or None.
-
-        This expunges expired keys during each get.
-        """
-
-        now = timeutils.utcnow_ts()
-        for k in list(self.cache):
-            (timeout, _value) = self.cache[k]
-            if timeout and now >= timeout:
-                del self.cache[k]
-
+        """Retrieves the value for a key or None."""
+        self._clean_expired_items()
         return self.cache.get(key, (0, None))[1]
 
     def set(self, key, value, time=0, min_compress_len=0):
@@ -67,6 +73,7 @@ class Client(object):
         timeout = 0
         if time != 0:
             timeout = timeutils.utcnow_ts() + time
+            heappush(self.priority_queue, (timeout, key))
         self.cache[key] = (timeout, value)
         return True
 
@@ -88,4 +95,10 @@ class Client(object):
     def delete(self, key, time=0):
         """Deletes the value associated with a key."""
         if key in self.cache:
+            (timeout, value) = self.cache[key]
+            pq_value = (timeout, key)
             del self.cache[key]
+            if timeout != 0 and pq_value in self.priority_queue:
+                self.priority_queue.remove(pq_value)
+            
+
