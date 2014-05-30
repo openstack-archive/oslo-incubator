@@ -16,6 +16,8 @@
 
 """Super simple fake memcache client."""
 
+import heapq
+
 from oslo.config import cfg
 
 from openstack.common import timeutils
@@ -47,27 +49,34 @@ class Client(object):
     def __init__(self, *args, **kwargs):
         """Ignores the passed in args."""
         self.cache = {}
+        self.priority_queue = []
+
+    def _clean_expired_items(self):
+        """Removes items which have passed their timeout."""
+        now = timeutils.utcnow_ts()
+        while self.priority_queue and self.priority_queue[0][0] <= now:
+            (t, k) = heapq.heappop(self.priority_queue)
+            del self.cache[k]
+
+    def _remove_from_pq(self, key):
+        self.priority_queue = [(t, k) for (t, k) in self.priority_queue
+                               if key != k]
+        heapq.heapify(self.priority_queue)
 
     def get(self, key):
-        """Retrieves the value for a key or None.
-
-        This expunges expired keys during each get.
-        """
-
-        now = timeutils.utcnow_ts()
-        for k in list(self.cache):
-            (timeout, _value) = self.cache[k]
-            if timeout and now >= timeout:
-                del self.cache[k]
-
-        return self.cache.get(key, (0, None))[1]
+        """Retrieves the value for a key or None."""
+        self._clean_expired_items()
+        return self.cache.get(key)
 
     def set(self, key, value, time=0, min_compress_len=0):
         """Sets the value for a key."""
         timeout = 0
+        if key in self.cache:
+            self._remove_from_pq(key)
         if time != 0:
             timeout = timeutils.utcnow_ts() + time
-        self.cache[key] = (timeout, value)
+            heapq.heappush(self.priority_queue, (timeout, key))
+        self.cache[key] = value
         return True
 
     def add(self, key, value, time=0, min_compress_len=0):
@@ -82,10 +91,11 @@ class Client(object):
         if value is None:
             return None
         new_value = int(value) + delta
-        self.cache[key] = (self.cache[key][0], str(new_value))
+        self.cache[key] = str(new_value)
         return new_value
 
     def delete(self, key, time=0):
         """Deletes the value associated with a key."""
         if key in self.cache:
             del self.cache[key]
+            self._remove_from_pq(key)

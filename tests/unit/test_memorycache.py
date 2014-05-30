@@ -53,3 +53,54 @@ class MemorycacheTest(test_base.BaseTestCase):
             self.assertEqual(self.client.get('foo'), 'bar')
             time_mock.return_value = now + 3
             self.assertIsNone(self.client.get('foo'))
+
+    def test_eviction(self):
+        now = time.time()
+        with mock.patch('time.time') as time_mock:
+            time_mock.return_value = now
+            self.client.set('foo-1', 'bar-1', time=1)
+            self.client.set('foo-2', 'bar-2', time=60)
+
+            time_mock.return_value = now + 2
+            self.assertEqual(2, len(self.client.cache))
+            self.assertEqual(2, len(self.client.priority_queue))
+            self.assertEqual('bar-2', self.client.get('foo-2'))
+            self.assertEqual(1, len(self.client.cache))
+            self.assertEqual(1, len(self.client.priority_queue))
+            self.assertEqual('bar-2', self.client.get('foo-2'))
+
+    def test_duplicate_keys(self):
+            self.client.set('foo-1', 'bar-1', time=1)
+            self.client.set('foo-1', 'bar-1', time=5)
+            self.client.set('foo-1', 'bar-1', time=1)
+            self.client.set('foo-1', 'bar-1', time=99)
+            self.assertEqual(1, len(self.client.priority_queue))
+            self.assertEqual(1, len(self.client.cache))
+
+    def test_build_cache(self):
+        """Construct a cache that will break if not heapified on
+        deletion of keys.
+        """
+        now = 0
+        with mock.patch('time.time') as time_mock:
+            time_mock.return_value = now
+            self.client.set('key-4', 'val-0', time=1)
+            self.client.set('key-5', 'val-0', time=7)
+            self.client.set('key-0', 'val-0', time=5)
+            self.client.set('key-7', 'val-0', time=5)
+            self.client.set('key-8', 'val-0', time=5)
+            self.client.set('key-1', 'val-1', time=40)
+            self.client.set('key-2', 'val-2', time=20)
+            self.client.set('key-3', 'val-3', time=10)
+            self.client.set('key-6', 'val-6', time=30)
+
+            self.client.delete('key-4')
+            self.client.delete('key-5')
+            self.client.delete('key-0')
+            self.client.delete('key-7')
+            self.client.delete('key-8')
+
+            time_mock.return_value = now + 30
+            self.assertEqual('val-1', self.client.get('key-1'))
+            self.assertEqual(1, len(self.client.priority_queue))
+            self.assertEqual(1, len(self.client.cache))
