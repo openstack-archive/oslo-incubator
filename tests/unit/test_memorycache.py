@@ -53,3 +53,18 @@ class MemorycacheTest(test_base.BaseTestCase):
             self.assertEqual(self.client.get('foo'), 'bar')
             time_mock.return_value = now + 3
             self.assertIsNone(self.client.get('foo'))
+
+    def test_eviction(self):
+        now = time.time()
+        with mock.patch('time.time') as time_mock:
+            time_mock.return_value = now
+            self.client.set('foo-1', 'bar-1', time=1)
+            self.client.set('foo-2', 'bar-2', time=60)
+
+            time_mock.return_value = now + 2
+            self.assertEqual(len(self.client.cache), 2)
+            self.assertEqual(len(self.client.priority_queue), 2)
+            self.assertEqual(self.client.get('foo-2'), 'bar-2')
+            self.assertEqual(len(self.client.cache), 1)
+            self.assertEqual(len(self.client.priority_queue), 1)
+            self.assertEqual(self.client.get('foo-2'), 'bar-2')
