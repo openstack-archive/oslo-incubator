@@ -1,6 +1,5 @@
-# -*- encoding: utf-8 -*-
 #
-# Copyright © 2013 Intel Corp.
+# Copyright (c) 2013 Intel Corp.
 #
 # Author: Lianhao Lu <lianhao.lu@intel.com>
 #
