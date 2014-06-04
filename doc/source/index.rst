@@ -9,7 +9,7 @@ Contents
 .. toctree::
    :maxdepth: 1
 
-   api/autoindex
+   sourcecode/autoindex
 
 Indices and tables
 ==================
