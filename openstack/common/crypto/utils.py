@@ -118,7 +118,7 @@ class SymmetricCrypto(object):
         """Encrypt the provided msg and returns the cyphertext optionally
         base64 encoded.
 
-        Uses AES-128-CBC with a Random IV by default.
+        Uses AES-256-CBC with a Random IV by default.
 
         The plaintext is padded to reach blocksize length.
         The last byte of the block is the length of the padding.
@@ -150,7 +150,7 @@ class SymmetricCrypto(object):
         """Decrypts the provided ciphertext, optionally base64 encoded, and
         returns the plaintext message, after padding is removed.
 
-        Uses AES-128-CBC with an IV by default.
+        Uses AES-256-CBC with an IV by default.
 
         :param key: The Encryption key.
         :param msg: the ciphetext, the first block is the IV
