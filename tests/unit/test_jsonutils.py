@@ -58,6 +58,11 @@ class JSONUtilsTestMixin(object):
         i18n_str = i18n_str_unicode.encode('utf-8')
         self.assertIsInstance(jsonutils.loads(i18n_str), six.text_type)
 
+    def test_loads_with_kwargs(self):
+        jsontext = u'{"foo": 3}'
+        result = jsonutils.loads(jsontext, parse_int=lambda x: 5)
+        self.assertEqual(5, result['foo'])
+
     def test_load(self):
 
         jsontext = u'{"a": "\u0442\u044d\u0441\u0442"}'
