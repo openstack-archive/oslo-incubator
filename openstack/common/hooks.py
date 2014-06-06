@@ -25,21 +25,25 @@ Hooks.
 
 Example Hook object:
 
-class MyHook(object):
-    def pre(self, *args, **kwargs):
-        # do stuff before wrapped callable runs
+.. code-block:: python
 
-    def post(self, rv, *args, **kwargs):
-        # do stuff after wrapped callable runs
+   class MyHook(object):
+       def pre(self, *args, **kwargs):
+           # do stuff before wrapped callable runs
+
+       def post(self, rv, *args, **kwargs):
+           # do stuff after wrapped callable runs
 
 Example Hook object with function parameters:
 
-class MyHookWithFunction(object):
-    def pre(self, f, *args, **kwargs):
-        # do stuff with wrapped function info
-    def post(self, f, *args, **kwards):
-        # do stuff with wrapped function info
+.. code-block:: python
 
+   class MyHookWithFunction(object):
+       def pre(self, f, *args, **kwargs):
+           # do stuff with wrapped function info
+
+       def post(self, f, *args, **kwards):
+           # do stuff with wrapped function info
 """
 
 import functools

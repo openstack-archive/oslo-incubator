@@ -223,6 +223,8 @@ def find_resource(manager, name_or_id, **find_args):
     Used as a helper for the _find_* methods.
     Example:
 
+    .. code-block:: python
+
         def _find_hypervisor(cs, hypervisor):
             #Get a hypervisor by name or ID.
             return cliutils.find_resource(cs.hypervisors, hypervisor)
@@ -287,9 +289,12 @@ def service_type(stype):
     """Adds 'service_type' attribute to decorated function.
 
     Usage:
-        @service_type('volume')
-        def mymethod(f):
-            ...
+
+    .. code-block:: python
+
+       @service_type('volume')
+       def mymethod(f):
+       ...
     """
     def inner(f):
         f.service_type = stype
