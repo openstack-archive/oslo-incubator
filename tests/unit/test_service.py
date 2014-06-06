@@ -33,10 +33,10 @@ from eventlet import event
 import mock
 import mox
 from oslotest import base as test_base
+from oslotest import moxstubout
 
 from openstack.common import eventlet_backdoor
 from openstack.common.fixture import config
-from openstack.common.fixture import moxstubout
 from openstack.common import log as logging
 from openstack.common.notifier import api as notifier_api
 from openstack.common import service
