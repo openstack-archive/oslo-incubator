@@ -56,8 +56,7 @@ class TranslatorFactory(object):
         """
         self.domain = domain
         self.lazy = lazy
-        if localedir is None:
-            localedir = os.environ.get(domain.upper() + '_LOCALEDIR')
+        localedir = localedir or os.environ.get(domain.upper() + '_LOCALEDIR')
         self.localedir = localedir
 
     def _make_translation_func(self, domain=None):
@@ -73,18 +72,12 @@ class TranslatorFactory(object):
         catalog.
 
         """
-        if domain is None:
-            domain = self.domain
+        domain = domain or self.domain
         if self.lazy:
             return functools.partial(Message, domain=domain)
-        t = gettext.translation(
-            domain,
-            localedir=self.localedir,
-            fallback=True,
-        )
-        if six.PY3:
-            return t.gettext
-        return t.ugettext
+        t = gettext.translation(domain, localedir=self.localedir,
+                                fallback=True)
+        return t.gettext if six.PY3 else t.ugettext
 
     @property
     def primary(self):
@@ -212,8 +205,7 @@ class Message(six.text_type):
         # If the base msgtext is not given, we use the default translation
         # of the msgid (which is in English) just in case the system locale is
         # not English, so that the base text will be in that locale by default.
-        if not msgtext:
-            msgtext = Message._translate_msgid(msgid, domain)
+        msgtext = msgtext or Message._translate_msgid(msgid, domain)
         # We want to initialize the parent unicode with the actual object that
         # would have been plain unicode if 'Message' was not enabled.
         msg = super(Message, cls).__new__(cls, msgtext)
@@ -254,20 +246,14 @@ class Message(six.text_type):
         if not desired_locale:
             system_locale = locale.getdefaultlocale()
             # If the system locale is not available to the runtime use English
-            if not system_locale[0]:
-                desired_locale = 'en_US'
-            else:
-                desired_locale = system_locale[0]
+            desired_locale = system_locale[0] if system_locale[0] else 'en_US'
 
         locale_dir = os.environ.get(domain.upper() + '_LOCALEDIR')
         lang = gettext.translation(domain,
                                    localedir=locale_dir,
                                    languages=[desired_locale],
                                    fallback=True)
-        if six.PY3:
-            translator = lang.gettext
-        else:
-            translator = lang.ugettext
+        translator = lang.gettext if six.PY3 else lang.ugettext
 
         translated_message = translator(msgid)
         return translated_message
@@ -300,10 +286,10 @@ class Message(six.text_type):
             # Copy each item in case one does not support deep copy.
             params = {}
             if isinstance(self.params, dict):
-                for key, val in self.params.items():
-                    params[key] = self._copy_param(val)
-            for key, val in other.items():
-                params[key] = self._copy_param(val)
+                params = dict((key, self._copy_param(val))
+                              for key, val in self.params.items())
+            params.update((key, self._copy_param(val))
+                          for key, val in other.items())
         else:
             params = self._copy_param(other)
         return params
@@ -357,9 +343,8 @@ def get_available_languages(domain):
                         getattr(localedata, 'locale_identifiers'))
     locale_identifiers = list_identifiers()
 
-    for i in locale_identifiers:
-        if find(i) is not None:
-            language_list.append(i)
+    language_list.extend([identifier for identifier in locale_identifiers
+                          if find(identifier)])
 
     # NOTE(luisg): Babel>=1.0,<1.3 has a bug where some OpenStack supported
     # locales (e.g. 'zh_CN', and 'zh_TW') aren't supported even though they
@@ -423,10 +408,8 @@ def _translate_args(args, desired_locale=None):
     if isinstance(args, tuple):
         return tuple(translate(v, desired_locale) for v in args)
     if isinstance(args, dict):
-        translated_dict = {}
-        for (k, v) in six.iteritems(args):
-            translated_v = translate(v, desired_locale)
-            translated_dict[k] = translated_v
+        translated_dict = dict((key, translate(value, desired_locale))
+                               for (key, value) in six.iteritems(args))
         return translated_dict
     return translate(args, desired_locale)
 
