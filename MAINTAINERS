@@ -312,6 +312,12 @@ M: ChangBo Guo <glongwave@gmail.com>
 S: Maintained
 F: units.py
 
+== uriutils ==
+
+M: Ken'ichi Ohmichi <oomichi@mxs.nes.nec.co.jp>
+S: Maintained
+F: uriutils.py
+
 == uuidutils ==
 
 M: Zhongyue Luo <zhongyue.nah@intel.com>
