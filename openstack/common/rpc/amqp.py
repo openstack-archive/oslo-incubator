@@ -551,7 +551,7 @@ _reply_proxy_create_sem = semaphore.Semaphore()
 
 def multicall(conf, context, topic, msg, timeout, connection_pool):
     """Make a call that returns multiple times."""
-    LOG.debug('Making synchronous call on %s ...', topic)
+    LOG.debug('Making synchronous call %s on %s...', msg['method'], topic)
     msg_id = uuid.uuid4().hex
     msg.update({'_msg_id': msg_id})
     LOG.debug('MSG_ID is %s' % (msg_id))
@@ -575,12 +575,13 @@ def call(conf, context, topic, msg, timeout, connection_pool):
     rv = list(rv)
     if not rv:
         return
-    return rv[-1]
-
+    rv = rv[-1]
+    LOG.debug('Synchronous call %s received %s', msg['method'], rv)
+    return rv
 
 def cast(conf, context, topic, msg, connection_pool):
     """Sends a message on a topic without waiting for a response."""
-    LOG.debug('Making asynchronous cast on %s...', topic)
+    LOG.debug('Making asynchronous cast %s on %s...', msg['method'], topic)
     _add_unique_id(msg)
     pack_context(msg, context)
     with ConnectionContext(conf, connection_pool) as conn:
@@ -589,7 +590,7 @@ def cast(conf, context, topic, msg, connection_pool):
 
 def fanout_cast(conf, context, topic, msg, connection_pool):
     """Sends a message on a fanout exchange without waiting for a response."""
-    LOG.debug('Making asynchronous fanout cast...')
+    LOG.debug('Making asynchronous fanout cast %s...', msg['method'])
     _add_unique_id(msg)
     pack_context(msg, context)
     with ConnectionContext(conf, connection_pool) as conn:
