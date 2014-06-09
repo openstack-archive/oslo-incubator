@@ -22,15 +22,15 @@ There are two use cases for the ConfigFilter class:
 2. Prevent private configuration opts from being visible to modules
    other than the one which registered it.
 
-Cross-Module Option Depencies
------------------------------
+Cross-Module Option Dependencies
+--------------------------------
 
 When using the global cfg.CONF object, it is quite common for a module
 to require the existence of configuration options registered by other
 modules.
 
 For example, if module 'foo' registers the 'blaa' option and the module
-'bar' uses the 'blaa' option then 'bar' might do:
+'bar' uses the 'blaa' option then 'bar' might do::
 
   import foo
 
@@ -40,7 +40,7 @@ However, it's completely non-obvious why foo is being imported (is it
 unused, can we remove the import) and where the 'blaa' option comes from.
 
 The CONF.import_opt() method allows such a dependency to be explicitly
-declared:
+declared::
 
   CONF.import_opt('blaa', 'foo')
   print(CONF.blaa)
@@ -53,7 +53,7 @@ get away with only declaring a dependency on a single option.
 
 The ConfigFilter class provides a way to ensure that options are not
 available unless they have been registered in the module or imported using
-import_opt() e.g. with:
+import_opt() e.g. with::
 
   CONF = ConfigFilter(cfg.CONF)
   CONF.import_opt('blaa', 'foo')
