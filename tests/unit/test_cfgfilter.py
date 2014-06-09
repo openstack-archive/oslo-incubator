@@ -165,6 +165,86 @@ class RegisterTestCase(BaseTestCase):
         self.assertEqual(0, len(self.fconf))
         self.assertRaises(cfg.NoSuchOptError, getattr, self.fconf, 'foo')
 
+    def test_already_registered_opt(self):
+        self.conf.register_opt(cfg.StrOpt('foo'))
+        self.fconf.register_opt(cfg.StrOpt('foo'))
+
+        self.assertIn('foo', self.conf)
+        self.assertEqual(1, len(self.conf))
+        self.assertIsNone(self.conf.foo)
+        self.assertIn('foo', self.fconf)
+        self.assertEqual(1, len(self.fconf))
+        self.assertIsNone(self.fconf.foo)
+
+        self.conf.set_override('foo', 'bar')
+
+        self.assertEqual('bar', self.conf.foo)
+        self.assertEqual('bar', self.fconf.foo)
+
+    def test_already_registered_opts(self):
+        self.conf.register_opts([cfg.StrOpt('foo'),
+                                 cfg.StrOpt('fu')])
+        self.fconf.register_opts([cfg.StrOpt('foo'),
+                                  cfg.StrOpt('bu')])
+
+        self.assertIn('foo', self.conf)
+        self.assertIn('fu', self.conf)
+        self.assertNotIn('bu', self.conf)
+        self.assertEqual(2, len(self.conf))
+        self.assertIsNone(self.conf.foo)
+        self.assertIsNone(self.conf.fu)
+        self.assertIn('foo', self.fconf)
+        self.assertIn('bu', self.fconf)
+        self.assertNotIn('fu', self.fconf)
+        self.assertEqual(2, len(self.fconf))
+        self.assertIsNone(self.fconf.foo)
+        self.assertIsNone(self.fconf.bu)
+
+        self.conf.set_override('foo', 'bar')
+
+        self.assertEqual('bar', self.conf.foo)
+        self.assertEqual('bar', self.fconf.foo)
+
+    def test_already_registered_cli_opt(self):
+        self.conf.register_cli_opt(cfg.StrOpt('foo'))
+        self.fconf.register_cli_opt(cfg.StrOpt('foo'))
+
+        self.assertIn('foo', self.conf)
+        self.assertEqual(1, len(self.conf))
+        self.assertIsNone(self.conf.foo)
+        self.assertIn('foo', self.fconf)
+        self.assertEqual(1, len(self.fconf))
+        self.assertIsNone(self.fconf.foo)
+
+        self.conf.set_override('foo', 'bar')
+
+        self.assertEqual('bar', self.conf.foo)
+        self.assertEqual('bar', self.fconf.foo)
+
+    def test_already_registered_cli_opts(self):
+        self.conf.register_cli_opts([cfg.StrOpt('foo'),
+                                     cfg.StrOpt('fu')])
+        self.fconf.register_cli_opts([cfg.StrOpt('foo'),
+                                      cfg.StrOpt('bu')])
+
+        self.assertIn('foo', self.conf)
+        self.assertIn('fu', self.conf)
+        self.assertNotIn('bu', self.conf)
+        self.assertEqual(2, len(self.conf))
+        self.assertIsNone(self.conf.foo)
+        self.assertIsNone(self.conf.fu)
+        self.assertIn('foo', self.fconf)
+        self.assertIn('bu', self.fconf)
+        self.assertNotIn('fu', self.fconf)
+        self.assertEqual(2, len(self.fconf))
+        self.assertIsNone(self.fconf.foo)
+        self.assertIsNone(self.fconf.bu)
+
+        self.conf.set_override('foo', 'bar')
+
+        self.assertEqual('bar', self.conf.foo)
+        self.assertEqual('bar', self.fconf.foo)
+
 
 class ImportTestCase(BaseTestCase):
 

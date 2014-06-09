@@ -176,6 +176,15 @@ class ConfigFilter(collections.Mapping):
                 len(self._imported_opts) +
                 len(self._imported_groups))
 
+    @staticmethod
+    def _already_registered(conf, opt, group=None):
+        group_name = group.name if isinstance(group, cfg.OptGroup) else group
+        return ((group_name is None and
+                 opt.dest in conf) or
+                (group_name is not None and
+                 group_name in conf and
+                 opt.dest in conf[group_name]))
+
     def register_opt(self, opt, group=None):
         """Register an option schema.
 
@@ -184,11 +193,17 @@ class ConfigFilter(collections.Mapping):
         :return: False if the opt was already registered, True otherwise
         :raises: DuplicateOptError
         """
-        return self._fconf.register_opt(opt, group)
+        if self._already_registered(self._conf, opt, group):
+            ret = self._conf.register_opt(opt, group)
+            self._import_opt(opt.dest, group)
+            return ret
+        else:
+            return self._fconf.register_opt(opt, group)
 
     def register_opts(self, opts, group=None):
         """Register multiple option schemas at once."""
-        return self._fconf.register_opts(opts, group)
+        for opt in opts:
+            self.register_opt(opt, group)
 
     def register_cli_opt(self, opt, group=None):
         """Register a CLI option schema.
@@ -198,11 +213,17 @@ class ConfigFilter(collections.Mapping):
         :return: False if the opt was already register, True otherwise
         :raises: DuplicateOptError, ArgsAlreadyParsedError
         """
-        return self._fconf.register_cli_opt(opt, group)
+        if self._already_registered(self._conf, opt, group):
+            ret = self._conf.register_cli_opt(opt, group)
+            self._import_opt(opt.dest, group)
+            return ret
+        else:
+            return self._fconf.register_cli_opt(opt, group)
 
     def register_cli_opts(self, opts, group=None):
         """Register multiple CLI option schemas at once."""
-        return self._fconf.register_cli_opts(opts, group)
+        for opt in opts:
+            self.register_cli_opt(opt, group)
 
     def register_group(self, group):
         """Register an option group.
