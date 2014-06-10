@@ -12,6 +12,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+import collections
 
 from oslotest import base as test_base
 
@@ -119,6 +120,16 @@ class TestClient(client.BaseClient):
         self.crud_resources = CrudResourceManager(self)
 
 
+class ManagerWithoutCompletionCache(object):
+    def __init__(self):
+        self.cache = collections.defaultdict(list)
+
+
+class ManagerWithCompletionCache(ManagerWithoutCompletionCache):
+    def write_to_completion_cache(self, cache_type, val):
+        self.cache[cache_type].append(val)
+
+
 class ResourceTest(test_base.BaseTestCase):
 
     def test_resource_repr(self):
@@ -135,6 +146,43 @@ class ResourceTest(test_base.BaseTestCase):
         self.assertIsNone(r.human_id)
         r = HumanResource(None, {"name": "1"})
         self.assertEqual(r.human_id, "1")
+
+    def test_write_to_cache_with_manager_that_supports_it(self):
+        """If a resource is using a `Manager` with a completion cache, then
+        when the resource is created, it should write its UUID, and
+        optionally, its human-id to the completion cache.
+        """
+        fake_uuid = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+        fake_uuid2 = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
+
+        manager = ManagerWithCompletionCache()
+
+        self.assertEqual({}, manager.cache)
+        r = base.Resource(manager, {"id": fake_uuid})
+        self.assertEqual({'uuid': [fake_uuid]}, manager.cache)
+
+        r = HumanResource(manager, {"id": fake_uuid2,
+                                    "name": "this is a resource"})
+        self.assertEqual({'uuid': [fake_uuid, fake_uuid2],
+                          'human_id': ['this-is-a-resource']}, manager.cache)
+
+    def test_write_to_cache_with_manager_that_doesnt_support_it(self):
+        """If a resource is using a `Manager` that doesn't have a
+        `write_to_completion_cache` method, then it should gracefully ignore
+        it.
+        """
+        fake_uuid = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+        fake_uuid2 = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
+
+        manager = ManagerWithoutCompletionCache()
+
+        self.assertEqual({}, manager.cache)
+        r = base.Resource(manager, {"id": fake_uuid})
+        self.assertEqual({}, manager.cache)
+
+        r = HumanResource(manager, {"id": fake_uuid2,
+                                    "name": "this is a resource"})
+        self.assertEqual({}, manager.cache)
 
 
 class BaseManagerTest(test_base.BaseTestCase):
