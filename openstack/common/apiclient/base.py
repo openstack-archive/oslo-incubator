@@ -448,9 +448,13 @@ class Resource(object):
     def human_id(self):
         """Human-readable ID which can be used for bash completion.
         """
-        if self.NAME_ATTR in self.__dict__ and self.HUMAN_ID:
-            return strutils.to_slug(getattr(self, self.NAME_ATTR))
-        return None
+        humanized_id = None
+
+        val = getattr(self, self.NAME_ATTR, None)
+        if self.HUMAN_ID and val:
+            humanized_id = strutils.to_slug(val)
+
+        return humanized_id
 
     def _add_details(self, info):
         for (k, v) in six.iteritems(info):
