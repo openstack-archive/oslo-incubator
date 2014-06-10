@@ -18,6 +18,7 @@
 
 import logging
 import re
+import warnings
 
 import sqlalchemy
 from sqlalchemy import Boolean
@@ -45,6 +46,11 @@ from openstack.common import timeutils
 LOG = logging.getLogger(__name__)
 
 _DBURL_REGEX = re.compile(r"[^:]+://([^:]+):([^@]+)@.+")
+
+# The migration.changeset module turns on deprecation warnings which
+# is probably a good thing for migration scripts, but is unnecessary
+# here.
+warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 
 def sanitize_db_url(url):
