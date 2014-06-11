@@ -1,0 +1,12 @@
+Verified+2: Jenkins
+Code-Review+1: Doug Hellmann <doug.hellmann@dreamhost.com>
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Workflow+1: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+2: Ben Nemec <openstack@nemebean.com>
+Code-Review+1: Alex Gaynor <alex.gaynor@gmail.com>
+Code-Review+1: ChangBo Guo(gcb) <glongwave@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 11 Jun 2014 11:35:23 +0000
+Reviewed-on: https://review.openstack.org/91951
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
