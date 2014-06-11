@@ -27,24 +27,24 @@ LOG = logging.getLogger(__name__)
 
 def link_request_ids(context, source_id, target_id=None, stage=None,
                      target_name=None, notifier=None):
-    """Links the Request ID from the Source service to
-       the Request ID returned from the Target service.
+    """Links the Request ID from the Source service to the Request ID returned
+    from the Target service.
 
-       Linkages are logged and emitted as INFO notifications.
+    Linkages are logged and emitted as INFO notifications.
 
-       :params context: context object
-       :params source_id: the Request ID of the source
-       :params target_id: the Request ID of the target
-       :params stage: optional event name extension to
-                      indicate which part of the linkage
-                      this is.
-       :params target_name: human readable name of the
-                            target system you are talking to.
-       :params notifier: notifier object
+    :params context: context object
+    :params source_id: the Request ID of the source
+    :params target_id: the Request ID of the target
+    :params stage: optional event name extension to indicate which part of the
+      linkage this is.
+    :params target_name: human readable name of the target system you are
+      talking to.
+    :params notifier: notifier object
 
-       A typical use case is: System A asking System B
-       to perform some action. The linkages might look
-       like this:
+    A typical use case is: System A asking System B to perform some action. The
+    linkages might look like this:
+
+    .. code-block:: python
 
        link_request_ids(sys_A.request_ID, stage="start")
        # send request to System B and get request ID
@@ -53,7 +53,10 @@ def link_request_ids(context, source_id, target_id=None, stage=None,
        link_request_ids(sys_A.request_ID, target_id=sys_B.request.ID,
                         stage="end")
 
-       But, it could be as simple as:
+    But, it could be as simple as:
+
+    .. code-block:: python
+
        link_request_ids(sys_A.request_ID, target_id=sys_B.request.ID)
        """
 
