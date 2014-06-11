@@ -77,6 +77,20 @@ class RequestContext(object):
                 'instance_uuid': self.instance_uuid,
                 'user_identity': user_idt}
 
+    @classmethod
+    def from_dict(cls, ctx):
+        return cls(
+            ctx.get("auth_token"),
+            ctx.get("user"),
+            ctx.get("tenant"),
+            ctx.get("domain"),
+            ctx.get("user_domain"),
+            ctx.get("project_domain"),
+            ctx.get("is_admin", False),
+            ctx.get("read_only", False),
+            ctx.get("show_deleted", False),
+            ctx.get("request_id"),
+            ctx.get("instance_uuid"))
 
 def get_admin_context(show_deleted=False):
     context = RequestContext(None,
