@@ -71,7 +71,7 @@ def periodic_task(*args, **kwargs):
             f._periodic_enabled = kwargs.pop('enabled', True)
 
         # Control frequency
-        f._periodic_spacing = kwargs.pop('spacing', 0)
+        f._periodic_spacing = kwargs.pop('spacing', DEFAULT_INTERVAL)
         f._periodic_immediate = kwargs.pop('run_immediately', False)
         if f._periodic_immediate:
             f._periodic_last_run = None
@@ -142,6 +142,13 @@ class _PeriodicTasksMeta(type):
                 cls._periodic_spacing[name] = task._periodic_spacing
 
 
+def _nearest_boundary(last_run, spacing):
+    current_time = time.time()
+    delta = current_time - last_run
+    offset = delta % spacing
+    return current_time - offset
+
+
 @six.add_metaclass(_PeriodicTasksMeta)
 class PeriodicTasks(object):
     def __init__(self):
@@ -163,13 +170,14 @@ class PeriodicTasks(object):
             idle_for = min(idle_for, spacing)
             if last_run is not None:
                 delta = last_run + spacing - time.time()
-                if delta > 0.2:
+                if delta > 0:
                     idle_for = min(idle_for, delta)
                     continue
 
             LOG.debug("Running periodic task %(full_task_name)s",
                       {"full_task_name": full_task_name})
-            self._periodic_last_run[task_name] = time.time()
+            self._periodic_last_run[task_name] = _nearest_boundary(
+                last_run, spacing)
 
             try:
                 task(self, context)
