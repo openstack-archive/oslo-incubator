@@ -151,10 +151,12 @@ class OpportunisticTestCase(DbTestCase):
 
 class MySQLOpportunisticFixture(OpportunisticFixture):
     DRIVER = 'mysql'
+    DBNAME = ''
 
 
 class PostgreSQLOpportunisticFixture(OpportunisticFixture):
     DRIVER = 'postgresql'
+    DBNAME = 'postgres'
 
 
 class MySQLOpportunisticTestCase(OpportunisticTestCase):
