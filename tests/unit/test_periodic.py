@@ -30,70 +30,120 @@ class AnException(Exception):
     pass
 
 
-class AService(periodic_task.PeriodicTasks):
-
-    def __init__(self):
-        super(AService, self).__init__()
-        self.called = {'doit': 0, 'urg': 0, 'ticks': 0, 'tocks': 0}
-
-    @periodic_task.periodic_task
-    def doit(self, context):
-        self.called['doit'] += 1
-
-    @periodic_task.periodic_task
-    def crashit(self, context):
-        self.called['urg'] += 1
-        raise AnException('urg')
-
-    @periodic_task.periodic_task(spacing=10 + periodic_task.DEFAULT_INTERVAL,
-                                 run_immediately=True)
-    def doit_with_ticks(self, context):
-        self.called['ticks'] += 1
-
-    @periodic_task.periodic_task(spacing=10 + periodic_task.DEFAULT_INTERVAL)
-    def doit_with_tocks(self, context):
-        self.called['tocks'] += 1
-
-
 class PeriodicTasksTestCase(test_base.BaseTestCase):
     """Test cases for PeriodicTasks."""
 
     @mock.patch('time.time')
     def test_called_thrice(self, mock_time):
-        serv = AService()
-        now = serv._periodic_last_run['doit_with_tocks']
 
-        time = now + periodic_task.DEFAULT_INTERVAL
+        time = 340
+        mock_time.return_value = time
+
+        # Class inside test def to mock 'time.time' in
+        # the periodic task decorator
+        class AService(periodic_task.PeriodicTasks):
+            def __init__(self):
+                super(AService, self).__init__()
+                self.called = {'doit': 0, 'urg': 0, 'ticks': 0, 'tocks': 0}
+
+            @periodic_task.periodic_task
+            def doit(self, context):
+                self.called['doit'] += 1
+
+            @periodic_task.periodic_task
+            def crashit(self, context):
+                self.called['urg'] += 1
+                raise AnException('urg')
+
+            @periodic_task.periodic_task(
+                spacing=10 + periodic_task.DEFAULT_INTERVAL,
+                run_immediately=True)
+            def doit_with_ticks(self, context):
+                self.called['ticks'] += 1
+
+            @periodic_task.periodic_task(
+                spacing=10 + periodic_task.DEFAULT_INTERVAL)
+            def doit_with_tocks(self, context):
+                self.called['tocks'] += 1
+
+        serv = AService()
+        serv.run_periodic_tasks(None)
+        # Time: 340
+        self.assertEqual(serv.called['doit'], 0)
+        self.assertEqual(serv.called['urg'], 0)
+        # New last run will be 350
+        self.assertEqual(serv.called['ticks'], 1)
+        self.assertEqual(serv.called['tocks'], 0)
+
+        time = time + periodic_task.DEFAULT_INTERVAL
+        mock_time.return_value = time
+        serv.run_periodic_tasks(None)
+
+        # Time:400
+        # New Last run: 420
+        self.assertEqual(serv.called['doit'], 1)
+        self.assertEqual(serv.called['urg'], 1)
+        # Closest multiple of 70 is 420
+        self.assertEqual(serv.called['ticks'], 1)
+        self.assertEqual(serv.called['tocks'], 0)
+
+        time = time + periodic_task.DEFAULT_INTERVAL / 2
         mock_time.return_value = time
         serv.run_periodic_tasks(None)
         self.assertEqual(serv.called['doit'], 1)
         self.assertEqual(serv.called['urg'], 1)
-        self.assertEqual(serv.called['ticks'], 1)
-        self.assertEqual(serv.called['tocks'], 0)
+        self.assertEqual(serv.called['ticks'], 2)
+        self.assertEqual(serv.called['tocks'], 1)
 
-        time = time + 9 + periodic_task.DEFAULT_INTERVAL
+        time = time + periodic_task.DEFAULT_INTERVAL
         mock_time.return_value = time
         serv.run_periodic_tasks(None)
         self.assertEqual(serv.called['doit'], 2)
         self.assertEqual(serv.called['urg'], 2)
-        # doit_with_ticks will only be called the first time because its
-        # spacing time interval will not have elapsed between the calls.
-        self.assertEqual(serv.called['ticks'], 1)
-        # doit_with_tocks will run since idle_for is equal to DEFAULT_INTERVAL
-        # and the task processor will pick the minimum of those two to
-        # determine when to run, and the idle time will have passed.
-        self.assertEqual(serv.called['tocks'], 1)
-
-        time = time + 10 + periodic_task.DEFAULT_INTERVAL
-        mock_time.return_value = time
-        serv.run_periodic_tasks(None)
-        self.assertEqual(serv.called['doit'], 3)
-        self.assertEqual(serv.called['urg'], 3)
-        self.assertEqual(serv.called['ticks'], 2)
+        self.assertEqual(serv.called['ticks'], 3)
         self.assertEqual(serv.called['tocks'], 2)
 
     @mock.patch('time.time')
+    def test_called_correct(self, mock_time):
+
+        time = 360444
+        mock_time.return_value = time
+
+        test_spacing = 9
+
+        # Class inside test def to mock 'time.time' in
+        # the periodic task decorator
+        class AService(periodic_task.PeriodicTasks):
+            def __init__(self):
+                super(AService, self).__init__()
+                self.called = {'ticks': 0}
+
+            @periodic_task.periodic_task(spacing=test_spacing)
+            def tick(self, context):
+                self.called['ticks'] += 1
+
+        serv = AService()
+        for i in range(200):
+            serv.run_periodic_tasks(None)
+            self.assertEqual(serv.called['ticks'], int(i / test_spacing))
+            time += 1
+            mock_time.return_value = time
+
+    @mock.patch('time.time')
     def test_raises(self, mock_time):
+        time = 230000
+        mock_time.return_value = time
+
+        class AService(periodic_task.PeriodicTasks):
+            def __init__(self):
+                super(AService, self).__init__()
+                self.called = {'urg': 0, }
+
+            @periodic_task.periodic_task
+            def crashit(self, context):
+                self.called['urg'] += 1
+                raise AnException('urg')
+
         serv = AService()
         now = serv._periodic_last_run['crashit']
 
@@ -278,3 +328,26 @@ class ManagerTestCase(test_base.BaseTestCase):
 
         m = Manager()
         self.assertEqual([], m._periodic_tasks)
+
+    @mock.patch('time.time')
+    @mock.patch('random.random')
+    def test_nearest_boundary(self, mock_random, mock_time):
+        mock_time.return_value = 19
+        mock_random.return_value = 0
+        self.assertEqual(17, periodic_task._nearest_boundary(10, 7))
+        mock_time.return_value = 28
+        self.assertEqual(27, periodic_task._nearest_boundary(13, 7))
+        mock_time.return_value = 1841
+        self.assertEqual(1837, periodic_task._nearest_boundary(781, 88))
+        mock_time.return_value = 1835
+        self.assertEqual(mock_time.return_value,
+                         periodic_task._nearest_boundary(None, 88))
+
+        # Add 5% jitter
+        mock_random.return_value = 1.0
+        mock_time.return_value = 1300
+        self.assertEqual(1200 + 10, periodic_task._nearest_boundary(1000, 200))
+        # Add 2.5% jitter
+        mock_random.return_value = 0.5
+        mock_time.return_value = 1300
+        self.assertEqual(1200 + 5, periodic_task._nearest_boundary(1000, 200))
