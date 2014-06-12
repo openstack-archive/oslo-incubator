@@ -142,6 +142,22 @@ class _PeriodicTasksMeta(type):
                 cls._periodic_spacing[name] = task._periodic_spacing
 
 
+def _nearest_boundary(last_run, spacing):
+    """Find nearest boundary which is in the past, which is a multiple of the
+    spacing with the last run as an offset.
+
+    Eg if last run was 10 and spacing was 7, the new last run could be: 17, 24,
+    31, 38...
+
+    """
+    current_time = time.time()
+    if last_run is None:
+        return current_time
+    delta = current_time - last_run
+    offset = delta % spacing
+    return current_time - offset
+
+
 @six.add_metaclass(_PeriodicTasksMeta)
 class PeriodicTasks(object):
     def __init__(self):
@@ -163,13 +179,14 @@ class PeriodicTasks(object):
             idle_for = min(idle_for, spacing)
             if last_run is not None:
                 delta = last_run + spacing - time.time()
-                if delta > 0.2:
+                if delta > 0:
                     idle_for = min(idle_for, delta)
                     continue
 
             LOG.debug("Running periodic task %(full_task_name)s",
                       {"full_task_name": full_task_name})
-            self._periodic_last_run[task_name] = time.time()
+            self._periodic_last_run[task_name] = _nearest_boundary(
+                last_run, spacing)
 
             try:
                 task(self, context)
