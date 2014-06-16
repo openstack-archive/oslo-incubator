@@ -116,7 +116,6 @@ class RpcQpidTestCase(tests.utils.BaseTestCase):
         self.mock_connection = self.mox.CreateMock(self.orig_connection)
         self.mock_session = self.mox.CreateMock(self.orig_session)
 
-        self.mock_connection.opened().AndReturn(False)
         self.mock_connection.open()
         self.mock_connection.session().AndReturn(self.mock_session)
         self.mock_connection.close()
@@ -133,7 +132,6 @@ class RpcQpidTestCase(tests.utils.BaseTestCase):
         self.mock_session = self.mox.CreateMock(self.orig_session)
         self.mock_receiver = self.mox.CreateMock(self.orig_receiver)
 
-        self.mock_connection.opened().AndReturn(False)
         self.mock_connection.open()
         self.mock_connection.session().AndReturn(self.mock_session)
         if fanout:
@@ -197,7 +195,6 @@ class RpcQpidTestCase(tests.utils.BaseTestCase):
         self.mock_session = self.mox.CreateMock(self.orig_session)
         self.mock_receiver = self.mox.CreateMock(self.orig_receiver)
 
-        self.mock_connection.opened().AndReturn(False)
         self.mock_connection.open()
         self.mock_connection.session().AndReturn(self.mock_session)
         if topology_version == 1:
@@ -240,7 +237,6 @@ class RpcQpidTestCase(tests.utils.BaseTestCase):
         self.mock_session = self.mox.CreateMock(self.orig_session)
         self.mock_receiver = self.mox.CreateMock(self.orig_receiver)
 
-        self.mock_connection.opened().AndReturn(False)
         self.mock_connection.open()
         self.mock_connection.session().AndReturn(self.mock_session)
         if topology_version == 1:
@@ -286,7 +282,6 @@ class RpcQpidTestCase(tests.utils.BaseTestCase):
         self.mock_session = self.mox.CreateMock(self.orig_session)
         self.mock_receiver = self.mox.CreateMock(self.orig_receiver)
 
-        self.mock_connection.opened().AndReturn(False)
         self.mock_connection.open()
         self.mock_connection.session().AndReturn(self.mock_session)
         if topology_version == 1:
@@ -338,7 +333,6 @@ class RpcQpidTestCase(tests.utils.BaseTestCase):
         self.mock_session = self.mox.CreateMock(self.orig_session)
         self.mock_sender = self.mox.CreateMock(self.orig_sender)
 
-        self.mock_connection.opened().AndReturn(False)
         self.mock_connection.open()
 
         self.mock_connection.session().AndReturn(self.mock_session)
@@ -447,7 +441,6 @@ class RpcQpidTestCase(tests.utils.BaseTestCase):
         self.mock_sender = self.mox.CreateMock(self.orig_sender)
         self.mock_receiver = self.mox.CreateMock(self.orig_receiver)
 
-        self.mock_connection.opened().AndReturn(False)
         self.mock_connection.open()
         self.mock_connection.session().AndReturn(self.mock_session)
         rcv_addr = mox.Regex(
@@ -459,7 +452,6 @@ class RpcQpidTestCase(tests.utils.BaseTestCase):
             'false}, "durable": true, "name": ".*"}}')
         self.mock_session.receiver(rcv_addr).AndReturn(self.mock_receiver)
         self.mock_receiver.capacity = 1
-        self.mock_connection.opened().AndReturn(False)
         self.mock_connection.open()
         self.mock_connection.session().AndReturn(self.mock_session)
         send_addr = (
@@ -690,7 +682,6 @@ class RpcQpidTestCase(tests.utils.BaseTestCase):
         self.mock_session = self.mox.CreateMock(self.orig_session)
         self.mock_receiver = self.mox.CreateMock(self.orig_receiver)
 
-        self.mock_connection.opened().AndReturn(False)
         self.mock_connection.open()
         self.mock_connection.session().AndReturn(self.mock_session)
         expected_address = (
@@ -717,7 +708,6 @@ class RpcQpidTestCase(tests.utils.BaseTestCase):
         self.mock_session = self.mox.CreateMock(self.orig_session)
         self.mock_receiver = self.mox.CreateMock(self.orig_receiver)
 
-        self.mock_connection.opened().AndReturn(False)
         self.mock_connection.open()
         self.mock_connection.session().AndReturn(self.mock_session)
         expected_address = (
@@ -751,7 +741,6 @@ class RpcQpidTestCase(tests.utils.BaseTestCase):
         self.mock_receiver = self.mox.CreateMock(self.orig_receiver)
 
         # First connection and create_consumer
-        self.mock_connection.opened().AndReturn(False)
         self.mock_connection.open()
         self.mock_connection.session().AndReturn(self.mock_session)
         self.mock_session.receiver(expected_address).AndReturn(
