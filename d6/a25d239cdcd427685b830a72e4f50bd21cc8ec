@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Code-Review+2: Mark McLoughlin <markmc@redhat.com>
+Workflow+1: Mark McLoughlin <markmc@redhat.com>
+Code-Review+2: Doug Hellmann <doug.hellmann@dreamhost.com>
+Code-Review+1: ChangBo Guo(gcb) <glongwave@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Mon, 16 Jun 2014 06:47:46 +0000
+Reviewed-on: https://review.openstack.org/96495
+Project: openstack/oslo-incubator
+Branch: refs/heads/stable/icehouse
