@@ -541,9 +541,14 @@ def _setup_logging_from_conf(project, version):
         log_root.addHandler(streamlog)
 
     if CONF.publish_errors:
-        handler = importutils.import_object(
-            "openstack.common.log_handler.PublishErrorsHandler",
-            logging.ERROR)
+        try:
+            handler = importutils.import_object(
+                "openstack.common.log_handler.PublishErrorsHandler",
+                logging.ERROR)
+        except ImportError:
+            handler = importutils.import_object(
+                "oslo.messaging.notify.log_handler.PublishErrorsHandler",
+                logging.ERROR)
         log_root.addHandler(handler)
 
     datefmt = CONF.log_date_format
