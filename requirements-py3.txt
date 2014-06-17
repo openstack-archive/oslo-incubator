@@ -8,7 +8,7 @@ Jinja2
 kombu>=2.4.8
 lockfile>=0.8
 netaddr>=0.7.6
-oslo.config>=1.2.0
+oslo.config>=1.2.1
 PasteDeploy>=1.5.0
 pbr>=0.6,!=0.7,<1.0
 posix_ipc
@@ -16,7 +16,7 @@ PrettyTable>=0.7,<0.8
 pycrypto>=2.6
 requests>=1.1
 Routes>=1.12.3
-six>=1.6.0
+six>=1.7.0
 SQLAlchemy>=0.7.8,<=0.9.99
 sqlalchemy-migrate>=0.9.1
 stevedore>=0.14
