@@ -138,7 +138,7 @@ class ConfigFilter(collections.Mapping):
     def register_cli_opts(self, opts, group=None):
         """Register multiple CLI option schemas at once."""
         for opt in opts:
-            self.register_cli_opts(opt, group)
+            self.register_cli_opt(opt, group)
 
     def register_group(self, group):
         """Register an option group.
