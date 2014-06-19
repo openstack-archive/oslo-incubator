@@ -24,11 +24,11 @@ from openstack.common.config import generator
 
 
 class GeneratorTestcase(test_base.BaseTestCase):
-    # The .py suffix left out for file fblaa_opt, to trigger the ext_names
+    # The .py suffix left out for file blaa_opt, to trigger the ext_names
     # code snippet in generator.generate()
     conffiles = ["tests/testmods/baar_baa_opt.py",
                  "tests/testmods/bar_foo_opt.py",
-                 "tests/testmods/fblaa_opt"]
+                 "tests/testmods/blaa_opt"]
 
     conffiles_i18n = ["tests/testmods/i18n_opt"]
 
@@ -66,7 +66,7 @@ class GeneratorTestcase(test_base.BaseTestCase):
         # Test we have opt in the output
         self.assertIn('#baa=<None>\n', lines)
         self.assertIn('#foo=<None>\n', lines)
-        self.assertIn('#fblaa=fblaa\n', lines)
+        self.assertIn('#blaa=blaa\n', lines)
 
     def test_i18n(self):
         stdout = self.useFixture(fixtures.StringStream('confstdout')).stream

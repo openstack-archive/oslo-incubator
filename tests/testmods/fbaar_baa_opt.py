@@ -1,4 +1,4 @@
-# Copyright (c) 2013 Intel Corporation.
+# Copyright 2012 Red Hat, Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -16,6 +16,6 @@ from oslo.config import cfg
 
 CONF = cfg.CONF
 
-opt = cfg.StrOpt('baz')
+opt = cfg.StrOpt('baa')
 
-CONF.register_opt(opt, group='qux')
+CONF.register_opt(opt, group='fbaar')

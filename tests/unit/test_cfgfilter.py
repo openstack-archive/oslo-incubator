@@ -130,20 +130,21 @@ class ConfigFilterTestCase(test_base.BaseTestCase):
 
     def test_import_opt(self):
         self.fconf = cfgfilter.ConfigFilter(cfg.CONF)
-        self.assertFalse(hasattr(self.fconf, 'blaa'))
-        self.fconf.import_opt('blaa', 'tests.testmods.blaa_opt')
-        self.assertTrue(hasattr(self.fconf, 'blaa'))
+        self.assertFalse(hasattr(self.fconf, 'fblaa'))
+        self.fconf.import_opt('fblaa', 'tests.testmods.fblaa_opt')
+        self.assertTrue(hasattr(self.fconf, 'fblaa'))
 
     def test_import_opt_in_group(self):
         self.fconf = cfgfilter.ConfigFilter(cfg.CONF)
-        self.assertFalse(hasattr(self.fconf, 'bar'))
-        self.fconf.import_opt('foo', 'tests.testmods.bar_foo_opt', group='bar')
-        self.assertTrue(hasattr(self.fconf, 'bar'))
-        self.assertTrue(hasattr(self.fconf.bar, 'foo'))
+        self.assertFalse(hasattr(self.fconf, 'fbar'))
+        self.fconf.import_opt('foo', 'tests.testmods.fbar_foo_opt',
+                              group='fbar')
+        self.assertTrue(hasattr(self.fconf, 'fbar'))
+        self.assertTrue(hasattr(self.fconf.fbar, 'foo'))
 
     def test_import_group(self):
         self.fconf = cfgfilter.ConfigFilter(cfg.CONF)
-        self.assertFalse(hasattr(self.fconf, 'baar'))
-        self.fconf.import_group('baar', 'tests.testmods.baar_baa_opt')
-        self.assertTrue(hasattr(self.fconf, 'baar'))
-        self.assertTrue(hasattr(self.fconf.baar, 'baa'))
+        self.assertFalse(hasattr(self.fconf, 'fbaar'))
+        self.fconf.import_group('fbaar', 'tests.testmods.fbaar_baa_opt')
+        self.assertTrue(hasattr(self.fconf, 'fbaar'))
+        self.assertTrue(hasattr(self.fconf.fbaar, 'baa'))

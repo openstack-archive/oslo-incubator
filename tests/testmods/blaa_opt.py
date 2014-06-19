@@ -1,4 +1,4 @@
-# Copyright 2012 Red Hat, Inc.
+# Copyright 2013 Red Hat, Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -16,6 +16,10 @@ from oslo.config import cfg
 
 CONF = cfg.CONF
 
-opt = cfg.StrOpt('blaa')
+opts = [
+    cfg.StrOpt('blaa', default="blaa"),
+    # duplicated option
+    cfg.StrOpt('blaa', default="blaa"),
+]
 
-CONF.register_opt(opt)
+CONF.register_opts(opts)
