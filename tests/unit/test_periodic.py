@@ -20,10 +20,10 @@ Unit Tests for periodic_task decorator and PeriodicTasks class.
 
 import mock
 from oslotest import base as test_base
+from testtools import matchers
 
 from openstack.common.fixture import config
 from openstack.common import periodic_task
-from testtools import matchers
 
 
 class AnException(Exception):

@@ -196,6 +196,7 @@ if os.name == 'nt':
 else:
     import base64
     import hashlib
+
     import posix_ipc
     InterProcessLock = _PosixLock
     FileLock = _FcntlLock

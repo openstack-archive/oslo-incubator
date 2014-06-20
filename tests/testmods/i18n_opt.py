@@ -12,8 +12,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from openstack.common import gettextutils
 from oslo.config import cfg
+
+from openstack.common import gettextutils
 
 CONF = cfg.CONF
 

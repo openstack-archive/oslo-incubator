@@ -410,7 +410,7 @@ class RpcQpidTestCase(tests.utils.BaseTestCase):
                                  server_params['password'])
                 self.assertEqual(myself.brokers,
                                  [server_params['hostname'] + ':' +
-                                 str(server_params['port'])])
+                                  str(server_params['port'])])
 
         MyConnection.pool = rpc_amqp.Pool(self.FLAGS, MyConnection)
         self.stubs.Set(impl_qpid, 'Connection', MyConnection)
@@ -447,7 +447,7 @@ class RpcQpidTestCase(tests.utils.BaseTestCase):
             r'^.*/.* ; {"node": {"x-declare": {"auto-delete":'
             ' true, "durable": true, "type": "direct"}, "type": '
             '"topic"}, "create": "always", "link": {"x-declare": '
-            #'{"auto-delete": true, "exclusive": true, "durable": '
+            # '{"auto-delete": true, "exclusive": true, "durable": '
             '{"exclusive": true, "auto-delete": false, "durable": '
             'false}, "durable": true, "name": ".*"}}')
         self.mock_session.receiver(rcv_addr).AndReturn(self.mock_receiver)
@@ -801,7 +801,7 @@ class RpcQpidTestCase(tests.utils.BaseTestCase):
 
 
 #
-#from nova.tests.rpc import common
+# from nova.tests.rpc import common
 #
 # Qpid does not have a handy in-memory transport like kombu, so it's not
 # terribly straight forward to take advantage of the common unit tests.

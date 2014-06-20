@@ -43,6 +43,7 @@ try:
     import kombu
     import kombu.connection
     import kombu.entity
+
     from openstack.common.rpc import impl_kombu
 except ImportError:
     kombu = None
@@ -585,7 +586,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
             self.fail("should have thrown Exception")
         except NotImplementedError as exc:
             self.assertTrue(value in six.text_type(exc))
-            #Traceback should be included in exception message
+            # Traceback should be included in exception message
             self.assertTrue('raise NotImplementedError(value)' in
                             six.text_type(exc))
 
@@ -614,7 +615,7 @@ class RpcKombuTestCase(amqp.BaseRpcAMQPTestCase):
             self.fail("should have thrown Exception")
         except common.ApiError as exc:
             self.assertTrue(value in six.text_type(exc))
-            #Traceback should be included in exception message
+            # Traceback should be included in exception message
             self.assertTrue('ApiError' in six.text_type(exc))
 
     def test_create_worker(self):
