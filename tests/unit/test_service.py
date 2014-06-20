@@ -38,7 +38,6 @@ from oslotest import moxstubout
 from openstack.common import eventlet_backdoor
 from openstack.common.fixture import config
 from openstack.common import log as logging
-from openstack.common.notifier import api as notifier_api
 from openstack.common import service
 
 
@@ -81,12 +80,9 @@ class ServiceTestBase(test_base.BaseTestCase):
     def setUp(self):
         super(ServiceTestBase, self).setUp()
         self.CONF = self.useFixture(config.Config()).conf
-        # FIXME(markmc): Ugly hack to workaround bug #1073732
-        self.CONF.unregister_opts(notifier_api.notifier_opts)
         # NOTE(markmc): ConfigOpts.log_opt_values() uses CONF.config-file
         self.CONF(args=[], default_config_files=[])
         self.addCleanup(self.CONF.reset)
-        self.addCleanup(self.CONF.register_opts, notifier_api.notifier_opts)
         self.addCleanup(self._reap_pid)
 
     def _reap_pid(self):

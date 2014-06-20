@@ -22,7 +22,6 @@ import tempfile
 import mock
 from oslo.config import cfg
 from oslotest import base as test_base
-from oslotest import moxstubout
 import six
 
 from openstack.common import context
@@ -32,8 +31,6 @@ from openstack.common import gettextutils
 from openstack.common import jsonutils
 from openstack.common import local
 from openstack.common import log
-from openstack.common import log_handler
-from openstack.common.notifier import api as notifier
 
 
 def _fake_context():
@@ -205,49 +202,6 @@ class SysLogHandlersTestCase(test_base.BaseTestCase):
         expected = logrecord
         self.assertEqual(self.logger.format(logrecord),
                          expected.getMessage())
-
-
-class PublishErrorsHandlerTestCase(test_base.BaseTestCase):
-    """Tests for log.PublishErrorsHandler."""
-    def setUp(self):
-        super(PublishErrorsHandlerTestCase, self).setUp()
-        self.stubs = self.useFixture(moxstubout.MoxStubout()).stubs
-        self.config = self.useFixture(config.Config()).config
-        self.publiserrorshandler = log_handler.\
-            PublishErrorsHandler(logging.ERROR)
-
-    def test_emit_cfg_log_notifier_in_notifier_drivers(self):
-        self.config(notification_driver=[
-            'openstack.common.notifier.rabbit_notifier',
-            'openstack.common.notifier.log_notifier'])
-        self.stub_flg = True
-
-        def fake_notifier(*args, **kwargs):
-            self.stub_flg = False
-
-        self.stubs.Set(notifier, 'notify', fake_notifier)
-        logrecord = logging.LogRecord('name', 'WARN', '/tmp', 1,
-                                      'Message', None, None)
-        self.publiserrorshandler.emit(logrecord)
-        self.assertTrue(self.stub_flg)
-
-    def test_emit_with_args(self):
-        """Make sure emit the message which merged user-supplied arguments."""
-        self.config(notification_driver=[
-            'openstack.common.notifier.rabbit_notifier'
-        ])
-        self.emit_payload = None
-        expect_payload = dict(error="msg with args: show me")
-
-        def fake_notifier(_context, _publisher_id, _event_type, _priority,
-                          payload):
-            self.emit_payload = payload
-
-        self.stubs.Set(notifier, 'notify', fake_notifier)
-        logrecord = logging.LogRecord('name', 'WARN', '/tmp', 1,
-                                      'msg with args: %s', 'show me', None)
-        self.publiserrorshandler.emit(logrecord)
-        self.assertEqual(self.emit_payload, expect_payload)
 
 
 class LogLevelTestCase(test_base.BaseTestCase):
