@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Code-Review+2: Mark McLoughlin <markmc@redhat.com>
+Workflow+1: Mark McLoughlin <markmc@redhat.com>
+Code-Review+1: Ihar Hrachyshka <ihrachys@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 20 Jun 2014 15:44:41 +0000
+Reviewed-on: https://review.openstack.org/100177
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
