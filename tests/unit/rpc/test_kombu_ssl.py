@@ -29,6 +29,7 @@ from openstack.common.fixture import config
 
 try:
     import kombu
+
     from openstack.common.rpc import impl_kombu
 except ImportError:
     kombu = None
@@ -62,16 +63,16 @@ class RpcKombuSslTestCase(test_base.BaseTestCase):
         rpc = impl_kombu
         conn = rpc.create_connection(self.FLAGS, True)
         c = conn.connection
-        #This might be kombu version dependent...
-        #Since we are now peaking into the internals of kombu...
+        # This might be kombu version dependent...
+        # Since we are now peaking into the internals of kombu...
         self.assertTrue(isinstance(c.connection.ssl, dict))
         self.assertEqual(ssl.PROTOCOL_SSLv3,
                          c.connection.ssl.get("ssl_version"))
         self.assertEqual(SSL_CERT, c.connection.ssl.get("certfile"))
         self.assertEqual(SSL_CA_CERT, c.connection.ssl.get("ca_certs"))
         self.assertEqual(SSL_KEYFILE, c.connection.ssl.get("keyfile"))
-        #That hash then goes into amqplib which then goes
-        #Into python ssl creation...
+        # That hash then goes into amqplib which then goes
+        # Into python ssl creation...
 
 
 class RpcKombuSslBadVersionTestCase(test_base.BaseTestCase):

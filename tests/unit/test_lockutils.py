@@ -79,7 +79,7 @@ class LockTestCase(test_base.BaseTestCase):
     def test_synchronized_wrapped_function_metadata(self):
         @lockutils.synchronized('whatever', 'test-')
         def foo():
-            """Bar"""
+            """Bar."""
             pass
 
         self.assertEqual(foo.__doc__, 'Bar', "Wrapped function's docstring "

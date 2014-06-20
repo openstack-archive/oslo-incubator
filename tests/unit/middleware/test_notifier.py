@@ -13,8 +13,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import mock
 import uuid
+
+import mock
 import webob
 
 from openstack.common.middleware import notifier

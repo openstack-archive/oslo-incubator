@@ -12,8 +12,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslotest import base as test_base
 from xml.dom import minidom
+
+from oslotest import base as test_base
 
 from openstack.common import xmlutils
 

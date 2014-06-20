@@ -126,7 +126,7 @@ class RpcCommonTestCase(test_base.BaseTestCase):
         after_exc = rpc_common.deserialize_remote_exception(self.FLAGS,
                                                             serialized)
         self.assertTrue(isinstance(after_exc, NotImplementedError))
-        #assure the traceback was added
+        # assure the traceback was added
         self.assertTrue('raise NotImplementedError' in
                         six.text_type(after_exc))
 
@@ -158,7 +158,7 @@ class RpcCommonTestCase(test_base.BaseTestCase):
                                                             serialized)
         self.assertTrue(isinstance(after_exc, FakeUserDefinedException))
         self.assertTrue('foobar' in six.text_type(after_exc))
-        #assure the traceback was added
+        # assure the traceback was added
         self.assertTrue('raise FakeUserDefinedException' in
                         six.text_type(after_exc))
 
@@ -204,7 +204,7 @@ class RpcCommonTestCase(test_base.BaseTestCase):
         self.assertTrue(isinstance(after_exc, rpc_common.RemoteError))
         self.assertTrue(six.text_type(after_exc).startswith(
             "Remote error: FakeIDontExistException"))
-        #assure the traceback was added
+        # assure the traceback was added
         self.assertTrue('raise FakeIDontExistException' in
                         six.text_type(after_exc))
 

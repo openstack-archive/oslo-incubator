@@ -20,7 +20,6 @@ Unit Tests for remote procedure calls using fake_impl
 
 import eventlet
 eventlet.monkey_patch()
-
 from oslo.config import cfg
 
 from openstack.common.rpc import impl_fake

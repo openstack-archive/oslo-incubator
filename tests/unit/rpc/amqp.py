@@ -118,8 +118,8 @@ class BaseRpcAMQPTestCase(common.BaseRpcTestCase):
 
         class MyReplyProxy(rpc_amqp.ReplyProxy):
             def _process_data(myself, message_data):
-                #with open('mylog', 'a') as f:
-                #    f.write('my_process_data: ' + str(message_data) + '\n')
+                # with open('mylog', 'a') as f:
+                #     f.write('my_process_data: ' + str(message_data) + '\n')
                 self.assertTrue('_msg_id' in message_data)
                 self.ReplyProxy_was_called = True
                 super(MyReplyProxy, myself)._process_data(message_data)

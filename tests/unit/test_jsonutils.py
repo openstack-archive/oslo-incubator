@@ -195,9 +195,9 @@ class ToPrimitiveTestCase(test_base.BaseTestCase):
         self.assertEqual(len(ret), 3)
         self.assertTrue(ret[0].startswith(u"<module 'datetime' from "))
         if six.PY3:
-            self.assertTrue(ret[1].startswith('<function '
-                            'ToPrimitiveTestCase.test_nasties.<locals>.foo '
-                            'at 0x'))
+            self.assertTrue(ret[1].startswith(
+                '<function ToPrimitiveTestCase.test_nasties.<locals>.foo at 0x'
+            ))
         else:
             self.assertTrue(ret[1].startswith('<function foo at 0x'))
         self.assertEqual(ret[2], '<built-in function dir>')

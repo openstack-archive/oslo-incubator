@@ -74,7 +74,8 @@ class QuotaException(Exception):
                 # log the issue and the kwargs
                 LOG.exception(_LE('Exception in string format operation'))
                 for name, value in six.iteritems(kwargs):
-                    LOG.error(_LE("%s: %s") % (name, value))
+                    LOG.error(_LE("%(name)s: %(value)s") % {'name': name,
+                                                            'value': value})
                 # at least get the core message out if something happened
                 message = self.msg_fmt
         super(QuotaException, self).__init__(message)

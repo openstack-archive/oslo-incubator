@@ -462,9 +462,8 @@ def setup(product_name, version='unknown'):
 
 
 def set_defaults(logging_context_format_string):
-    cfg.set_defaults(log_opts,
-                     logging_context_format_string=
-                     logging_context_format_string)
+    cfg.set_defaults(
+        log_opts, logging_context_format_string=logging_context_format_string)
 
 
 def _find_facility_from_conf():

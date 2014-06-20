@@ -30,7 +30,7 @@ LOG = logging.getLogger(__name__)
 
 class MatchMakerRedisLookupTestCase(test_base.BaseTestCase,
                                     common._MatchMakerTestCase):
-    """Test lookups against the Redis matchmaker"""
+    """Test lookups against the Redis matchmaker."""
     def setUp(self):
         super(MatchMakerRedisLookupTestCase, self).setUp()
         self.config = self.useFixture(config.Config()).config

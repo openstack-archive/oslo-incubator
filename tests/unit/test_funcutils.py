@@ -32,7 +32,7 @@ class FuncutilsTestCase(test_base.BaseTestCase):
         kwargs = {'instance': {'uuid': 1}, 'red': 3, 'blue': 4}
         callargs = funcutils.getcallargs(self._test_func, *args, **kwargs)
 
-        #implicit self counts as an arg
+        # implicit self counts as an arg
         self.assertEqual(4, len(callargs))
         self.assertTrue('instance' in callargs)
         self.assertEqual({'uuid': 1}, callargs['instance'])
@@ -46,7 +46,7 @@ class FuncutilsTestCase(test_base.BaseTestCase):
         kwargs = {}
         callargs = funcutils.getcallargs(self._test_func, *args, **kwargs)
 
-        #implicit self counts as an arg
+        # implicit self counts as an arg
         self.assertEqual(4, len(callargs))
         self.assertTrue('instance' in callargs)
         self.assertEqual({'uuid': 1}, callargs['instance'])
@@ -60,7 +60,7 @@ class FuncutilsTestCase(test_base.BaseTestCase):
         kwargs = {'blue': 4}
         callargs = funcutils.getcallargs(self._test_func, *args, **kwargs)
 
-        #implicit self counts as an arg
+        # implicit self counts as an arg
         self.assertEqual(4, len(callargs))
         self.assertTrue('instance' in callargs)
         self.assertEqual({'uuid': 1}, callargs['instance'])
@@ -74,7 +74,7 @@ class FuncutilsTestCase(test_base.BaseTestCase):
         kwargs = {'instance': {'uuid': 1}, 'red': 3}
         callargs = funcutils.getcallargs(self._test_func, *args, **kwargs)
 
-        #implicit self counts as an arg
+        # implicit self counts as an arg
         self.assertEqual(4, len(callargs))
         self.assertTrue('instance' in callargs)
         self.assertEqual({'uuid': 1}, callargs['instance'])
@@ -88,7 +88,7 @@ class FuncutilsTestCase(test_base.BaseTestCase):
         kwargs = {}
         callargs = funcutils.getcallargs(self._test_func, *args, **kwargs)
 
-        #implicit self counts as an arg
+        # implicit self counts as an arg
         self.assertEqual(4, len(callargs))
         self.assertTrue('instance' in callargs)
         self.assertEqual({'uuid': 1}, callargs['instance'])

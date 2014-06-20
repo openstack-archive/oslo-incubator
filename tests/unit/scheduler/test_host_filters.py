@@ -31,7 +31,7 @@ class TestFilter(filters.BaseHostFilter):
 
 
 class TestBogusFilter(object):
-    """Class that doesn't inherit from BaseHostFilter"""
+    """Class that doesn't inherit from BaseHostFilter."""
     pass
 
 

@@ -281,7 +281,7 @@ class BaseRpcTestCase(test_base.BaseTestCase):
         self.assertEqual(synced_echo_call.wait_states(),
                          synced_echo_call.expected_wait_states())
 
-        #synced_echo_call.print_times() #for DEBUG
+        # synced_echo_call.print_times() #for DEBUG
         self.assertEqual((r1, r2, r3), (1, 2, 3))
         self.assertTrue(synced_echo_call.verify_time_order(callid3, callid1,
                                                            callid2))
@@ -347,7 +347,7 @@ class SyncedEchoCall():
         self.list[idx].event.send()
         retval = self.list[idx].gthread.wait()
         self.list[idx].expected_wait_state = False
-        #self.print_wait_states() #for DEBUG
+        # self.print_wait_states() #for DEBUG
         return retval
 
     def wait(self, idx):
@@ -361,20 +361,20 @@ class SyncedEchoCall():
             self.list[idx2].time < self.list[idx3].time
 
     # for DEBUG
-    #def print_times(self):
-    #    # change /dev/null to name to get output to a log file
-    #    with open('mylog', 'a') as f:
-    #            f.write('SyncedEchoCall times: ' + '\n')
-    #            f.write(' ' + str(self.list[0].time) + '\n')
-    #            f.write(' ' + str(self.list[1].time) + '\n')
-    #            f.write(' ' + str(self.list[2].time) + '\n')
+    # def print_times(self):
+    #     # change /dev/null to name to get output to a log file
+    #     with open('mylog', 'a') as f:
+    #             f.write('SyncedEchoCall times: ' + '\n')
+    #             f.write(' ' + str(self.list[0].time) + '\n')
+    #             f.write(' ' + str(self.list[1].time) + '\n')
+    #             f.write(' ' + str(self.list[2].time) + '\n')
 
     # for DEBUG
-    #def print_wait_states(self):
-    #    # change /dev/null to name to get output to a log file
-    #    with open('mylog', 'a') as f:
-    #        f.write('SyncedEchoCall times: ' +
-    #                str(self.wait_states()) + '\n')
+    # def print_wait_states(self):
+    #     # change /dev/null to name to get output to a log file
+    #     with open('mylog', 'a') as f:
+    #         f.write('SyncedEchoCall times: ' +
+    #                 str(self.wait_states()) + '\n')
 
 
 class TestReceiver(object):
