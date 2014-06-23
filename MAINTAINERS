@@ -56,7 +56,7 @@ F: apiclient/
 
 == audit ==
 
-M: Gordon Chung <chungg@ca.ibm.com>
+M: Gordon Chung <gord@live.ca>
 S: Maintained
 F: middleware/audit.py
 
@@ -203,8 +203,8 @@ F: memorycache.py
 
 == middleware ==
 
-M:
-S: Orphan
+M: Gordon Chung <gord@live.ca>
+S: Graduating
 F: middleware/
 
 == network_utils ==
