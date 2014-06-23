@@ -385,9 +385,6 @@ class LauncherTest(test_base.BaseTestCase):
 
 class ProcessLauncherTest(test_base.BaseTestCase):
 
-    def setUp(self):
-        super(ProcessLauncherTest, self).setUp()
-
     def test_stop(self):
         launcher = service.ProcessLauncher()
         self.assertTrue(launcher.running)
@@ -408,9 +405,6 @@ class ProcessLauncherTest(test_base.BaseTestCase):
 class ServiceUtilitiesTest(test_base.BaseTestCase):
     """Tests utility methods in the service module.
     """
-
-    def setUp(self):
-        super(ServiceUtilitiesTest, self).setUp()
 
     @mock.patch.object(multiprocessing, 'cpu_count', return_value=8)
     def test_get_worker_count(self, mock_cpu_count):
