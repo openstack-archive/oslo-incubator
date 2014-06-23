@@ -16,10 +16,12 @@
 from __future__ import print_function
 
 import errno
+import multiprocessing
 import os
 import tempfile
 
 import fixtures
+import mock
 from oslotest import base as test_base
 import six
 
@@ -34,6 +36,16 @@ class UtilsTest(test_base.BaseTestCase):
         self.assertRaises(processutils.UnknownArgumentError,
                           processutils.execute,
                           hozer=True)
+
+    @mock.patch.object(multiprocessing, 'cpu_count', return_value=8)
+    def test_get_worker_count(self, mock_cpu_count):
+        self.assertEqual(8, processutils.get_worker_count())
+
+    @mock.patch.object(multiprocessing, 'cpu_count',
+                       side_effect=NotImplementedError())
+    def test_get_worker_count_cpu_count_not_implemented(self,
+                                                        mock_cpu_count):
+        self.assertEqual(1, processutils.get_worker_count())
 
 
 class ProcessExecutionErrorTest(test_base.BaseTestCase):
