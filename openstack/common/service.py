@@ -19,6 +19,7 @@
 
 import errno
 import logging as std_logging
+import multiprocessing
 import os
 import random
 import signal
@@ -510,3 +511,15 @@ def launch(service, workers=1):
         launcher.launch_service(service, workers=workers)
 
     return launcher
+
+
+def get_worker_count():
+    """Utility to get the default worker count.
+
+    @return: The number of CPUs if that can be determined, else a default
+             worker count of 1 is returned.
+    """
+    try:
+        return multiprocessing.cpu_count()
+    except NotImplementedError:
+        return 1
