@@ -385,9 +385,6 @@ class LauncherTest(test_base.BaseTestCase):
 
 class ProcessLauncherTest(test_base.BaseTestCase):
 
-    def setUp(self):
-        super(ProcessLauncherTest, self).setUp()
-
     def test_stop(self):
         launcher = service.ProcessLauncher()
         self.assertTrue(launcher.running)
