@@ -403,3 +403,21 @@ class ProcessLauncherTest(test_base.BaseTestCase):
         self.assertEqual([mock.call(22, signal.SIGTERM),
                           mock.call(222, signal.SIGTERM)],
                          mock_kill.mock_calls)
+
+
+class ServiceUtilitiesTest(test_base.BaseTestCase):
+    """Tests utility methods in the service module.
+    """
+
+    def setUp(self):
+        super(ServiceUtilitiesTest, self).setUp()
+
+    @mock.patch.object(multiprocessing, 'cpu_count', return_value=8)
+    def test_get_worker_count(self, mock_cpu_count):
+        self.assertEqual(8, service.get_worker_count())
+
+    @mock.patch.object(multiprocessing, 'cpu_count',
+                       side_effect=NotImplementedError())
+    def test_get_worker_count_cpu_count_not_implemented_returns_1(self,
+                                                            mock_cpu_count):
+        self.assertEqual(1, service.get_worker_count())
