@@ -16,6 +16,7 @@
 Send notifications on request
 
 """
+import logging
 import os.path
 import sys
 import traceback as tb
@@ -25,7 +26,6 @@ import webob.dec
 
 from openstack.common import context
 from openstack.common.gettextutils import _LE
-from openstack.common import log as logging
 from openstack.common.middleware import base
 from openstack.common.notifier import api
 

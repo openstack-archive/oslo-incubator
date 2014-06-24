@@ -18,12 +18,12 @@
 It catches all exceptions from subsequent applications in WSGI pipeline
 to hide internal errors from API response.
 """
+import logging
 
 import webob.dec
 import webob.exc
 
 from openstack.common.gettextutils import _LE
-from openstack.common import log as logging
 from openstack.common.middleware import base
 
 
