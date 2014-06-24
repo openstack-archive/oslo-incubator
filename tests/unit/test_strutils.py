@@ -155,7 +155,7 @@ class StrUtilsTest(test_base.BaseTestCase):
                              incoming='base64'))
 
         self.assertEqual(six.u("strange"), safe_decode(six.b('\x80strange'),
-                         errors='ignore'))
+                         incoming='utf-8', errors='ignore'))
 
         self.assertEqual(six.u('\xc0'), safe_decode(six.b('\xc0'),
                          incoming='iso-8859-1'))
@@ -196,9 +196,11 @@ class StrUtilsTest(test_base.BaseTestCase):
         self.assertEqual(six.u("ampserand"), to_slug("&ampser$and"))
         self.assertEqual(six.u("ju5tnum8er"), to_slug("ju5tnum8er"))
         self.assertEqual(six.u("strip-"), to_slug(" strip - "))
-        self.assertEqual(six.u("perche"), to_slug(six.b("perch\xc3\xa9")))
+        self.assertEqual(six.u("perche"),
+                         to_slug(six.b("perch\xc3\xa9"), incoming='utf-8'))
         self.assertEqual(six.u("strange"),
-                         to_slug("\x80strange", errors="ignore"))
+                         to_slug("\x80strange", incoming='utf-8',
+                                 errors="ignore"))
 
 
 class StringToBytesTest(test_base.BaseTestCase):
