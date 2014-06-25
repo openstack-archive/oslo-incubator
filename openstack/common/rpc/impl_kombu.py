@@ -141,7 +141,53 @@ class ConsumerBase(object):
         self.channel = channel
         self.kwargs['channel'] = channel
         self.queue = kombu.entity.Queue(**self.kwargs)
-        self.queue.declare()
+        try:
+            self.queue.declare()
+        except Exception:
+            # NOTE(Mouad): Catching Exception b/c Kombu doesn't raise a proper
+            # error instead it's raise what the underlying transport library
+            # raise which can be either 'ampq.NotFound' or
+            # 'librabbitmq.ChannelError' depending on which transport library
+            # is used.
+            LOG.exception("Declaring queue fail retrying ...")
+            # NOTE(Mouad): We need to re-try Queue creation in case the Queue
+            # was created with auto-delete this instruct the Broker to delete
+            # the Queue when the last Consumer disconnect from it, and the
+            # Exchange when the last Queue is deleted from this Exchange.
+            #
+            # Now in a RabbitMQ cluster setup, if the cluster node that we are
+            # connected to go down, 2 things will happen:
+            #
+            #  1. From RabbitMQ side the Queues will be deleted from the other
+            #     cluster nodes and then the correspanding Exchanges will also
+            #     be deleted.
+            #  2. From Neutron side, Neutron will reconnect to another cluster
+            #     node and start creating Exchanges then Queues then Binding
+            #     (The order is important to understand the problem).
+            #
+            # Now this may lead to a race condition, specially if Neutron create
+            # Exchange and Queue and before Neutron could bind Queue to Exchange
+            # RabbitMQ nodes just received the 'signal' that they need to delete
+            # Exchanges with auto-delete that belong to the down node, so they
+            # will delete the Exchanges that was just created, and when Neutron
+            # try to bind Queue with Exchange, the Binding will fail b/c the
+            # Exchange is not found.
+            #
+            # But if the first Queue declartion work and binding was created we
+            # suppose that RabbitMQ will not try to delete the Exchange even if
+            # the auto-delete propagation wasn't received yet, b/c the Queue
+            # have a Consumer now and a Binding exist with the Exchange.
+            #
+            # Note: AMQP 0-9-1 deprecated the use of 'auto-delete' for Exchanges
+            # but according to here[1] RabbitMQ doesn't seem that he will delete
+            # it:
+            #
+            #   The 'auto-delete' flag on 'exchange.declare' got deprecated in
+            #   0-9-1. Auto-delete exchanges are actually quite useful, so this
+            #   flag should be restored.
+            #
+            # [1] http://www.rabbitmq.com/amqp-0-9-1-errata.html
+            self.queue.declare()
 
     def _callback_handler(self, message, callback):
         """Call callback with deserialized message.
