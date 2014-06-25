@@ -19,6 +19,7 @@ System-level utilities and helper functions.
 
 import errno
 import logging as stdlib_logging
+import multiprocessing
 import os
 import random
 import shlex
@@ -270,3 +271,15 @@ def ssh_execute(ssh, cmd, process_input=None,
                                         cmd=cmd)
 
     return (stdout, stderr)
+
+
+def get_worker_count():
+    """Utility to get the default worker count.
+
+    @return: The number of CPUs if that can be determined, else a default
+             worker count of 1 is returned.
+    """
+    try:
+        return multiprocessing.cpu_count()
+    except NotImplementedError:
+        return 1
