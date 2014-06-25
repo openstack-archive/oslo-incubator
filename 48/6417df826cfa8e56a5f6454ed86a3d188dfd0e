@@ -1,0 +1,12 @@
+Verified+2: Jenkins
+Code-Review+2: Mark McLoughlin <markmc@redhat.com>
+Workflow+1: Mark McLoughlin <markmc@redhat.com>
+Code-Review+2: Julien Danjou <julien@danjou.info>
+Code-Review+1: Matt Riedemann <mriedem@us.ibm.com>
+Code-Review+1: Qin Zhao <chaochin@gmail.com>
+Code-Review+1: Ihar Hrachyshka <ihrachys@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 25 Jun 2014 15:06:27 +0000
+Reviewed-on: https://review.openstack.org/101990
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
