@@ -22,12 +22,15 @@ import mock
 from oslotest import base as test_base
 from oslotest import moxstubout
 import six
+import testscenarios
 import testtools
 
 from openstack.common import gettextutils
 from tests.unit import fakes
 
 LOG = logging.getLogger(__name__)
+
+load_tests = testscenarios.load_tests_apply_scenarios
 
 
 class GettextTest(test_base.BaseTestCase):
