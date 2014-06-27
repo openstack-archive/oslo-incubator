@@ -1,0 +1,11 @@
+Verified+2: Jenkins
+Code-Review+2: Doug Hellmann <doug@doughellmann.com>
+Workflow+1: Doug Hellmann <doug@doughellmann.com>
+Code-Review+1: James Carey  <jecarey@us.ibm.com>
+Code-Review+2: Ben Nemec <openstack@nemebean.com>
+Code-Review+1: Petr Blaho <pblaho@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 27 Jun 2014 21:34:21 +0000
+Reviewed-on: https://review.openstack.org/97305
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
