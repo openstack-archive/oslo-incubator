@@ -225,6 +225,10 @@ def _copy_file(path, dest, base):
     replacements.append(('possible_topdir, "oslo",$',
                          'possible_topdir, "' + base + '",'))
 
+    # For nova and cinder rpc module is present in base package
+    replacements.append(('\'rpc\'',
+                         '' + base + '.rpc'))
+
     _replace(dest, replacements)
 
 
