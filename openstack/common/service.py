@@ -45,7 +45,12 @@ from openstack.common import systemd
 from openstack.common import threadgroup
 
 
-rpc = importutils.try_import('openstack.common.rpc')
+try:
+    rpc = importutils.import_module('openstack.common.rpc')
+except ImportError:
+    # For nova and cinder rpc module is present in base package
+    rpc = importutils.try_import('rpc')
+
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
@@ -180,12 +185,6 @@ class ServiceLauncher(Launcher):
             status = exc.code
         finally:
             self.stop()
-            if rpc:
-                try:
-                    rpc.cleanup()
-                except Exception:
-                    # We're shutting down, so it doesn't matter at this point.
-                    LOG.exception(_LE('Exception during rpc cleanup.'))
 
         return status, signo
 
@@ -195,7 +194,19 @@ class ServiceLauncher(Launcher):
             self.handle_signal()
             status, signo = self._wait_for_exit_or_signal(ready_callback)
             if not _is_sighup_and_daemon(signo):
+                # Cleaning up rpc only after getting 'SIGTERM' or 'SIGINT'
+                # signals. After getting 'SIGHUP' signal service is restarting
+                # so no need to cleanup rpc in this case.
+                if rpc:
+                    try:
+                        rpc.cleanup()
+                    except Exception:
+                        # We're shutting down, so it doesn't matter at this
+                        # point.
+                        LOG.exception(_LE('Exception during rpc cleanup.'))
+
                 return status
+
             self.restart()
 
 
