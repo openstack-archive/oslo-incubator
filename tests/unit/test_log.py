@@ -907,6 +907,12 @@ class MaskPasswordTestCase(test_base.BaseTestCase):
                     "'***', 'nomask'")
         self.assertEqual(expected, log.mask_password(payload))
 
+        payload = ("test = 'node.session.auth.password', '--password', "
+                   "'mypassword'")
+        expected = ("test = 'node.session.auth.password', '--password', "
+                    "'***'")
+        self.assertEqual(expected, log.mask_password(payload))
+
         payload = "test = node.session.auth.password -v mypassword nomask"
         expected = "test = node.session.auth.password -v *** nomask"
         self.assertEqual(expected, log.mask_password(payload))
@@ -915,4 +921,8 @@ class MaskPasswordTestCase(test_base.BaseTestCase):
                    "nomask")
         expected = ("test = node.session.auth.password --password *** "
                     "nomask")
+        self.assertEqual(expected, log.mask_password(payload))
+
+        payload = ("test = node.session.auth.password --password mypassword")
+        expected = ("test = node.session.auth.password --password ***")
         self.assertEqual(expected, log.mask_password(payload))
