@@ -16,15 +16,17 @@
 #    under the License.
 
 import sys
+import time
 
 from eventlet import event
 from eventlet import greenthread
 
 from openstack.common.gettextutils import _LE, _LW
 from openstack.common import log as logging
-from openstack.common import timeutils
 
 LOG = logging.getLogger(__name__)
+
+_ts = lambda: time.time()
 
 
 class LoopingCallDone(Exception):
@@ -72,12 +74,12 @@ class FixedIntervalLoopingCall(LoopingCallBase):
 
             try:
                 while self._running:
-                    start = timeutils.utcnow()
+                    start = _ts()
                     self.f(*self.args, **self.kw)
-                    end = timeutils.utcnow()
+                    end = _ts()
                     if not self._running:
                         break
-                    delay = interval - timeutils.delta_seconds(start, end)
+                    delay = interval + start - end
                     if delay <= 0:
                         LOG.warn(_LW('task %(func_name)s run outlasted '
                                      'interval by %(delay)s sec'),
