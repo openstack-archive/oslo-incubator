@@ -338,20 +338,26 @@ class LockTestCase(test_base.BaseTestCase):
             if os.path.exists(lock_dir):
                 shutil.rmtree(lock_dir, ignore_errors=True)
 
-    def test_remove_lock_external_file(self):
+    def _test_remove_lock_external_file(self, lock_dir=None):
         lock_name = 'mylock'
         lock_pfix = 'mypfix-remove-lock-test-'
 
-        lock_dir = tempfile.mkdtemp()
-        self.config(lock_path=lock_dir)
-
-        lockutils.remove_external_lock_file(lock_name, lock_pfix)
+        lockutils.remove_external_lock_file(lock_name, lock_pfix, lock_dir)
 
         for ent in os.listdir(lock_dir):
             self.assertRaises(OSError, ent.startswith, lock_pfix)
 
         if os.path.exists(lock_dir):
             shutil.rmtree(lock_dir, ignore_errors=True)
+
+    def test_remove_lock_external_file(self):
+        lock_dir = tempfile.mkdtemp()
+        self.config(lock_path=lock_dir)
+        self._test_remove_lock_external_file()
+
+    def test_remove_lock_external_file_lock_path(self):
+        lock_dir = tempfile.mkdtemp()
+        self._test_remove_lock_external_file(lock_dir=lock_dir)
 
     def test_no_slash_in_b64(self):
         # base64(sha1(foobar)) has a slash in it
