@@ -239,12 +239,12 @@ def external_lock(name, lock_file_prefix=None, lock_path=None):
     return InterProcessLock(lock_file_path)
 
 
-def remove_external_lock_file(name, lock_file_prefix=None):
+def remove_external_lock_file(name, lock_file_prefix=None, lock_path=None):
     """Remove an external lock file when it's not used anymore
     This will be helpful when we have a lot of lock files
     """
     with internal_lock(name):
-        lock_file_path = _get_lock_path(name, lock_file_prefix)
+        lock_file_path = _get_lock_path(name, lock_file_prefix, lock_path)
         try:
             os.remove(lock_file_path)
         except OSError:
