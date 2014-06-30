@@ -20,6 +20,7 @@
 from __future__ import print_function
 
 import argparse
+import codecs
 import imp
 import os
 import re
@@ -69,6 +70,9 @@ def raise_extension_exception(extmanager, ep, err):
 
 
 def generate(argv):
+
+    sys.stdout = codecs.getwriter('utf_8')(sys.stdout)
+
     parser = argparse.ArgumentParser(
         description='generate sample configuration file',
     )
