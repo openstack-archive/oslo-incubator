@@ -181,11 +181,11 @@ log_opts = [
     cfg.StrOpt('instance_format',
                default='[instance: %(uuid)s] ',
                help='The format for an instance that is passed with the log '
-                    'message. '),
+                    'message.'),
     cfg.StrOpt('instance_uuid_format',
                default='[instance: %(uuid)s] ',
                help='The format for an instance UUID that is passed with the '
-                    'log message. '),
+                    'log message.'),
 ]
 
 CONF = cfg.CONF
