@@ -165,7 +165,8 @@ log_opts = [
                     'suds=INFO',
                     'oslo.messaging=INFO',
                     'iso8601=WARN',
-                    'requests.packages.urllib3.connectionpool=WARN'
+                    'requests.packages.urllib3.connectionpool=WARN',
+                    'urllib3.connectionpool=WARN'
                 ],
                 help='List of logger=LEVEL pairs.'),
     cfg.BoolOpt('publish_errors',
