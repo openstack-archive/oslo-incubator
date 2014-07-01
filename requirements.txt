@@ -18,7 +18,7 @@ pycadf>=0.5.1
 pycrypto>=2.6
 qpid-python
 requests>=1.1
-Routes>=1.12.3
+Routes>=1.12.3,!=2.0
 six>=1.7.0
 SQLAlchemy>=0.7.8,!=0.9.5,<=0.9.99
 sqlalchemy-migrate>=0.9.1
