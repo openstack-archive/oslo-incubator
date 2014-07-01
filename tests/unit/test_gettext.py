@@ -94,7 +94,8 @@ class GettextTest(test_base.BaseTestCase):
                        _mock_locale_identifiers)
 
         # Only the languages available for a specific translation domain
-        def _mock_gettext_find(domain, localedir=None, languages=[], all=0):
+        def _mock_gettext_find(domain, localedir=None, languages=None, all=0):
+            languages = languages or []
             if domain == 'domain_1':
                 return 'translation-file' if any(x in ['zh', 'es', 'fil']
                                                  for x in languages) else None
