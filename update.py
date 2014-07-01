@@ -323,7 +323,8 @@ def _build_dependency_tree():
     return dep_tree
 
 
-def _dfs_dependency_tree(dep_tree, mod_name, mod_list=[]):
+def _dfs_dependency_tree(dep_tree, mod_name, mod_list=None):
+    mod_list = mod_list or []
     mod_list.append(mod_name)
     for mod in dep_tree.get(mod_name, []):
         if mod not in mod_list:
