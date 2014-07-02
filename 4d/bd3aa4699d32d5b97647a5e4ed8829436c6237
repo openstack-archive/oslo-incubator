@@ -1,0 +1,12 @@
+Verified+2: Jenkins
+Code-Review+1: Joe Gordon <joe.gordon0@gmail.com>
+Code-Review+2: Flavio Percoco <fpercoco@redhat.com>
+Workflow+1: Flavio Percoco <fpercoco@redhat.com>
+Code-Review+2: Ben Nemec <openstack@nemebean.com>
+Code-Review+1: Paul Murray <pmurray@hp.com>
+Code-Review+1: Petr Blaho <pblaho@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 02 Jul 2014 13:06:25 +0000
+Reviewed-on: https://review.openstack.org/99695
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
