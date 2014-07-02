@@ -333,6 +333,10 @@ class SqliteForeignKeysListener(PoolListener):
 # N columns - (IntegrityError) (1062, "Duplicate entry 'values joined
 #               with -' for key 'name_of_our_constraint'")
 #
+# mysql+mysqlconnector:
+# 1 column - (IntegrityError) 1062 (23000): Duplicate entry 'value_of_c1' for
+#               key 'c1'
+#
 # ibm_db_sa:
 # N columns - (IntegrityError) SQL0803N  One or more values in the INSERT
 #                statement, UPDATE statement, or foreign key update caused by a
@@ -343,8 +347,9 @@ class SqliteForeignKeysListener(PoolListener):
 _DUP_KEY_RE_DB = {
     "sqlite": (re.compile(r"^.*columns?([^)]+)(is|are)\s+not\s+unique$"),
                re.compile(r"^.*UNIQUE\s+constraint\s+failed:\s+(.+)$")),
-    "postgresql": (re.compile(r"^.*duplicate\s+key.*\"([^\"]+)\"\s*\n.*$"),),
-    "mysql": (re.compile(r"^.*\(1062,.*'([^\']+)'\"\)$"),),
+    "postgresql": (re.compile(r'^.*duplicate\s+key.*"([^"]+)"\s*\n.*$'),),
+    "mysql": (re.compile(
+        r"^.*\b1062\b.*Duplicate entry '[^']+' for key '([^']+)'.*$"),),
     "ibm_db_sa": (re.compile(r"^.*SQL0803N.*$"),),
 }
 

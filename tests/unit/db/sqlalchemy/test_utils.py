@@ -685,11 +685,18 @@ class TestRaiseDuplicateEntryError(test_base.BaseTestCase):
             '(IntegrityError) UNIQUE constraint failed: tbl.a, tbl.b'
         )
 
-    def test_mysql(self):
+    def test_mysql_mysqldb(self):
         self._test_impl(
             'mysql',
             '(IntegrityError) (1062, "Duplicate entry '
             '\'2-3\' for key \'uniq_tbl0a0b\'")'
+        )
+
+    def test_mysql_mysqlconnector(self):
+        self._test_impl(
+            'mysql',
+            '(IntegrityError) 1062 (23000): Duplicate entry '
+            '\'2-3\' for key \'uniq_tbl0a0b\'',
         )
 
     def test_postgresql(self):
