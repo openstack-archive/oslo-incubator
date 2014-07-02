@@ -33,9 +33,9 @@ import logging
 import logging.config
 import logging.handlers
 import os
-import re
 import sys
 import traceback
+import warnings
 
 from oslo.config import cfg
 import six
@@ -45,29 +45,10 @@ from openstack.common.gettextutils import _
 from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import local
+from openstack.common import strutils
 
 
 _DEFAULT_LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
-
-_SANITIZE_KEYS = ['adminPass', 'admin_pass', 'password', 'admin_password']
-
-# NOTE(ldbragst): Let's build a list of regex objects using the list of
-# _SANITIZE_KEYS we already have. This way, we only have to add the new key
-# to the list of _SANITIZE_KEYS and we can generate regular expressions
-# for XML and JSON automatically.
-_SANITIZE_PATTERNS = []
-_FORMAT_PATTERNS = [r'(%(key)s\s*[=]\s*[\"\']).*?([\"\'])',
-                    r'(<%(key)s>).*?(</%(key)s>)',
-                    r'([\"\']%(key)s[\"\']\s*:\s*[\"\']).*?([\"\'])',
-                    r'([\'"].*?%(key)s[\'"]\s*:\s*u?[\'"]).*?([\'"])',
-                    r'([\'"].*?%(key)s[\'"]\s*,\s*\'--?[A-z]+\'\s*,\s*u?[\'"])'
-                    '.*?([\'"])',
-                    r'(%(key)s\s*--?[A-z]+\s*)\S+(\s*)']
-
-for key in _SANITIZE_KEYS:
-    for pattern in _FORMAT_PATTERNS:
-        reg_ex = re.compile(pattern % {'key': key}, re.DOTALL)
-        _SANITIZE_PATTERNS.append(reg_ex)
 
 
 common_cli_opts = [
@@ -245,37 +226,11 @@ def _get_log_file_path(binary=None):
 
 
 def mask_password(message, secret="***"):
-    """Replace password with 'secret' in message.
-
-    :param message: The string which includes security information.
-    :param secret: value with which to replace passwords.
-    :returns: The unicode value of message with the password fields masked.
-
-    For example:
-
-    >>> mask_password("'adminPass' : 'aaaaa'")
-    "'adminPass' : '***'"
-    >>> mask_password("'admin_pass' : 'aaaaa'")
-    "'admin_pass' : '***'"
-    >>> mask_password('"password" : "aaaaa"')
-    '"password" : "***"'
-    >>> mask_password("'original_password' : 'aaaaa'")
-    "'original_password' : '***'"
-    >>> mask_password("u'original_password' :   u'aaaaa'")
-    "u'original_password' :   u'***'"
-    """
-    message = six.text_type(message)
-
-    # NOTE(ldbragst): Check to see if anything in message contains any key
-    # specified in _SANITIZE_KEYS, if not then just return the message since
-    # we don't have to mask any passwords.
-    if not any(key in message for key in _SANITIZE_KEYS):
-        return message
-
-    secret = r'\g<1>' + secret + r'\g<2>'
-    for pattern in _SANITIZE_PATTERNS:
-        message = re.sub(pattern, secret, message)
-    return message
+    """Please refer to `openstack.common.strutils.mask_password`"""
+    msg = ("This function has been moved into openstack.common.strutils. "
+           "Please, update your imports.")
+    warnings.warn(msg, DeprecationWarning)
+    return strutils.mask_password(message, secret=secret)
 
 
 class BaseLoggerAdapter(logging.LoggerAdapter):
