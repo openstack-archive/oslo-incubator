@@ -12,14 +12,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import datetime
+import time
 
 from eventlet import greenthread
 from oslotest import base as test_base
 from six.moves import mox
 
 from openstack.common import loopingcall
-from openstack.common import timeutils
 
 
 class LoopingCallTestCase(test_base.BaseTestCase):
@@ -59,23 +58,23 @@ class LoopingCallTestCase(test_base.BaseTestCase):
         """Ensure the interval is adjusted to account for task duration."""
         self.num_runs = 3
 
-        now = datetime.datetime.utcnow()
-        second = datetime.timedelta(seconds=1)
-        smidgen = datetime.timedelta(microseconds=10000)
+        now = time.time()
+        second = 1
+        smidgen = 0.01
 
         m = mox.Mox()
         m.StubOutWithMock(greenthread, 'sleep')
         greenthread.sleep(mox.IsAlmost(0.02))
         greenthread.sleep(mox.IsAlmost(0.0))
         greenthread.sleep(mox.IsAlmost(0.0))
-        m.StubOutWithMock(timeutils, 'utcnow')
-        timeutils.utcnow().AndReturn(now)
-        timeutils.utcnow().AndReturn(now + second - smidgen)
-        timeutils.utcnow().AndReturn(now)
-        timeutils.utcnow().AndReturn(now + second + second)
-        timeutils.utcnow().AndReturn(now)
-        timeutils.utcnow().AndReturn(now + second + smidgen)
-        timeutils.utcnow().AndReturn(now)
+        m.StubOutWithMock(loopingcall, '_ts')
+        loopingcall._ts().AndReturn(now)
+        loopingcall._ts().AndReturn(now + second - smidgen)
+        loopingcall._ts().AndReturn(now)
+        loopingcall._ts().AndReturn(now + second + second)
+        loopingcall._ts().AndReturn(now)
+        loopingcall._ts().AndReturn(now + second + smidgen)
+        loopingcall._ts().AndReturn(now)
         m.ReplayAll()
 
         timer = loopingcall.FixedIntervalLoopingCall(self._wait_for_zero)
