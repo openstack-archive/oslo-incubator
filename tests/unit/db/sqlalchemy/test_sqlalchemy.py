@@ -16,6 +16,7 @@
 #    under the License.
 
 """Unit tests for SQLAlchemy specific code."""
+import eventlet
 import logging
 
 import _mysql_exceptions
@@ -121,6 +122,60 @@ class SessionErrorWrapperTestCase(test_base.DbTestCase):
         integrity_error = sqla_exc.IntegrityError(statement, params, orig)
         session._raise_if_duplicate_entry_error(integrity_error, 'ibm_db_sa')
 
+    def test_concurrent_transaction(self):
+        logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
+
+        def operate_on_row(name, ready=None, proceed=None):
+            logging.info('%s starting', name)
+            _session = self.sessionmaker()
+            with _session.begin():
+                logging.info('%s ready', name)
+
+                # Modify the same row, inside transaction
+                tbl = TmpTable()
+                tbl.update({'foo': 10})
+                tbl.save(_session)
+
+                if ready is not None:
+                    ready.send()
+                if proceed is not None:
+                    logging.info('%s waiting to proceed', name)
+                    proceed.wait()
+                logging.info('%s exiting transaction', name)
+            logging.info('%s terminating', name)
+            return True
+
+        logging.info('preparing context')
+
+        a_ready = eventlet.event.Event()
+        a_proceed = eventlet.event.Event()
+        b_proceed = eventlet.event.Event()
+
+        # thread A opens transaction
+        logging.info('spawning A')
+        a = eventlet.spawn(operate_on_row, 'A',
+                           ready=a_ready, proceed=a_proceed)
+        logging.info('waiting for A to enter transaction')
+        a_ready.wait()
+
+        # thread B opens transaction on same row
+        logging.info('spawning B')
+        b = eventlet.spawn(operate_on_row, 'B',
+                           proceed=b_proceed)
+        logging.info('waiting for B to (attempt to) enter transaction')
+        eventlet.sleep(1)  # should(?) advance B to blocking on transaction
+
+        # While B is still blocked, A should be able to proceed
+        a_proceed.send()
+
+        # Will block forever(*) if DB library isn't reentrant
+        # (*) Until hub_blocking_detection kicks in
+        self.assertTrue(a.wait())
+
+        b_proceed.send()
+        # If everything proceeded without blocking, this will throw a
+        # "duplicate entry" exception
+        self.assertRaises(db_exc.DBDuplicateEntry, b.wait)
 
 _REGEXP_TABLE_NAME = _TABLE_NAME + "regexp"
 
