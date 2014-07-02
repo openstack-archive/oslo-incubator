@@ -16,6 +16,7 @@
 """Provision test environment for specific DB backends"""
 
 import argparse
+import copy
 import logging
 import os
 import random
@@ -60,29 +61,23 @@ def create_database(engine):
     """Provide temporary user and database for each particular test."""
     driver = engine.name
 
-    auth = {
-        'database': ''.join(random.choice(string.ascii_lowercase)
-                            for i in moves.range(10)),
-        'user': engine.url.username,
-        'passwd': engine.url.password,
-    }
+    database = ''.join(random.choice(string.ascii_lowercase)
+                       for i in moves.range(10))
 
     sqls = [
-        "drop database if exists %(database)s;",
-        "create database %(database)s;"
+        'create database %s;' % database
     ]
 
     if driver == 'sqlite':
-        return 'sqlite:////tmp/%s' % auth['database']
+        database = '/tmp/%s' % database
     elif driver in ['mysql', 'postgresql']:
-        sql_query = map(lambda x: x % auth, sqls)
-        _execute_sql(engine, sql_query, driver)
+        _execute_sql(engine, sqls, driver)
     else:
         raise ValueError('Unsupported RDBMS %s' % driver)
 
-    params = auth.copy()
-    params['backend'] = driver
-    return "%(backend)s://%(user)s:%(passwd)s@localhost/%(database)s" % params
+    new_url = copy.copy(engine.url)
+    new_url.database = database
+    return str(new_url)
 
 
 def drop_database(admin_engine, current_uri):
