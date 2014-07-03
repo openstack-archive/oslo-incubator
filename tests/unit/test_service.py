@@ -110,6 +110,7 @@ class ServiceLauncherTest(ServiceTestBase):
         self.workers = 2
         pid = os.fork()
         if pid == 0:
+            os.setsid()
             # NOTE(johannes): We can't let the child processes exit back
             # into the unit test framework since then we'll have multiple
             # processes running the same tests (and possibly forking more
@@ -235,6 +236,7 @@ class ServiceRestartTest(ServiceTestBase):
         pid = os.fork()
         status = 0
         if pid == 0:
+            os.setsid()
             try:
                 serv = ServiceWithTimer()
                 launcher = service.ServiceLauncher()
