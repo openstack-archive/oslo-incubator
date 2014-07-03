@@ -39,6 +39,7 @@ class GettextTest(test_base.BaseTestCase):
         self.mox = moxfixture.mox
         # remember so we can reset to it later
         self._USE_LAZY = gettextutils.USE_LAZY
+        gettextutils.USE_LAZY = False
 
     def tearDown(self):
         # reset to value before test
@@ -59,27 +60,22 @@ class GettextTest(test_base.BaseTestCase):
         gettextutils.install('blaa')
         self.assertTrue(isinstance(_('A String'), six.text_type))  # noqa
 
+        # lazy is ignored (parm removed in i18n library)
         gettextutils.install('blaa', lazy=True)
         self.assertTrue(isinstance(_('A Message'),  # noqa
                                    gettextutils.Message))
 
-    def test_gettext_install_looks_up_localedir(self):
-        with mock.patch('os.environ.get') as environ_get:
-            with mock.patch('gettext.install') as gettext_install:
-                environ_get.return_value = '/foo/bar'
+    def test_gettextutils_install_with_enable(self):
+        gettextutils.install('blaa')
+        self.assertTrue(isinstance(_('A String'), six.text_type))  # noqa
 
-                gettextutils.install('blaa')
+        # lazy is ignored (parm removed in i18n library)
+        gettextutils.install('blaa', lazy=False)
+        self.assertTrue(isinstance(_('A String'), six.text_type))  # noqa
 
-                environ_get.assert_called_once_with('BLAA_LOCALEDIR')
-                if six.PY3:
-                    gettext_install.assert_called_once_with(
-                        'blaa',
-                        localedir='/foo/bar')
-                else:
-                    gettext_install.assert_called_once_with(
-                        'blaa',
-                        localedir='/foo/bar',
-                        unicode=True)
+        gettextutils.enable_lazy()
+        self.assertTrue(isinstance(_('A Message'),  # noqa
+                                   gettextutils.Message))
 
     def test_get_available_languages(self):
         # All the available languages for which locale data is available
@@ -718,9 +714,21 @@ class TranslationHandlerTestCase(test_base.BaseTestCase):
 
 class TranslatorFactoryTest(test_base.BaseTestCase):
 
+    def setUp(self):
+        super(TranslatorFactoryTest, self).setUp()
+        # remember so we can reset to it later
+        self._USE_LAZY = gettextutils.USE_LAZY
+        gettextutils.USE_LAZY = False
+
+    def tearDown(self):
+        # reset to value before test
+        gettextutils.USE_LAZY = self._USE_LAZY
+        super(TranslatorFactoryTest, self).tearDown()
+
     def test_lazy(self):
         with mock.patch.object(gettextutils, 'Message') as msg:
             tf = gettextutils.TranslatorFactory('domain', lazy=True)
+            gettextutils.enable_lazy()
             tf.primary('some text')
             msg.assert_called_with('some text', domain='domain')
 

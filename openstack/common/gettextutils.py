@@ -23,7 +23,6 @@ Usual usage in an openstack.common module:
 """
 
 import copy
-import functools
 import gettext
 import locale
 from logging import handlers
@@ -75,16 +74,19 @@ class TranslatorFactory(object):
         """
         if domain is None:
             domain = self.domain
-        if self.lazy:
-            return functools.partial(Message, domain=domain)
-        t = gettext.translation(
-            domain,
-            localedir=self.localedir,
-            fallback=True,
-        )
-        if six.PY3:
-            return t.gettext
-        return t.ugettext
+        t = gettext.translation(domain,
+                                localedir=self.localedir,
+                                fallback=True)
+        # Use the appropriate method of the translation object based
+        # on the python version.
+        m = t.gettext if six.PY3 else t.ugettext
+
+        def f(msg):
+            """oslo.i18n.gettextutils translation function."""
+            if self.lazy or USE_LAZY:
+                return Message(msg, domain=domain)
+            return m(msg)
+        return f
 
     @property
     def primary(self):
@@ -147,15 +149,7 @@ def enable_lazy():
     your project is importing _ directly instead of using the
     gettextutils.install() way of importing the _ function.
     """
-    # FIXME(dhellmann): This function will be removed in oslo.i18n,
-    # because the TranslatorFactory makes it superfluous.
-    global _, _LI, _LW, _LE, _LC, USE_LAZY
-    tf = TranslatorFactory('oslo', lazy=True)
-    _ = tf.primary
-    _LI = tf.log_info
-    _LW = tf.log_warning
-    _LE = tf.log_error
-    _LC = tf.log_critical
+    global USE_LAZY
     USE_LAZY = True
 
 
@@ -177,19 +171,9 @@ def install(domain, lazy=False):
                  instead of strings, which can then be lazily translated into
                  any available locale.
     """
-    if lazy:
-        from six import moves
-        tf = TranslatorFactory(domain, lazy=True)
-        moves.builtins.__dict__['_'] = tf.primary
-    else:
-        localedir = '%s_LOCALEDIR' % domain.upper()
-        if six.PY3:
-            gettext.install(domain,
-                            localedir=os.environ.get(localedir))
-        else:
-            gettext.install(domain,
-                            localedir=os.environ.get(localedir),
-                            unicode=True)
+    from six import moves
+    tf = TranslatorFactory(domain, lazy=True)
+    moves.builtins.__dict__['_'] = tf.primary
 
 
 class Message(six.text_type):
