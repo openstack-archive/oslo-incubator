@@ -23,6 +23,7 @@ import threading
 import time
 
 import eventlet
+eventlet.monkey_patch()
 from eventlet import greenpool
 from eventlet import greenthread
 from oslo.config import cfg
