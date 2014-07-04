@@ -630,7 +630,7 @@ class LogConfigOptsTestCase(test_base.BaseTestCase):
 
 class LogConfigTestCase(test_base.BaseTestCase):
 
-    minimal_config = """[loggers]
+    minimal_config = b"""[loggers]
 keys=root
 
 [formatters]
