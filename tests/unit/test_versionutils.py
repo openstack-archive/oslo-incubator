@@ -188,6 +188,41 @@ class DeprecatedTestCase(test_base.BaseTestCase):
                                remove_in='Grizzly')
 
 
+    @mock.patch('openstack.common.versionutils.LOG')
+    def test_deprecated_class_without_init(self, mock_log):
+
+        @versionutils.deprecated(as_of=versionutils.deprecated.JUNO,
+                                 remove_in=+1)
+        class OutdatedClass(object):
+            pass
+        OutdatedClass()
+
+        self.assertEqual(type, OutdatedClass.__class__)
+        self.assert_deprecated(mock_log,
+                               what='OutdatedClass()',
+                               as_of='Juno',
+                               remove_in='Kilo')
+
+    @mock.patch('openstack.common.versionutils.LOG')
+    def test_deprecated_class_with_init(self, mock_log):
+
+        @versionutils.deprecated(as_of=versionutils.deprecated.JUNO,
+                                 remove_in=+1)
+        class OutdatedClass(object):
+            def __init__(self):
+                """It is __init__ method."""
+                super(OutdatedClass, self).__init__()
+        obj = OutdatedClass()
+
+        self.assertEqual(type, OutdatedClass.__class__)
+        self.assertEqual('__init__', obj.__init__.__name__)
+        self.assertEqual('It is __init__ method.', obj.__init__.__doc__)
+        self.assert_deprecated(mock_log,
+                               what='OutdatedClass()',
+                               as_of='Juno',
+                               remove_in='Kilo')
+
+
 class IsCompatibleTestCase(test_base.BaseTestCase):
     def test_same_version(self):
         self.assertTrue(versionutils.is_compatible('1', '1'))
