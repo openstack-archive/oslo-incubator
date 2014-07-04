@@ -59,12 +59,14 @@ class deprecated(object):
     GRIZZLY = 'G'
     HAVANA = 'H'
     ICEHOUSE = 'I'
+    JUNO = 'J'
 
     _RELEASES = {
         'F': 'Folsom',
         'G': 'Grizzly',
         'H': 'Havana',
         'I': 'Icehouse',
+        'J': 'Juno'
     }
 
     _deprecated_msg_with_alternative = _(
@@ -92,16 +94,23 @@ class deprecated(object):
         self.remove_in = remove_in
         self.what = what
 
-    def __call__(self, func):
+    def __call__(self, func_or_cls):
         if not self.what:
-            self.what = func.__name__ + '()'
+            self.what = func_or_cls.__name__ + '()'
+        msg, details = self._build_message()
 
-        @functools.wraps(func)
-        def wrapped(*args, **kwargs):
-            msg, details = self._build_message()
-            LOG.deprecated(msg, details)
-            return func(*args, **kwargs)
-        return wrapped
+        if hasattr(func_or_cls, 'func_code'):
+            @functools.wraps(func_or_cls)
+            def wrapped(*args, **kwargs):
+                LOG.deprecated(msg, details)
+                return func_or_cls(*args, **kwargs)
+            return wrapped
+        else:
+            class cls(func_or_cls):
+                def __init__(self, *args, **kwargs):
+                    LOG.deprecated(msg, details)
+                    super(cls, self).__init__(*args, **kwargs)
+            return cls
 
     def _get_safe_to_remove_release(self, release):
         # TODO(dstanek): this method will have to be reimplemented once
