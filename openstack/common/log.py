@@ -244,6 +244,11 @@ class LazyAdapter(BaseLoggerAdapter):
     def logger(self):
         if not self._logger:
             self._logger = getLogger(self.name, self.version)
+            if six.PY3:
+                # In Python 3, the code fails because the 'manager' attribute
+                # cannot be found when using a LoggerAdapter as the
+                # underlying logger. Work around this issue.
+                self._logger.manager = self._logger.logger.manager
         return self._logger
 
 
@@ -397,7 +402,7 @@ def _load_log_config(log_config_append):
     try:
         logging.config.fileConfig(log_config_append,
                                   disable_existing_loggers=False)
-    except moves.configparser.Error as exc:
+    except (moves.configparser.Error, KeyError) as exc:
         raise LogConfigError(log_config_append, six.text_type(exc))
 
 
