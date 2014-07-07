@@ -44,6 +44,15 @@ class JSONUtilsTestMixin(object):
     def test_dumps(self):
         self.assertEqual('{"a": "b"}', jsonutils.dumps({'a': 'b'}))
 
+    def test_dump(self):
+        expected = '{"a": "b"}'
+        json_dict = {'a': 'b'}
+
+        fp = six.StringIO()
+        jsonutils.dump(json_dict, fp)
+
+        self.assertEqual(expected, fp.getvalue())
+
     def test_loads(self):
         self.assertEqual({'a': 'b'}, jsonutils.loads('{"a": "b"}'))
 
