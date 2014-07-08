@@ -129,10 +129,33 @@ class PolicyBaseTestCase(test_base.BaseTestCase):
 class EnforcerTest(PolicyBaseTestCase):
 
     def test_load_file(self):
+        self.CONF.set_override('policy_configration_directories', [])
         self.enforcer.load_rules(True)
         self.assertIsNotNone(self.enforcer.rules)
         self.assertIn('default', self.enforcer.rules)
         self.assertIn('admin', self.enforcer.rules)
+
+    def test_load_directory(self):
+        self.enforcer.load_rules(True)
+        self.assertIsNotNone(self.enforcer.rules)
+        loaded_rules = jsonutils.loads(str(self.enforcer.rules))
+        self.assertEqual('role:fakeB', loaded_rules['default'])
+        self.assertEqual('is_admin:True', loaded_rules['admin'])
+
+    def test_load_multiple_directories(self):
+        self.CONF.set_override('policy_configration_directories',
+                               ['policy.d', 'policy.2.d'])
+        self.enforcer.load_rules(True)
+        self.assertIsNotNone(self.enforcer.rules)
+        loaded_rules = jsonutils.loads(str(self.enforcer.rules))
+        self.assertEqual('role:fakeC', loaded_rules['default'])
+        self.assertEqual('is_admin:True', loaded_rules['admin'])
+
+    def test_load_non_existed_directory(self):
+        self.CONF.set_override('policy_configration_directories',
+                               ['policy.d', 'policy.x.d'])
+        self.assertRaises(cfg.ConfigFilesNotFoundError,
+                          self.enforcer.load_rules, True)
 
     def test_set_rules_type(self):
         self.assertRaises(TypeError,
@@ -205,7 +228,7 @@ class EnforcerTest(PolicyBaseTestCase):
     def test_get_policy_path_raises_exc(self):
         enforcer = policy.Enforcer(policy_file='raise_error.json')
         e = self.assertRaises(cfg.ConfigFilesNotFoundError,
-                              enforcer._get_policy_path)
+                              enforcer._get_policy_path, enforcer.policy_file)
         self.assertEqual(('raise_error.json', ), e.config_files)
 
     def test_enforcer_set_rules(self):
