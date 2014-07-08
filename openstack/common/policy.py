@@ -77,6 +77,7 @@ as it allows particular rules to be explicitly disabled.
 
 import abc
 import ast
+import os
 import re
 
 from oslo.config import cfg
@@ -98,6 +99,10 @@ policy_opts = [
                default='default',
                help=_('Default rule. Enforced when a requested rule is not '
                       'found.')),
+    cfg.ListOpt('policy_configration_directories',
+                default=['policy.d'],
+                help=_('The directories of policy configuration files is '
+                       'stored')),
 ]
 
 CONF = cfg.CONF
@@ -232,31 +237,45 @@ class Enforcer(object):
 
         if self.use_conf:
             if not self.policy_path:
-                self.policy_path = self._get_policy_path()
+                self.policy_path = self._get_policy_path(self.policy_file)
 
+            self._load_policy_file(self.policy_path, force_reload)
+            for path in CONF.policy_configration_directories:
+                path = self._get_policy_path(path)
+                self._walk_through_policy_directory(path,
+                                                    self._load_policy_file,
+                                                    force_reload, False)
+
+    def _walk_through_policy_directory(self, path, func, *args):
+        policy_files = os.walk(path).next()[2]
+        policy_files.sort()
+        for policy_file in policy_files:
+            func(os.path.join(path, policy_file), *args)
+
+    def _load_policy_file(self, path, force_reload, overwrite=True):
             reloaded, data = fileutils.read_cached_file(
-                self.policy_path, force_reload=force_reload)
+                path, force_reload=force_reload)
             if reloaded or not self.rules:
                 rules = Rules.load_json(data, self.default_rule)
-                self.set_rules(rules)
+                self.set_rules(rules, overwrite)
                 LOG.debug("Rules successfully reloaded")
 
-    def _get_policy_path(self):
-        """Locate the policy json data file.
+    def _get_policy_path(self, path):
+        """Locate the policy json data file/path.
 
         :param policy_file: Custom policy file to locate.
 
         :returns: The policy path
 
-        :raises: ConfigFilesNotFoundError if the file couldn't
+        :raises: ConfigFilesNotFoundError if the file/path couldn't
                  be located.
         """
-        policy_file = CONF.find_file(self.policy_file)
+        policy_path = CONF.find_file(path)
 
-        if policy_file:
-            return policy_file
+        if policy_path:
+            return policy_path
 
-        raise cfg.ConfigFilesNotFoundError((self.policy_file,))
+        raise cfg.ConfigFilesNotFoundError((path,))
 
     def enforce(self, rule, target, creds, do_raise=False,
                 exc=None, *args, **kwargs):
