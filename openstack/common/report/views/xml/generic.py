@@ -66,11 +66,11 @@ class KeyValueView(object):
             res = ET.Element(rootkeyname)
 
             if isinstance(rootmodel, col.Mapping):
-                for key in rootmodel:
+                for key in sorted(rootmodel):
                     res.append(serialize(rootmodel[key], key))
             elif (isinstance(rootmodel, col.Sequence)
                     and not isinstance(rootmodel, six.string_types)):
-                for val in rootmodel:
+                for val in sorted(rootmodel, key=lambda obj: str(obj)):
                     res.append(serialize(val, 'item'))
             elif ET.iselement(rootmodel):
                 res.append(rootmodel)

@@ -101,8 +101,8 @@ class TestGenericXMLView(utils.BaseTestCase):
         self.model['dt'] = {'a': 1, 'b': 2}
 
         target_str = ('<model>'
-                      '<int>1</int>'
                       '<dt><a>1</a><b>2</b></dt>'
+                      '<int>1</int>'
                       '<string>value</string></model>')
         self.assertEqual(target_str, str(self.model))
 
@@ -119,9 +119,9 @@ class TestGenericXMLView(utils.BaseTestCase):
         self.model['dt'] = {'a': 1, 'b': [2, 3]}
 
         target_str = ('<model>'
-                      '<int>1</int>'
                       '<dt><a>1</a>'
                       '<b><item>2</item><item>3</item></b></dt>'
+                      '<int>1</int>'
                       '<string>value</string></model>')
         self.assertEqual(target_str, str(self.model))
 
@@ -131,7 +131,7 @@ class TestGenericXMLView(utils.BaseTestCase):
         target_str = ('<model>'
                       '<int>1</int>'
                       '<lt><item>1</item>'
-                      '<item><c>3</c><b>2</b></item></lt>'
+                      '<item><b>2</b><c>3</c></item></lt>'
                       '<string>value</string></model>')
         self.assertEqual(target_str, str(self.model))
 
@@ -178,8 +178,8 @@ class TestGenericJSONViews(utils.BaseTestCase):
         self.model['dt'] = {'a': 1, 'b': 2}
 
         target_str = ('{'
-                      '"int": 1, '
                       '"dt": {"a": 1, "b": 2}, '
+                      '"int": 1, '
                       '"string": "value"'
                       '}')
         self.assertEqual(target_str, str(self.model))
@@ -198,8 +198,8 @@ class TestGenericJSONViews(utils.BaseTestCase):
         self.model['dt'] = {'a': 1, 'b': [2, 3]}
 
         target_str = ('{'
-                      '"int": 1, '
                       '"dt": {"a": 1, "b": [2, 3]}, '
+                      '"int": 1, '
                       '"string": "value"'
                       '}')
         self.assertEqual(target_str, str(self.model))
@@ -209,7 +209,7 @@ class TestGenericJSONViews(utils.BaseTestCase):
 
         target_str = ('{'
                       '"int": 1, '
-                      '"lt": [1, {"c": 3, "b": 2}], '
+                      '"lt": [1, {"b": 2, "c": 3}], '
                       '"string": "value"'
                       '}')
         self.assertEqual(target_str, str(self.model))
@@ -278,10 +278,10 @@ class TestGenericTextViews(utils.BaseTestCase):
     def test_dict_serialization(self):
         self.model['dt'] = {'a': 1, 'b': 2}
 
-        target_str = ('int = 1\n'
-                      'dt = \n'
+        target_str = ('dt = \n'
                       '  a = 1\n'
                       '  b = 2\n'
+                      'int = 1\n'
                       'string = value')
         self.assertEqual(target_str, str(self.model))
 
@@ -298,13 +298,14 @@ class TestGenericTextViews(utils.BaseTestCase):
     def test_list_in_dict_serialization(self):
         self.model['dt'] = {'a': 1, 'b': [2, 3]}
 
-        target_str = ('int = 1\n'
-                      'dt = \n'
+        target_str = ('dt = \n'
                       '  a = 1\n'
                       '  b = \n'
                       '    2\n'
                       '    3\n'
+                      'int = 1\n'
                       'string = value')
+
         self.assertEqual(target_str, str(self.model))
 
     def test_dict_in_list_serialization(self):
@@ -314,8 +315,8 @@ class TestGenericTextViews(utils.BaseTestCase):
                       'lt = \n'
                       '  1\n'
                       '  [dict]\n'
-                      '    c = 3\n'
                       '    b = 2\n'
+                      '    c = 3\n'
                       'string = value')
         self.assertEqual(target_str, str(self.model))
 
