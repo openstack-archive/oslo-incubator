@@ -22,9 +22,8 @@ from tests import utils
 class BasicView(object):
     def __call__(self, model):
         res = ""
-        for k, v in model.items():
-            res += str(k) + ": " + str(v) + ";"
-
+        for k in sorted(model.keys()):
+            res += str(k) + ": " + str(model[k]) + ";"
         return res
 
 
