@@ -503,7 +503,11 @@ def _parse_check(rule):
         return TrueCheck()
 
     try:
-        kind, match = rule.split(':', 1)
+        if '==' in rule:
+            kind, match = rule.split('==', 1)
+            return _checks['=='](kind, match)
+        else:
+            kind, match = rule.split(':', 1)
     except Exception:
         LOG.exception(_LE("Failed to understand rule %s") % rule)
         # If the rule is invalid, we'll fail closed
@@ -512,6 +516,8 @@ def _parse_check(rule):
     # Find what implements the check
     if kind in _checks:
         return _checks[kind](kind, match)
+    elif '==' in _checks:
+        return _checks['=='](kind, match)
     elif None in _checks:
         return _checks[None](kind, match)
     else:
@@ -893,3 +899,19 @@ class GenericCheck(Check):
             except KeyError:
                 return False
         return match == six.text_type(leftval)
+        return False
+
+
+@register('==')
+class ParameterEqualityCheck(Check):
+    def __call__(self, target, creds, enforcer):
+        """Compare an individual match.
+
+        Matches look like:
+
+            tenant:%(tenant_id)s
+        """
+
+        # TODO(termie): do dict inspection via dot syntax
+        match = self.match % target
+        return match == self.kind
