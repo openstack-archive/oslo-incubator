@@ -883,6 +883,9 @@ class GenericCheck(Check):
             # present in Target return false
             return False
 
+        if match == self.kind:
+            return True
+
         try:
             # Try to interpret self.kind as a literal
             leftval = ast.literal_eval(self.kind)

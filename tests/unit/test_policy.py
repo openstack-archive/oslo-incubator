@@ -956,3 +956,17 @@ class GenericCheckTestCase(PolicyBaseTestCase):
         self.assertEqual(check(dict(enabled=True),
                                {},
                                self.enforcer), True)
+
+    def test_kind_equals_to_match(self):
+        check = policy.GenericCheck("test_1234", '%(test_key)s')
+
+        self.assertEqual(check(dict(test_key='test_1234'),
+                               {},
+                               self.enforcer), True)
+
+    def test_kind_not_equals_to_match(self):
+        check = policy.GenericCheck("test_1234", '%(test_key)s')
+
+        self.assertEqual(check(dict(test_key='test_1235'),
+                               {},
+                               self.enforcer), False)
