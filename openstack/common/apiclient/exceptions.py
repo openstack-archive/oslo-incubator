@@ -115,18 +115,27 @@ class HttpError(ClientException):
 
     def __init__(self, message=None, details=None,
                  response=None, request_id=None,
-                 url=None, method=None, http_status=None):
-        self.http_status = http_status or self.http_status
+                 url=None, method=None, http_status=None, **kwargs):
+        self.http_status = (http_status or kwargs.get('code') or
+                            self.http_status)
         self.message = message or self.message
         self.details = details
         self.request_id = request_id
         self.response = response
         self.url = url
         self.method = method
+        self.kwargs = kwargs
         formatted_string = "%s (HTTP %s)" % (self.message, self.http_status)
         if request_id:
             formatted_string += " (Request-ID: %s)" % request_id
         super(HttpError, self).__init__(formatted_string)
+
+    def __getattr__(self, attr):
+        if attr in self.kwargs:
+            return self.kwargs[attr]
+        else:
+            raise AttributeError(_("%(cls)s object has no attribute %(attr)s")
+                                 % {"cls": self.__class__, "attr": attr})
 
 
 class HTTPRedirection(HttpError):
