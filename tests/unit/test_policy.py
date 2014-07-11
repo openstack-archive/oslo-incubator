@@ -24,6 +24,7 @@ import six
 import six.moves.urllib.parse as urlparse
 import six.moves.urllib.request as urlrequest
 
+from openstack.common import fileutils
 from openstack.common.fixture import config
 from openstack.common.fixture import lockutils
 from openstack.common import jsonutils
@@ -139,11 +140,16 @@ class EnforcerTest(PolicyBaseTestCase):
                           self.enforcer.set_rules,
                           'dummy')
 
+    @mock.patch.object(fileutils, 'delete_cached_file', mock.Mock())
     def test_clear(self):
         # Make sure the rules are reset
         self.enforcer.rules = 'spam'
+        filename = self.enforcer.policy_path
         self.enforcer.clear()
         self.assertEqual(self.enforcer.rules, {})
+        self.assertEqual(self.enforcer.default_rule, None)
+        self.assertEqual(self.enforcer.policy_path, None)
+        fileutils.delete_cached_file.assert_called_once_with(filename)
 
     def test_rule_with_check(self):
         rules_json = """{

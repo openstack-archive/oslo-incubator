@@ -74,6 +74,22 @@ class TestCachedFile(test_base.BaseTestCase):
         self.assertEqual(data, fake_contents)
         self.assertTrue(fresh)
 
+    def test_delete_cached_file(self):
+        filename = '/this/is/a/fake/deletion/of/cached/file'
+        fileutils._FILE_CACHE = {
+            filename: {"data": 1123, "mtime": 1}
+        }
+        self.assertIn(filename, fileutils._FILE_CACHE)
+        fileutils.delete_cached_file(filename)
+        self.assertNotIn(filename, fileutils._FILE_CACHE)
+
+    def test_delete_cached_file_not_exist(self):
+        # We expect that if cached file does not exist no Exception raised.
+        filename = '/this/is/a/fake/deletion/attempt/of/not/cached/file'
+        self.assertNotIn(filename, fileutils._FILE_CACHE)
+        fileutils.delete_cached_file(filename)
+        self.assertNotIn(filename, fileutils._FILE_CACHE)
+
 
 class DeleteIfExists(test_base.BaseTestCase):
     def test_file_present(self):
