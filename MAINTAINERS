@@ -67,12 +67,6 @@ M: Morgan Fainberg <m@metacloud.com>
 S: Maintained
 F: cache/
 
-== cfg ==
-
-M: Mark McLoughlin <markmc@redhat.com>
-S: Maintained
-F: cfgfilter.py
-
 == cliutils ==
 
 M:
