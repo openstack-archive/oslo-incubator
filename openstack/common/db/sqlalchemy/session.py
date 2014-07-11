@@ -405,9 +405,14 @@ def _raise_if_duplicate_entry_error(integrity_error, engine_name):
 #
 # postgresql:
 # (TransactionRollbackError) deadlock detected <deadlock_details>
+#
+# ibm_db_sa:
+# SQL0911N The current transaction has been rolled back because of a deadlock
+#          or timeout <deadlock details>
 _DEADLOCK_RE_DB = {
     "mysql": re.compile(r"^.*\(1213, 'Deadlock.*"),
-    "postgresql": re.compile(r"^.*deadlock detected.*")
+    "postgresql": re.compile(r"^.*deadlock detected.*"),
+    "ibm_db_sa": re.compile(r"^.*SQL0911N.*")
 }
 
 
