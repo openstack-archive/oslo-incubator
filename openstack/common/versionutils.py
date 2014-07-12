@@ -59,12 +59,14 @@ class deprecated(object):
     GRIZZLY = 'G'
     HAVANA = 'H'
     ICEHOUSE = 'I'
+    JUNO = 'J'
 
     _RELEASES = {
         'F': 'Folsom',
         'G': 'Grizzly',
         'H': 'Havana',
         'I': 'Icehouse',
+        'J': 'Juno',
     }
 
     _deprecated_msg_with_alternative = _(
