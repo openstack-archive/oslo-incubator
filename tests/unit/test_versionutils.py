@@ -24,9 +24,19 @@ class DeprecatedTestCase(test_base.BaseTestCase):
     def assert_deprecated(self, mock_log, **expected_details):
         decorator = versionutils.deprecated
         if 'in_favor_of' in expected_details:
-            expected_msg = decorator._deprecated_msg_with_alternative
+            if int(expected_details.get('remove_in')) > 0:
+                expected_msg = decorator._deprecated_msg_with_alternative
+            else:
+                expected_msg = getattr(
+                    decorator,
+                    '_deprecated_msg_with_alternative_no_removal')
         else:
-            expected_msg = decorator._deprecated_msg_no_alternative
+            if int(expected_details.get('remove_in')) > 0:
+                expected_msg = decorator._deprecated_msg_no_alternative
+            else:
+                expected_msg = getattr(
+                    decorator,
+                    '_deprecated_msg_with_no_alternative_no_removal')
         mock_log.deprecated.assert_called_with(expected_msg, expected_details)
 
     @mock.patch('openstack.common.versionutils.LOG', mock.Mock())
@@ -134,8 +144,8 @@ class DeprecatedTestCase(test_base.BaseTestCase):
     @mock.patch('openstack.common.versionutils.LOG')
     def test_deprecated_with_removed_plus_3(self, mock_log):
 
-        @versionutils.deprecated(as_of=versionutils.deprecated.GRIZZLY,
-                                 remove_in=+3)
+        @versionutils.deprecated(as_of=versionutils.deprecated.BEXAR,
+                                 remove_in=3)
         def do_outdated_stuff():
             return
 
@@ -143,8 +153,34 @@ class DeprecatedTestCase(test_base.BaseTestCase):
 
         self.assert_deprecated(mock_log,
                                what='do_outdated_stuff()',
-                               as_of='Grizzly',
-                               remove_in='J')
+                               as_of='Bexar',
+                               remove_in='E')
+
+    @mock.patch('openstack.common.versionutils.LOG')
+    def test_deprecated_with_removed_zero(self, mock_log):
+        @versionutils.deprecated(as_of=versionutils.deprecated.GRIZZLY,
+                                 remove_in=0)
+        def do_outdated_stuff():
+            return
+
+        do_outdated_stuff()
+        self.assert_deprecated(mock_log,
+                               as_of=versionutils.deprecated.GRIZZLY,
+                               remove_in=0)
+
+    @mock.patch('openstack.common.versionutils.LOG')
+    def test_deprecated_with_removed_zero_and_alternative(self, mock_log):
+        @versionutils.deprecated(as_of=versionutils.deprecated.GRIZZLY,
+                                 in_favor_of='different_stuff()',
+                                 remove_in=0)
+        def do_outdated_stuff():
+            return
+
+        do_outdated_stuff()
+        self.assert_deprecated(mock_log,
+                               as_of=versionutils.deprecated.GRIZZLY,
+                               in_favor_of='different_stuff()',
+                               remove_in=0)
 
 
 class IsCompatibleTestCase(test_base.BaseTestCase):
