@@ -16,6 +16,7 @@
 import datetime
 import sys
 
+from oslo.config import cfg
 from oslotest import base as test_base
 
 from openstack.common import importutils
@@ -116,3 +117,17 @@ class ImportUtilsTest(test_base.BaseTestCase):
     def test_try_import_returns_default(self):
         foo = importutils.try_import('foo.bar')
         self.assertIsNone(foo)
+
+    def test_load_lazy_pluggable(self):
+        IMPL = importutils.LazyPluggable('backend',
+                                        cfg.CONF,
+                                        config_group=None,
+                                        sqlalchemy=
+                                        'openstack.common.db.sqlalchemy.migration')
+
+        IMPL.__getattr__('db_backend')
+
+
+
+
+

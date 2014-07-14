@@ -20,6 +20,8 @@ Import related utilities and helper functions.
 import sys
 import traceback
 
+from openstack.common.db import exception
+
 
 def import_class(import_str):
     """Returns a class from a string including module and class."""
@@ -71,3 +73,46 @@ def try_import(import_str, default=None):
         return import_module(import_str)
     except ImportError:
         return default
+
+
+class LazyPluggable(object):
+    """A pluggable backend loaded lazily based on some value."""
+
+    def __init__(self, pivot, conf, config_group=None, **backends):
+        """
+        :param pivot: name of option in config, which responsible
+            for the selection of backend in runtime
+        :param conf: instance of config
+        :param config_group: group of config, None if not exist
+        :param backends: supported backends
+        """
+        self.__backends = backends
+        self.__pivot = pivot
+        self.__backend = None
+        self.__config_group = config_group
+        self.__conf = conf
+
+    def __get_backend(self):
+        if not self.__backend:
+            if self.__config_group is None:
+                backend_name = self.__conf[self.__pivot]
+            else:
+                backend_name = self.__conf[self.__config_group][self.__pivot]
+            if backend_name not in self.__backends:
+                msg = ('Invalid backend: %s') % backend_name
+                raise exception.PluginLoadError(msg)
+
+            backend = self.__backends[backend_name]
+            if isinstance(backend, tuple):
+                name = backend[0]
+                fromlist = backend[1]
+            else:
+                name = backend
+                fromlist = backend
+
+            self.__backend = __import__(name, None, None, fromlist)
+        return self.__backend
+
+    def __getattr__(self, key):
+        backend = self.__get_backend()
+        return getattr(backend, key)
