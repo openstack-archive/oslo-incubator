@@ -180,7 +180,13 @@ def safe_encode(text, incoming=None,
         incoming = (sys.stdin.encoding or
                     sys.getdefaultencoding())
 
-    if isinstance(text, six.text_type):
+    # Avoid case issues in comparisons
+    if hasattr(incoming, 'lower'):
+        incoming = incoming.lower()
+    if hasattr(encoding, 'lower'):
+        encoding = encoding.lower()
+
+    if isinstance(text, six.text_type) and encoding != incoming:
         return text.encode(encoding, errors)
     elif text and encoding != incoming:
         # Decode text before encoding it with `encoding`
