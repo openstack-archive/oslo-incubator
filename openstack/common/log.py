@@ -410,18 +410,20 @@ def setup(product_name, version='unknown'):
     sys.excepthook = _create_logging_excepthook(product_name)
 
 
-def set_defaults(logging_context_format_string,
+def set_defaults(logging_context_format_string=None,
                  default_log_levels=None):
     # Just in case the caller is not setting the
     # default_log_level. This is insurance because
     # we introduced the default_log_level parameter
     # later in a backwards in-compatible change
-    if default_log_levels is None:
-        default_log_levels = DEFAULT_LOG_LEVELS
-    cfg.set_defaults(
-            log_opts,
-            logging_context_format_string=logging_context_format_string,
-            default_log_levels=default_log_levels)
+    if default_log_levels is not None:
+        cfg.set_defaults(
+                log_opts,
+                default_log_levels=default_log_levels)
+    if logging_context_format_string is not None:
+        cfg.set_defaults(
+                log_opts,
+                logging_context_format_string=logging_context_format_string)
 
 
 def _find_facility_from_conf():
