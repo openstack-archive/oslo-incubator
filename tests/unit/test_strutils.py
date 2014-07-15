@@ -185,6 +185,43 @@ class StrUtilsTest(test_base.BaseTestCase):
                          safe_encode(six.b('ni\xc3\xb1o'), incoming='ascii'))
         self.assertEqual(six.b('foo'), safe_encode(six.u('foo')))
 
+    def test_safe_encode_none_instead_of_text(self):
+        self.assertRaises(TypeError, strutils.safe_encode, None)
+
+    def test_safe_encode_bool_instead_of_text(self):
+        self.assertRaises(TypeError, strutils.safe_encode, True)
+
+    def test_safe_encode_int_instead_of_text(self):
+        self.assertRaises(TypeError, strutils.safe_encode, 1)
+
+    def test_safe_encode_list_instead_of_text(self):
+        self.assertRaises(TypeError, strutils.safe_encode, [])
+
+    def test_safe_encode_dict_instead_of_text(self):
+        self.assertRaises(TypeError, strutils.safe_encode, {})
+
+    def test_safe_encode_tuple_instead_of_text(self):
+        self.assertRaises(TypeError, strutils.safe_encode, ('foo', 'bar', ))
+
+    def test_safe_encode_different_case_same_encoding(self):
+        text = six.u('foo\xc3\xb1bar')
+        result = strutils.safe_encode(
+            text=text, incoming='UTF-8', encoding='utf-8')
+        self.assertEqual(text, result)
+
+    def test_safe_encode_same_case_and_encoding(self):
+        text = six.u('foo\xc3\xb1bar')
+        encoding = 'utf-8'
+        result = strutils.safe_encode(
+            text=text, incoming=encoding, encoding=encoding)
+        self.assertEqual(text, result)
+
+    def test_safe_encode_different_encodings(self):
+        text = six.u('foo\xc3\xb1bar')
+        result = strutils.safe_encode(
+            text=text, incoming='utf-8', encoding='iso-8859-1')
+        self.assertNotEqual(text, result)
+
     def test_slugify(self):
         to_slug = strutils.to_slug
         self.assertRaises(TypeError, to_slug, True)
