@@ -533,6 +533,14 @@ class SetDefaultsTestCase(test_base.BaseTestCase):
         self.conf = self.TestConfigOpts()
         self.conf.register_opts(log.log_opts)
 
+        self._orig_defaults = dict([(o.dest, o.default)
+                                    for o in log.log_opts])
+        self.addCleanup(self._restore_log_defaults)
+
+    def _restore_log_defaults(self):
+        for opt in log.log_opts:
+            opt.default = self._orig_defaults[opt.dest]
+
     def test_default_to_none(self):
         log.set_defaults(logging_context_format_string=None)
         self.conf([])
