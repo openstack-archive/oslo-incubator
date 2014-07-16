@@ -20,8 +20,6 @@ Import related utilities and helper functions.
 import sys
 import traceback
 
-from openstack.common.db import exception
-
 
 def import_class(import_str):
     """Returns a class from a string including module and class."""
@@ -79,7 +77,8 @@ class LazyPluggable(object):
     """A pluggable backend loaded lazily based on some value.
     For example when we need to load backend, which depends on some option,
     we can register this option in config and load needed backend via
-    function _get_backend."""
+    function _get_backend.
+    """
 
     def __init__(self, conf, pivot, config_group=None, **backends):
         """Given instance of config, get backend depending on pivot.
@@ -120,7 +119,6 @@ class LazyPluggable(object):
     def __getattr__(self, key):
         backend = self._get_backend()
         return getattr(backend, key)
-
 
 
 class PluginLoadError(Exception):
