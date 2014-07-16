@@ -71,3 +71,55 @@ def try_import(import_str, default=None):
         return import_module(import_str)
     except ImportError:
         return default
+
+
+class LazyPluggable(object):
+    """A pluggable backend loaded lazily based on some value.
+    For example when we need to load backend, which depends on some option,
+    we can register this option in config and load needed backend via
+    function _get_backend.
+    """
+
+    def __init__(self, conf, pivot, config_group=None, **backends):
+        """Given instance of config, get backend depending on pivot.
+        :param conf: instance of config
+        :param pivot: name of option in config, which responsible
+            for the selection of backend in runtime
+        :param config_group: group of config, None if not exist
+        :param backends: supported backends
+        """
+
+        self._conf = conf
+        self._backends = backends
+        self._pivot = pivot
+        self._backend = None
+        self._config_group = config_group
+
+    def _get_backend(self):
+        if not self._backend:
+            if self._config_group is None:
+                backend_name = self._conf[self._pivot]
+            else:
+                backend_name = self._conf[self._config_group][self._pivot]
+            if backend_name not in self._backends:
+                msg = ('Invalid backend: %s') % backend_name
+                raise PluginLoadError(msg)
+
+            backend = self._backends[backend_name]
+            if isinstance(backend, tuple):
+                name = backend[0]
+                fromlist = backend[1]
+            else:
+                name = backend
+                fromlist = backend
+
+            self._backend = __import__(name, None, None, fromlist)
+        return self._backend
+
+    def __getattr__(self, key):
+        backend = self._get_backend()
+        return getattr(backend, key)
+
+
+class PluginLoadError(Exception):
+    pass
