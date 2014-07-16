@@ -54,3 +54,7 @@ class DbMigrationError(DBError):
 class DBConnectionError(DBError):
     """Wraps connection specific exception."""
     pass
+
+
+class PluginLoadError(Exception):
+    pass
