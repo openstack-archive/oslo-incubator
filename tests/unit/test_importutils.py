@@ -16,6 +16,7 @@
 import datetime
 import sys
 
+from oslo.config import cfg
 from oslotest import base as test_base
 
 from openstack.common import importutils
@@ -116,3 +117,57 @@ class ImportUtilsTest(test_base.BaseTestCase):
     def test_try_import_returns_default(self):
         foo = importutils.try_import('foo.bar')
         self.assertIsNone(foo)
+
+    def test_load_lazy_pluggable_without_config_group(self):
+        conf = cfg.ConfigOpts()
+        test_backend = cfg.StrOpt('foo',
+                                  default='bar',
+                                  help='This module will be imported lazily')
+        conf.register_opt(test_backend)
+        module_name = 'tests.unit.test_importutils'
+        _backend = importutils.LazyPluggable(conf, 'foo', config_group=None,
+                                             bar=module_name)
+
+        self.assertIs(__import__(module_name, None, None, module_name),
+                      _backend._get_backend())
+
+    def test_load_lazy_pluggable_with_config_group(self):
+        conf = cfg.ConfigOpts()
+        test_backend = cfg.StrOpt('foo',
+                                  default='bar',
+                                  help='This module will be imported lazily')
+        test_group = cfg.OptGroup(name='group', title='Test Options')
+        conf.register_group(test_group)
+        conf.register_opt(test_backend, test_group)
+        module_name = 'tests.unit.test_importutils'
+        _backend = importutils.LazyPluggable(conf, 'foo', config_group='group',
+                                             bar=module_name)
+
+        self.assertIs(__import__(module_name, None, None, module_name),
+                      _backend._get_backend())
+
+    def test_load_lazy_pluggable_when_backend_is_tuple(self):
+        conf = cfg.ConfigOpts()
+        test_backend = cfg.StrOpt('foo',
+                                  default='bar',
+                                  help='This module will be imported lazily')
+        conf.register_opt(test_backend)
+        module_name = 'tests.unit.test_importutils'
+        from_list = 'tests.unit.test_importutils'
+        _backend = importutils.LazyPluggable(conf, 'foo', config_group=None,
+                                             bar=(module_name, from_list))
+
+        self.assertIs(__import__(module_name, None, None, from_list),
+                      _backend._get_backend())
+
+    def test_load_lazy_pluggable_raise_of_PluginLoadError(self):
+        conf = cfg.ConfigOpts()
+        test_backend = cfg.StrOpt('foo',
+                                  default='bar_1',
+                                  help='This module will be imported lazily')
+        conf.register_opt(test_backend)
+        module_name = 'tests.unit.test_importutils'
+        _backend = importutils.LazyPluggable(conf, 'foo', config_group=None,
+                                             bar_2=module_name)
+
+        self.assertRaises(importutils.PluginLoadError, _backend._get_backend)
