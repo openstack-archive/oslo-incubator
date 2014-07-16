@@ -56,5 +56,3 @@ class DBConnectionError(DBError):
     pass
 
 
-class PluginLoadError(Exception):
-    pass
