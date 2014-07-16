@@ -22,10 +22,6 @@ import tempfile
 import threading
 import time
 
-import eventlet
-eventlet.monkey_patch()
-from eventlet import greenpool
-from eventlet import greenthread
 from oslo.config import cfg
 from oslotest import base as test_base
 from six import moves
@@ -33,42 +29,6 @@ from six import moves
 from openstack.common.fixture import config
 from openstack.common.fixture import lockutils as fixtures
 from openstack.common import lockutils
-
-
-class TestFileLocks(test_base.BaseTestCase):
-
-    def test_concurrent_green_lock_succeeds(self):
-        """Verify spawn_n greenthreads with two locks run concurrently."""
-        tmpdir = tempfile.mkdtemp()
-        try:
-            self.completed = False
-
-            def locka(wait):
-                a = lockutils.InterProcessLock(os.path.join(tmpdir, 'a'))
-                with a:
-                    wait.wait()
-                self.completed = True
-
-            def lockb(wait):
-                b = lockutils.InterProcessLock(os.path.join(tmpdir, 'b'))
-                with b:
-                    wait.wait()
-
-            wait1 = eventlet.event.Event()
-            wait2 = eventlet.event.Event()
-            pool = greenpool.GreenPool()
-            pool.spawn_n(locka, wait1)
-            pool.spawn_n(lockb, wait2)
-            wait2.send()
-            eventlet.sleep(0)
-            wait1.send()
-            pool.waitall()
-
-            self.assertTrue(self.completed)
-
-        finally:
-            if os.path.exists(tmpdir):
-                shutil.rmtree(tmpdir)
 
 
 class LockTestCase(test_base.BaseTestCase):
@@ -124,7 +84,7 @@ class LockTestCase(test_base.BaseTestCase):
         self.assertNotEqual(0, acquired_children)
 
     def test_lock_internally(self):
-        """We can lock across multiple green threads."""
+        """We can lock across multiple threads."""
         saved_sem_num = len(lockutils._semaphores)
         seen_threads = list()
 
@@ -132,15 +92,15 @@ class LockTestCase(test_base.BaseTestCase):
             with lockutils.lock('testlock2', 'test-', external=False):
                 for x in range(10):
                     seen_threads.append(_id)
-                    greenthread.sleep(0)
 
         threads = []
-        pool = greenpool.GreenPool(10)
         for i in range(10):
-            threads.append(pool.spawn(f, i))
+            thread = threading.Thread(target=f, args=(i,))
+            threads.append(thread)
+            thread.start()
 
         for thread in threads:
-            thread.wait()
+            thread.join()
 
         self.assertEqual(len(seen_threads), 100)
         # Looking at the seen threads, split it into chunks of 10, and verify
@@ -448,16 +408,18 @@ class FileBasedLockingTestCase(test_base.BaseTestCase):
         def other(param):
             foo(param)
 
-        thread = eventlet.spawn(other, 'other')
+        thread = threading.Thread(target=other, args=('other',))
+        thread.start()
         # Make sure the other thread grabs the lock
         start = time.time()
         while not os.path.exists(os.path.join(self.lock_dir, 'foo')):
             if time.time() - start > 5:
                 self.fail('Timed out waiting for thread to grab lock')
             time.sleep(0)
-        thread1 = eventlet.spawn(other, 'main')
-        thread1.wait()
-        thread.wait()
+        thread1 = threading.Thread(target=other, args=('main',))
+        thread1.start()
+        thread1.join()
+        thread.join()
         self.assertEqual(call_list, ['other', 'other', 'main', 'main'])
 
 
