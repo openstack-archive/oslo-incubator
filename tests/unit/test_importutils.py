@@ -119,14 +119,14 @@ class ImportUtilsTest(test_base.BaseTestCase):
         self.assertIsNone(foo)
 
     def test_load_lazy_pluggable(self):
-        _conf = cfg.ConfigOpts()
+        conf = cfg.ConfigOpts()
         test_backend = cfg.StrOpt('ipv6_backend',
                                   default='rfc2462',
                                   help='Backend to use for IPv6 generation')
-        _conf.register_opt(test_backend)
+        conf.register_opt(test_backend)
 
-        _backend = importutils.LazyPluggable('ipv6_backend',
-                                             _conf,
+        _backend = importutils.LazyPluggable(conf,
+                                             'ipv6_backend',
                                              config_group=None,
                                              rfc2462='tests.unit.'
                                                      'test_importutils')
