@@ -16,6 +16,7 @@
 import datetime
 import sys
 
+from oslo.config import cfg
 from oslotest import base as test_base
 
 from openstack.common import importutils
@@ -116,3 +117,19 @@ class ImportUtilsTest(test_base.BaseTestCase):
     def test_try_import_returns_default(self):
         foo = importutils.try_import('foo.bar')
         self.assertIsNone(foo)
+
+    def test_load_lazy_pluggable(self):
+        _conf = cfg.ConfigOpts()
+        test_backend = cfg.StrOpt('ipv6_backend',
+                                  default='rfc2462',
+                                  help='Backend to use for IPv6 generation')
+        _conf.register_opt(test_backend)
+
+        _backend = importutils.LazyPluggable('ipv6_backend',
+                                             _conf,
+                                             config_group=None,
+                                             rfc2462='tests.unit.'
+                                                     'test_importutils')
+
+        self.assertIs(importutils.import_module('tests.unit.test_importutils'),
+                      _backend._get_backend())
