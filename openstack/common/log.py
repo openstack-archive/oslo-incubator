@@ -40,6 +40,8 @@ from oslo.config import cfg
 import six
 from six import moves
 
+_PY26 = sys.version_info[0:2] == (2, 6)
+
 from openstack.common.gettextutils import _
 from openstack.common import importutils
 from openstack.common import jsonutils
@@ -230,6 +232,12 @@ class BaseLoggerAdapter(logging.LoggerAdapter):
 
     def audit(self, msg, *args, **kwargs):
         self.log(logging.AUDIT, msg, *args, **kwargs)
+
+    def isEnabledFor(self, level):
+        if _PY26:
+            return self.logger.isEnabledFor(level)
+        else:
+            return super(BaseLoggerAdapter, self).isEnabledFor(level)
 
 
 class LazyAdapter(BaseLoggerAdapter):
