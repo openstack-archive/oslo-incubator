@@ -258,11 +258,17 @@ class LogLevelTestCase(test_base.BaseTestCase):
         self.CONF = self.useFixture(config.Config()).conf
         levels = self.CONF.default_log_levels
         levels.append("nova-test=AUDIT")
+        levels.append("nova-not-debug=WARN")
         self.config = self.useFixture(config.Config()).config
         self.config(default_log_levels=levels,
                     verbose=True)
         log.setup('testing')
         self.log = log.getLogger('nova-test')
+        self.log_no_debug = log.getLogger('nova-not-debug')
+
+    def test_is_enabled_for(self):
+        self.assertTrue(self.log.isEnabledFor(logging.AUDIT))
+        self.assertFalse(self.log_no_debug.isEnabledFor(logging.DEBUG))
 
     def test_has_level_from_flags(self):
         self.assertEqual(logging.AUDIT, self.log.logger.getEffectiveLevel())
