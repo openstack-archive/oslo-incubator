@@ -73,8 +73,8 @@ class TestGuruMeditationReport(utils.BaseTestCase):
                              '====                            Package                             ====',  # noqa
                              '========================================================================',  # noqa
                              'product = Sharp Cheddar',
-                             'version = 1.0.0',
                              'vendor = Cheese Shoppe',
+                             'version = 1.0.0',
                              '========================================================================',  # noqa
                              '====                            Threads                             ====',  # noqa
                              '========================================================================']  # noqa
@@ -130,15 +130,15 @@ class TestGuruMeditationReport(utils.BaseTestCase):
         target_lst = ['========================================================================',  # noqa
                       '====                          Cheese Types                          ====',  # noqa
                       '========================================================================',  # noqa
-                      'swiss = ',
-                      '  with holes',
-                      '  with lots of holes',
                       'american = ',
                       '  orange',
                       '  yellow',
                       'cheddar = ',
+                      '  mild',
                       '  sharp',
-                      '  mild']
+                      'swiss = ',
+                      '  with holes',
+                      '  with lots of holes']
         target_str = '\n'.join(target_lst)
         self.assertIn(target_str, report_lines)
 

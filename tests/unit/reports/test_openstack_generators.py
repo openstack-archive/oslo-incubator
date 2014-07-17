@@ -75,13 +75,13 @@ class TestOpenstackGenerators(utils.BaseTestCase):
         model = os_cgen.ConfigReportGenerator(conf)()
         model.set_current_view_type('text')
 
-        target_str = ('\ndefault: \n'
-                      '  crackers = triscuit\n'
-                      '\n'
-                      'cheese: \n'
+        target_str = ('\ncheese: \n'
                       '  from_cow = True\n'
+                      '  name = cheddar\n'
                       '  sharpness = 1\n'
-                      '  name = cheddar')
+                      '\n'
+                      'default: \n'
+                      '  crackers = triscuit')
         self.assertEqual(target_str, str(model))
 
     def test_package_report_generator(self):
@@ -99,6 +99,6 @@ class TestOpenstackGenerators(utils.BaseTestCase):
         model.set_current_view_type('text')
 
         target_str = ('product = Sharp Cheddar\n'
-                      'version = 1.0.0\n'
-                      'vendor = Cheese Shoppe')
+                      'vendor = Cheese Shoppe\n'
+                      'version = 1.0.0')
         self.assertEqual(target_str, str(model))
