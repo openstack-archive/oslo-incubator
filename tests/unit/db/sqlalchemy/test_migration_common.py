@@ -14,7 +14,6 @@
 #    under the License.
 #
 
-import contextlib
 import os
 import tempfile
 
@@ -73,18 +72,16 @@ class TestMigrationCommon(test_base.DbTestCase):
         self.assertNotEqual(repo1, repo2)
 
     def test_db_version_control(self):
-        with contextlib.nested(
-            mock.patch.object(migration, '_find_migrate_repo'),
-            mock.patch.object(versioning_api, 'version_control'),
-        ) as (mock_find_repo, mock_version_control):
-            mock_find_repo.return_value = self.return_value
+        with mock.patch.object(migration, '_find_migrate_repo') as mock_find_repo:
+            with mock.patch.object(versioning_api, 'version_control') as mock_version_control:
+                mock_find_repo.return_value = self.return_value
 
-            version = migration.db_version_control(
-                self.engine, self.path, self.test_version)
+                version = migration.db_version_control(
+                    self.engine, self.path, self.test_version)
 
-            self.assertEqual(version, self.test_version)
-            mock_version_control.assert_called_once_with(
-                self.engine, self.return_value, self.test_version)
+                self.assertEqual(version, self.test_version)
+                mock_version_control.assert_called_once_with(
+                    self.engine, self.return_value, self.test_version)
 
     def test_db_version_return(self):
         ret_val = migration.db_version(self.engine, self.path,
@@ -136,57 +133,45 @@ class TestMigrationCommon(test_base.DbTestCase):
 
     def test_db_sync_upgrade(self):
         init_ver = 55
-        with contextlib.nested(
-            mock.patch.object(migration, '_find_migrate_repo'),
-            mock.patch.object(versioning_api, 'upgrade')
-        ) as (mock_find_repo, mock_upgrade):
+        with mock.patch.object(migration, '_find_migrate_repo') as mock_find_repo:
+            with mock.patch.object(versioning_api, 'upgrade') as mock_upgrade:
+                mock_find_repo.return_value = self.return_value
+                self.mock_api_db_version.return_value = self.test_version - 1
 
-            mock_find_repo.return_value = self.return_value
-            self.mock_api_db_version.return_value = self.test_version - 1
+                migration.db_sync(self.engine, self.path, self.test_version,
+                                  init_ver)
 
-            migration.db_sync(self.engine, self.path, self.test_version,
-                              init_ver)
-
-            mock_upgrade.assert_called_once_with(
-                self.engine, self.return_value, self.test_version)
+                mock_upgrade.assert_called_once_with(
+                    self.engine, self.return_value, self.test_version)
 
     def test_db_sync_downgrade(self):
-        with contextlib.nested(
-            mock.patch.object(migration, '_find_migrate_repo'),
-            mock.patch.object(versioning_api, 'downgrade')
-        ) as (mock_find_repo, mock_downgrade):
+        with mock.patch.object(migration, '_find_migrate_repo') as mock_find_repo:
+            with mock.patch.object(versioning_api, 'downgrade') as mock_downgrade:
+                mock_find_repo.return_value = self.return_value
+                self.mock_api_db_version.return_value = self.test_version + 1
 
-            mock_find_repo.return_value = self.return_value
-            self.mock_api_db_version.return_value = self.test_version + 1
+                migration.db_sync(self.engine, self.path, self.test_version)
 
-            migration.db_sync(self.engine, self.path, self.test_version)
-
-            mock_downgrade.assert_called_once_with(
-                self.engine, self.return_value, self.test_version)
+                mock_downgrade.assert_called_once_with(
+                    self.engine, self.return_value, self.test_version)
 
     def test_db_sync_sanity_called(self):
-        with contextlib.nested(
-            mock.patch.object(migration, '_find_migrate_repo'),
-            mock.patch.object(migration, '_db_schema_sanity_check'),
-            mock.patch.object(versioning_api, 'downgrade')
-        ) as (mock_find_repo, mock_sanity, mock_downgrade):
+        with mock.patch.object(migration, '_find_migrate_repo') as mock_find_repo:
+            with mock.patch.object(migration, '_db_schema_sanity_check') as mock_sanity:
+                with mock.patch.object(versioning_api, 'downgrade') as mock_downgrade:
+                    mock_find_repo.return_value = self.return_value
+                    migration.db_sync(self.engine, self.path, self.test_version)
 
-            mock_find_repo.return_value = self.return_value
-            migration.db_sync(self.engine, self.path, self.test_version)
-
-            mock_sanity.assert_called_once()
+                    mock_sanity.assert_called_once()
 
     def test_db_sync_sanity_skipped(self):
-        with contextlib.nested(
-            mock.patch.object(migration, '_find_migrate_repo'),
-            mock.patch.object(migration, '_db_schema_sanity_check'),
-            mock.patch.object(versioning_api, 'downgrade')
-        ) as (mock_find_repo, mock_sanity, mock_downgrade):
+        with mock.patch.object(migration, '_find_migrate_repo') as mock_find_repo:
+            with mock.patch.object(migration, '_db_schema_sanity_check') as mock_sanity:
+                with mock.patch.object(versioning_api, 'downgrade') as mock_downgrade:
+                    mock_find_repo.return_value = self.return_value
+                    migration.db_sync(self.engine, self.path, self.test_version, False)
 
-            mock_find_repo.return_value = self.return_value
-            migration.db_sync(self.engine, self.path, self.test_version, False)
-
-            mock_sanity.assert_not_called()
+                    mock_sanity.assert_not_called()
 
     def test_db_sanity_table_not_utf8(self):
         with mock.patch.object(self, 'engine') as mock_eng:
