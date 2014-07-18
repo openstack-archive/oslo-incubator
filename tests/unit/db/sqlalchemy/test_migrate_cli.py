@@ -18,12 +18,30 @@ from openstack.common.db.sqlalchemy.migration_cli import ext_migrate
 from openstack.common.db.sqlalchemy.migration_cli import manager
 
 
-class MockWithCmp(mock.MagicMock):
+class MockWithCmp(mock.Mock):
 
     order = 0
 
     def __cmp__(self, other):
         return self.order > other.order
+
+    def __lt__(self, other):
+        return self.order < other.order
+
+    def __le__(self, other):
+        return self.order <= other.order
+
+    def __eq__(self, other):
+        return self.order == other.order
+
+    def __ge__(self, other):
+        return self.order >= other.order
+
+    def __gt__(self, other):
+        return self.order > other.order
+
+    def __ne__(self, other):
+        return self.order != other.order
 
 
 @mock.patch(('openstack.common.db.sqlalchemy.migration_cli.'
