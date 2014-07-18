@@ -71,6 +71,7 @@ class deprecated(object):
     HAVANA = 'H'
     ICEHOUSE = 'I'
     JUNO = 'J'
+    KILO = 'K'
 
     _RELEASES = {
         # NOTE(morganfainberg): Bexar is used for unit test purposes, it is
@@ -81,6 +82,7 @@ class deprecated(object):
         'H': 'Havana',
         'I': 'Icehouse',
         'J': 'Juno',
+        'K': 'Kilo',
     }
 
     _deprecated_msg_with_alternative = _(
