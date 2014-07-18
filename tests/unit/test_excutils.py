@@ -103,10 +103,13 @@ class ForeverRetryUncaughtExceptionsTest(test_base.BaseTestCase):
     def my_time_sleep(self, arg):
         pass
 
+    def my_time_time(self, args):
+        pass
+
     def exc_retrier_common_start(self):
         self.stubs.Set(time, 'sleep', self.my_time_sleep)
         self.mox.StubOutWithMock(logging, 'exception')
-        self.mox.StubOutWithMock(time, 'time')
+        self.mox.StubOutWithMock(time, 'time', self.my_time_time)
         self.mox.StubOutWithMock(self, 'exception_to_raise')
 
     def exc_retrier_sequence(self, exc_id=None, timestamp=None,
