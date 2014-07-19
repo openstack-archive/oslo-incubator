@@ -217,6 +217,37 @@ grep foo
 
         self.assertIn('SUPER_UNIQUE_VAR=The answer is 42', out)
 
+    def test_exception_and_masking_password(self):
+        fd, tmpfilename = tempfile.mkstemp()
+
+        fp = os.fdopen(fd, 'w+')
+        fp.write('#!/bin/bash\n'
+                 '# This is to test stdout and stderr\n'
+                 '# when a non-zero exit code is\n'
+                 '# returned\n'
+                 'echo "This goes to stdout"\n'
+                 'echo "This goes to stderr" 1>&2\n'
+                 'exit 38\n')
+
+        fp.close()
+        os.chmod(tmpfilename, 0o755)
+
+        err = self.assertRaises(processutils.ProcessExecutionError,
+                                processutils.execute,
+                                tmpfilename, 'password="secret"',
+                                'something')
+
+        self.assertTrue(err.exit_code is 38)
+        self.assertTrue(err.stdout == "This goes to stdout\n")
+        self.assertTrue(err.stderr == "This goes to stderr\n")
+        self.assertTrue(err.cmd == ' '.join([tmpfilename,
+                                             'password="***"',
+                                             'something']))
+        self.assertTrue('password="secret"' not in err.cmd)
+        self.assertTrue('password="***"' in err.cmd)
+
+        os.unlink(tmpfilename)
+
 
 def fake_execute(*cmd, **kwargs):
     return 'stdout', 'stderr'
