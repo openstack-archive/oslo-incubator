@@ -154,8 +154,9 @@ def execute(*cmd, **kwargs):
     while attempts > 0:
         attempts -= 1
         try:
+            sanitized_command = strutils.mask_password(' '.join(cmd))
             LOG.log(loglevel, 'Running cmd (subprocess): %s',
-                    strutils.mask_password(' '.join(cmd)))
+                    sanitized_command)
             _PIPE = subprocess.PIPE  # pylint: disable=E1101
 
             if os.name == 'nt':
@@ -195,7 +196,7 @@ def execute(*cmd, **kwargs):
                 raise ProcessExecutionError(exit_code=_returncode,
                                             stdout=stdout,
                                             stderr=stderr,
-                                            cmd=' '.join(cmd))
+                                            cmd=sanitized_command)
             return result
         except ProcessExecutionError:
             if not attempts:
