@@ -52,8 +52,15 @@ class ProcessExecutionError(Exception):
         self.exit_code = exit_code
         self.stderr = stderr
         self.stdout = stdout
-        self.cmd = cmd
         self.description = description
+        # WARNING: The command being returned in the exception
+        # is not the command that the user provided, but rather
+        # the sanitized command. If mask_password found something
+        # that it masked, then the command returned here will
+        # differ from the command submitted by the user
+        # and as such may be unexecutable.
+        if cmd:
+            self.cmd = strutils.mask_password(' '.join(cmd))
 
         if description is None:
             description = _("Unexpected error while running command.")
@@ -154,8 +161,9 @@ def execute(*cmd, **kwargs):
     while attempts > 0:
         attempts -= 1
         try:
+            sanitized_command = strutils.mask_password(' '.join(cmd))
             LOG.log(loglevel, 'Running cmd (subprocess): %s',
-                    strutils.mask_password(' '.join(cmd)))
+                    sanitized_command)
             _PIPE = subprocess.PIPE  # pylint: disable=E1101
 
             if os.name == 'nt':
@@ -195,13 +203,14 @@ def execute(*cmd, **kwargs):
                 raise ProcessExecutionError(exit_code=_returncode,
                                             stdout=stdout,
                                             stderr=stderr,
-                                            cmd=' '.join(cmd))
+                                            cmd=cmd)
             return result
         except ProcessExecutionError:
             if not attempts:
                 raise
             else:
-                LOG.log(loglevel, '%r failed. Retrying.', cmd)
+                LOG.log(loglevel, '%r failed. Retrying.',
+                        sanitized_command)
                 if delay_on_retry:
                     greenthread.sleep(random.randint(20, 200) / 100.0)
         finally:
