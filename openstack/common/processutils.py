@@ -48,7 +48,7 @@ class UnknownArgumentError(Exception):
 
 class ProcessExecutionError(Exception):
     def __init__(self, stdout=None, stderr=None, exit_code=None, cmd=None,
-                 description=None):
+                 description=None, verbose=None, loglevel=None):
         self.exit_code = exit_code
         self.stderr = stderr
         self.stdout = stdout
@@ -59,6 +59,8 @@ class ProcessExecutionError(Exception):
             description = _("Unexpected error while running command.")
         if exit_code is None:
             exit_code = '-'
+        if loglevel is None:
+            loglevel = logging.DEBUG
         message = _('%(description)s\n'
                     'Command: %(cmd)s\n'
                     'Exit code: %(exit_code)s\n'
@@ -68,6 +70,10 @@ class ProcessExecutionError(Exception):
                                              'exit_code': exit_code,
                                              'stdout': stdout,
                                              'stderr': stderr}
+
+        if verbose:
+            LOG.log(loglevel, message)
+
         super(ProcessExecutionError, self).__init__(message)
 
 
@@ -116,6 +122,8 @@ def execute(*cmd, **kwargs):
     :type shell:            boolean
     :param loglevel:        log level for execute commands.
     :type loglevel:         int.  (Should be logging.DEBUG or logging.INFO)
+    :param verbose          whether to log stdout and stderrr (at loglevel)
+    :type verbose           boolean
     :returns:               (stdout, stderr) from process execution
     :raises:                :class:`UnknownArgumentError` on
                             receiving unknown arguments
@@ -132,6 +140,7 @@ def execute(*cmd, **kwargs):
     root_helper = kwargs.pop('root_helper', '')
     shell = kwargs.pop('shell', False)
     loglevel = kwargs.pop('loglevel', logging.DEBUG)
+    verbose = kwargs.pop('verbose', False)
 
     if isinstance(check_exit_code, bool):
         ignore_exit_code = not check_exit_code
@@ -195,7 +204,9 @@ def execute(*cmd, **kwargs):
                 raise ProcessExecutionError(exit_code=_returncode,
                                             stdout=stdout,
                                             stderr=stderr,
-                                            cmd=' '.join(cmd))
+                                            cmd=' '.join(cmd),
+                                            loglevel=loglevel,
+                                            verbose=verbose)
             return result
         except ProcessExecutionError:
             if not attempts:
