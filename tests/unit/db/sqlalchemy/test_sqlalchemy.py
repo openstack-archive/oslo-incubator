@@ -297,6 +297,14 @@ class MySQLModeTestCase(test_base.MySQLOpportunisticTestCase):
         self.assertNotEqual(value,
                             self._test_string_too_long(value))
 
+    def test_default_engine(self):
+        self.engine.execute('create table testtbl (a int primary key);')
+        raise Exception(
+            str(
+                self.engine.execute('show create table testtbl;').fetchone()[1]
+            )
+        )
+
 
 class MySQLStrictAllTablesModeTestCase(MySQLModeTestCase):
     "Test data integrity enforcement in MySQL STRICT_ALL_TABLES mode."
