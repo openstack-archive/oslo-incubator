@@ -18,6 +18,7 @@ import errno
 import functools
 import os
 import shutil
+import struct
 import subprocess
 import sys
 import tempfile
@@ -148,24 +149,27 @@ class _FcntlLock(_FileLock):
         fcntl.lockf(self.lockfile, fcntl.LOCK_UN)
 
 
-class _PosixLock(object):
+class _SysvLock(object):
     def __init__(self, name):
-        # Hash the name because it's not valid to have POSIX semaphore
-        # names with things like / in them. Then use base64 to encode
-        # the digest() instead taking the hexdigest() because the
-        # result is shorter and most systems can't have shm sempahore
-        # names longer than 31 characters.
         h = hashlib.sha1()
-        h.update(name.encode('ascii'))
-        self.name = str((b'/' + base64.urlsafe_b64encode(
-            h.digest())).decode('ascii'))
+        h.update(name.encode('utf-8'))
+        d = h.digest()
+        # SysV semaphore's key is not longer than 64 bit
+        key = struct.unpack('Q', d[:8])[0] & sysv_ipc.KEY_MAX
+        try:
+            self.semaphore = sysv_ipc.Semaphore(key,
+                                                flags=sysv_ipc.IPC_CREX,
+                                                initial_value=1)
+        except sysv_ipc.ExistentialError:
+            # initial_value won't be set without IPC_CREX flag
+            self.semaphore = sysv_ipc.Semaphore(key)
+
+        # Undo all actions with this semaphore on process exit
+        self.semaphore.undo = True
 
     def acquire(self, timeout=None):
-        self.semaphore = posix_ipc.Semaphore(self.name,
-                                             flags=posix_ipc.O_CREAT,
-                                             initial_value=1)
         self.semaphore.acquire(timeout)
-        return self
+        return True
 
     def __enter__(self):
         self.acquire()
@@ -173,18 +177,12 @@ class _PosixLock(object):
 
     def release(self):
         self.semaphore.release()
-        self.semaphore.close()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.release()
 
     def exists(self):
-        try:
-            semaphore = posix_ipc.Semaphore(self.name)
-        except posix_ipc.ExistentialError:
-            return False
-        else:
-            semaphore.close()
+        # Lock always exists after __init__
         return True
 
 
@@ -193,12 +191,11 @@ if os.name == 'nt':
     InterProcessLock = _WindowsLock
     FileLock = _WindowsLock
 else:
-    import base64
     import fcntl
     import hashlib
 
-    import posix_ipc
-    InterProcessLock = _PosixLock
+    import sysv_ipc
+    InterProcessLock = _SysvLock
     FileLock = _FcntlLock
 
 _semaphores = weakref.WeakValueDictionary()
@@ -218,7 +215,7 @@ def _get_lock_path(name, lock_file_prefix, lock_path=None):
     if not local_lock_path:
         # NOTE(bnemec): Create a fake lock path for posix locks so we don't
         # unnecessarily raise the RequiredOptError below.
-        if InterProcessLock is not _PosixLock:
+        if InterProcessLock is not _SysvLock:
             raise cfg.RequiredOptError('lock_path')
         local_lock_path = 'posixlock:/'
 

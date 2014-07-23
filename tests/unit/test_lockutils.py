@@ -16,7 +16,9 @@ import errno
 import fcntl
 import multiprocessing
 import os
+import Queue
 import shutil
+import signal
 import sys
 import tempfile
 import threading
@@ -29,6 +31,7 @@ from eventlet import greenthread
 from oslo.config import cfg
 from oslotest import base as test_base
 from six import moves
+from testtools import content
 
 from openstack.common.fixture import config
 from openstack.common.fixture import lockutils as fixtures
@@ -358,6 +361,39 @@ class LockTestCase(test_base.BaseTestCase):
         # base64(sha1(foobar)) has a slash in it
         with lockutils.lock("foobar"):
             pass
+
+    def test_cruel_process_death(self):
+        lock_name = tempfile.mktemp()
+        queue = multiprocessing.Queue()
+        
+        def process():
+            try:
+                with lockutils.InterProcessLock(lock_name):
+                    queue.put('OK')
+                    while True:
+                        time.sleep(100)
+            except Exception as e:
+                queue.put(str(e))
+
+        def run_process(name):
+            proc= multiprocessing.Process(target=process)
+            proc.start()
+            try:
+                res = queue.get(timeout=1)
+            except Queue.Empty:
+                proc.terminate()
+                self.fail("%s process hang" % name)
+
+            if res != 'OK':
+                self.addDetail('process_error', content.text_content(res))
+                self.fail("%s process failed" % name)
+
+            return proc
+            
+        process1 = run_process("First")
+        os.kill(process1.pid, signal.SIGKILL)
+        process2 = run_process("Second")
+        process2.terminate()
 
 
 class BrokenLock(lockutils._FileLock):
