@@ -11,7 +11,6 @@ netaddr>=0.7.6
 oslo.config>=1.4.0.0a3
 PasteDeploy>=1.5.0
 pbr>=0.6,!=0.7,<1.0
-posix_ipc
 PrettyTable>=0.7,<0.8
 pycrypto>=2.6
 requests>=1.1
@@ -20,4 +19,5 @@ six>=1.7.0
 SQLAlchemy>=0.8.4,<=0.8.99,>=0.9.7,<=0.9.99
 sqlalchemy-migrate>=0.9.1
 stevedore>=0.14
+sysv_ipc
 WebOb>=1.2.3
