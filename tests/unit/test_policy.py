@@ -144,7 +144,7 @@ class EnforcerTest(PolicyBaseTestCase):
     def test_clear(self):
         # Make sure the rules are reset
         self.enforcer.rules = 'spam'
-        filename = self.enforcer.policy_path
+        filename = self.enforcer.policy_file
         self.enforcer.clear()
         self.assertEqual(self.enforcer.rules, {})
         self.assertEqual(self.enforcer.default_rule, None)
