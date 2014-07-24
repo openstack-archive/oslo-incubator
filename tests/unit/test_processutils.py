@@ -18,6 +18,7 @@ from __future__ import print_function
 import errno
 import multiprocessing
 import os
+import stat
 import tempfile
 
 import fixtures
@@ -26,6 +27,14 @@ from oslotest import base as test_base
 import six
 
 from openstack.common import processutils
+
+TEST_EXCEPTION_AND_MASKING_SCRIPT = """#!/bin/bash
+# This is to test stdout and stderr
+# and the command returned in an exception
+# when a non-zero exit code is returned
+echo onstdout --password='"secret"'
+echo onstderr --password='"secret"' 1>&2
+exit 38"""
 
 
 class UtilsTest(test_base.BaseTestCase):
@@ -216,6 +225,30 @@ grep foo
         out, err = processutils.execute('/usr/bin/env', env_variables=env_vars)
 
         self.assertIn('SUPER_UNIQUE_VAR=The answer is 42', out)
+
+    def test_exception_and_masking(self):
+        tmpfilename = self.create_tempfiles(
+            [["test_exceptions_and_masking",
+              TEST_EXCEPTION_AND_MASKING_SCRIPT]], ext='bash')[0]
+
+        os.chmod(tmpfilename, (stat.S_IRWXU |
+                               stat.S_IRGRP |
+                               stat.S_IXGRP |
+                               stat.S_IROTH |
+                               stat.S_IXOTH))
+
+        err = self.assertRaises(processutils.ProcessExecutionError,
+                                processutils.execute,
+                                tmpfilename, 'password="secret"',
+                                'something')
+
+        self.assertEqual(38, err.exit_code)
+        self.assertEqual(err.stdout, 'onstdout --password="***"\n')
+        self.assertEqual(err.stderr, 'onstderr --password="***"\n')
+        self.assertEqual(err.cmd, ' '.join([tmpfilename,
+                                            'password="***"',
+                                            'something']))
+        self.assertNotIn('secret', str(err))
 
 
 def fake_execute(*cmd, **kwargs):
