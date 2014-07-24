@@ -252,10 +252,12 @@ class Enforcer(object):
         :raises: ConfigFilesNotFoundError if the file couldn't
                  be located.
         """
-        policy_file = CONF.find_file(self.policy_file)
+        policy_path = CONF.find_file(self.policy_file)
 
-        if policy_file:
-            return policy_file
+        if policy_path:
+            # save changed path
+            self.policy_path = policy_path
+            return self.policy_path
 
         raise cfg.ConfigFilesNotFoundError((self.policy_file,))
 

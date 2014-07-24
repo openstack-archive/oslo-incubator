@@ -214,6 +214,19 @@ class EnforcerTest(PolicyBaseTestCase):
                               enforcer._get_policy_path)
         self.assertEqual(('raise_error.json', ), e.config_files)
 
+    def test_get_policy_path_found_in_different_place(self):
+        default_policy_file = 'default_policy.json'
+        new_policy_path = '/fake/path/to/new/policy.json'
+        enforcer = policy.Enforcer(policy_file=default_policy_file)
+        with mock.patch.object(policy.CONF, 'find_file',
+                               mock.Mock(return_value=new_policy_path)):
+            self.assertEqual(enforcer.policy_file, default_policy_file)
+            self.assertNotEqual(enforcer.policy_path, new_policy_path)
+            enforcer._get_policy_path()
+            policy.CONF.find_file.assert_called_once_with(enforcer.policy_file)
+            self.assertEqual(enforcer.policy_path, new_policy_path)
+            self.assertEqual(enforcer.policy_file, default_policy_file)
+
     def test_enforcer_set_rules(self):
         self.enforcer.load_rules()
         self.enforcer.set_rules({'test': 'test1'})
