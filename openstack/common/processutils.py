@@ -117,6 +117,8 @@ def execute(*cmd, **kwargs):
     :param loglevel:        log level for execute commands.
     :type loglevel:         int.  (Should be logging.DEBUG or logging.INFO)
     :returns:               (stdout, stderr) from process execution
+    :type verbose:          boolean
+    :param verbose:         whether execute() should log failure information.
     :raises:                :class:`UnknownArgumentError` on
                             receiving unknown arguments
     :raises:                :class:`ProcessExecutionError`
@@ -132,6 +134,7 @@ def execute(*cmd, **kwargs):
     root_helper = kwargs.pop('root_helper', '')
     shell = kwargs.pop('shell', False)
     loglevel = kwargs.pop('loglevel', logging.DEBUG)
+    verbose = kwargs.pop('verbose', False)
 
     if isinstance(check_exit_code, bool):
         ignore_exit_code = not check_exit_code
@@ -150,12 +153,13 @@ def execute(*cmd, **kwargs):
         cmd = shlex.split(root_helper) + list(cmd)
 
     cmd = map(str, cmd)
+    sanitized_cmd = strutils.mask_password(' '.join(cmd))
 
     while attempts > 0:
         attempts -= 1
         try:
-            LOG.log(loglevel, 'Running cmd (subprocess): %s',
-                    strutils.mask_password(' '.join(cmd)))
+            LOG.log(loglevel, 'Running cmd (subprocess): %s' %
+                    sanitized_cmd)
             _PIPE = subprocess.PIPE  # pylint: disable=E1101
 
             if os.name == 'nt':
@@ -192,16 +196,40 @@ def execute(*cmd, **kwargs):
             LOG.log(loglevel, 'Result was %s' % _returncode)
             if not ignore_exit_code and _returncode not in check_exit_code:
                 (stdout, stderr) = result
+                sanitized_stdout = strutils.mask_password(stdout)
+                sanitized_stderr = strutils.mask_password(stderr)
                 raise ProcessExecutionError(exit_code=_returncode,
-                                            stdout=stdout,
-                                            stderr=stderr,
-                                            cmd=' '.join(cmd))
+                                            stdout=sanitized_stdout,
+                                            stderr=sanitized_stderr,
+                                            cmd=sanitized_cmd)
             return result
-        except ProcessExecutionError:
+        except ProcessExecutionError as err:
             if not attempts:
+                if verbose:
+                    message = _('%(description)s\n'
+                                'Command: %(cmd)s\n'
+                                'Exit code: %(exit_code)s\n'
+                                'Stdout: %(stdout)r\n'
+                                'Stderr: %(stderr)r') % (
+                                    {'description': err.description,
+                                     'cmd': err.cmd,
+                                     'exit_code': err.exit_code,
+                                     'stdout': err.stdout,
+                                     'stderr': err.stderr})
+
+                    LOG.log(loglevel,
+                            'Command execution failed. Out of retries.\n'
+                            '%s' % message)
+                else:
+                    LOG.log(loglevel,
+                            'Command execution failed. Out of retries.\n'
+                            '%s' % sanitized_cmd)
                 raise
             else:
-                LOG.log(loglevel, '%r failed. Retrying.', cmd)
+                LOG.log(loglevel,
+                        'Command execution failed. Retrying.\n'
+                        '%s' % sanitized_cmd)
+
                 if delay_on_retry:
                     greenthread.sleep(random.randint(20, 200) / 100.0)
         finally:
