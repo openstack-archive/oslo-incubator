@@ -217,6 +217,49 @@ grep foo
 
         self.assertIn('SUPER_UNIQUE_VAR=The answer is 42', out)
 
+    def test_exception_and_masking(self):
+        fd, tmpfilename = tempfile.mkstemp()
+
+        with os.fdopen(fd, 'w+') as fp:
+            # The intent here is to generate a bash script that reads
+            # as follows. The fancy footwork with the join is to
+            # make sure we get the quotes nested right.
+            # #!/bin/bash
+            # # This is to test stdout and stderr
+            # # when a non-zero exit code is returned
+            # echo onstdout --password='"secret"'
+            # echo onstderr --password='"secret"' 1>&2
+            # exit 38
+
+            fp.write('#!/bin/bash\n'
+                     '# This is to test stdout and stderr\n'
+                     '# and the command returned in an exception\n'
+                     '# when a non-zero exit code is returned\n')
+            fp.write(''.join(['echo onstdout --password=',
+                              "'", '"', 'secret', '"', "'", '\n']))
+            fp.write(''.join(['echo onstderr --password=',
+                              "'", '"', 'secret', '"', "'", ' 1>&2\n']))
+            fp.write('exit 38\n')
+
+            fp.close()
+
+            os.chmod(tmpfilename, 0o755)
+
+            err = self.assertRaises(processutils.ProcessExecutionError,
+                                    processutils.execute,
+                                    tmpfilename, 'password="secret"',
+                                    'something')
+
+            self.assertEqual(38, err.exit_code)
+            self.assertEqual(err.stdout, 'onstdout --password="***"\n')
+            self.assertEqual(err.stderr, 'onstderr --password="***"\n')
+            self.assertEqual(err.cmd, ' '.join([tmpfilename,
+                                                'password="***"',
+                                                'something']))
+            self.assertNotIn('secret', str(err))
+
+        os.unlink(tmpfilename)
+
 
 def fake_execute(*cmd, **kwargs):
     return 'stdout', 'stderr'
