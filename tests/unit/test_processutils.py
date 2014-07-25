@@ -27,7 +27,10 @@ import mock
 from oslotest import base as test_base
 import six
 
+from openstack.common.fixture import mockpatch
 from openstack.common import processutils
+PROCESS_EXECUTION_ERROR_LOGGING_TEST = """#!/bin/bash
+exit 41"""
 
 TEST_EXCEPTION_AND_MASKING_SCRIPT = """#!/bin/bash
 # This is to test stdout and stderr
@@ -202,23 +205,34 @@ grep foo
             os.unlink(tmpfilename)
             os.unlink(tmpfilename2)
 
+    # This test and the one below ensures that when communicate raises
+    # an OSError, we do the right thing(s)
+    def test_exception_on_communicate_error(self):
+        mock = self.useFixture(mockpatch.Patch(
+            'subprocess.Popen.communicate',
+            side_effect=OSError(errno.EAGAIN, 'fake-test')))
+
+        self.assertRaises(OSError,
+                          processutils.execute,
+                          '/usr/bin/env',
+                          'false',
+                          check_exit_code=False)
+
+        self.assertEqual(1, mock.mock.call_count)
+
     def test_retry_on_communicate_error(self):
-        self.called = False
+        mock = self.useFixture(mockpatch.Patch(
+            'subprocess.Popen.communicate',
+            side_effect=OSError(errno.EAGAIN, 'fake-test')))
 
-        def fake_communicate(*args, **kwargs):
-            if self.called:
-                return ('', '')
-            self.called = True
-            e = OSError('foo')
-            e.errno = errno.EAGAIN
-            raise e
+        self.assertRaises(OSError,
+                          processutils.execute,
+                          '/usr/bin/env',
+                          'false',
+                          check_exit_code=False,
+                          attempts=5)
 
-        self.useFixture(fixtures.MonkeyPatch(
-            'subprocess.Popen.communicate', fake_communicate))
-
-        processutils.execute('/usr/bin/env', 'true', check_exit_code=False)
-
-        self.assertTrue(self.called)
+        self.assertEqual(5, mock.mock.call_count)
 
     def test_with_env_variables(self):
         env_vars = {'SUPER_UNIQUE_VAR': 'The answer is 42'}
@@ -250,6 +264,65 @@ grep foo
                                             'password="***"',
                                             'something']))
         self.assertNotIn('secret', str(err))
+
+
+class ProcessExecutionErrorLoggingTest(test_base.BaseTestCase):
+    def setUp(self):
+        super(ProcessExecutionErrorLoggingTest, self).setUp()
+        self.tmpfilename = self.create_tempfiles(
+            [["process_execution_error_logging_test",
+              PROCESS_EXECUTION_ERROR_LOGGING_TEST]],
+            ext='bash')[0]
+
+        os.chmod(self.tmpfilename, (stat.S_IRWXU | stat.S_IRGRP |
+                                    stat.S_IXGRP | stat.S_IROTH |
+                                    stat.S_IXOTH))
+
+    def _test_and_check(self, log_errors=None, attempts=None):
+        fixture = self.useFixture(fixtures.FakeLogger(level=logging.DEBUG))
+        kwargs = {}
+
+        if log_errors:
+            kwargs.update({"log_errors": log_errors})
+
+        if attempts:
+            kwargs.update({"attempts": attempts})
+
+        err = self.assertRaises(processutils.ProcessExecutionError,
+                                processutils.execute,
+                                self.tmpfilename,
+                                **kwargs)
+
+        self.assertEqual(41, err.exit_code)
+        self.assertIn(self.tmpfilename, fixture.output)
+
+    def test_with_invalid_log_errors(self):
+        self.assertRaises(processutils.InvalidArgumentError,
+                          processutils.execute,
+                          self.tmpfilename,
+                          log_errors='invalid')
+
+    def test_with_log_errors_NONE(self):
+        self._test_and_check(log_errors=None, attempts=None)
+
+    def test_with_log_errors_final(self):
+        self._test_and_check(log_errors=processutils.LOG_FINAL_ERROR,
+                             attempts=None)
+
+    def test_with_log_errors_all(self):
+        self._test_and_check(log_errors=processutils.LOG_ALL_ERRORS,
+                             attempts=None)
+
+    def test_multiattempt_with_log_errors_NONE(self):
+        self._test_and_check(log_errors=None, attempts=3)
+
+    def test_multiattempt_with_log_errors_final(self):
+        self._test_and_check(log_errors=processutils.LOG_FINAL_ERROR,
+                             attempts=3)
+
+    def test_multiattempt_with_log_errors_all(self):
+        self._test_and_check(log_errors=processutils.LOG_ALL_ERRORS,
+                             attempts=3)
 
 
 def fake_execute(*cmd, **kwargs):
