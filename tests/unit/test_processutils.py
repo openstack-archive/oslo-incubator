@@ -217,6 +217,73 @@ grep foo
 
         self.assertIn('SUPER_UNIQUE_VAR=The answer is 42', out)
 
+    # the following six tests use the same shell script
+    # which does nothing more than return an error.
+    # I see no reason to make it six tests, that'd just
+    # add a ton of lines of code that are all identical.
+
+    def test_parameter_log_errors(self):
+        fd, tmpfilename = tempfile.mkstemp()
+
+        with os.fdopen(fd, 'w+') as fp:
+            fp.write('#!/bin/bash\n')
+            fp.write('exit 41\n')
+            fp.close()
+
+            os.chmod(tmpfilename, 0o755)
+
+            err = self.assertRaises(processutils.InvalidArgumentError,
+                                    processutils.execute,
+                                    tmpfilename,
+                                    log_errors=3)
+
+            err = self.assertRaises(processutils.ProcessExecutionError,
+                                    processutils.execute,
+                                    tmpfilename,
+                                    log_errors=0)
+
+            self.assertEqual(41, err.exit_code)
+
+            err = self.assertRaises(processutils.ProcessExecutionError,
+                                    processutils.execute,
+                                    tmpfilename,
+                                    log_errors=1)
+
+            self.assertEqual(41, err.exit_code)
+
+            err = self.assertRaises(processutils.ProcessExecutionError,
+                                    processutils.execute,
+                                    tmpfilename,
+                                    log_errors=2)
+
+            self.assertEqual(41, err.exit_code)
+
+            err = self.assertRaises(processutils.ProcessExecutionError,
+                                    processutils.execute,
+                                    tmpfilename,
+                                    log_errors=0,
+                                    attempts=3)
+
+            self.assertEqual(41, err.exit_code)
+
+            err = self.assertRaises(processutils.ProcessExecutionError,
+                                    processutils.execute,
+                                    tmpfilename,
+                                    log_errors=1,
+                                    attempts=3)
+
+            self.assertEqual(41, err.exit_code)
+
+            err = self.assertRaises(processutils.ProcessExecutionError,
+                                    processutils.execute,
+                                    tmpfilename,
+                                    log_errors=2,
+                                    attempts=3)
+
+            self.assertEqual(41, err.exit_code)
+
+        os.unlink(tmpfilename)
+
 
 def fake_execute(*cmd, **kwargs):
     return 'stdout', 'stderr'

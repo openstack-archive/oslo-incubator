@@ -116,6 +116,8 @@ def execute(*cmd, **kwargs):
     :type shell:            boolean
     :param loglevel:        log level for execute commands.
     :type loglevel:         int.  (Should be logging.DEBUG or logging.INFO)
+    :param log_errors:      Should stdout and stderr be logged on error?
+    :type log_errors:       int. (0=off, 1=final, 2=all)
     :returns:               (stdout, stderr) from process execution
     :raises:                :class:`UnknownArgumentError` on
                             receiving unknown arguments
@@ -132,6 +134,7 @@ def execute(*cmd, **kwargs):
     root_helper = kwargs.pop('root_helper', '')
     shell = kwargs.pop('shell', False)
     loglevel = kwargs.pop('loglevel', logging.DEBUG)
+    log_errors = kwargs.pop('log_errors', 0)
 
     if isinstance(check_exit_code, bool):
         ignore_exit_code = not check_exit_code
@@ -141,6 +144,10 @@ def execute(*cmd, **kwargs):
 
     if kwargs:
         raise UnknownArgumentError(_('Got unknown keyword args: %r') % kwargs)
+
+    if log_errors not in [0, 1, 2]:
+        raise InvalidArgumentError(_('Got invalid arg log_errors: %r') %
+                                   log_errors)
 
     if run_as_root and hasattr(os, 'geteuid') and os.geteuid() != 0:
         if not root_helper:
@@ -197,11 +204,21 @@ def execute(*cmd, **kwargs):
                                             stderr=stderr,
                                             cmd=' '.join(cmd))
             return result
-        except ProcessExecutionError:
+        except ProcessExecutionError as err:
+            # if we want to always log the errors or if this is
+            # the final attempt that failed and we want to log that.
+            if log_errors == 2 or (log_errors == 1 and not attempts):
+                LOG.log(loglevel, _('%r'), err.description)
+                LOG.log(loglevel, _('command: %r'), err.cmd)
+                LOG.log(loglevel, _('exit_code: %r'), err.exit_code)
+                LOG.log(loglevel, _('stdout: %r'), err.stdout)
+                LOG.log(loglevel, _('stderr: %r'), err.stderr)
+
             if not attempts:
+                LOG.log(loglevel, _('%r failed. Out of retries.'), cmd)
                 raise
             else:
-                LOG.log(loglevel, '%r failed. Retrying.', cmd)
+                LOG.log(loglevel, _('%r failed. Retrying.'), cmd)
                 if delay_on_retry:
                     greenthread.sleep(random.randint(20, 200) / 100.0)
         finally:
