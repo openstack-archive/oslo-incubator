@@ -218,6 +218,80 @@ grep foo
         self.assertIn('SUPER_UNIQUE_VAR=The answer is 42', out)
 
 
+class ProcessExecutionErrorLoggingTest(test_base.BaseTestCase):
+    def setUp(self):
+        super(ProcessExecutionErrorLoggingTest, self).setUp()
+        fd, self.tmpfilename = tempfile.mkstemp()
+        self.addCleanup(self._cleanup)
+
+        fp = os.fdopen(fd, 'w+')
+        fp.write('#!/bin/bash\n')
+        fp.write('exit 41\n')
+        fp.close()
+
+        os.chmod(self.tmpfilename, 0o755)
+
+    def _cleanup(self):
+        os.unlink(self.tmpfilename)
+
+    def test_with_invalid_log_errors(self):
+        self.assertRaises(processutils.InvalidArgumentError,
+                          processutils.execute,
+                          self.tmpfilename,
+                          log_errors=3)
+
+    def test_with_log_errors0(self):
+        err = self.assertRaises(processutils.ProcessExecutionError,
+                                processutils.execute,
+                                self.tmpfilename,
+                                log_errors=0)
+
+        self.assertEqual(41, err.exit_code)
+
+    def test_with_log_errors1(self):
+        err = self.assertRaises(processutils.ProcessExecutionError,
+                                processutils.execute,
+                                self.tmpfilename,
+                                log_errors=1)
+
+        self.assertEqual(41, err.exit_code)
+
+    def test_with_log_errors2(self):
+        err = self.assertRaises(processutils.ProcessExecutionError,
+                                processutils.execute,
+                                self.tmpfilename,
+                                log_errors=2)
+
+        self.assertEqual(41, err.exit_code)
+
+    def test_multiattempt_with_log_errors0(self):
+        err = self.assertRaises(processutils.ProcessExecutionError,
+                                processutils.execute,
+                                self.tmpfilename,
+                                log_errors=0,
+                                attempts=3)
+
+        self.assertEqual(41, err.exit_code)
+
+    def test_multiattempt_with_log_errors1(self):
+        err = self.assertRaises(processutils.ProcessExecutionError,
+                                processutils.execute,
+                                self.tmpfilename,
+                                log_errors=1,
+                                attempts=3)
+
+        self.assertEqual(41, err.exit_code)
+
+    def test_multiattempt_with_log_errors2(self):
+        err = self.assertRaises(processutils.ProcessExecutionError,
+                                processutils.execute,
+                                self.tmpfilename,
+                                log_errors=2,
+                                attempts=3)
+
+        self.assertEqual(41, err.exit_code)
+
+
 def fake_execute(*cmd, **kwargs):
     return 'stdout', 'stderr'
 
