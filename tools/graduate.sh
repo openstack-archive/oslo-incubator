@@ -63,39 +63,60 @@ virtualenv $venv
 $venv/bin/python -m pip install cookiecutter
 cookiecutter=$venv/bin/cookiecutter
 
-# Build the grep pattern for ignoring files that we want to keep, so
-# the prune script won't delete them from index.
+# Build the grep pattern for ignoring files that we want to keep
 keep_pattern="\($(echo $files_to_keep | sed -e 's/ /\\|/g')\)"
-
+# Prune all other files in every commit
 pruner="git ls-files | grep -v \"$keep_pattern\" | git update-index --force-remove --stdin; git ls-files > /dev/stderr"
+
+# Find all first commits with listed files and find a subset of them that
+# predates all others
+
+roots=""
+for file in $files_to_keep; do
+    file_root="$(git rev-list --reverse HEAD -- $file | head -n1)"
+    fail=0
+    for root in $roots; do
+        if git merge-base --is-ancestor $root $file_root; then
+            fail=1
+            break
+        elif !git merge-base --is-ancestor $file_root $root; then
+            new_roots="$new_roots $root"
+        fi
+    done
+    if [ $fail -ne 1 ]; then
+        roots="$new_roots $file_root"
+    fi
+done
+
+# Purge all parents for those commits
+
+set_roots="
+if [ '' $(for root in $roots; do echo " -o \"\$GIT_COMMIT\" == '$root' "; done) ]; then
+    echo ''
+else
+    cat
+fi"
+
+# Enhance git_commit_non_empty_tree to skip merges with:
+# a) either two equal parents (commit that was about to land got purged as well
+# as all commits on mainline);
+# b) or with second parent being an ancestor to the first one (just as with a)
+# but when there are some commits on mainline).
+# In both cases drop second parent and let git_commit_non_empty_tree to decide
+# if commit worth doing (most likely not).
+
+skip_empty=$(cat << \EOF
+if [ $# = 5 ] && git merge-base --is-ancestor $5 $3; then
+    git_commit_non_empty_tree $1 -p $3
+else
+    git_commit_non_empty_tree "$@"
+fi
+EOF
+)
 
 # Filter out commits for unrelated files
 echo "Pruning commits for unrelated files..."
-git filter-branch --index-filter "$pruner" --prune-empty HEAD
-
-# Find the earliest commit
-earliest_commit=$(git log --format='format:%H' $files_to_keep | tail -1)
-echo "Resetting git history to start with $earliest_commit"
-git show --quiet $earliest_commit
-
-count_commits
-
-# Remove the parent of the earliest commit to make it the first one we
-# will keep
-echo "Resetting parent of $earliest_commit ..."
-git filter-branch -f --parent-filter \
-    "test \$GIT_COMMIT = $earliest_commit && echo '' || cat" HEAD
-
-count_commits
-
-# Fix up dates, since we have touched the commits
-echo "Fixing committer dates..."
-git rebase --committer-date-is-author-date $(git log --format='format:%H' | tail -1)
-
-# Fix up committer, since we have touched the commits
-echo "Fixing committer name..."
-git filter-branch -f --commit-filter \
-    'GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME" GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL" git commit-tree "$@"' HEAD
+git filter-branch --index-filter "$pruner" --parent-filter "$set_roots" --commit-filter "$skip_empty" HEAD
 
 # Move things around
 echo "Moving files into place..."
