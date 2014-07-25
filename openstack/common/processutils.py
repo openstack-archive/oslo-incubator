@@ -81,6 +81,9 @@ def _subprocess_setup():
     # non-Python subprocesses expect.
     signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
+LOG_ALL_ERRORS = 1
+LOG_FINAL_ERROR = 2
+
 
 def execute(*cmd, **kwargs):
     """Helper method to shell out and execute a command through subprocess.
@@ -116,6 +119,18 @@ def execute(*cmd, **kwargs):
     :type shell:            boolean
     :param loglevel:        log level for execute commands.
     :type loglevel:         int.  (Should be logging.DEBUG or logging.INFO)
+    :param log_errors:      Should stdout and stderr be logged on error?
+                            Possible values are None=default,
+                            LOG_FINAL_ERROR, or LOG_ALL_ERRORS. None
+                            implies no logging on errors. The values
+                            LOG_FINAL_ERROR and LOG_ALL_ERRORS are
+                            relevant when multiple attempts of command
+                            execution are requested using the
+                            'attempts' parameter. If LOG_FINAL_ERROR
+                            is specified then only log an error on the
+                            last attempt, and LOG_ALL_ERRORS requires
+                            logging on each occurence of an error.
+    :type log_errors:       integer.
     :returns:               (stdout, stderr) from process execution
     :raises:                :class:`UnknownArgumentError` on
                             receiving unknown arguments
@@ -132,6 +147,7 @@ def execute(*cmd, **kwargs):
     root_helper = kwargs.pop('root_helper', '')
     shell = kwargs.pop('shell', False)
     loglevel = kwargs.pop('loglevel', logging.DEBUG)
+    log_errors = kwargs.pop('log_errors', None)
 
     if isinstance(check_exit_code, bool):
         ignore_exit_code = not check_exit_code
@@ -141,6 +157,10 @@ def execute(*cmd, **kwargs):
 
     if kwargs:
         raise UnknownArgumentError(_('Got unknown keyword args: %r') % kwargs)
+
+    if log_errors not in [None, LOG_ALL_ERRORS, LOG_FINAL_ERROR]:
+        raise InvalidArgumentError(_('Got invalid arg log_errors: %r') %
+                                   log_errors)
 
     if run_as_root and hasattr(os, 'geteuid') and os.geteuid() != 0:
         if not root_helper:
@@ -199,11 +219,25 @@ def execute(*cmd, **kwargs):
                                             stderr=sanitized_stderr,
                                             cmd=sanitized_cmd)
             return result
-        except ProcessExecutionError:
+        except ProcessExecutionError as err:
+            # if we want to always log the errors or if this is
+            # the final attempt that failed and we want to log that.
+            if log_errors == LOG_ALL_ERRORS or (
+                    log_errors == LOG_FINAL_ERROR and not attempts):
+                format = _('%(desc)r\ncommand: %(cmd)r\n'
+                           'exit code: %(code)r\nstdout: %(stdout)r\n'
+                           'stderr: %(stderr)r')
+                LOG.log(loglevel, format, {"desc": err.description,
+                                           "cmd": err.cmd,
+                                           "code": err.exit_code,
+                                           "stdout": err.stdout,
+                                           "stderr": err.stderr})
+
             if not attempts:
+                LOG.log(loglevel, _('%r failed. Not Retrying.'), err.cmd)
                 raise
             else:
-                LOG.log(loglevel, _('%r failed. Retrying.'), sanitized_cmd)
+                LOG.log(loglevel, _('%r failed. Retrying.'), err.cmd)
                 if delay_on_retry:
                     greenthread.sleep(random.randint(20, 200) / 100.0)
         finally:
