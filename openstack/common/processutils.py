@@ -116,6 +116,8 @@ def execute(*cmd, **kwargs):
     :type shell:            boolean
     :param loglevel:        log level for execute commands.
     :type loglevel:         int.  (Should be logging.DEBUG or logging.INFO)
+    :param verbose:         Should stdout and stderr be logged on error?
+    :type verbose:          boolean
     :returns:               (stdout, stderr) from process execution
     :raises:                :class:`UnknownArgumentError` on
                             receiving unknown arguments
@@ -132,6 +134,7 @@ def execute(*cmd, **kwargs):
     root_helper = kwargs.pop('root_helper', '')
     shell = kwargs.pop('shell', False)
     loglevel = kwargs.pop('loglevel', logging.DEBUG)
+    verbose = kwargs.pop('verbose', False)
 
     if isinstance(check_exit_code, bool):
         ignore_exit_code = not check_exit_code
@@ -197,11 +200,19 @@ def execute(*cmd, **kwargs):
                                             stderr=stderr,
                                             cmd=' '.join(cmd))
             return result
-        except ProcessExecutionError:
+        except ProcessExecutionError as err:
+            if verbose:
+                LOG.log(loglevel, _('%r'), err.description)
+                LOG.log(loglevel, _('command: %r'), err.cmd)
+                LOG.log(loglevel, _('exit_code: %r'), err.exit_code)
+                LOG.log(loglevel, _('stdout: %r'), err.stdout)
+                LOG.log(loglevel, _('stderr: %r'), err.stderr)
+
             if not attempts:
+                LOG.log(loglevel, _('%r failed. Out of retries.'), cmd)
                 raise
             else:
-                LOG.log(loglevel, '%r failed. Retrying.', cmd)
+                LOG.log(loglevel, _('%r failed. Retrying.'), cmd)
                 if delay_on_retry:
                     greenthread.sleep(random.randint(20, 200) / 100.0)
         finally:
