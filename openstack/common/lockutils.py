@@ -16,6 +16,7 @@
 import contextlib
 import errno
 import functools
+import logging
 import os
 import shutil
 import subprocess
@@ -29,7 +30,6 @@ from oslo.config import cfg
 
 from openstack.common import fileutils
 from openstack.common.gettextutils import _, _LE, _LI
-from openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)
