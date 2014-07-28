@@ -8,7 +8,7 @@ Jinja2
 kombu>=2.4.8
 lockfile>=0.8
 netaddr>=0.7.6
-oslo.config>=1.2.1
+oslo.config>=1.4.0.0a3
 PasteDeploy>=1.5.0
 pbr>=0.6,!=0.7,<1.0
 posix_ipc
