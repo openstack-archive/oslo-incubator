@@ -108,10 +108,19 @@ class NetworkUtilsTest(test_base.BaseTestCase):
         network_utils.set_tcp_keepalive(mock_sock, True, 100, 10, 5)
         calls = [
             mock.call.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, True),
-            mock.call.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 100),
-            mock.call.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 10),
-            mock.call.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 5)
         ]
+        if hasattr(socket, 'TCP_KEEPIDLE'):
+            calls.append(
+                mock.call.setsockopt(socket.IPPROTO_TCP,
+                                     socket.TCP_KEEPIDLE, 100))
+        if hasattr(socket, 'TCP_KEEPINTVL'):
+            calls.append(
+                mock.call.setsockopt(socket.IPPROTO_TCP,
+                                     socket.TCP_KEEPINTVL, 10))
+        if hasattr(socket, 'TCP_KEEPCNT'):
+            calls.append(
+                mock.call.setsockopt(socket.IPPROTO_TCP,
+                                     socket.TCP_KEEPCNT, 5))
         mock_sock.assert_has_calls(calls)
 
         mock_sock.reset_mock()
