@@ -154,7 +154,7 @@ class ServiceLauncherTest(ServiceTestBase):
         f.readline()
 
         processes = [tuple(int(p) for p in l.strip().split()[:2])
-                     for l in f.readlines()]
+                     for l in f]
         return [p for p, pp in processes if pp == self.pid]
 
     def test_killed_worker_recover(self):
