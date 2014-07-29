@@ -184,11 +184,9 @@ class SysLogHandlersTestCase(test_base.BaseTestCase):
     def setUp(self):
         super(SysLogHandlersTestCase, self).setUp()
         self.facility = logging.handlers.SysLogHandler.LOG_USER
-        self.rfclogger = log.RFCSysLogHandler(address='/dev/log',
-                                              facility=self.facility)
+        self.rfclogger = log.RFCSysLogHandler(facility=self.facility)
         self.rfclogger.binary_name = 'Foo_application'
-        self.logger = logging.handlers.SysLogHandler(address='/dev/log',
-                                                     facility=self.facility)
+        self.logger = logging.handlers.SysLogHandler(facility=self.facility)
         self.logger.binary_name = 'Foo_application'
 
     def test_rfc_format(self):
