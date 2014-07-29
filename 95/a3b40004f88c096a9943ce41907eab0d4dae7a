@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Code-Review+2: Julien Danjou <julien@danjou.info>
+Workflow+1: Julien Danjou <julien@danjou.info>
+Code-Review+2: Zhongyue Luo <zhongyue.luo@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 29 Jul 2014 10:29:20 +0000
+Reviewed-on: https://review.openstack.org/110104
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
