@@ -300,11 +300,10 @@ class ContextAdapter(BaseLoggerAdapter):
         self.warn(stdmsg, *args, **kwargs)
 
     def process(self, msg, kwargs):
-        # NOTE(mrodden): catch any Message/other object and
-        #                coerce to unicode before they can get
-        #                to the python logging and possibly
-        #                cause string encoding trouble
-        if not isinstance(msg, six.string_types):
+        # NOTE(jecarey): If msg is not unicode, coerce it into unicode
+        #                before it can get to the python logging and
+        #                possibly cause string encoding trouble
+        if not isinstance(msg, six.text_type):
             msg = six.text_type(msg)
 
         if 'extra' not in kwargs:
