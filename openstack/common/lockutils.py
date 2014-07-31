@@ -164,8 +164,11 @@ class _PosixLock(object):
         self.semaphore = posix_ipc.Semaphore(self.name,
                                              flags=posix_ipc.O_CREAT,
                                              initial_value=1)
-        self.semaphore.acquire(timeout)
-        return self
+        try:
+            self.semaphore.acquire(timeout)
+        except posix_ipc.BusyError:
+            return False
+        return True
 
     def __enter__(self):
         self.acquire()
