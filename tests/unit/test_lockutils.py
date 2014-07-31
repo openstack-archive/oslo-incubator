@@ -49,6 +49,11 @@ class LockTestCase(test_base.BaseTestCase):
         self.assertEqual(foo.__name__, 'foo', "Wrapped function's name "
                                               "got mangled")
 
+    def test_ipc_lock_timeout(self):
+        lock = lockutils.InterProcessLock('this is my lock')
+        self.assertTrue(lock.acquire())
+        self.assertFalse(lock.acquire(timeout=0))
+
     def test_lock_acquire_release(self):
         lock_name = 'a unique lock 123'
         lock = lockutils.InterProcessLock(lock_name)
