@@ -165,8 +165,10 @@ def execute(*cmd, **kwargs):
                 preexec_fn = _subprocess_setup
                 close_fds = True
 
+            need_stdin = _PIPE if process_input else None
+
             obj = subprocess.Popen(cmd,
-                                   stdin=_PIPE,
+                                   stdin=need_stdin,
                                    stdout=_PIPE,
                                    stderr=_PIPE,
                                    close_fds=close_fds,
@@ -177,6 +179,11 @@ def execute(*cmd, **kwargs):
             for _i in six.moves.range(20):
                 # NOTE(russellb) 20 is an arbitrary number of retries to
                 # prevent any chance of looping forever here.
+                # NOTE(amrith) for an explanation of the setting of
+                # stdin and need_stdin above (in the call to Popen)
+                # and the strange exception handling below, refer to
+                # bug 1347337 and the associated python issue
+                # http://bugs.python.org/issue22114
                 try:
                     if process_input is not None:
                         result = obj.communicate(process_input)
@@ -184,10 +191,14 @@ def execute(*cmd, **kwargs):
                         result = obj.communicate()
                 except OSError as e:
                     if e.errno in (errno.EAGAIN, errno.EINTR):
-                        continue
+                        if need_stdin is None:
+                            continue
                     raise
                 break
-            obj.stdin.close()  # pylint: disable=E1101
+
+            if need_stdin:
+                obj.stdin.close()  # pylint: disable=E1101
+
             _returncode = obj.returncode  # pylint: disable=E1101
             LOG.log(loglevel, 'Result was %s' % _returncode)
             if not ignore_exit_code and _returncode not in check_exit_code:
