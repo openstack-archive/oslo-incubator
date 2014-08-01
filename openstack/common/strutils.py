@@ -39,8 +39,8 @@ UNIT_PREFIX_EXPONENT = {
     'Ti': 4,
 }
 UNIT_SYSTEM_INFO = {
-    'IEC': (1024, re.compile(r'(^[-+]?\d*\.?\d+)([KMGT]i?)?(b|bit|B)$')),
-    'SI': (1000, re.compile(r'(^[-+]?\d*\.?\d+)([kMGT])?(b|bit|B)$')),
+    'IEC': (1024, re.compile(r'(^[-+]?\d*\.?\d+)(([KMGT]i?)?(b|bit|B))?$')),
+    'SI': (1000, re.compile(r'(^[-+]?\d*\.?\d+)(([kMGT])?(b|bit|B))?$')),
 }
 
 TRUE_STRINGS = ('1', 't', 'true', 'on', 'y', 'yes')
@@ -221,8 +221,8 @@ def string_to_bytes(text, unit_system='IEC', return_int=False):
     match = reg_ex.match(text)
     if match:
         magnitude = float(match.group(1))
-        unit_prefix = match.group(2)
-        if match.group(3) in ['b', 'bit']:
+        unit_prefix = match.group(3)
+        if match.group(4) in ['b', 'bit']:
             magnitude /= 8
     else:
         msg = _('Invalid string format: %s') % text
