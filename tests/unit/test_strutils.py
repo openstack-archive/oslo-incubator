@@ -238,10 +238,11 @@ class StringToBytesTest(test_base.BaseTestCase):
         ('Mi', dict(unit_prefix='Mi')),
         ('Gi', dict(unit_prefix='Gi')),
         ('Ti', dict(unit_prefix='Ti')),
-        ('invalid_unit_prefix', dict(unit_prefix='B', assert_error=True)),
+        ('invalid_unit_prefix', dict(unit_prefix='C', assert_error=True)),
     ]
 
     _unit_suffix = [
+        ('no_unit_suffix', dict(unit_suffix='')),
         ('b', dict(unit_suffix='b')),
         ('bit', dict(unit_suffix='bit')),
         ('B', dict(unit_suffix='B')),
@@ -287,7 +288,8 @@ class StringToBytesTest(test_base.BaseTestCase):
         err_si = self.unit_system == 'SI' and (self.unit_prefix == 'K' or
                                                self.unit_prefix.endswith('i'))
         err_iec = self.unit_system == 'IEC' and self.unit_prefix == 'k'
-        if getattr(self, 'assert_error', False) or err_si or err_iec:
+        if (getattr(self, 'assert_error', False) or err_si or err_iec or
+           (self.unit_suffix == '' and self.unit_prefix != '')):
             self.assertRaises(ValueError, strutils.string_to_bytes,
                               text, unit_system=self.unit_system,
                               return_int=self.return_int)
