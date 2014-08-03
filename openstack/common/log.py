@@ -57,9 +57,9 @@ _DEFAULT_LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 common_cli_opts = [
     cfg.BoolOpt('debug',
                 short='d',
-                default=False,
+                default=True,
                 help='Print debugging output (set logging level to '
-                     'DEBUG instead of default WARNING level).'),
+                     'DEBUG instead of WARNING level).'),
     cfg.BoolOpt('verbose',
                 short='v',
                 default=False,
