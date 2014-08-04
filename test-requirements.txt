@@ -5,7 +5,7 @@ hacking>=0.9.1,<0.10
 MySQL-python
 oslotest
 pylint==0.25.2
-pyzmq==2.2.0.1
+pyzmq>=14.3.1 # LGPL+BSD
 redis
 simplejson>=2.0.9
 sphinx>=1.1.2,!=1.2.0,<1.3
