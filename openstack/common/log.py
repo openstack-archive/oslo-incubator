@@ -621,6 +621,12 @@ class ContextFormatter(logging.Formatter):
     def format(self, record):
         """Uses contextstring if request_id is set, otherwise default."""
 
+        # NOTE(jecarey): If msg is not unicode, coerce it into unicode
+        #                before it can get to the python logging and
+        #                possibly cause string encoding trouble
+        if not isinstance(record.msg, six.text_type):
+            record.msg = six.text_type(record.msg)
+
         # store project info
         record.project = self.project
         record.version = self.version

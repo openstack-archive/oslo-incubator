@@ -408,7 +408,7 @@ class ContextFormatterTestCase(LogTestBase):
                                                six.text_type(message))
         self.assertEqual(expected, self.stream.getvalue())
 
-    def test_unicode_conversion(self):
+    def test_unicode_conversion_in_adapter(self):
         ctxt = _fake_context()
         ctxt.request_id = six.text_type('99')
         message = "Exception is (%s)"
@@ -418,6 +418,23 @@ class ContextFormatterTestCase(LogTestBase):
         expected = "HAS CONTEXT [%s]: %s --DBG\n" % (ctxt.request_id,
                                                      message)
         self.assertEqual(expected, self.stream.getvalue())
+
+    def test_unicode_conversion_in_formatter(self):
+        ctxt = _fake_context()
+        local.store.context = ctxt
+        ctxt.request_id = six.text_type('99')
+        try:
+            no_adapt_log = logging.getLogger('no_adapt')
+            no_adapt_log.setLevel(logging.INFO)
+            message = "Exception is (%s)"
+            ex = Exception(gettextutils.Message('test' + six.unichr(128)))
+            no_adapt_log.info(message, ex)
+            message = six.text_type(message) % ex
+            expected = "HAS CONTEXT [%s]: %s\n" % (ctxt.request_id,
+                                                   message)
+            self.assertEqual(expected, self.stream.getvalue())
+        finally:
+            del local.store.context
 
 
 class ExceptionLoggingTestCase(LogTestBase):
