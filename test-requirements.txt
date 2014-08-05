@@ -3,6 +3,7 @@ discover
 fixtures>=0.3.14
 hacking>=0.9.1,<0.10
 MySQL-python
+oslosphinx
 oslotest
 pylint==0.25.2
 pyzmq==2.2.0.1
