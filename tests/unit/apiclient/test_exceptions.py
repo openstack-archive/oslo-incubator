@@ -32,7 +32,8 @@ class FakeResponse(object):
 
 class ExceptionsArgsTest(test_base.BaseTestCase):
 
-    def assert_exception(self, ex_cls, method, url, status_code, json_data):
+    def assert_exception(self, ex_cls, method, url, status_code, json_data,
+                         check_description=True):
         ex = exceptions.from_response(
             FakeResponse(status_code=status_code,
                          headers={"Content-Type": "application/json"},
@@ -40,8 +41,9 @@ class ExceptionsArgsTest(test_base.BaseTestCase):
             method,
             url)
         self.assertTrue(isinstance(ex, ex_cls))
-        self.assertEqual(ex.message, json_data["error"]["message"])
-        self.assertEqual(ex.details, json_data["error"]["details"])
+        if check_description:
+            self.assertEqual(ex.message, json_data["error"]["message"])
+            self.assertEqual(ex.details, json_data["error"]["details"])
         self.assertEqual(ex.method, method)
         self.assertEqual(ex.url, url)
         self.assertEqual(ex.http_status, status_code)
@@ -66,3 +68,12 @@ class ExceptionsArgsTest(test_base.BaseTestCase):
         status_code = 600
         self.assert_exception(
             exceptions.HttpError, method, url, status_code, json_data)
+
+    def test_from_response_non_openstack(self):
+        method = "POST"
+        url = "/fake-unknown"
+        status_code = 400
+        json_data = {"alien": 123}
+        self.assert_exception(
+            exceptions.BadRequest, method, url, status_code, json_data,
+            check_description=False)
