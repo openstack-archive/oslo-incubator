@@ -16,6 +16,7 @@ import eventlet
 eventlet.monkey_patch()
 
 import contextlib
+import copy
 import sys
 
 from oslo.config import cfg
@@ -27,6 +28,16 @@ from openstack.common.rpc import impl_zmq
 CONF = cfg.CONF
 CONF.register_opts(rpc.rpc_opts)
 CONF.register_opts(impl_zmq.zmq_opts)
+
+
+def list_opts():
+    """Return a list of oslo.config options available.
+
+    The purpose of this is to allow tools like the Oslo sample config file
+    generator to discover the options exposed to users.
+    """
+    return [(None, copy.deepcopy(rpc.rpc_opts)),
+            (None, copy.deepcopy(impl_zmq.zmq_opts))]
 
 
 def main():

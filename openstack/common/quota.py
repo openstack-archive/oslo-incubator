@@ -16,6 +16,7 @@
 
 """Common quotas"""
 
+import copy
 import datetime
 
 from oslo.config import cfg
@@ -48,6 +49,15 @@ common_quota_opts = [
 
 CONF = cfg.CONF
 CONF.register_opts(common_quota_opts)
+
+
+def list_opts():
+   """Return a list of oslo.config options available.
+
+    The purpose of this is to allow tools like the Oslo sample config file
+    generator to discover the options exposed to users.
+    """
+   return [(None, copy.deepcopy(common_quota_opts))]
 
 
 class QuotaException(Exception):

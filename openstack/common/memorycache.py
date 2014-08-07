@@ -16,6 +16,8 @@
 
 """Super simple fake memcache client."""
 
+import copy
+
 from oslo.config import cfg
 
 from openstack.common import timeutils
@@ -27,6 +29,15 @@ memcache_opts = [
 
 CONF = cfg.CONF
 CONF.register_opts(memcache_opts)
+
+
+def list_opts():
+    """Return a list of oslo.config options available.
+
+    The purpose of this is to allow tools like the Oslo sample config file
+    generator to discover the options exposed to users.
+    """
+    return [(None, copy.deepcopy(memcache_opts))]
 
 
 def get_client(memcached_servers=None):

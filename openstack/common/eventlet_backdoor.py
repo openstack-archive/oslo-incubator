@@ -16,6 +16,7 @@
 
 from __future__ import print_function
 
+import copy
 import errno
 import gc
 import os
@@ -47,6 +48,15 @@ eventlet_backdoor_opts = [
 CONF = cfg.CONF
 CONF.register_opts(eventlet_backdoor_opts)
 LOG = logging.getLogger(__name__)
+
+
+def list_opts():
+    """Return a list of oslo.config options available.
+
+    The purpose of this is to allow tools like the Oslo sample config file
+    generator to discover the options exposed to users.
+    """
+    return [(None, copy.deepcopy(eventlet_backdoor_opts))]
 
 
 class EventletBackdoorConfigValueError(Exception):

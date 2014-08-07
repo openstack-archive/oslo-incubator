@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import copy
 import os
 import ssl
 
@@ -35,6 +36,15 @@ ssl_opts = [
 
 CONF = cfg.CONF
 CONF.register_opts(ssl_opts, "ssl")
+
+
+def list_opts():
+   """Return a list of oslo.config options available.
+
+    The purpose of this is to allow tools like the Oslo sample config file
+    generator to discover the options exposed to users.
+    """
+   return [("ssl", copy.deepcopy(ssl_opts))]
 
 
 def is_enabled():

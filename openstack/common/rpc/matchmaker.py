@@ -18,6 +18,7 @@ return keys for direct exchanges, per (approximate) AMQP parlance.
 """
 
 import contextlib
+import copy
 
 import eventlet
 from oslo.config import cfg
@@ -39,6 +40,15 @@ CONF = cfg.CONF
 CONF.register_opts(matchmaker_opts)
 LOG = logging.getLogger(__name__)
 contextmanager = contextlib.contextmanager
+
+
+def list_opts():
+    """Return a list of oslo.config options available.
+
+    The purpose of this is to allow tools like the Oslo sample config file
+    generator to discover the options exposed to users.
+    """
+    return [(None, copy.deepcopy(matchmaker_opts))]
 
 
 class MatchMakerException(Exception):

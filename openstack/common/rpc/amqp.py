@@ -24,6 +24,7 @@ uses AMQP, but is deprecated and predates this code.
 """
 
 import collections
+import copy
 import inspect
 import sys
 import uuid
@@ -58,6 +59,15 @@ cfg.CONF.register_opts(amqp_opts)
 
 UNIQUE_ID = '_unique_id'
 LOG = logging.getLogger(__name__)
+
+
+def list_opts():
+    """Return a list of oslo.config options available.
+
+    The purpose of this is to allow tools like the Oslo sample config file
+    generator to discover the options exposed to users.
+    """
+    return [(None, copy.deepcopy(amqp_opts))]
 
 
 class Pool(pools.Pool):

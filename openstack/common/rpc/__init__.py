@@ -23,6 +23,8 @@ For some wrappers that add message versioning to rpc, see:
     rpc.proxy
 """
 
+import copy
+
 from oslo.config import cfg
 
 from openstack.common import importutils
@@ -66,6 +68,15 @@ rpc_opts = [
 
 CONF = cfg.CONF
 CONF.register_opts(rpc_opts)
+
+
+def list_opts():
+    """Return a list of oslo.config options available.
+
+    The purpose of this is to allow tools like the Oslo sample config file
+    generator to discover the options exposed to users.
+    """
+    return [(None, copy.deepcopy(rpc_opts))]
 
 
 def set_defaults(control_exchange):
