@@ -192,23 +192,46 @@ grep foo
             os.unlink(tmpfilename)
             os.unlink(tmpfilename2)
 
-    def test_retry_on_communicate_error(self):
-        self.called = False
+    # This test ensures that when communicate raises
+    # an OSError, we return that to the caller. The next test
+    # verifies that when attempts > 1, we still don't retry
+    # the command or the communicate call.
+    def test_retry_on_communicate_error1(self):
+        self.called = 0
 
         def fake_communicate(*args, **kwargs):
-            if self.called:
-                return ('', '')
-            self.called = True
-            e = OSError('foo')
+            self.called += 1
+            e = OSError('fake-test')
             e.errno = errno.EAGAIN
             raise e
 
         self.useFixture(fixtures.MonkeyPatch(
             'subprocess.Popen.communicate', fake_communicate))
 
-        processutils.execute('/usr/bin/env', 'true', check_exit_code=False)
+        self.assertRaises(OSError,
+                          processutils.execute,
+                          '/usr/bin/env', 'false', check_exit_code=False)
 
-        self.assertTrue(self.called)
+        self.assertEqual(1, self.called)
+
+    def test_retry_on_communicate_error2(self):
+        self.called = 0
+
+        def fake_communicate(*args, **kwargs):
+            self.called += 1
+            e = OSError('fake-test')
+            e.errno = errno.EAGAIN
+            raise e
+
+        self.useFixture(fixtures.MonkeyPatch(
+            'subprocess.Popen.communicate', fake_communicate))
+
+        self.assertRaises(OSError,
+                          processutils.execute,
+                          '/usr/bin/env', 'false', check_exit_code=False,
+                          attempts=5)
+
+        self.assertEqual(1, self.called)
 
     def test_with_env_variables(self):
         env_vars = {'SUPER_UNIQUE_VAR': 'The answer is 42'}
