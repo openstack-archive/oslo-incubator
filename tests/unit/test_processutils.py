@@ -192,23 +192,38 @@ grep foo
             os.unlink(tmpfilename)
             os.unlink(tmpfilename2)
 
+    # This test and the one below ensures that when communicate raises
+    # an OSError, we do the right thing(s)
+    def test_exception_on_communicate_error(self):
+        self.fake_communicate = mock.Mock(side_effect=OSError(
+            errno.EAGAIN, 'fake-test'))
+        self.mock = self.useFixture(fixtures.MonkeyPatch(
+            'subprocess.Popen.communicate',
+            self.fake_communicate))
+
+        self.assertRaisesRegexp(OSError, 'fake-test',
+                                processutils.execute,
+                                '/usr/bin/env',
+                                'false',
+                                check_exit_code=False)
+
+        self.assertEqual(1, self.fake_communicate.call_count)
+
     def test_retry_on_communicate_error(self):
-        self.called = False
+        self.fake_communicate = mock.Mock(side_effect=OSError(
+            errno.EAGAIN, 'fake-test'))
+        self.mock = self.useFixture(fixtures.MonkeyPatch(
+            'subprocess.Popen.communicate',
+            self.fake_communicate))
 
-        def fake_communicate(*args, **kwargs):
-            if self.called:
-                return ('', '')
-            self.called = True
-            e = OSError('foo')
-            e.errno = errno.EAGAIN
-            raise e
+        self.assertRaisesRegexp(OSError, 'fake-test',
+                                processutils.execute,
+                                '/usr/bin/env',
+                                'false',
+                                check_exit_code=False,
+                                attempts=5)
 
-        self.useFixture(fixtures.MonkeyPatch(
-            'subprocess.Popen.communicate', fake_communicate))
-
-        processutils.execute('/usr/bin/env', 'true', check_exit_code=False)
-
-        self.assertTrue(self.called)
+        self.assertEqual(5, self.fake_communicate.call_count)
 
     def test_with_env_variables(self):
         env_vars = {'SUPER_UNIQUE_VAR': 'The answer is 42'}
