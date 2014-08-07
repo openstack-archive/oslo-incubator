@@ -168,7 +168,8 @@ F: local.py
 == lockutils ==
 
 M: Michael Still <mikal@stillhq.com>
-S: Maintained
+M: Yuriy Taraday <yorik.sar@gmail.com>
+S: Graduating
 F: lockutils.py
 
 == log ==
@@ -230,7 +231,8 @@ F: policy.py
 == processutils ==
 
 M: Michael Still <mikal@stillhq.com>
-S: Maintained
+M: Yuriy Taraday <yorik.sar@gmail.com>
+S: Graduating
 F: processutils.py
 
 == quota ==
