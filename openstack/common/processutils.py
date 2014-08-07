@@ -17,7 +17,6 @@
 System-level utilities and helper functions.
 """
 
-import errno
 import logging
 import multiprocessing
 import os
@@ -120,6 +119,7 @@ def execute(*cmd, **kwargs):
     :raises:                :class:`UnknownArgumentError` on
                             receiving unknown arguments
     :raises:                :class:`ProcessExecutionError`
+    :raises:                :class:`OSError`
     """
 
     process_input = kwargs.pop('process_input', None)
@@ -173,20 +173,9 @@ def execute(*cmd, **kwargs):
                                    preexec_fn=preexec_fn,
                                    shell=shell,
                                    env=env_variables)
-            result = None
-            for _i in six.moves.range(20):
-                # NOTE(russellb) 20 is an arbitrary number of retries to
-                # prevent any chance of looping forever here.
-                try:
-                    if process_input is not None:
-                        result = obj.communicate(process_input)
-                    else:
-                        result = obj.communicate()
-                except OSError as e:
-                    if e.errno in (errno.EAGAIN, errno.EINTR):
-                        continue
-                    raise
-                break
+
+            result = obj.communicate(process_input)
+
             obj.stdin.close()  # pylint: disable=E1101
             _returncode = obj.returncode  # pylint: disable=E1101
             LOG.log(loglevel, 'Result was %s' % _returncode)
@@ -197,13 +186,14 @@ def execute(*cmd, **kwargs):
                                             stderr=stderr,
                                             cmd=' '.join(cmd))
             return result
-        except ProcessExecutionError:
+        except (ProcessExecutionError, OSError):
             if not attempts:
                 raise
             else:
                 LOG.log(loglevel, '%r failed. Retrying.', cmd)
                 if delay_on_retry:
                     greenthread.sleep(random.randint(20, 200) / 100.0)
+
         finally:
             # NOTE(termie): this appears to be necessary to let the subprocess
             #               call clean something up in between calls, without
