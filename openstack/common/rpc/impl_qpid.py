@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import copy
 import functools
 import itertools
 import time
@@ -81,6 +82,15 @@ qpid_opts = [
 cfg.CONF.register_opts(qpid_opts)
 
 JSON_CONTENT_TYPE = 'application/json; charset=utf8'
+
+
+def list_opts():
+    """Return a list of oslo.config options available.
+
+    The purpose of this is to allow tools like the Oslo sample config file
+    generator to discover the options exposed to users.
+    """
+    return [(None, copy.deepcopy(qpid_opts))]
 
 
 def raise_invalid_topology_version(conf):

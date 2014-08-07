@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import copy
 import os
 import pprint
 import re
@@ -81,6 +82,15 @@ CONF.register_opts(zmq_opts)
 
 ZMQ_CTX = None  # ZeroMQ Context, must be global.
 matchmaker = None  # memorized matchmaker object
+
+
+def list_opts():
+    """Return a list of oslo.config options available.
+
+    The purpose of this is to allow tools like the Oslo sample config file
+    generator to discover the options exposed to users.
+    """
+    return [(None, copy.deepcopy(zmq_opts))]
 
 
 def _serialize(data):

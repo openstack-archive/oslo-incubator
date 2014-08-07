@@ -27,6 +27,7 @@ It also allows setting of formatting information through conf.
 
 """
 
+import copy
 import inspect
 import itertools
 import logging
@@ -193,6 +194,16 @@ except AttributeError:  # NOTE(jkoelker) NullHandler added in Python 2.7
 
         def createLock(self):
             self.lock = None
+
+
+def list_opts():
+    """Return a list of oslo.config options available.
+
+    The purpose of this is to allow tools like the Oslo sample config file
+    generator to discover the options exposed to users.
+    """
+    return [(None, copy.deepcopy(generic_log_opts)),
+            (None, copy.deepcopy(log_opts))]
 
 
 def _dictify_context(context):

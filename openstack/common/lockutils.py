@@ -14,6 +14,7 @@
 #    under the License.
 
 import contextlib
+import copy
 import errno
 import functools
 import logging
@@ -50,6 +51,15 @@ CONF.register_opts(util_opts)
 
 def set_defaults(lock_path):
     cfg.set_defaults(util_opts, lock_path=lock_path)
+
+
+def list_opts():
+    """Return a list of oslo.config options available.
+
+    The purpose of this is to allow tools like the Oslo sample config file
+    generator to discover the options exposed to users.
+    """
+    return [(None, copy.deepcopy(util_opts))]
 
 
 class _FileLock(object):

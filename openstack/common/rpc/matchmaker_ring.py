@@ -17,6 +17,7 @@ The MatchMaker classes should except a Topic or Fanout exchange key and
 return keys for direct exchanges, per (approximate) AMQP parlance.
 """
 
+import copy
 import itertools
 import json
 
@@ -39,6 +40,15 @@ matchmaker_opts = [
 CONF = cfg.CONF
 CONF.register_opts(matchmaker_opts, 'matchmaker_ring')
 LOG = logging.getLogger(__name__)
+
+
+def list_opts():
+    """Return a list of oslo.config options available.
+
+    The purpose of this is to allow tools like the Oslo sample config file
+    generator to discover the options exposed to users.
+    """
+    return [('matchmaker_ring', copy.deepcopy(matchmaker_opts))]
 
 
 class RingExchange(mm.Exchange):

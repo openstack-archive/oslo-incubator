@@ -17,6 +17,8 @@ The MatchMaker classes should accept a Topic or Fanout exchange key and
 return keys for direct exchanges, per (approximate) AMQP parlance.
 """
 
+import copy
+
 from oslo.config import cfg
 
 from openstack.common import importutils
@@ -43,6 +45,15 @@ opt_group = cfg.OptGroup(name='matchmaker_redis',
 CONF.register_group(opt_group)
 CONF.register_opts(matchmaker_redis_opts, opt_group)
 LOG = logging.getLogger(__name__)
+
+
+def list_opts():
+    """Return a list of oslo.config options available.
+
+    The purpose of this is to allow tools like the Oslo sample config file
+    generator to discover the options exposed to users.
+    """
+    return [(opt_group.name, copy.deepcopy(matchmaker_redis_opts))]
 
 
 class RedisExchange(mm_common.Exchange):
