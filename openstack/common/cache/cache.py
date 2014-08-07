@@ -20,6 +20,8 @@ Supported configuration options:
 `key_namespace`: Namespace under which keys will be created.
 """
 
+import copy
+
 from six.moves.urllib import parse
 from stevedore import driver
 
@@ -46,6 +48,15 @@ def register_oslo_configs(conf):
     :type conf: `cfg.ConfigOptions`
     """
     conf.register_opts(_get_olso_configs())
+
+
+def list_opts():
+    """Return a list of oslo.config options available.
+
+    The purpose of this is to allow tools like the Oslo sample config file
+    generator to discover the options exposed to users.
+    """
+    return [(None, copy.deepcopy(_get_olso_configs()))]
 
 
 def get_cache(url='memory://'):

@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import copy
 import functools
 import itertools
 import socket
@@ -100,6 +101,15 @@ kombu_opts = [
 cfg.CONF.register_opts(kombu_opts)
 
 LOG = rpc_common.LOG
+
+
+def list_opts():
+    """Return a list of oslo.config options available.
+
+    The purpose of this is to allow tools like the Oslo sample config file
+    generator to discover the options exposed to users.
+    """
+    return [(None, copy.deepcopy(kombu_opts))]
 
 
 def _get_queue_arguments(conf):

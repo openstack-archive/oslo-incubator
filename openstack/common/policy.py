@@ -77,6 +77,7 @@ as it allows particular rules to be explicitly disabled.
 
 import abc
 import ast
+import copy
 import re
 
 from oslo.config import cfg
@@ -106,6 +107,15 @@ CONF.register_opts(policy_opts)
 LOG = logging.getLogger(__name__)
 
 _checks = {}
+
+
+def list_opts():
+    """Return a list of oslo.config options available.
+
+    The purpose of this is to allow tools like the Oslo sample config file
+    generator to discover the options exposed to users.
+    """
+    return [(None, copy.deepcopy(policy_opts))]
 
 
 class PolicyNotAuthorized(Exception):
