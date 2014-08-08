@@ -429,12 +429,12 @@ def set_defaults(logging_context_format_string=None,
     # later in a backwards in-compatible change
     if default_log_levels is not None:
         cfg.set_defaults(
-                log_opts,
-                default_log_levels=default_log_levels)
+            log_opts,
+            default_log_levels=default_log_levels)
     if logging_context_format_string is not None:
         cfg.set_defaults(
-                log_opts,
-                logging_context_format_string=logging_context_format_string)
+            log_opts,
+            logging_context_format_string=logging_context_format_string)
 
 
 def _find_facility_from_conf():

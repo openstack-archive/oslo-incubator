@@ -101,10 +101,8 @@ class _FileLock(object):
                     raise threading.ThreadError(_("Unable to acquire lock on"
                                                   " `%(filename)s` due to"
                                                   " %(exception)s") %
-                                                {
-                                                    'filename': self.fname,
-                                                    'exception': e,
-                                                })
+                                                {'filename': self.fname,
+                                                    'exception': e})
 
     def __enter__(self):
         self.acquire()
