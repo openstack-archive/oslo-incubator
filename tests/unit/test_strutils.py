@@ -501,6 +501,51 @@ class MaskPasswordTestCase(test_base.BaseTestCase):
         self.assertEqual(expected,
                          strutils.mask_password(payload, secret='111'))
 
+        payload = 'mysqld --password "aaaaaa"'
+        expected = 'mysqld --password "****"'
+        self.assertEqual(expected,
+                         strutils.mask_password(payload, secret='****'))
+
+        payload = 'mysqld --password aaaaaa'
+        expected = 'mysqld --password ???'
+        self.assertEqual(expected,
+                         strutils.mask_password(payload, secret='???'))
+
+        payload = 'mysqld --password = "aaaaaa"'
+        expected = 'mysqld --password = "****"'
+        self.assertEqual(expected,
+                         strutils.mask_password(payload, secret='****'))
+
+        payload = "mysqld --password = 'aaaaaa'"
+        expected = "mysqld --password = '****'"
+        self.assertEqual(expected,
+                         strutils.mask_password(payload, secret='****'))
+
+        payload = "mysqld --password = aaaaaa"
+        expected = "mysqld --password = ****"
+        self.assertEqual(expected,
+                         strutils.mask_password(payload, secret='****'))
+
+        payload = "test = password =   aaaaaa"
+        expected = "test = password =   111"
+        self.assertEqual(expected,
+                         strutils.mask_password(payload, secret='111'))
+
+        payload = "test = password=   aaaaaa"
+        expected = "test = password=   111"
+        self.assertEqual(expected,
+                         strutils.mask_password(payload, secret='111'))
+
+        payload = "test = password =aaaaaa"
+        expected = "test = password =111"
+        self.assertEqual(expected,
+                         strutils.mask_password(payload, secret='111'))
+
+        payload = "test = password=aaaaaa"
+        expected = "test = password=111"
+        self.assertEqual(expected,
+                         strutils.mask_password(payload, secret='111'))
+
         payload = 'test = "original_password" : "aaaaaaaaa"'
         expected = 'test = "original_password" : "***"'
         self.assertEqual(expected, strutils.mask_password(payload))
