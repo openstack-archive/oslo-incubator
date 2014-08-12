@@ -16,9 +16,14 @@
 
 """Super simple fake memcache client."""
 
+import urllib
+
 from oslo.config import cfg
 
 from openstack.common import timeutils
+
+_DECORATE_METHODS = ('get', 'set', 'add', 'delete', 'incr', 'decr', 'append',
+                     'prepend', 'replace', 'cas', 'gets', 'check_key')
 
 memcache_opts = [
     cfg.ListOpt('memcached_servers',
@@ -36,7 +41,29 @@ def get_client(memcached_servers=None):
         memcached_servers = CONF.memcached_servers
     if memcached_servers:
         import memcache
-        client_cls = memcache.Client
+
+        class MemcacheClient(memcache.Client):
+            def __getattribute__(self, name):
+                """Decorate some methods to fix the key as memcached client
+                does not like spaces
+                """
+                attribute = super(MemcacheClient, self).__getattribute__(name)
+                if name not in _DECORATE_METHODS:
+                    return attribute
+
+                def decorated(*args, **kwargs):
+                    """if the key has a space, then use urllib's quote to
+                    alter the key to prevent MemcachedKeyCharacterError
+                    """
+                    if args:
+                        args = list(args)
+                        args[0] = urllib.quote(args[0])
+                        args = tuple(args)
+                    return attribute(*args, **kwargs)
+
+                return decorated
+
+        client_cls = MemcacheClient
 
     return client_cls(memcached_servers, debug=0)
 
