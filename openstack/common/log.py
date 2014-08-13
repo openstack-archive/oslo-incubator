@@ -127,7 +127,8 @@ DEFAULT_LOG_LEVELS = ['amqp=WARN', 'amqplib=WARN', 'boto=WARN',
                       'qpid=WARN', 'sqlalchemy=WARN', 'suds=INFO',
                       'oslo.messaging=INFO', 'iso8601=WARN',
                       'requests.packages.urllib3.connectionpool=WARN',
-                      'urllib3.connectionpool=WARN', 'websocket=WARN']
+                      'urllib3.connectionpool=WARN', 'websocket=WARN',
+                      "keystonemiddleware=WARN", "routes.middleware=WARN"]
 
 log_opts = [
     cfg.StrOpt('logging_context_format_string',
