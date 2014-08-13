@@ -39,6 +39,10 @@ notifier_opts = [
                help='Default publisher_id for outgoing notifications'),
 ]
 
+# this is used to expose options to oslo-config-generator as an entry point
+config_section = None
+list_opts = lambda: [(config_section, notifier_opts)]
+
 CONF = cfg.CONF
 CONF.register_opts(notifier_opts)
 

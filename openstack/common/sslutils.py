@@ -32,9 +32,12 @@ ssl_opts = [
                     "the server securely."),
 ]
 
+# this is used to expose options to oslo-config-generator as an entry point
+config_section = 'ssl'
+list_opts = lambda: [(config_section, ssl_opts)]
 
 CONF = cfg.CONF
-CONF.register_opts(ssl_opts, "ssl")
+CONF.register_opts(ssl_opts, config_section)
 
 
 def is_enabled():

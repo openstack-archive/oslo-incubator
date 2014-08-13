@@ -36,8 +36,12 @@ matchmaker_opts = [
                help='Matchmaker ring file (JSON)'),
 ]
 
+# this is used to expose options to oslo-config-generator as an entry point
+config_section = 'matchmaker_ring'
+list_opts = lambda: [(config_section, matchmaker_opts)]
+
 CONF = cfg.CONF
-CONF.register_opts(matchmaker_opts, 'matchmaker_ring')
+CONF.register_opts(matchmaker_opts, config_section)
 LOG = logging.getLogger(__name__)
 
 

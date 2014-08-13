@@ -46,6 +46,10 @@ common_quota_opts = [
                help='Number of seconds until a reservation expires.'),
 ]
 
+# this is used to expose options to oslo-config-generator as an entry point
+config_section = None
+list_opts = lambda: [(config_section, common_quota_opts)]
+
 CONF = cfg.CONF
 CONF.register_opts(common_quota_opts)
 

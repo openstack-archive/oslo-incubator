@@ -32,6 +32,10 @@ max_req_body_size = cfg.IntOpt('max_request_body_size',
                                help='The maximum body size for each '
                                     ' request, in bytes.')
 
+# this is used to expose options to oslo-config-generator as an entry point
+config_section = None
+list_opts = lambda: [(config_section, [max_req_body_size])]
+
 CONF = cfg.CONF
 CONF.register_opt(max_req_body_size)
 

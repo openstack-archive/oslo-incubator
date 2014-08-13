@@ -97,6 +97,10 @@ kombu_opts = [
 
 ]
 
+# this is used to expose options to oslo-config-generator as an entry point
+config_section = None
+list_opts = lambda: [(config_section, kombu_opts)]
+
 cfg.CONF.register_opts(kombu_opts)
 
 LOG = rpc_common.LOG

@@ -43,6 +43,9 @@ util_opts = [
                help='Directory to use for lock files.')
 ]
 
+# this is used to expose options to oslo-config-generator as an entry point
+config_section = None
+list_opts = lambda: [(config_section, util_opts)]
 
 CONF = cfg.CONF
 CONF.register_opts(util_opts)

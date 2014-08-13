@@ -130,8 +130,12 @@ database_opts = [
                     '(setting -1 implies an infinite retry count)'),
 ]
 
+# this is used to expose options to oslo-config-generator as an entry point
+config_section = 'database'
+list_opts = lambda: [(config_section, database_opts)]
+
 CONF = cfg.CONF
-CONF.register_opts(database_opts, 'database')
+CONF.register_opts(database_opts, config_section)
 
 
 def set_defaults(sql_connection, sqlite_db, max_pool_size=None,

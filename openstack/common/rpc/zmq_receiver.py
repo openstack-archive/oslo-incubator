@@ -28,6 +28,10 @@ CONF = cfg.CONF
 CONF.register_opts(rpc.rpc_opts)
 CONF.register_opts(impl_zmq.zmq_opts)
 
+# this is used to expose options to oslo-config-generator as an entry point
+config_section = None
+list_opts = lambda: [(config_section, rpc.rpc_opts + impl_zmq.zmq_opts)]
+
 
 def main():
     CONF(sys.argv[1:], project='oslo')

@@ -54,6 +54,10 @@ amqp_opts = [
                 help='Auto-delete queues in amqp.'),
 ]
 
+# this is used to expose options to oslo-config-generator as an entry point
+config_section = None
+list_opts = lambda: [(config_section, amqp_opts)]
+
 cfg.CONF.register_opts(amqp_opts)
 
 UNIQUE_ID = '_unique_id'
