@@ -75,6 +75,8 @@ zmq_opts = [
                     'IP address. Must match "host" option, if running Nova.')
 ]
 
+# this is used to expose options to oslo-config-generator as an entry point
+list_opts = lambda: zmq_opts
 
 CONF = cfg.CONF
 CONF.register_opts(zmq_opts)

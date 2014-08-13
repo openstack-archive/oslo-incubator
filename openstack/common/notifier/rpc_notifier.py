@@ -26,6 +26,9 @@ notification_topic_opt = cfg.ListOpt(
     'notification_topics', default=['notifications', ],
     help='AMQP topic used for OpenStack notifications')
 
+# this is used to expose options to oslo-config-generator as an entry point
+list_opts = lambda: [notification_topic_opt]
+
 CONF = cfg.CONF
 CONF.register_opt(notification_topic_opt)
 

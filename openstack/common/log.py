@@ -170,6 +170,10 @@ log_opts = [
                     'log message.'),
 ]
 
+# this is used to expose options to oslo-config-generator as an entry point
+all_opts = common_cli_opts + logging_cli_opts + log_opts + generic_log_opts
+list_opts = lambda: all_opts
+
 CONF = cfg.CONF
 CONF.register_cli_opts(common_cli_opts)
 CONF.register_cli_opts(logging_cli_opts)

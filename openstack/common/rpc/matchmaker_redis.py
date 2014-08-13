@@ -37,6 +37,9 @@ matchmaker_redis_opts = [
                help='Password for Redis server. (optional)'),
 ]
 
+# this is used to expose options to oslo-config-generator as an entry point
+list_opts = lambda: matchmaker_redis_opts
+
 CONF = cfg.CONF
 opt_group = cfg.OptGroup(name='matchmaker_redis',
                          title='Options for Redis-based MatchMaker')

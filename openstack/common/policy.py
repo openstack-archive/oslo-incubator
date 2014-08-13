@@ -100,6 +100,9 @@ policy_opts = [
                       'found.')),
 ]
 
+# this is used to expose options to oslo-config-generator as an entry point
+list_opts = lambda: policy_opts
+
 CONF = cfg.CONF
 CONF.register_opts(policy_opts)
 

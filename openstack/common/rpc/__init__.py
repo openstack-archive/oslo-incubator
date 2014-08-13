@@ -64,6 +64,9 @@ rpc_opts = [
                help='AMQP exchange to connect to if using RabbitMQ or Qpid'),
 ]
 
+# this is used to expose options to oslo-config-generator as an entry point
+list_opts = lambda: rpc_opts
+
 CONF = cfg.CONF
 CONF.register_opts(rpc_opts)
 

@@ -78,6 +78,9 @@ qpid_opts = [
                     "requires a clean break."),
 ]
 
+# this is used to expose options to oslo-config-generator as an entry point
+list_opts = lambda: qpid_opts
+
 cfg.CONF.register_opts(qpid_opts)
 
 JSON_CONTENT_TYPE = 'application/json; charset=utf8'

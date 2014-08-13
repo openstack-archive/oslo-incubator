@@ -25,6 +25,9 @@ memcache_opts = [
                 help='Memcached servers or None for in process cache.'),
 ]
 
+# this is used to expose options to oslo-config-generator as an entry point
+list_opts = lambda: memcache_opts
+
 CONF = cfg.CONF
 CONF.register_opts(memcache_opts)
 

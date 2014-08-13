@@ -28,6 +28,9 @@ periodic_opts = [
                      'Should we run them here?'),
 ]
 
+# this is used to expose options to oslo-config-generator as an entry point
+list_opts = lambda: [periodic_opts]
+
 CONF = cfg.CONF
 CONF.register_opts(periodic_opts)
 

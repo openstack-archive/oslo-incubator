@@ -32,6 +32,8 @@ ssl_opts = [
                     "the server securely."),
 ]
 
+# this is used to expose options to oslo-config-generator as an entry point
+list_opts = lambda: ssl_opts
 
 CONF = cfg.CONF
 CONF.register_opts(ssl_opts, "ssl")

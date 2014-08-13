@@ -44,6 +44,9 @@ eventlet_backdoor_opts = [
                help="Enable eventlet backdoor.  %s" % help_for_backdoor_port)
 ]
 
+# this is used to expose options to oslo-config-generator as an entry point
+list_opts = lambda: eventlet_backdoor_opts
+
 CONF = cfg.CONF
 CONF.register_opts(eventlet_backdoor_opts)
 LOG = logging.getLogger(__name__)

@@ -35,6 +35,9 @@ matchmaker_opts = [
                help='Heartbeat time-to-live.'),
 ]
 
+# this is used to expose options to oslo-config-generator as an entry point
+list_opts = lambda: matchmaker_opts
+
 CONF = cfg.CONF
 CONF.register_opts(matchmaker_opts)
 LOG = logging.getLogger(__name__)
