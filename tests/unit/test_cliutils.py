@@ -447,6 +447,14 @@ class PrintResultTestCase(test_base.BaseTestCase):
         self.useFixture(fixtures.MonkeyPatch(
             "prettytable.PrettyTable.get_string",
             self.mock_get_string))
+        self.mock_init = mock.MagicMock(return_value=None)
+        self.useFixture(fixtures.MonkeyPatch(
+            "prettytable.PrettyTable.__init__",
+            self.mock_init))
+        # NOTE(dtantsur): won't work with mocked __init__
+        self.useFixture(fixtures.MonkeyPatch(
+            "prettytable.PrettyTable.align",
+            mock.MagicMock()))
 
     def test_print_list_sort_by_str(self):
         objs = [_FakeResult("k1", 1),
@@ -460,6 +468,8 @@ class PrintResultTestCase(test_base.BaseTestCase):
                           mock.call(["k3", 2]),
                           mock.call(["k2", 3])])
         self.mock_get_string.assert_called_with(sortby="Name")
+        self.mock_init.assert_called_once_with(["Name", "Value"],
+                                               caching=False)
 
     def test_print_list_sort_by_integer(self):
         objs = [_FakeResult("k1", 1),
@@ -473,6 +483,8 @@ class PrintResultTestCase(test_base.BaseTestCase):
                           mock.call(["k2", 3]),
                           mock.call(["k3", 2])])
         self.mock_get_string.assert_called_with(sortby="Value")
+        self.mock_init.assert_called_once_with(["Name", "Value"],
+                                               caching=False)
 
     def test_print_list_sort_by_none(self):
         objs = [_FakeResult("k1", 1),
@@ -486,6 +498,8 @@ class PrintResultTestCase(test_base.BaseTestCase):
                           mock.call(["k3", 3]),
                           mock.call(["k2", 2])])
         self.mock_get_string.assert_called_with()
+        self.mock_init.assert_called_once_with(["Name", "Value"],
+                                               caching=False)
 
     def test_print_dict(self):
         cliutils.print_dict({"K": "k", "Key": "Value"})
@@ -497,6 +511,49 @@ class PrintResultTestCase(test_base.BaseTestCase):
             mock.call(["Key", "Long"]),
             mock.call(["", "Value"])],
             any_order=True)
+
+    def test_print_list_field_labels(self):
+        objs = [_FakeResult("k1", 1),
+                _FakeResult("k3", 3),
+                _FakeResult("k2", 2)]
+        field_labels = ["Another Name", "Another Value"]
+
+        cliutils.print_list(objs, ["Name", "Value"], sortby_index=None,
+                            field_labels=field_labels)
+
+        self.assertEqual(self.mock_add_row.call_args_list,
+                         [mock.call(["k1", 1]),
+                          mock.call(["k3", 3]),
+                          mock.call(["k2", 2])])
+        self.mock_init.assert_called_once_with(field_labels,
+                                               caching=False)
+
+    def test_print_list_field_labels_sort(self):
+        objs = [_FakeResult("k1", 1),
+                _FakeResult("k3", 3),
+                _FakeResult("k2", 2)]
+        field_labels = ["Another Name", "Another Value"]
+
+        cliutils.print_list(objs, ["Name", "Value"], sortby_index=0,
+                            field_labels=field_labels)
+
+        self.assertEqual(self.mock_add_row.call_args_list,
+                         [mock.call(["k1", 1]),
+                          mock.call(["k3", 3]),
+                          mock.call(["k2", 2])])
+        self.mock_init.assert_called_once_with(field_labels,
+                                               caching=False)
+        self.mock_get_string.assert_called_with(sortby="Another Name")
+
+    def test_print_list_field_labels_too_many(self):
+        objs = [_FakeResult("k1", 1),
+                _FakeResult("k3", 3),
+                _FakeResult("k2", 2)]
+        field_labels = ["Another Name", "Another Value", "Redundant"]
+
+        self.assertRaises(ValueError, cliutils.print_list,
+                          objs, ["Name", "Value"], sortby_index=None,
+                          field_labels=field_labels)
 
 
 class DecoratorsTestCase(test_base.BaseTestCase):
