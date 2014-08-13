@@ -30,8 +30,12 @@ from six import moves
 
 from openstack.common.apiclient import exceptions
 from openstack.common.gettextutils import _
+from openstack.common import log as logging
 from openstack.common import strutils
 from openstack.common import uuidutils
+
+
+LOG = logging.getLogger(__name__)
 
 
 def validate_args(fn, *args, **kwargs):
@@ -132,7 +136,7 @@ def isunauthenticated(func):
 
 
 def print_list(objs, fields, formatters=None, sortby_index=0,
-               mixed_case_fields=None):
+               mixed_case_fields=None, field_labels=None):
     """Print a list or objects as a table, one row per object.
 
     :param objs: iterable of :class:`Resource`
@@ -141,14 +145,26 @@ def print_list(objs, fields, formatters=None, sortby_index=0,
     :param sortby_index: index of the field for sorting table rows
     :param mixed_case_fields: fields corresponding to object attributes that
         have mixed case names (e.g., 'serverId')
+    :param field_labels: Labels to use in the heading of the table, default to
+        fields. If contains less items, than fields, remaining items from
+        fields will be reused.
     """
     formatters = formatters or {}
     mixed_case_fields = mixed_case_fields or []
+    field_labels = field_labels or fields
+    if len(field_labels) < len(fields):
+        field_labels = field_labels + fields[len(field_labels) - len(fields):]
+    elif len(field_labels) > len(fields):
+        LOG.warn(_("Field labels list %(labels)s has more elements "
+                   "than fields list %(fields)s, truncating"),
+                 {'labels': field_labels, 'fields': fields})
+        field_labels = field_labels[:len(fields)]
+
     if sortby_index is None:
         kwargs = {}
     else:
-        kwargs = {'sortby': fields[sortby_index]}
-    pt = prettytable.PrettyTable(fields, caching=False)
+        kwargs = {'sortby': field_labels[sortby_index]}
+    pt = prettytable.PrettyTable(field_labels, caching=False)
     pt.align = 'l'
 
     for o in objs:

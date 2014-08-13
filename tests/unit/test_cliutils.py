@@ -498,6 +498,91 @@ class PrintResultTestCase(test_base.BaseTestCase):
             mock.call(["", "Value"])],
             any_order=True)
 
+    def test_print_list_field_labels(self):
+        objs = [_FakeResult("k1", 1),
+                _FakeResult("k3", 3),
+                _FakeResult("k2", 2)]
+        table_class_mock = mock.MagicMock()
+        self.useFixture(fixtures.MonkeyPatch("prettytable.PrettyTable",
+                                             table_class_mock))
+        table_mock = table_class_mock.return_value
+        table_mock.get_string.return_value = ""
+        field_labels = ["Another Name", "Another Value"]
+
+        cliutils.print_list(objs, ["Name", "Value"], sortby_index=None,
+                            field_labels=field_labels)
+
+        self.assertEqual(table_mock.add_row.call_args_list,
+                         [mock.call(["k1", 1]),
+                          mock.call(["k3", 3]),
+                          mock.call(["k2", 2])])
+        table_class_mock.assert_called_once_with(field_labels,
+                                                 caching=False)
+
+    def test_print_list_field_labels_extend(self):
+        objs = [_FakeResult("k1", 1),
+                _FakeResult("k3", 3),
+                _FakeResult("k2", 2)]
+        table_class_mock = mock.MagicMock()
+        self.useFixture(fixtures.MonkeyPatch("prettytable.PrettyTable",
+                                             table_class_mock))
+        table_mock = table_class_mock.return_value
+        table_mock.get_string.return_value = ""
+        field_labels = ["Another Name"]
+
+        cliutils.print_list(objs, ["Name", "Value"], sortby_index=None,
+                            field_labels=field_labels)
+
+        self.assertEqual(table_mock.add_row.call_args_list,
+                         [mock.call(["k1", 1]),
+                          mock.call(["k3", 3]),
+                          mock.call(["k2", 2])])
+        table_class_mock.assert_called_once_with(["Another Name", "Value"],
+                                                 caching=False)
+
+    def test_print_list_field_labels_sort(self):
+        objs = [_FakeResult("k1", 1),
+                _FakeResult("k3", 3),
+                _FakeResult("k2", 2)]
+        table_class_mock = mock.MagicMock()
+        self.useFixture(fixtures.MonkeyPatch("prettytable.PrettyTable",
+                                             table_class_mock))
+        table_mock = table_class_mock.return_value
+        table_mock.get_string.return_value = ""
+        field_labels = ["Another Name", "Another Value"]
+
+        cliutils.print_list(objs, ["Name", "Value"], sortby_index=0,
+                            field_labels=field_labels)
+
+        self.assertEqual(table_mock.add_row.call_args_list,
+                         [mock.call(["k1", 1]),
+                          mock.call(["k3", 3]),
+                          mock.call(["k2", 2])])
+        table_class_mock.assert_called_once_with(field_labels,
+                                                 caching=False)
+        table_mock.get_string.assert_called_with(sortby="Another Name")
+
+    def test_print_list_field_labels_too_many(self):
+        objs = [_FakeResult("k1", 1),
+                _FakeResult("k3", 3),
+                _FakeResult("k2", 2)]
+        table_class_mock = mock.MagicMock()
+        self.useFixture(fixtures.MonkeyPatch("prettytable.PrettyTable",
+                                             table_class_mock))
+        table_mock = table_class_mock.return_value
+        table_mock.get_string.return_value = ""
+        field_labels = ["Another Name", "Another Value", "Redundant"]
+
+        cliutils.print_list(objs, ["Name", "Value"], sortby_index=None,
+                            field_labels=field_labels)
+
+        self.assertEqual(table_mock.add_row.call_args_list,
+                         [mock.call(["k1", 1]),
+                          mock.call(["k3", 3]),
+                          mock.call(["k2", 2])])
+        table_class_mock.assert_called_once_with(field_labels[:2],
+                                                 caching=False)
+
 
 class DecoratorsTestCase(test_base.BaseTestCase):
 
