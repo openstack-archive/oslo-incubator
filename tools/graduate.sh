@@ -64,19 +64,14 @@ $venv/bin/python -m pip install cookiecutter
 cookiecutter=$venv/bin/cookiecutter
 
 # Build the grep pattern for ignoring files that we want to keep, so
-# the prune script does not list them and cause them to be deleted.
-keep_pattern="./\(.git/\|$(echo $files_to_keep | sed -e 's/ /\\|/g')\)"
+# the prune script won't delete them from index.
+keep_pattern="\($(echo $files_to_keep | sed -e 's/ /\\|/g')\)"
 
-pruner="$tmpdir/pruner.sh"
-cat >$pruner <<EOF
-#!/bin/bash
-find . -type f | grep -v "$keep_pattern"
-EOF
-chmod +x $pruner
+pruner="git ls-files | grep -v \"$keep_pattern\" | git update-index --force-remove --stdin; git ls-files > /dev/stderr"
 
 # Filter out commits for unrelated files
 echo "Pruning commits for unrelated files..."
-git filter-branch --tree-filter 'git rm -f $('$pruner')' --prune-empty HEAD
+git filter-branch --index-filter "$pruner" --prune-empty HEAD
 
 # Find the earliest commit
 earliest_commit=$(git log --format='format:%H' $files_to_keep | tail -1)
