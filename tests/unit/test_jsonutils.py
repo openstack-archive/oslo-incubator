@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import collections
 import datetime
 import json
 
@@ -33,8 +34,9 @@ class JSONUtilsTestMixin(object):
 
     def setUp(self):
         super(JSONUtilsTestMixin, self).setUp()
-        self.json_patcher = mock.patch.object(
-            jsonutils, 'json', self.json_impl)
+        self.json_patcher = mock.patch.multiple(
+            jsonutils, json=self.json_impl,
+            is_simplejson=self.json_impl is simplejson)
         self.json_impl_mock = self.json_patcher.start()
 
     def tearDown(self):
@@ -44,9 +46,22 @@ class JSONUtilsTestMixin(object):
     def test_dumps(self):
         self.assertEqual('{"a": "b"}', jsonutils.dumps({'a': 'b'}))
 
+    def test_dumps_namedtuple(self):
+        n = collections.namedtuple("foo", "bar baz")(1, 2)
+        self.assertEqual('[1, 2]', jsonutils.dumps(n))
+
     def test_dump(self):
         expected = '{"a": "b"}'
         json_dict = {'a': 'b'}
+
+        fp = six.StringIO()
+        jsonutils.dump(json_dict, fp)
+
+        self.assertEqual(expected, fp.getvalue())
+
+    def test_dump_namedtuple(self):
+        expected = '[1, 2]'
+        json_dict = collections.namedtuple("foo", "bar baz")(1, 2)
 
         fp = six.StringIO()
         jsonutils.dump(json_dict, fp)
