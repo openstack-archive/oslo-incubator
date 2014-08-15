@@ -56,13 +56,13 @@ if sys.version_info < (2, 7):
 else:
     import json
 
+from oslo.utils import encodeutils
+from oslo.utils import importutils
+from oslo.utils import timeutils
 import six
 import six.moves.xmlrpc_client as xmlrpclib
 
 from openstack.common import gettextutils
-from openstack.common import importutils
-from openstack.common import strutils
-from openstack.common import timeutils
 
 netaddr = importutils.try_import("netaddr")
 
@@ -185,7 +185,7 @@ def dump(obj, fp, *args, **kwargs):
 
 
 def loads(s, encoding='utf-8', **kwargs):
-    return json.loads(strutils.safe_decode(s, encoding), **kwargs)
+    return json.loads(encodeutils.safe_decode(s, encoding), **kwargs)
 
 
 def load(fp, encoding='utf-8', **kwargs):

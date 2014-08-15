@@ -38,18 +38,15 @@ import sys
 import traceback
 
 from oslo.config import cfg
+from oslo.utils import importutils
 import six
 from six import moves
 
 _PY26 = sys.version_info[0:2] == (2, 6)
 
 from openstack.common.gettextutils import _
-from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import local
-# NOTE(flaper87): Pls, remove when graduating this module
-# from the incubator.
-from openstack.common.strutils import mask_password  # noqa
 
 
 _DEFAULT_LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
