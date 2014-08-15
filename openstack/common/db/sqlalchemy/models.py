@@ -20,13 +20,12 @@
 SQLAlchemy models.
 """
 
+from oslo.utils import timeutils
 import six
 
 from sqlalchemy import Column, Integer
 from sqlalchemy import DateTime
 from sqlalchemy.orm import object_mapper
-
-from openstack.common import timeutils
 
 
 class ModelBase(six.Iterator):
