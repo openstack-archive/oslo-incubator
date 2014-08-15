@@ -18,7 +18,7 @@ import sys
 
 from oslotest import base as test_base
 
-from openstack.common import importutils
+from openstack.common import importutils  # noqa
 
 
 class ImportUtilsTest(test_base.BaseTestCase):

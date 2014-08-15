@@ -15,11 +15,11 @@
 import logging
 
 import eventlet
+from oslo.utils import importutils
 from oslotest import base as test_base
 from six import moves
 
 from openstack.common.fixture import config
-from openstack.common import importutils
 from openstack.common.rpc import matchmaker_redis as matchmaker
 from tests.unit.rpc import matchmaker_common as common
 
