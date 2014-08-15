@@ -25,9 +25,10 @@ import logging
 import threading
 import time
 
+from oslo.utils import importutils
+
 from openstack.common.db import exception
 from openstack.common.gettextutils import _LE
-from openstack.common import importutils
 
 
 LOG = logging.getLogger(__name__)
