@@ -23,12 +23,12 @@ import uuid
 import eventlet
 import greenlet
 from oslo.config import cfg
+from oslo.utils import excutils
+from oslo.utils import importutils
 import six
 from six import moves
 
-from openstack.common import excutils
 from openstack.common.gettextutils import _, _LE, _LI
-from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common.rpc import common as rpc_common
 

@@ -24,8 +24,8 @@ For some wrappers that add message versioning to rpc, see:
 """
 
 from oslo.config import cfg
+from oslo.utils import importutils
 
-from openstack.common import importutils
 from openstack.common import log as logging
 
 

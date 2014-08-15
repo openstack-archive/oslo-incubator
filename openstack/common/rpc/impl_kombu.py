@@ -26,11 +26,11 @@ import kombu.connection
 import kombu.entity
 import kombu.messaging
 from oslo.config import cfg
+from oslo.utils import excutils
+from oslo.utils import netutils
 import six
 
-from openstack.common import excutils
 from openstack.common.gettextutils import _, _LE, _LI
-from openstack.common import network_utils
 from openstack.common.rpc import amqp as rpc_amqp
 from openstack.common.rpc import common as rpc_common
 from openstack.common import sslutils
@@ -438,7 +438,7 @@ class Connection(object):
         ssl_params = self._fetch_ssl_params()
         params_list = []
         for adr in self.conf.rabbit_hosts:
-            hostname, port = network_utils.parse_host_port(
+            hostname, port = netutils.parse_host_port(
                 adr, default_port=self.conf.rabbit_port)
 
             params = {
