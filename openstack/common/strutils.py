@@ -13,6 +13,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+# NOTE(dims): This module has been deprecated in Icehouse, please switch
+# the equivalent module in oslo.utils
+
 """
 System-level utilities and helper functions.
 """
