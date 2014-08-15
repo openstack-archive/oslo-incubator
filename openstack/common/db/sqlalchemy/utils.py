@@ -19,6 +19,7 @@
 import logging
 import re
 
+from oslo.utils import timeutils
 import sqlalchemy
 from sqlalchemy import Boolean
 from sqlalchemy import CheckConstraint
@@ -39,7 +40,6 @@ from sqlalchemy.types import NullType
 from openstack.common import context as request_context
 from openstack.common.db.sqlalchemy import models
 from openstack.common.gettextutils import _, _LI, _LW
-from openstack.common import timeutils
 
 
 LOG = logging.getLogger(__name__)
