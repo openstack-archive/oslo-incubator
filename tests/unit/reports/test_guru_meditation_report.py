@@ -150,7 +150,7 @@ class TestGuruMeditationReport(utils.BaseTestCase):
         os.kill(os.getpid(), signal.SIGUSR1)
         self.assertIn('Guru Meditation', sys.stderr.getvalue())
 
-    @mock.patch('openstack.common.timeutils.strtime', return_value="NOW")
+    @mock.patch('oslo.utils.timeutils.strtime', return_value="NOW")
     def test_register_autorun_log_dir(self, mock_strtime):
         log_dir = self.useFixture(fixtures.TempDir()).path
         gmr.TextGuruMeditation.setup_autorun(
