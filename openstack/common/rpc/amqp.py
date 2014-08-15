@@ -33,10 +33,10 @@ from eventlet import pools
 from eventlet import queue
 from eventlet import semaphore
 from oslo.config import cfg
+from oslo.utils import excutils
 import six
 
 
-from openstack.common import excutils
 from openstack.common.gettextutils import _, _LE
 from openstack.common import local
 from openstack.common import log as logging
