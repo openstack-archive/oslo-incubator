@@ -16,10 +16,10 @@
 """Unit tests for DB API."""
 
 import mock
+from oslo.utils import importutils
 
 from openstack.common.db import api
 from openstack.common.db import exception
-from openstack.common import importutils
 from tests import utils as test_utils
 
 sqla = importutils.import_module('sqlalchemy')
