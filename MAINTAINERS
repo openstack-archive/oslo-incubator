@@ -105,12 +105,6 @@ M:
 S: Orphan
 F: eventlet_backdoor.py
 
-== excutils ==
-
-M:
-S: Obsolete
-F: excutils.py
-
 == fileutils ==
 
 M: Zhongyue Luo <zhongyue.nah@intel.com>
@@ -146,12 +140,6 @@ F: hooks.py
 M: Zhongyue Luo <zhongyue.nah@intel.com>
 S: Maintained
 F: imageutils.py
-
-== importutils ==
-
-M:
-S: Obsolete
-F: importutils.py
 
 == jsonutils ==
 
@@ -201,12 +189,6 @@ F: memorycache.py
 M: Gordon Chung <gord@live.ca>
 S: Obsolete
 F: middleware/
-
-== network_utils ==
-
-M:
-S: Orphan
-F: network_utils.py
 
 == notifier ==
 
@@ -272,12 +254,6 @@ M:
 S: Orphan
 F: sslutils.py
 
-== strutils ==
-
-M: Flavio Percoco <flavio@redhat.com>
-S: Obsolete
-F: strutils.py
-
 == systemd ==
 
 M: Alan Pevec <apevec@redhat.com>
@@ -295,18 +271,6 @@ F: test.py
 M:
 S: Orphan
 F: threadgroup.py
-
-== timeutils ==
-
-M: Zhongyue Luo <zhongyue.nah@intel.com>
-S: Obsolete
-F: timeutils.py
-
-== units ==
-
-M: ChangBo Guo <glongwave@gmail.com>
-S: Obsolete
-F: units.py
 
 == uuidutils ==
 
