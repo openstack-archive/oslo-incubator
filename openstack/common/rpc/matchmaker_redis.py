@@ -18,8 +18,8 @@ return keys for direct exchanges, per (approximate) AMQP parlance.
 """
 
 from oslo.config import cfg
+from oslo.utils import importutils
 
-from openstack.common import importutils
 from openstack.common import log as logging
 from openstack.common.rpc import matchmaker as mm_common
 

@@ -11,7 +11,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo.utils import importutils
 import six
 
-
 six.add_move(six.MovedModule('mox', 'mox', 'mox3.mox'))
+
+# FIXME(dims): The mandate in oslo.utils spec is to switch all following
+# calls to use stevedore. Let's just monkey patch for now.
+importutils.import_class = importutils._import_class
+importutils.import_object = importutils._import_object
+importutils.import_object_ns = importutils._import_object_ns
+importutils.import_module = importutils._import_module
