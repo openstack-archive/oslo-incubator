@@ -13,9 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo.utils import units
 from oslotest import base as test_base
-
-from openstack.common import units
 
 
 class UnitTest(test_base.BaseTestCase):
