@@ -33,11 +33,11 @@ try:
 except ImportError:
     import json
 
+from oslo.utils import importutils
 import requests
 
 from openstack.common.apiclient import exceptions
 from openstack.common.gettextutils import _
-from openstack.common import importutils
 
 
 _logger = logging.getLogger(__name__)

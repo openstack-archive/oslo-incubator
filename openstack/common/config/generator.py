@@ -28,11 +28,11 @@ import sys
 import textwrap
 
 from oslo.config import cfg
+from oslo.utils import importutils
 import six
 import stevedore.named
 
 from openstack.common import gettextutils
-from openstack.common import importutils
 
 gettextutils.install('oslo')
 

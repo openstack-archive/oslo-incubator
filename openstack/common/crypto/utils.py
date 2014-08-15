@@ -16,10 +16,10 @@ import base64
 
 from Crypto.Hash import HMAC
 from Crypto import Random
+from oslo.utils import importutils
 import six
 
 from openstack.common.gettextutils import _
-from openstack.common import importutils
 
 bchr = six.int2byte
 
