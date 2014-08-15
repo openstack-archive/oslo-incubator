@@ -283,6 +283,7 @@ import logging
 import re
 import time
 
+from oslo.utils import timeutils
 import six
 from sqlalchemy import exc as sqla_exc
 from sqlalchemy.interfaces import PoolListener
@@ -292,7 +293,6 @@ from sqlalchemy.sql.expression import literal_column
 
 from openstack.common.db import exception
 from openstack.common.gettextutils import _LE, _LW
-from openstack.common import timeutils
 
 
 LOG = logging.getLogger(__name__)
