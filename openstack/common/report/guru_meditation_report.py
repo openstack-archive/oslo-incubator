@@ -56,11 +56,12 @@ import os
 import signal
 import sys
 
+from oslo.utils import timeutils
+
 from openstack.common.report.generators import conf as cgen
 from openstack.common.report.generators import threading as tgen
 from openstack.common.report.generators import version as pgen
 from openstack.common.report import report
-from openstack.common import timeutils
 
 
 class GuruMeditation(object):

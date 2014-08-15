@@ -19,11 +19,11 @@ Unit Tests for 'common' functons used through rpc code.
 import logging
 import sys
 
+from oslo.utils import importutils
 from oslotest import base as test_base
 import six
 
 from openstack.common.fixture import config
-from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import rpc
 from openstack.common.rpc import common as rpc_common
