@@ -20,11 +20,11 @@ import time
 import eventlet
 import greenlet
 from oslo.config import cfg
+from oslo.utils import excutils
+from oslo.utils import importutils
 import six
 
-from openstack.common import excutils
 from openstack.common.gettextutils import _, _LE, _LI
-from openstack.common import importutils
 from openstack.common import jsonutils
 from openstack.common import log as logging
 from openstack.common.rpc import amqp as rpc_amqp

@@ -24,13 +24,14 @@ import os
 import sys
 import textwrap
 
+from oslo.utils import encodeutils
+from oslo.utils import strutils
 import prettytable
 import six
 from six import moves
 
 from openstack.common.apiclient import exceptions
 from openstack.common.gettextutils import _
-from openstack.common import strutils
 from openstack.common import uuidutils
 
 
@@ -173,7 +174,7 @@ def print_list(objs, fields, formatters=None, sortby_index=0,
                 row.append(data)
         pt.add_row(row)
 
-    print(strutils.safe_encode(pt.get_string(**kwargs)))
+    print(encodeutils.safe_encode(pt.get_string(**kwargs)))
 
 
 def print_dict(dct, dict_property="Property", wrap=0):
@@ -201,7 +202,7 @@ def print_dict(dct, dict_property="Property", wrap=0):
                 col1 = ''
         else:
             pt.add_row([k, v])
-    print(strutils.safe_encode(pt.get_string()))
+    print(encodeutils.safe_encode(pt.get_string()))
 
 
 def get_password(max_password_prompts=3):
@@ -246,9 +247,9 @@ def find_resource(manager, name_or_id, **find_args):
     # now try to get entity as uuid
     try:
         if six.PY2:
-            tmp_id = strutils.safe_encode(name_or_id)
+            tmp_id = encodeutils.safe_encode(name_or_id)
         else:
-            tmp_id = strutils.safe_decode(name_or_id)
+            tmp_id = encodeutils.safe_decode(name_or_id)
 
         if uuidutils.is_uuid_like(tmp_id):
             return manager.get(tmp_id)
