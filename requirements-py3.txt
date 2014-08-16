@@ -14,7 +14,7 @@ pbr>=0.6,!=0.7,<1.0
 posix_ipc
 PrettyTable>=0.7,<0.8
 pycrypto>=2.6
-requests>=1.1
+requests>=1.2.1
 Routes>=1.12.3,!=2.0
 six>=1.7.0
 SQLAlchemy>=0.8.4,<=0.8.99,>=0.9.7,<=0.9.99
