@@ -42,8 +42,14 @@ class ExceptionsArgsTest(test_base.BaseTestCase):
             url)
         self.assertTrue(isinstance(ex, ex_cls))
         if check_description:
-            self.assertEqual(ex.message, json_data["error"]["message"])
-            self.assertEqual(ex.details, json_data["error"]["details"])
+            if "error" in json_data:
+                self.assertEqual(ex.message, json_data["error"]["message"])
+                self.assertEqual(ex.details, json_data["error"]["details"])
+            elif "faultcode" in json_data:
+                expected_msg = "%(faultcode)s: %(faultstring)s" % json_data
+                expected_details = json_data.get('debuginfo')
+                self.assertEqual(ex.message, expected_msg)
+                self.assertEqual(ex.details, expected_details)
         self.assertEqual(ex.method, method)
         self.assertEqual(ex.url, url)
         self.assertEqual(ex.http_status, status_code)
@@ -77,3 +83,22 @@ class ExceptionsArgsTest(test_base.BaseTestCase):
         self.assert_exception(
             exceptions.BadRequest, method, url, status_code, json_data,
             check_description=False)
+
+    def test_from_response_wsme(self):
+        method = "GET"
+        url = "/fake-wsme"
+        status_code = 400
+        json_data = {"faultcode": "Client",
+                     "faultstring": "fake message"}
+        self.assert_exception(
+            exceptions.BadRequest, method, url, status_code, json_data)
+
+    def test_from_response_wsme_debuginfo(self):
+        method = "GET"
+        url = "/fake-wsme"
+        status_code = 400
+        json_data = {"faultcode": "Client",
+                     "faultstring": "fake message",
+                     "debuginfo": "fake debug info"}
+        self.assert_exception(
+            exceptions.BadRequest, method, url, status_code, json_data)
