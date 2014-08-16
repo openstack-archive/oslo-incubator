@@ -447,10 +447,18 @@ def from_response(response, method, url):
         except ValueError:
             pass
         else:
-            if isinstance(body, dict) and isinstance(body.get("error"), dict):
-                error = body["error"]
-                kwargs["message"] = error.get("message")
-                kwargs["details"] = error.get("details")
+            if isinstance(body, dict):
+                if isinstance(body.get("error"), dict):
+                    error = body["error"]
+                    kwargs["message"] = error.get("message")
+                    kwargs["details"] = error.get("details")
+                elif "faultstring" in body and "faultcode" in body:
+                    # Handle WSME-formatted error
+                    kwargs["message"] = "%(faultcode)s: %(faultstring)s" % body
+                    kwargs["details"] = body.get("debuginfo")
+                else:
+                    kwargs["message"] = body
+                    kwargs["details"] = "Error type not handled yet by Oslo."
     elif content_type.startswith("text/"):
         kwargs["details"] = response.text
 
