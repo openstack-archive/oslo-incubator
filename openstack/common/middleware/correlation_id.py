@@ -18,8 +18,11 @@
 import uuid
 
 from openstack.common.middleware import base
+from openstack.common import versionutils
 
 
+@versionutils.deprecated(as_of=versionutils.deprecated.JUNO,
+                         in_favor_of='oslo.middleware.CorrelationId')
 class CorrelationIdMiddleware(base.Middleware):
 
     def process_request(self, req):

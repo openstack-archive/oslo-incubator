@@ -25,11 +25,14 @@ import webob.exc
 
 from openstack.common.gettextutils import _LE
 from openstack.common.middleware import base
+from openstack.common import versionutils
 
 
 LOG = logging.getLogger(__name__)
 
 
+@versionutils.deprecated(as_of=versionutils.deprecated.JUNO,
+                         in_favor_of='oslo.middleware.CatchErrors')
 class CatchErrorsMiddleware(base.Middleware):
 
     @webob.dec.wsgify

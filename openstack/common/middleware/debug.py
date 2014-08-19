@@ -23,8 +23,11 @@ import six
 import webob.dec
 
 from openstack.common.middleware import base
+from openstack.common import versionutils
 
 
+@versionutils.deprecated(as_of=versionutils.deprecated.JUNO,
+                         in_favor_of='oslo.middleware.Debug')
 class Debug(base.Middleware):
     """Helper class that returns debug information.
 
