@@ -462,6 +462,24 @@ def _wrap_db_error(f):
     return _wrap
 
 
+def retry_on_deadlock(f):
+    """Decorator to retry a DB API call if Deadlock was received."""
+    @functools.wraps(f)
+    def wrapped(*args, **kwargs):
+        while True:
+            try:
+                return f(*args, **kwargs)
+            except exception.DBDeadlock:
+                LOG.warn(_LE("Deadlock detected when running "
+                             "'%(func_name)s': Retrying..."),
+                         dict(func_name=f.__name__))
+                # Retry!
+                time.sleep(0.5)
+                continue
+    functools.update_wrapper(wrapped, f)
+    return wrapped
+
+
 def _synchronous_switch_listener(dbapi_conn, connection_rec):
     """Switch sqlite connections to non-synchronous mode."""
     dbapi_conn.execute("PRAGMA synchronous = OFF")
