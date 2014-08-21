@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Code-Review+2: Julien Danjou <julien@danjou.info>
+Code-Review+2: Doug Hellmann <doug@doughellmann.com>
+Workflow+1: Doug Hellmann <doug@doughellmann.com>
+Code-Review+2: Morgan Fainberg <morgan.fainberg@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Thu, 21 Aug 2014 20:49:18 +0000
+Reviewed-on: https://review.openstack.org/116002
+Project: openstack/oslo-incubator
+Branch: refs/heads/stable/icehouse
