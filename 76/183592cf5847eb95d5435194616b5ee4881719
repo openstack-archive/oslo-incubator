@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Code-Review+2: Julien Danjou <julien@danjou.info>
+Code-Review+2: Doug Hellmann <doug@doughellmann.com>
+Workflow+1: Doug Hellmann <doug@doughellmann.com>
+Submitted-by: Jenkins
+Submitted-at: Sun, 24 Aug 2014 15:18:43 +0000
+Reviewed-on: https://review.openstack.org/115349
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
