@@ -23,6 +23,7 @@ import webob.exc
 
 from openstack.common.gettextutils import _
 from openstack.common.middleware import base
+from openstack.common import versionutils
 
 
 # default request size is 112k
@@ -66,6 +67,8 @@ class LimitingReader(object):
         return result
 
 
+@versionutils.deprecated(as_of=versionutils.deprecated.JUNO,
+                         in_favor_of='oslo.middleware.RequestBodySizeLimiter')
 class RequestBodySizeLimiter(base.Middleware):
     """Limit the size of incoming requests."""
 
