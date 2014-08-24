@@ -3,8 +3,8 @@ discover
 fixtures>=0.3.14
 hacking>=0.9.1,<0.10
 MySQL-python
-oslosphinx
-oslotest
+oslosphinx>=2.2.0.0a2
+oslotest>=1.1.0.0a1
 pylint==0.25.2
 pyzmq>=14.3.1 # LGPL+BSD
 redis
