@@ -182,6 +182,20 @@ def _check_obsolete(path):
             print('### WARNING: %s is an obsolete module, see %s' %
                   (path, replacement))
 
+OSLO_LIBS = [
+    'concurrency',
+    'config',
+    'db',
+    'i18n',
+    'messaging',
+    'middleware',
+    'rootwrap',
+    'serialization',
+    'utils',
+    'version',
+    'vmware',
+]
+
 
 def _copy_file(path, dest, base):
     _check_obsolete(path)
@@ -203,7 +217,7 @@ def _copy_file(path, dest, base):
     # because there are default configuration settings like
     # "oslo.sqlite" that we want to have changed to "nova.sqlite" by
     # the above call.
-    for oslo_module in ['config', 'i18n', 'messaging', ]:
+    for oslo_module in OSLO_LIBS:
         replacements.append((base + '.' + oslo_module,
                              'oslo.' + oslo_module))
 
