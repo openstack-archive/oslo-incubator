@@ -94,7 +94,7 @@ def int_from_bool_as_string(subject):
 
     Useful for JSON-decoded stuff and config file parsing
     """
-    return bool_from_string(subject) and 1 or 0
+    return int(bool_from_string(subject))
 
 
 def bool_from_string(subject, strict=False, default=False):
