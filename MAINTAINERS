@@ -162,7 +162,7 @@ F: jsonutils.py
 == local ==
 
 M:
-S: Orphan
+S: Graduating
 F: local.py
 
 == lockutils ==
@@ -175,13 +175,13 @@ F: lockutils.py
 == log ==
 
 M:
-S: Orphan
+S: Graduating
 F: log.py
 
 == log_handler ==
 
 M:
-S: Orphan
+S: Graduating
 F: log_handler.py
 
 == loopingcall ==
