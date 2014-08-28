@@ -66,15 +66,22 @@ class FakeHTTPClient(fake_client.FakeHTTPClient):
     crud_resource_json = {"id": "1", "domain_id": "my-domain"}
 
     def get_human_resources(self, **kw):
-        return (200, {}, {'human_resources': [
-            {'id': 1, 'name': '256 MB Server'},
-            {'id': 2, 'name': '512 MB Server'},
-            {'id': 'aa1', 'name': '128 MB Server'}
-        ]})
+        return (200, {},
+                {'human_resources': [
+                    {'id': 1, 'name': '256 MB Server'},
+                    {'id': 2, 'name': '512 MB Server'},
+                    {'id': 'aa1', 'name': '128 MB Server'},
+                    {'id': 3, 'name': '4 MB Server'},
+                ]})
 
     def get_human_resources_1(self, **kw):
         res = self.get_human_resources()[2]['human_resources'][0]
         return (200, {}, {'human_resource': res})
+
+    def get_human_resources_3(self, **kw):
+        res = self.get_human_resources()[2]['human_resources'][3]
+        return (200, {'x-openstack-request-id': 'req-flappy'},
+                {'human_resource': res})
 
     def put_human_resources_1(self, **kw):
         kw = kw["json"]["human_resource"].copy()
@@ -151,6 +158,18 @@ class BaseManagerTest(test_base.BaseTestCase):
 
         # Missing stuff still fails after a second get
         self.assertRaises(AttributeError, getattr, f, 'blahblah')
+
+    def test_resource_req_id(self):
+        f = HumanResource(self.tc.human_resources, {'id': 1})
+        self.assertEqual(f.name, '256 MB Server')
+        self.assertEqual(f.x_request_id, 'req-test')
+        self.http_client.assert_called('GET', '/human_resources/1')
+
+    def test_resource_req_id_header(self):
+        f = HumanResource(self.tc.human_resources, {'id': 3})
+        self.assertEqual(f.name, '4 MB Server')
+        self.assertEqual(f.x_request_id, 'req-flappy')
+        self.http_client.assert_called('GET', '/human_resources/3')
 
     def test_eq(self):
         # Two resources of the same type with the same id: equal
