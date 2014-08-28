@@ -82,7 +82,7 @@ F: context.py
 == config ==
 M: Julien Danjou <julien@danjou.info>
 M: Zhongyue Luo <zhongyue.nah@intel.com>
-S: Maintained
+S: Obsolete
 F: config/
 
 == crypto ==
