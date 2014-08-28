@@ -108,7 +108,7 @@ F: eventlet_backdoor.py
 == excutils ==
 
 M:
-S: Orphan
+S: Obsolete
 F: excutils.py
 
 == fileutils ==
@@ -150,7 +150,7 @@ F: imageutils.py
 == importutils ==
 
 M:
-S: Orphan
+S: Obsolete
 F: importutils.py
 
 == jsonutils ==
@@ -275,7 +275,7 @@ F: sslutils.py
 == strutils ==
 
 M: Flavio Percoco <flavio@redhat.com>
-S: Maintained
+S: Obsolete
 F: strutils.py
 
 == systemd ==
@@ -299,13 +299,13 @@ F: threadgroup.py
 == timeutils ==
 
 M: Zhongyue Luo <zhongyue.nah@intel.com>
-S: Maintained
+S: Obsolete
 F: timeutils.py
 
 == units ==
 
 M: ChangBo Guo <glongwave@gmail.com>
-S: Maintained
+S: Obsolete
 F: units.py
 
 == uuidutils ==
