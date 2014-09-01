@@ -169,7 +169,7 @@ F: local.py
 
 M: Michael Still <mikal@stillhq.com>
 M: Yuriy Taraday <yorik.sar@gmail.com>
-S: Graduating
+S: Obsolete
 F: lockutils.py
 
 == log ==
@@ -232,7 +232,7 @@ F: policy.py
 
 M: Michael Still <mikal@stillhq.com>
 M: Yuriy Taraday <yorik.sar@gmail.com>
-S: Graduating
+S: Obsolete
 F: processutils.py
 
 == quota ==
