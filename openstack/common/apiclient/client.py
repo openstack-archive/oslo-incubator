@@ -247,6 +247,10 @@ class HTTPClient(object):
                 raise
             self.cached_token = None
             client.cached_endpoint = None
+            if self.auth_plugin.opts.get('token'):
+                self.auth_plugin.opts['token'] = None
+            if self.auth_plugin.opts.get('endpoint'):
+                self.auth_plugin.opts['endpoint'] = None
             self.authenticate()
             try:
                 token, endpoint = self.auth_plugin.token_and_endpoint(
