@@ -3,13 +3,13 @@ OpenStack Common Code
 
 Code shared across OpenStack.
 
-Contents
---------
+Code Documentation
+==================
 
 .. toctree::
    :maxdepth: 1
 
-   sourcecode/autoindex
+   api/autoindex
 
 Indices and tables
 ==================
