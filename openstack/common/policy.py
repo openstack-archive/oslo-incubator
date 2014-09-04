@@ -99,10 +99,10 @@ policy_opts = [
                default='default',
                help=_('Default rule. Enforced when a requested rule is not '
                       'found.')),
-    cfg.ListOpt('policy_dirs',
-                default=['policy.d'],
-                help=_('The directories of policy configuration files is '
-                       'stored')),
+    cfg.MultiStrOpt('policy_dirs',
+                    default=['policy.d'],
+                    help=_('The directories of policy configuration files is '
+                           'stored')),
 ]
 
 CONF = cfg.CONF
