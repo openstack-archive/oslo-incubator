@@ -99,10 +99,10 @@ policy_opts = [
                default='default',
                help=_('Default rule. Enforced when a requested rule is not '
                       'found.')),
-    cfg.ListOpt('policy_dirs',
-                default=['policy.d'],
-                help=_('The directories of policy configuration files is '
-                       'stored')),
+    cfg.MultiStrOpt('policy_dirs',
+                    default=['policy.d'],
+                    help=_('The directories of policy configuration files is '
+                           'stored')),
 ]
 
 CONF = cfg.CONF
@@ -252,7 +252,7 @@ class Enforcer(object):
                                                     force_reload, False)
 
     def _walk_through_policy_directory(self, path, func, *args):
-        # We didn't iterate sub-directories.
+        # We do not iterate over sub-directories.
         policy_files = next(os.walk(path))[2]
         policy_files.sort()
         for policy_file in [p for p in policy_files if not p.startswith('.')]:
@@ -272,7 +272,7 @@ class Enforcer(object):
         :param path: It's value can be a full path or related path. When
                      full path specified, this function just returns the full
                      path. When related path specified, this function will
-                     search configuration directories to find one existed.
+                     search configuration directories to find one that exists.
 
         :returns: The policy path
 
