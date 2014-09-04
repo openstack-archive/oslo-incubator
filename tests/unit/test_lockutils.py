@@ -49,17 +49,20 @@ class LockTestCase(test_base.BaseTestCase):
         self.assertEqual(foo.__name__, 'foo', "Wrapped function's name "
                                               "got mangled")
 
-    def test_lock_acquire_release(self):
-        lock_name = 'a unique lock 123'
-        lock = lockutils.InterProcessLock(lock_name)
+    def test_lock_acquire_release_file_lock(self):
+        lock_dir = tempfile.mkdtemp()
+        lock_file = os.path.join(lock_dir, 'lock')
+        lock = lockutils._FcntlLock(lock_file)
 
         def try_lock():
+            lock.release()  # child co-owns it before fork
             try:
-                my_lock = lockutils.InterProcessLock(lock_name)
-                my_lock.acquire(0)
-                my_lock.release()
+                my_lock = lockutils._FcntlLock(lock_file)
+                my_lock.lockfile = open(lock_file, 'w')
+                my_lock.trylock()
+                my_lock.unlock()
                 os._exit(1)
-            except Exception:
+            except IOError:
                 os._exit(0)
 
         def attempt_acquire(count):
@@ -81,8 +84,14 @@ class LockTestCase(test_base.BaseTestCase):
         finally:
             lock.release()
 
-        acquired_children = attempt_acquire(5)
-        self.assertNotEqual(0, acquired_children)
+        try:
+            acquired_children = attempt_acquire(5)
+            self.assertNotEqual(0, acquired_children)
+        finally:
+            try:
+                shutil.rmtree(lock_dir)
+            except IOError:
+                pass
 
     def test_lock_internally(self):
         """We can lock across multiple threads."""
@@ -362,17 +371,6 @@ class FileBasedLockingTestCase(test_base.BaseTestCase):
 
         self.assertRaises(threading.ThreadError, lock.acquire)
 
-    def test_no_lock_path(self):
-        lock_file = os.path.join(self.lock_dir, 'should-not-exist')
-
-        @lockutils.synchronized('should-not-exist', external=True)
-        def foo():
-            # Without lock_path explicitly passed to synchronized, we should
-            # default to using posix locks and not create a lock file.
-            self.assertFalse(os.path.exists(lock_file))
-
-        foo()
-
     def test_interprocess_lock(self):
         lock_file = os.path.join(self.lock_dir, 'processlock')
 
@@ -384,12 +382,12 @@ class FileBasedLockingTestCase(test_base.BaseTestCase):
                 if time.time() - start > 5:
                     self.fail('Timed out waiting for child to grab lock')
                 time.sleep(0)
-            lock1 = lockutils.FileLock('foo')
+            lock1 = lockutils.InterProcessLock('foo')
             lock1.lockfile = open(lock_file, 'w')
             self.assertRaises(IOError, lock1.trylock)
         else:
             try:
-                lock2 = lockutils.FileLock('foo')
+                lock2 = lockutils.InterProcessLock('foo')
                 lock2.lockfile = open(lock_file, 'w')
                 lock2.trylock()
             finally:
