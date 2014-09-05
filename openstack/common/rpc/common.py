@@ -276,8 +276,10 @@ def _safe_log(log_func, msg, msg_data):
             elif isinstance(d[k], dict):
                 _fix_passwords(d[k])
         return d
+    res = log_func(msg, _fix_passwords(copy.deepcopy(msg_data)))
+    _fix_passwords = None
 
-    return log_func(msg, _fix_passwords(copy.deepcopy(msg_data)))
+    return res
 
 
 def serialize_remote_exception(failure_info, log_failure=True):
