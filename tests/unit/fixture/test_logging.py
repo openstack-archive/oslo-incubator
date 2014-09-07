@@ -23,6 +23,6 @@ class TestLoggingFixture(utils.BaseTestCase):
         LOG.info('pid of first child is %(foo)s', 1)
         self.useFixture(logging_fixture.get_logging_handle_error_fixture())
         self.assertRaises(TypeError,
-                          LOG.info,
+                          LOG.error,
                           'pid of first child is %(foo)s',
                           1)
