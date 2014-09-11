@@ -20,6 +20,7 @@ import os
 import fixtures
 from oslotest import base as test_base
 import six
+import testtools
 
 from openstack.common.db.sqlalchemy import provision
 from openstack.common.db.sqlalchemy import session
@@ -43,13 +44,11 @@ class DbFixture(fixtures.Fixture):
 
         self.test = test
 
-    def cleanUp(self):
-        self.test.engine.dispose()
-
     def setUp(self):
         super(DbFixture, self).setUp()
 
         self.test.engine = session.create_engine(self._get_uri())
+        self.addCleanup(self.test.engine.dispose)
         self.test.sessionmaker = session.get_maker(self.test.engine)
 
 
@@ -104,8 +103,21 @@ class OpportunisticFixture(DbFixture):
 
     DRIVER = abc.abstractproperty(lambda: None)
     DBNAME = PASSWORD = USERNAME = 'openstack_citest'
+    _uri = None
 
-    def setUp(self):
+    def _get_uri(self):
+        if self._uri is not None:
+            return self._uri
+
+        credentials = {
+            'backend': self.DRIVER,
+            'user': self.USERNAME,
+            'passwd': self.PASSWORD,
+            'database': self.DBNAME}
+        if self.DRIVER and not utils.is_backend_avail(**credentials):
+            msg = '%s backend is not available.' % self.DRIVER
+            raise testtools.TestSkipped(msg)
+
         self._provisioning_engine = provision.get_engine(
             utils.get_connect_string(backend=self.DRIVER,
                                      user=self.USERNAME,
@@ -113,15 +125,9 @@ class OpportunisticFixture(DbFixture):
                                      database=self.DBNAME)
         )
         self._uri = provision.create_database(self._provisioning_engine)
-
-        super(OpportunisticFixture, self).setUp()
-
-    def cleanUp(self):
-        super(OpportunisticFixture, self).cleanUp()
-
-        provision.drop_database(self._provisioning_engine, self._uri)
-
-    def _get_uri(self):
+        self.addCleanup(
+            provision.drop_database, self._provisioning_engine, self._uri)
+        self.addCleanup(setattr, self, '_uri', None)
         return self._uri
 
 
@@ -130,23 +136,10 @@ class OpportunisticTestCase(DbTestCase):
     """Base test case to use default CI databases.
 
     The subclasses of the test case are running only when openstack_citest
-    database is available otherwise a tests will be skipped.
+    database is available otherwise tests will be skipped.
     """
 
     FIXTURE = abc.abstractproperty(lambda: None)
-
-    def setUp(self):
-        credentials = {
-            'backend': self.FIXTURE.DRIVER,
-            'user': self.FIXTURE.USERNAME,
-            'passwd': self.FIXTURE.PASSWORD,
-            'database': self.FIXTURE.DBNAME}
-
-        if self.FIXTURE.DRIVER and not utils.is_backend_avail(**credentials):
-            msg = '%s backend is not available.' % self.FIXTURE.DRIVER
-            return self.skip(msg)
-
-        super(OpportunisticTestCase, self).setUp()
 
 
 class MySQLOpportunisticFixture(OpportunisticFixture):
