@@ -18,13 +18,24 @@
 from __future__ import print_function
 
 import fixtures
+import logging
+import mock
 import os
+import stat
 import tempfile
 
 import six
 
 from openstack.common import processutils
 from openstack.common import test
+
+TEST_EXCEPTION_AND_MASKING_SCRIPT = """#!/bin/bash
+# This is to test stdout and stderr
+# and the command returned in an exception
+# when a non-zero exit code is returned
+echo onstdout --password='"secret"'
+echo onstderr --password='"secret"' 1>&2
+exit 38"""
 
 
 class UtilsTest(test.BaseTestCase):
@@ -217,6 +228,30 @@ class FakeSshStream(six.StringIO):
     def setup_channel(self, rc):
         self.channel = FakeSshChannel(rc)
 
+    def test_exception_and_masking(self):
+        tmpfilename = self.create_tempfiles(
+            [["test_exceptions_and_masking",
+              TEST_EXCEPTION_AND_MASKING_SCRIPT]], ext='bash')[0]
+
+        os.chmod(tmpfilename, (stat.S_IRWXU |
+                               stat.S_IRGRP |
+                               stat.S_IXGRP |
+                               stat.S_IROTH |
+                               stat.S_IXOTH))
+
+        err = self.assertRaises(processutils.ProcessExecutionError,
+                                processutils.execute,
+                                tmpfilename, 'password="secret"',
+                                'something')
+
+        self.assertEqual(38, err.exit_code)
+        self.assertEqual(err.stdout, 'onstdout --password="***"\n')
+        self.assertEqual(err.stderr, 'onstderr --password="***"\n')
+        self.assertEqual(err.cmd, ' '.join([tmpfilename,
+                                            'password="***"',
+                                            'something']))
+        self.assertNotIn('secret', str(err))
+
 
 class FakeSshConnection(object):
     def __init__(self, rc):
@@ -249,3 +284,57 @@ class SshExecuteTestCase(test.BaseTestCase):
     def test_fails(self):
         self.assertRaises(processutils.ProcessExecutionError,
                           processutils.ssh_execute, FakeSshConnection(1), 'ls')
+
+    def _test_compromising_ssh(self, rc, check):
+        fixture = self.useFixture(fixtures.FakeLogger(level=logging.DEBUG))
+        fake_stdin = six.StringIO()
+
+        fake_stdout = mock.Mock()
+        fake_stdout.channel.recv_exit_status.return_value = rc
+        fake_stdout.read.return_value = 'password="secret"'
+
+        fake_stderr = six.StringIO('password="foobar"')
+
+        command = 'ls --password="bar"'
+
+        connection = mock.Mock()
+        connection.exec_command.return_value = (fake_stdin, fake_stdout,
+                                                fake_stderr)
+
+        if check and rc != -1 and rc != 0:
+            err = self.assertRaises(processutils.ProcessExecutionError,
+                                    processutils.ssh_execute,
+                                    connection, command,
+                                    check_exit_code=check)
+
+            self.assertEqual(rc, err.exit_code)
+            self.assertEqual(err.stdout, 'password="***"')
+            self.assertEqual(err.stderr, 'password="***"')
+            self.assertEqual(err.cmd, 'ls --password="***"')
+            self.assertNotIn('secret', str(err))
+            self.assertNotIn('foobar', str(err))
+        else:
+            o, e = processutils.ssh_execute(connection, command,
+                                            check_exit_code=check)
+            self.assertEqual('password="***"', o)
+            self.assertEqual('password="***"', e)
+            self.assertIn('password="***"', fixture.output)
+            self.assertNotIn('bar', fixture.output)
+
+    def test_compromising_ssh1(self):
+        self._test_compromising_ssh(rc=-1, check=True)
+
+    def test_compromising_ssh2(self):
+        self._test_compromising_ssh(rc=0, check=True)
+
+    def test_compromising_ssh3(self):
+        self._test_compromising_ssh(rc=1, check=True)
+
+    def test_compromising_ssh4(self):
+        self._test_compromising_ssh(rc=1, check=False)
+
+    def test_compromising_ssh5(self):
+        self._test_compromising_ssh(rc=0, check=False)
+
+    def test_compromising_ssh6(self):
+        self._test_compromising_ssh(rc=-1, check=False)
