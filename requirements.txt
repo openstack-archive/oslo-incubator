@@ -1,23 +1,26 @@
+# The order of packages is significant, because pip processes them in the order
+# of appearance. Changing the order has an impact on the overall integration
+# process, which may cause wedges in the gate later.
 pbr>=0.6,!=0.7,<1.0
 alembic>=0.6.4
 anyjson>=0.3.3
 argparse
 Babel>=1.3
-eventlet>=0.13.0
+eventlet>=0.15.1
 greenlet>=0.3.2
 iso8601>=0.1.9
 Jinja2
 kombu>=2.4.8
 lockfile>=0.8
-netaddr>=0.7.6
+netaddr>=0.7.12
 oslo.config>=1.4.0.0a3
 PasteDeploy>=1.5.0
 posix_ipc
 PrettyTable>=0.7,<0.8
-pycadf>=0.5.1
+pycadf>=0.6.0
 pycrypto>=2.6
 qpid-python
-requests>=1.2.1
+requests>=1.2.1,!=2.4.0
 Routes>=1.12.3,!=2.0
 six>=1.7.0
 SQLAlchemy>=0.8.4,<=0.8.99,>=0.9.7,<=0.9.99
