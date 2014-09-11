@@ -19,12 +19,21 @@ from __future__ import print_function
 
 import fixtures
 import os
+import stat
 import tempfile
 
 import six
 
 from openstack.common import processutils
 from openstack.common import test
+
+TEST_EXCEPTION_AND_MASKING_SCRIPT = """#!/bin/bash
+# This is to test stdout and stderr
+# and the command returned in an exception
+# when a non-zero exit code is returned
+echo onstdout --password='"secret"'
+echo onstderr --password='"secret"' 1>&2
+exit 38"""
 
 
 class UtilsTest(test.BaseTestCase):
@@ -216,6 +225,30 @@ class FakeSshChannel(object):
 class FakeSshStream(six.StringIO):
     def setup_channel(self, rc):
         self.channel = FakeSshChannel(rc)
+
+    def test_exception_and_masking(self):
+        tmpfilename = self.create_tempfiles(
+            [["test_exceptions_and_masking",
+              TEST_EXCEPTION_AND_MASKING_SCRIPT]], ext='bash')[0]
+
+        os.chmod(tmpfilename, (stat.S_IRWXU |
+                               stat.S_IRGRP |
+                               stat.S_IXGRP |
+                               stat.S_IROTH |
+                               stat.S_IXOTH))
+
+        err = self.assertRaises(processutils.ProcessExecutionError,
+                                processutils.execute,
+                                tmpfilename, 'password="secret"',
+                                'something')
+
+        self.assertEqual(38, err.exit_code)
+        self.assertEqual(err.stdout, 'onstdout --password="***"\n')
+        self.assertEqual(err.stderr, 'onstderr --password="***"\n')
+        self.assertEqual(err.cmd, ' '.join([tmpfilename,
+                                            'password="***"',
+                                            'something']))
+        self.assertNotIn('secret', str(err))
 
 
 class FakeSshConnection(object):
