@@ -22,6 +22,8 @@ import os
 import fixtures
 import testtools
 
+_TRUE_VALUES = ('True', 'true', '1', 'yes')
+
 
 class BaseTestCase(testtools.TestCase):
 
@@ -29,7 +31,7 @@ class BaseTestCase(testtools.TestCase):
         super(BaseTestCase, self).setUp()
         self._set_timeout()
         self._fake_output()
-        self.useFixture(fixtures.FakeLogger('openstack.common'))
+        self.useFixture(fixtures.FakeLogger())
         self.useFixture(fixtures.NestedTempfile())
 
     def _set_timeout(self):
