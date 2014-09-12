@@ -3,6 +3,13 @@ OpenStack Common Code
 
 Code shared across OpenStack.
 
+Contents:
+
+.. toctree::
+   :maxdepth: 1
+
+   contributing
+
 Code Documentation
 ==================
 
