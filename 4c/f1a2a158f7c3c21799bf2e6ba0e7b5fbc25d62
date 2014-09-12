@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Code-Review+2: Alan Pevec <apevec@gmail.com>
+Workflow+1: Alan Pevec <apevec@gmail.com>
+Code-Review+2: Jay Bryant <jsbryant@us.ibm.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 12 Sep 2014 19:22:07 +0000
+Reviewed-on: https://review.openstack.org/120881
+Project: openstack/oslo-incubator
+Branch: refs/heads/stable/havana
