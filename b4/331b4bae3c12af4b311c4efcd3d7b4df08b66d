@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Workflow+1: Zhongyue Luo <zhongyue.luo@gmail.com>
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+1: Andreas Jaeger <jaegerandi@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 12 Sep 2014 05:15:53 +0000
+Reviewed-on: https://review.openstack.org/118736
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
