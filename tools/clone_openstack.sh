@@ -37,6 +37,10 @@ branched=""
 which git-hooks 2>&1 > /dev/null
 USE_GIT_HOOKS=$?
 
+# Users can set INCLUDE_STACKFORGE=1 if they want to always check out
+# new copies of stackforge projects.
+INCLUDE_STACKFORGE=${INCLUDE_STACKFORGE:-0}
+
 # If we have any trouble at all working with a repository, report that
 # and then record the name for the summary at the end.
 function track_trouble {
@@ -85,6 +89,15 @@ function report_branched {
 function clone_new {
     typeset repo="$1"
     typeset url="$2"
+    # Ignore stackforge projects unless told otherwise.
+    if [[ $repo =~ ^stackforge/.* ]]
+    then
+        if [ $INCLUDE_STACKFORGE -ne 1 ]
+        then
+            return 0
+        fi
+    fi
+    echo
     echo "Cloning $repo"
     git clone $url $repo
     (cd $repo && git review -s)
@@ -93,6 +106,7 @@ function clone_new {
         echo "Configuring git hooks"
         (cd $repo && git hooks --install)
     fi
+    return 0
 }
 
 # Update an existing copy of a repository, including all remotes and
@@ -100,6 +114,7 @@ function clone_new {
 # already.
 function update_existing {
     typeset repo="$1"
+    echo
     echo "Updating $repo"
     (cd $repo && git remote update)
     RC=$?
@@ -145,17 +160,24 @@ function get_one_repo {
 
 # If we are given a list of projects on the command line, we will only
 # work on those. Otherwise, ask gerrit for the full list of openstack
-# projects, ignoring the ones in the attic.
+# projects, ignoring the ones in the attic. Stackforge projects are
+# ignored if they do not exist locally, so we include them in the
+# output list and check for them when we decide what to do with each
+# repository.
 projects="$*"
 if [ -z "$projects" ]
 then
     projects=$(ssh review.openstack.org -p 29418 gerrit ls-projects | grep -v 'attic')
+else
+    # Go ahead and set things up so we will work with stackforge
+    # repositories, in case the caller has specified one on the
+    # command line.
+    INCLUDE_STACKFORGE=1
 fi
 
 for repo in $projects; do
     get_one_repo $repo git://git.openstack.org/$repo
     track_trouble $? $repo
-    echo
 done
 
 report_branched
