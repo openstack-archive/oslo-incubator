@@ -31,6 +31,12 @@ from oslo.config import cfg
 from openstack.common import fileutils
 from openstack.common.gettextutils import _, _LE, _LI
 
+try:
+    from eventlet import patcher
+    if patcher.already_patched('threading'):
+        semaphore = patcher.original('threading')
+except ImportError:
+    import threading as semaphore
 
 LOG = logging.getLogger(__name__)
 
@@ -201,7 +207,7 @@ def internal_lock(name):
             sem = _semaphores[name]
             LOG.debug('Using existing semaphore "%s"', name)
         except KeyError:
-            sem = threading.Semaphore()
+            sem = semaphore.Semaphore()
             _semaphores[name] = sem
             LOG.debug('Created new semaphore "%s"', name)
 
