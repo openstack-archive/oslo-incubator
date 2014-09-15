@@ -36,6 +36,12 @@ for lib in $libs
 do
     echo
     cd $repodir/$lib
+    current_branch=$(git rev-parse --abbrev-ref HEAD)
+    if [ "$current_branch" != "master" ]
+    then
+        echo "$lib repository is on $current_branch instead of master"
+        continue
+    fi
     prev_tag=$(get_last_tag)
     if [ -z "$prev_tag" ]
     then
