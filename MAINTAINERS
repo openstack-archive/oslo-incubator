@@ -57,7 +57,7 @@ F: apiclient/
 == audit ==
 
 M: Gordon Chung <gord@live.ca>
-S: Maintained
+S: Obsolete
 F: middleware/audit.py
 
 == cache ==
@@ -199,7 +199,7 @@ F: memorycache.py
 == middleware ==
 
 M: Gordon Chung <gord@live.ca>
-S: Graduating
+S: Obsolete
 F: middleware/
 
 == network_utils ==
