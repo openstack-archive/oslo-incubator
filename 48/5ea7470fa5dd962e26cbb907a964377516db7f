@@ -1,0 +1,11 @@
+Verified+2: Jenkins
+Code-Review+2: Alan Pevec <apevec@gmail.com>
+Workflow+1: Alan Pevec <apevec@gmail.com>
+Code-Review+1: James Carey  <jecarey@us.ibm.com>
+Code-Review+2: Jay Bryant <jsbryant@us.ibm.com>
+Code-Review+1: Tristan Cacqueray <tristan.cacqueray@enovance.com>
+Submitted-by: Jenkins
+Submitted-at: Mon, 15 Sep 2014 18:11:32 +0000
+Reviewed-on: https://review.openstack.org/121365
+Project: openstack/oslo-incubator
+Branch: refs/heads/stable/icehouse
