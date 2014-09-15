@@ -582,3 +582,7 @@ class MaskPasswordTestCase(test.BaseTestCase):
         payload = ("test = node.session.auth.password --password mypassword")
         expected = ("test = node.session.auth.password --password ***")
         self.assertEqual(expected, strutils.mask_password(payload))
+
+        payload = "test = cmd --password my\xe9\x80\x80pass"
+        expected = ("test = cmd --password ***")
+        self.assertEqual(expected, strutils.mask_password(payload))
