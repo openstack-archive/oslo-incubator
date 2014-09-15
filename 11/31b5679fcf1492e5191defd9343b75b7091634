@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Code-Review+2: Doug Hellmann <doug@doughellmann.com>
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Workflow+1: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+1: Jay Bryant <jsbryant@us.ibm.com>
+Submitted-by: Jenkins
+Submitted-at: Mon, 15 Sep 2014 22:24:58 +0000
+Reviewed-on: https://review.openstack.org/121632
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
