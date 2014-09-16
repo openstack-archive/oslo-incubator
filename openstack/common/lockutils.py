@@ -265,14 +265,27 @@ def synchronized(name, lock_file_prefix=None, external=False, lock_path=None):
     def wrap(f):
         @functools.wraps(f)
         def inner(*args, **kwargs):
+            t1 = time.time()
+            t2 = None
             try:
                 with lock(name, lock_file_prefix, external, lock_path):
-                    LOG.debug('Got semaphore / lock "%(function)s"',
-                              {'function': f.__name__})
+                    t2 = time.time()
+                    LOG.debug('Lock "%(name)s" acquired by "%(function)s" :: '
+                              'waited %(wait_secs)0.3fs',
+                              {'name': name, 'function': f.__name__,
+                               'wait_secs': (t2 - t1)})
                     return f(*args, **kwargs)
             finally:
-                LOG.debug('Semaphore / lock released "%(function)s"',
-                          {'function': f.__name__})
+                t3 = time.time()
+                if t2 is None:
+                    held_secs = "N/A"
+                else:
+                    held_secs = "%0.3f" % (t3 - t2)
+
+                LOG.debug('Lock "%(name)s" released by "%(function)s" :: held '
+                          '%(held_secs)ss',
+                          {'name': name, 'function': f.__name__,
+                           'held_secs': held_secs})
         return inner
     return wrap
 
