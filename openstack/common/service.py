@@ -38,7 +38,7 @@ from eventlet import event
 from oslo.config import cfg
 
 from openstack.common import eventlet_backdoor
-from openstack.common.gettextutils import _LE, _LI, _LW
+from openstack.common.gettextutils import _LE, _LI
 from openstack.common import importutils
 from openstack.common import log as logging
 from openstack.common import systemd
@@ -208,6 +208,10 @@ class ServiceWrapper(object):
 
 
 class ProcessLauncher(object):
+
+    __instances = []
+    readpipe, writepipe = os.pipe()
+
     def __init__(self, wait_interval=0.01):
         """Constructor.
 
@@ -218,16 +222,19 @@ class ProcessLauncher(object):
         self.sigcaught = None
         self.running = True
         self.wait_interval = wait_interval
-        rfd, self.writepipe = os.pipe()
-        self.readpipe = eventlet.greenio.GreenPipe(rfd, 'r')
-        self.handle_signal()
 
-    def handle_signal(self):
-        _set_signals_handler(self._handle_signal)
+        # NOTE(Mouad): Only register signals handler for first instance,
+        # in a green word (e.g. w/ eventlet) this doesn't need locking
+        # b/c signal.signal doesn't trigger context switch.
+        if not self.__instances:
+            _set_signals_handler(self._handle_signal)
+        self.__instances.append(self)
 
+    @classmethod
     def _handle_signal(self, signo, frame):
-        self.sigcaught = signo
-        self.running = False
+        for inst in self.__instances:
+            inst.sigcaught = signo
+            inst.running = False
 
         # Allow the process to be killed again and die from natural causes
         _set_signals_handler(signal.SIG_DFL)
@@ -235,7 +242,7 @@ class ProcessLauncher(object):
     def _pipe_watcher(self):
         # This will block until the write end is closed when the parent
         # dies unexpectedly
-        self.readpipe.read()
+        eventlet.greenio.GreenPipe(self.readpipe).read()
 
         LOG.info(_LI('Parent process has died unexpectedly, exiting'))
 
@@ -342,10 +349,13 @@ class ProcessLauncher(object):
 
     def _wait_child(self):
         try:
-            # Don't block if no child processes have exited
-            pid, status = os.waitpid(0, os.WNOHANG)
-            if not pid:
-                return None
+            for pid in self.children:
+                # Don't block if child processes didn't exit.
+                pid, status = os.waitpid(pid, os.WNOHANG)
+                if pid:
+                    break
+            else:
+                return
         except OSError as exc:
             if exc.errno not in (errno.EINTR, errno.ECHILD):
                 raise
@@ -359,10 +369,6 @@ class ProcessLauncher(object):
             code = os.WEXITSTATUS(status)
             LOG.info(_LI('Child %(pid)s exited with status %(code)d'),
                      dict(pid=pid, code=code))
-
-        if pid not in self.children:
-            LOG.warning(_LW('pid %d not in child list'), pid)
-            return None
 
         wrap = self.children.pop(pid)
         wrap.children.remove(pid)
@@ -389,7 +395,6 @@ class ProcessLauncher(object):
 
         try:
             while True:
-                self.handle_signal()
                 self._respawn_children()
                 # No signal means that stop was called.  Don't clean up here.
                 if not self.sigcaught:

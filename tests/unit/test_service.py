@@ -20,6 +20,7 @@ Unit Tests for service class
 
 from __future__ import print_function
 
+import abc
 import errno
 import multiprocessing
 import os
@@ -33,6 +34,7 @@ from eventlet import event
 import mock
 from oslotest import base as test_base
 from oslotest import moxstubout
+import six
 from six.moves import mox
 
 from openstack.common import eventlet_backdoor
@@ -43,6 +45,19 @@ from openstack.common import service
 
 
 LOG = logging.getLogger(__name__)
+
+
+def _wait(predicate, timeout, fail=False):
+    """Wait until predicate return True, will give up after timeout
+    raising AssertionError in case fail was set to True.
+    """
+    start = time.time()
+    while not predicate():
+        if time.time() - start > timeout:
+            if fail:
+                raise AssertionError('Predicate never succeeded')
+            break
+        time.sleep(.1)
 
 
 class ExtendedService(service.Service):
@@ -68,15 +83,54 @@ class ServiceWithTimer(service.Service):
         self.timer_fired = self.timer_fired + 1
 
 
+@six.add_metaclass(abc.ABCMeta)
+class SubProcess(object):
+    """Abstract class for creating and managing custom sub process."""
+
+    def __init__(self):
+        self._status = None  # Exit status.
+        self._pid = None
+        self._spawn()
+
+    @property
+    def status(self):
+        """Block waiting for subprocess exit status."""
+        if self._status is None:
+            pid, status = os.waitpid(self._pid, 0)
+            if pid:  # Process finished.
+                self._pid = None
+                self._status = status
+        return self._status
+
+    def _spawn(self):
+        self._pid = os.fork()
+        if self._pid == 0:
+            os.setsid()
+            status = self.child_callback()
+            # Really exit
+            os._exit(status)
+
+        self.parent_callback()
+
+    def kill(self, sig=signal.SIGTERM):
+        """Send a signal to subprocess, default to send SIGTERN."""
+        if self._pid:
+            # Make sure all processes are stopped
+            os.kill(self._pid, sig)
+
+    @abc.abstractmethod
+    def child_callback(self):
+        """Abstract method to execute in the subprocess after fork,
+        the subprocess exit status will be whatever this method return.
+        """
+
+    def parent_callback(self):
+        """Method to execute in the parent process after fork."""
+
+
+@six.add_metaclass(abc.ABCMeta)
 class ServiceTestBase(test_base.BaseTestCase):
     """A base class for ServiceLauncherTest and ServiceRestartTest."""
-
-    def _wait(self, cond, timeout):
-        start = time.time()
-        while not cond():
-            if time.time() - start > timeout:
-                break
-            time.sleep(.1)
 
     def setUp(self):
         super(ServiceTestBase, self).setUp()
@@ -87,30 +141,35 @@ class ServiceTestBase(test_base.BaseTestCase):
         self.CONF(args=[], default_config_files=[])
         self.addCleanup(self.CONF.reset)
         self.addCleanup(self.CONF.register_opts, notifier_api.notifier_opts)
-        self.addCleanup(self._reap_pid)
 
-    def _reap_pid(self):
-        if self.pid:
-            # Make sure all processes are stopped
-            os.kill(self.pid, signal.SIGTERM)
+        self.launcher = self.Launcher()
+        self.addCleanup(self.launcher.kill)
 
-            # Make sure we reap our test process
-            self._reap_test()
-
-    def _reap_test(self):
-        pid, status = os.waitpid(self.pid, 0)
-        self.pid = None
-        return status
+    @abc.abstractproperty
+    def Launcher(self):
+        """Abstract property (or class variable) that should implement
+        the SubProcess interface.
+        """
 
 
 class ServiceLauncherTest(ServiceTestBase):
     """Originally from nova/tests/integrated/test_multiprocess_api.py."""
 
-    def _spawn(self):
-        self.workers = 2
-        pid = os.fork()
-        if pid == 0:
-            os.setsid()
+    class Launcher(SubProcess):
+
+        children_count = 2
+
+        @property
+        def workers(self):
+            f = os.popen('ps ax -o pid,ppid,command')
+            # Skip ps header
+            f.readline()
+
+            processes = [tuple(int(p) for p in l.strip().split()[:2])
+                         for l in f]
+            return [p for p, pp in processes if pp == self._pid]
+
+        def child_callback(self):
             # NOTE(johannes): We can't let the child processes exit back
             # into the unit test framework since then we'll have multiple
             # processes running the same tests (and possibly forking more
@@ -122,7 +181,7 @@ class ServiceLauncherTest(ServiceTestBase):
             try:
                 launcher = service.ProcessLauncher()
                 serv = ServiceWithTimer()
-                launcher.launch_service(serv, workers=self.workers)
+                launcher.launch_service(serv, workers=self.children_count)
                 launcher.wait()
             except SystemExit as exc:
                 status = exc.code
@@ -133,142 +192,156 @@ class ServiceLauncherTest(ServiceTestBase):
                 except BaseException:
                     print("Couldn't print traceback")
                 status = 2
+            return status
 
-            # Really exit
-            os._exit(status)
-
-        self.pid = pid
-
-        # Wait at most 10 seconds to spawn workers
-        cond = lambda: self.workers == len(self._get_workers())
-        timeout = 10
-        self._wait(cond, timeout)
-
-        workers = self._get_workers()
-        self.assertEqual(len(workers), self.workers)
-        return workers
-
-    def _get_workers(self):
-        f = os.popen('ps ax -o pid,ppid,command')
-        # Skip ps header
-        f.readline()
-
-        processes = [tuple(int(p) for p in l.strip().split()[:2])
-                     for l in f]
-        return [p for p, pp in processes if pp == self.pid]
+        def parent_callback(self):
+            _wait(lambda: len(self.workers) == self.children_count,
+                  10, fail=True)
 
     def test_killed_worker_recover(self):
-        start_workers = self._spawn()
+        start_workers = self.launcher.workers
 
         # kill one worker and check if new worker can come up
         LOG.info('pid of first child is %s' % start_workers[0])
         os.kill(start_workers[0], signal.SIGTERM)
 
         # Wait at most 5 seconds to respawn a worker
-        cond = lambda: start_workers != self._get_workers()
+        cond = lambda: start_workers != self.launcher.workers
         timeout = 5
-        self._wait(cond, timeout)
+        _wait(cond, timeout)
 
         # Make sure worker pids don't match
-        end_workers = self._get_workers()
+        end_workers = self.launcher.workers
         LOG.info('workers: %r' % end_workers)
         self.assertNotEqual(start_workers, end_workers)
 
     def _terminate_with_signal(self, sig):
-        self._spawn()
-
-        os.kill(self.pid, sig)
+        self.launcher.kill(sig)
 
         # Wait at most 5 seconds to kill all workers
-        cond = lambda: not self._get_workers()
+        cond = lambda: not self.launcher.workers
         timeout = 5
-        self._wait(cond, timeout)
+        _wait(cond, timeout)
 
-        workers = self._get_workers()
+        workers = self.launcher.workers
         LOG.info('workers: %r' % workers)
         self.assertFalse(workers, 'No OS processes left.')
 
     def test_terminate_sigkill(self):
         self._terminate_with_signal(signal.SIGKILL)
-        status = self._reap_test()
+        status = self.launcher.status
         self.assertTrue(os.WIFSIGNALED(status))
         self.assertEqual(os.WTERMSIG(status), signal.SIGKILL)
 
     def test_terminate_sigterm(self):
         self._terminate_with_signal(signal.SIGTERM)
-        status = self._reap_test()
+        status = self.launcher.status
         self.assertTrue(os.WIFEXITED(status))
         self.assertEqual(os.WEXITSTATUS(status), 0)
 
     def test_child_signal_sighup(self):
-        start_workers = self._spawn()
+        start_workers = self.launcher.workers
 
         os.kill(start_workers[0], signal.SIGHUP)
         # Wait at most 5 seconds to respawn a worker
-        cond = lambda: start_workers == self._get_workers()
+        cond = lambda: start_workers == self.launcher.workers
         timeout = 5
-        self._wait(cond, timeout)
+        _wait(cond, timeout)
 
         # Make sure worker pids match
-        end_workers = self._get_workers()
+        end_workers = self.launcher.workers
         LOG.info('workers: %r' % end_workers)
         self.assertEqual(start_workers, end_workers)
 
     def test_parent_signal_sighup(self):
-        start_workers = self._spawn()
+        start_workers = self.launcher.workers
 
-        os.kill(self.pid, signal.SIGHUP)
+        self.launcher.kill(signal.SIGHUP)
         # Wait at most 5 seconds to respawn a worker
-        cond = lambda: start_workers == self._get_workers()
+        cond = lambda: start_workers == self.launcher.workers
         timeout = 5
-        self._wait(cond, timeout)
+        _wait(cond, timeout)
 
         # Make sure worker pids match
-        end_workers = self._get_workers()
+        end_workers = self.launcher.workers
         LOG.info('workers: %r' % end_workers)
         self.assertEqual(start_workers, end_workers)
 
 
+class MultiProcessLauncherTest(ServiceLauncherTest):
+    """Test case that launch multiple ProcessLauncher service."""
+
+    class Launcher(ServiceLauncherTest.Launcher):
+        """Class that launch multiple ProcessLauncher in the same
+        subprocess, each in it's own greenlet.
+        """
+
+        launcher_count = 2
+        # NOTE(Mouad): The biggest the number of children the easiest it's
+        # to catch bugs like #1364876.
+        children_count = 10
+
+        def __init__(self):
+            self.pool = eventlet.greenpool.GreenPool(self.launcher_count)
+            super(self.__class__, self).__init__()
+
+        def child_callback(self):
+            status = 0
+            try:
+                for _ in range(self.launcher_count):
+                    launcher = service.ProcessLauncher()
+                    serv = ServiceWithTimer()
+                    launcher.launch_service(serv, workers=self.children_count)
+                    self.pool.spawn(launcher.wait)
+                self.pool.waitall()
+            except SystemExit as exc:
+                status = exc.code
+            return status
+
+        def parent_callback(self):
+            subprocess_count = self.launcher_count * self.children_count
+            _wait(lambda: len(self.workers) == subprocess_count, 20, fail=True)
+
+
 class ServiceRestartTest(ServiceTestBase):
 
-    def _spawn_service(self):
-        ready_event = multiprocessing.Event()
-        pid = os.fork()
-        status = 0
-        if pid == 0:
-            os.setsid()
+    class Launcher(SubProcess):
+
+        def __init__(self):
+            self.ready = multiprocessing.Event()
+            super(self.__class__, self).__init__()
+
+        def child_callback(self):
+            status = 0
             try:
                 serv = ServiceWithTimer()
                 launcher = service.ServiceLauncher()
                 launcher.launch_service(serv)
-                launcher.wait(ready_callback=ready_event.set)
+                launcher.wait(ready_callback=self.ready.set)
             except SystemExit as exc:
                 status = exc.code
-            os._exit(status)
-        self.pid = pid
-        return ready_event
+            return status
 
     def test_service_restart(self):
-        ready = self._spawn_service()
-
         timeout = 5
-        ready.wait(timeout)
-        self.assertTrue(ready.is_set(), 'Service never became ready')
-        ready.clear()
+        self.launcher.ready.wait(timeout)
+        self.assertTrue(
+            self.launcher.ready.is_set(), 'Service never became ready')
+        self.launcher.ready.clear()
 
-        os.kill(self.pid, signal.SIGHUP)
-        ready.wait(timeout)
-        self.assertTrue(ready.is_set(), 'Service never back after SIGHUP')
+        self.launcher.kill(signal.SIGHUP)
+        self.launcher.ready.wait(timeout)
+        self.assertTrue(
+            self.launcher.ready.is_set(), 'Service never back after SIGHUP')
 
     def test_terminate_sigterm(self):
-        ready = self._spawn_service()
         timeout = 5
-        ready.wait(timeout)
-        self.assertTrue(ready.is_set(), 'Service never became ready')
+        self.launcher.ready.wait(timeout)
+        self.assertTrue(
+            self.launcher.ready.is_set(), 'Service never became ready')
 
-        os.kill(self.pid, signal.SIGTERM)
-
-        status = self._reap_test()
+        self.launcher.kill(signal.SIGTERM)
+        status = self.launcher.status
         self.assertTrue(os.WIFEXITED(status))
         self.assertEqual(os.WEXITSTATUS(status), 0)
 
