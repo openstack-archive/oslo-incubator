@@ -173,7 +173,7 @@ def print_list(objs, fields, formatters=None, sortby_index=0,
                 row.append(data)
         pt.add_row(row)
 
-    print(strutils.safe_encode(pt.get_string(**kwargs)))
+    print(pt.get_string(**kwargs))
 
 
 def print_dict(dct, dict_property="Property", wrap=0):
@@ -201,7 +201,7 @@ def print_dict(dct, dict_property="Property", wrap=0):
                 col1 = ''
         else:
             pt.add_row([k, v])
-    print(strutils.safe_encode(pt.get_string()))
+    print(pt.get_string())
 
 
 def get_password(max_password_prompts=3):
