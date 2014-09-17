@@ -174,7 +174,7 @@ def print_list(objs, fields, formatters=None, sortby_index=0,
                 row.append(data)
         pt.add_row(row)
 
-    print(encodeutils.safe_encode(pt.get_string(**kwargs)))
+    print(six.text_type(pt.get_string(**kwargs)))
 
 
 def print_dict(dct, dict_property="Property", wrap=0):
@@ -202,7 +202,7 @@ def print_dict(dct, dict_property="Property", wrap=0):
                 col1 = ''
         else:
             pt.add_row([k, v])
-    print(encodeutils.safe_encode(pt.get_string()))
+    print(six.text_type(pt.get_string()))
 
 
 def get_password(max_password_prompts=3):
@@ -246,11 +246,7 @@ def find_resource(manager, name_or_id, **find_args):
 
     # now try to get entity as uuid
     try:
-        if six.PY2:
-            tmp_id = encodeutils.safe_encode(name_or_id)
-        else:
-            tmp_id = encodeutils.safe_decode(name_or_id)
-
+        tmp_id = six.text_type(name_or_id)
         if uuidutils.is_uuid_like(tmp_id):
             return manager.get(tmp_id)
     except (TypeError, ValueError, exceptions.NotFound):
