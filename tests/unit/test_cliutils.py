@@ -15,6 +15,8 @@
 import fixtures
 import mock
 from oslotest import base as test_base
+import six
+from six.moves import builtins
 
 from openstack.common import cliutils
 
@@ -431,6 +433,33 @@ class _FakeResult(object):
     def __init__(self, name, value):
         self.name = name
         self.value = value
+
+
+class PrintTypeTestCase(test_base.BaseTestCase):
+    """Verify output of 'print_list' and 'print_dict' functions.
+
+    Printed data should be instance of string_type and not of
+    binary_type, especially using py3.
+    """
+
+    def test_print_list_string_types(self):
+        with mock.patch.object(builtins, 'print', mock.Mock()) as mock_print:
+            objs = [_FakeResult('foo', 'bar')]
+            cliutils.print_list(objs, ['FOO', 'BAR'], sortby_index=0)
+            mock_print.assert_has_calls([mock.ANY, ])
+            self.assertTrue(isinstance(mock_print.call_args_list[0][0][0],
+                                       six.string_types))
+            self.assertFalse(isinstance(mock_print.call_args_list[0][0][0],
+                                        six.binary_type))
+
+    def test_print_dict_string_types(self):
+        with mock.patch.object(builtins, 'print', mock.Mock()) as mock_print:
+            cliutils.print_dict({'foo': 'bar'})
+            mock_print.assert_has_calls([mock.ANY])
+            self.assertTrue(isinstance(mock_print.call_args_list[0][0][0],
+                                       six.string_types))
+            self.assertFalse(isinstance(mock_print.call_args_list[0][0][0],
+                                        six.binary_type))
 
 
 class PrintResultTestCase(test_base.BaseTestCase):
