@@ -812,7 +812,7 @@ def _parse_text_rule(rule):
         return state.result
     except ValueError:
         # Couldn't parse the rule
-        LOG.exception(_LE("Failed to understand rule %r") % rule)
+        LOG.exception(_LE("Failed to understand rule %s") % rule)
 
         # Fail closed
         return FalseCheck()
