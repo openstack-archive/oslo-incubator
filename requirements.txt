@@ -13,6 +13,7 @@ Jinja2
 kombu>=2.4.8
 lockfile>=0.8
 netaddr>=0.7.6
+oslo.concurrency>=1.0.0.0a1
 oslo.config>=1.4.0
 oslo.serialization>=1.0.0               # Apache-2.0
 oslo.utils>=1.0.0
