@@ -22,13 +22,13 @@ import tempfile
 import mock
 from oslo.config import cfg
 from oslo.config import fixture as config
+from oslo.serialization import jsonutils
 from oslotest import base as test_base
 import six
 
 from openstack.common import context
 from openstack.common import fileutils
 from openstack.common import gettextutils
-from openstack.common import jsonutils
 from openstack.common import local
 from openstack.common import log
 
