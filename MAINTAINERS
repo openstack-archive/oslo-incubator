@@ -91,14 +91,6 @@ M: Simo Sorce <simo@redhat.com>
 S: Maintained
 F: crypto/
 
-== db ==
-
-M: Boris Pavlovic <boris@pavlovic.me>
-M: Roman Podolyaka <rpodolyaka@mirantis.com>
-M: Victor Sergeyev <vsergeyev@mirantis.com>
-S: Obsolete
-F: db/
-
 == eventlet_backdoor ==
 
 M:
