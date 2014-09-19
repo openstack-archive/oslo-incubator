@@ -109,13 +109,6 @@ M:
 S: Graduating
 F: local.py
 
-== lockutils ==
-
-M: Michael Still <mikal@stillhq.com>
-M: Yuriy Taraday <yorik.sar@gmail.com>
-S: Graduating
-F: lockutils.py
-
 == log ==
 
 M:
@@ -152,13 +145,6 @@ M: Flavio Percoco <flavio@redhat.com>
 M: Adam Young <ayoung@redhat.com>
 S: Maintained
 F: policy.py
-
-== processutils ==
-
-M: Michael Still <mikal@stillhq.com>
-M: Yuriy Taraday <yorik.sar@gmail.com>
-S: Graduating
-F: processutils.py
 
 == quota ==
 
