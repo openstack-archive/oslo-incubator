@@ -38,6 +38,7 @@ import sys
 import traceback
 
 from oslo.config import cfg
+from oslo.serialization import jsonutils
 from oslo.utils import importutils
 import six
 from six import moves
@@ -45,7 +46,6 @@ from six import moves
 _PY26 = sys.version_info[0:2] == (2, 6)
 
 from openstack.common.gettextutils import _
-from openstack.common import jsonutils
 from openstack.common import local
 
 

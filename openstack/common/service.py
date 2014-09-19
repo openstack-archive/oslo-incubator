@@ -36,7 +36,6 @@ except ImportError:
 import eventlet
 from eventlet import event
 from oslo.config import cfg
-from oslo.utils import importutils
 
 from openstack.common import eventlet_backdoor
 from openstack.common.gettextutils import _LE, _LI, _LW
