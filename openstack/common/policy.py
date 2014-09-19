@@ -81,13 +81,13 @@ import os
 import re
 
 from oslo.config import cfg
+from oslo.serialization import jsonutils
 import six
 import six.moves.urllib.parse as urlparse
 import six.moves.urllib.request as urlrequest
 
 from openstack.common import fileutils
 from openstack.common._i18n import _, _LE, _LW
-from openstack.common import jsonutils
 from openstack.common import log as logging
 
 

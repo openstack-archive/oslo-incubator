@@ -133,12 +133,6 @@ M: Zhongyue Luo <zhongyue.nah@intel.com>
 S: Maintained
 F: imageutils.py
 
-== jsonutils ==
-
-M:
-S: Obsolete
-F: jsonutils.py
-
 == local ==
 
 M:
