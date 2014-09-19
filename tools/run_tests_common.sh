@@ -184,7 +184,7 @@ function run_pep8 {
 }
 
 
-TESTRTESTS="python -m openstack.common.lockutils python setup.py testr"
+TESTRTESTS="lockutils-wrapper python setup.py testr"
 
 if [ ${NO_SITE_PACKAGES} -eq 1 ]; then
   INSTALLVENVOPTS="--no-site-packages"
