@@ -18,6 +18,7 @@
 import os
 
 import mock
+from oslo.concurrency.fixture import lockutils
 from oslo.config import cfg
 from oslo.config import fixture as config
 from oslo.serialization import jsonutils
@@ -27,7 +28,6 @@ import six.moves.urllib.parse as urlparse
 import six.moves.urllib.request as urlrequest
 
 from openstack.common import fileutils
-from openstack.common.fixture import lockutils
 from openstack.common import policy
 
 

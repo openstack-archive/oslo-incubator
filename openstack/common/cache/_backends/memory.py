@@ -14,10 +14,10 @@
 
 import collections
 
+from oslo_concurrency import lockutils
 from oslo.utils import timeutils
 
 from openstack.common.cache import backends
-from openstack.common import lockutils
 
 
 class MemoryBackend(backends.BaseCache):
