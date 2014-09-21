@@ -491,10 +491,10 @@ class Connection(object):
         self.connection.tcp_nodelay = self.conf.qpid_tcp_nodelay
 
     def _register_consumer(self, consumer):
-        self.consumers[str(consumer.get_receiver())] = consumer
+        self.consumers[hash(consumer.get_receiver())] = consumer
 
     def _lookup_consumer(self, receiver):
-        return self.consumers[str(receiver)]
+        return self.consumers[hash(receiver)]
 
     def reconnect(self):
         """Handles reconnecting and re-establishing sessions and queues."""
