@@ -25,6 +25,7 @@ OpenStack Client interface. Handles the REST calls and responses.
 # E0202: An attribute inherited from %s hide this method
 # pylint: disable=E0202
 
+import hashlib
 import logging
 import time
 
@@ -33,14 +34,15 @@ try:
 except ImportError:
     import json
 
+from oslo.utils import encodeutils
 from oslo.utils import importutils
 import requests
 
 from openstack.common.apiclient import exceptions
 from openstack.common.gettextutils import _
 
-
 _logger = logging.getLogger(__name__)
+SENSITIVE_HEADERS = ('X-Auth-Token',)
 
 
 class HTTPClient(object):
@@ -99,6 +101,17 @@ class HTTPClient(object):
 
         self.cached_token = None
 
+    def _safe_header(self, name, value):
+        if name in SENSITIVE_HEADERS:
+            # because in python3 byte string handling is ... ug
+            v = value.encode('utf-8')
+            h = hashlib.sha1(v)
+            d = h.hexdigest()
+            return encodeutils.safe_decode(name), "{SHA1}%s" % d
+        else:
+            return (encodeutils.safe_decode(name),
+                    encodeutils.safe_decode(value))
+
     def _http_log_req(self, method, url, kwargs):
         if not self.debug:
             return
@@ -110,7 +123,8 @@ class HTTPClient(object):
         ]
 
         for element in kwargs['headers']:
-            header = "-H '%s: %s'" % (element, kwargs['headers'][element])
+            header = ("-H '%s: %s'" %
+                      self._safe_header(element, kwargs['headers'][element]))
             string_parts.append(header)
 
         _logger.debug("REQ: %s" % " ".join(string_parts))
