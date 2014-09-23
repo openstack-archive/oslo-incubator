@@ -11,15 +11,15 @@ iso8601>=0.1.9
 Jinja2
 kombu>=2.4.8
 lockfile>=0.8
-netaddr>=0.7.6
-oslo.config>=1.4.0.0a3
+netaddr>=0.7.12
+oslo.config>=1.4.0  # Apache-2.0
 PasteDeploy>=1.5.0
 pbr>=0.6,!=0.7,<1.0
 posix_ipc
 PrettyTable>=0.7,<0.8
 pycrypto>=2.6
-requests>=1.2.1
+requests>=1.2.1,!=2.4.0
 Routes>=1.12.3,!=2.0
 six>=1.7.0
-stevedore>=0.14
+stevedore>=1.0.0  # Apache-2.0
 WebOb>=1.2.3
