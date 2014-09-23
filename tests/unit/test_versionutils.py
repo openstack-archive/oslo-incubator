@@ -228,6 +228,24 @@ class DeprecatedTestCase(test_base.BaseTestCase):
                                as_of='Juno',
                                remove_in='Kilo')
 
+    @mock.patch('openstack.common.versionutils.LOG')
+    def test_deprecated_exception(self, mock_log):
+        @versionutils.deprecated(as_of=versionutils.deprecated.ICEHOUSE,
+                                 remove_in=+1)
+        class OldException(Exception):
+            pass
+
+        class NewException(OldException):
+            pass
+
+        try:
+            raise NewException()
+        except OldException:
+            pass
+
+        self.assert_deprecated(mock_log, what='OldException()',
+                               as_of='Icehouse', remove_in='Juno')
+
 
 class IsCompatibleTestCase(test_base.BaseTestCase):
     def test_same_version(self):
