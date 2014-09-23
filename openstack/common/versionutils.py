@@ -30,6 +30,7 @@ from openstack.common._i18n import _
 
 LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
+_DEPRECATED_EXCEPTIONS = set()
 
 
 opts = [
@@ -45,7 +46,9 @@ class deprecated(object):
     This decorator logs a deprecation message when the callable it decorates is
     used. The message will include the release where the callable was
     deprecated, the release where it may be removed and possibly an optional
-    replacement.
+    replacement. It also logs a message when a deprecated exception is being
+    caught in a try-except block, but not when subclasses of that exception
+    are being caught.
 
     Examples:
 
@@ -151,6 +154,16 @@ class deprecated(object):
                 report_deprecated_feature(LOG, msg, details)
                 orig_init(self, *args, **kwargs)
             func_or_cls.__init__ = new_init
+
+            if issubclass(func_or_cls, Exception):
+                class ExceptionMeta(type):
+                    def __subclasscheck__(self, subclass):
+                        if self in _DEPRECATED_EXCEPTIONS:
+                            LOG.deprecated(msg, details)
+                        return super(ExceptionMeta,
+                                     self).__subclasscheck__(subclass)
+                func_or_cls = six.add_metaclass(ExceptionMeta)(func_or_cls)
+                _DEPRECATED_EXCEPTIONS.add(func_or_cls)
             return func_or_cls
         else:
             raise TypeError('deprecated can be used only with functions or '
