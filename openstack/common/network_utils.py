@@ -20,6 +20,7 @@ Network-related utilities and helper functions.
 import logging
 import socket
 
+import netaddr
 from six.moves.urllib import parse
 
 from openstack.common.gettextutils import _LW
@@ -73,6 +74,22 @@ def parse_host_port(address, default_port=None):
             port = default_port
 
     return (host, None if port is None else int(port))
+
+
+def is_valid_ipv4(address):
+    """Verify that address represents a valid IPv4 address."""
+    try:
+        return netaddr.valid_ipv4(address)
+    except Exception:
+        return False
+
+
+def is_valid_ipv6(address):
+    """Verify that address represents a valid IPv6 address."""
+    try:
+        return netaddr.valid_ipv6(address)
+    except Exception:
+        return False
 
 
 class ModifiedSplitResult(parse.SplitResult):

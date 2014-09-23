@@ -117,3 +117,14 @@ class NetworkUtilsTest(test_base.BaseTestCase):
         mock_sock.reset_mock()
         network_utils.set_tcp_keepalive(mock_sock, False)
         self.assertEqual(1, len(mock_sock.mock_calls))
+
+    def test_is_valid_ipv4(self):
+        self.assertTrue(network_utils.is_valid_ipv4('42.42.42.42'))
+
+        self.assertFalse(network_utils.is_valid_ipv4('-1.11.11.11'))
+
+    def test_is_valid_ipv6(self):
+        self.assertTrue(network_utils.is_valid_ipv6('::1'))
+
+        self.assertFalse(network_utils.is_valid_ipv6(
+            '1fff::a88:85a3::172.31.128.1'))
