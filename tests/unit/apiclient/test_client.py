@@ -27,6 +27,7 @@ from openstack.common.apiclient import fake_client
 
 class TestClient(client.BaseClient):
     service_type = "test"
+    cached_endpoint = 'old_endpoint'
 
 
 class FakeAuthPlugin(auth.BaseAuthPlugin):
@@ -82,6 +83,34 @@ class ClientTest(test_base.BaseTestCase):
                 },
                 data='{"1": "2"}',
                 verify=True)
+
+    def test_client_request_expired_token(self):
+        side_effect_rv = [False, True]
+
+        def side_effect(*args, **kwargs):
+            if side_effect_rv.pop():
+                raise exceptions.Unauthorized()
+            return
+
+        def new_creds(*args, **kwargs):
+            return 'new_token', 'new_endpoint'
+
+        with mock.patch('%s.FakeAuthPlugin.token_and_endpoint' % __name__,
+                        mock.MagicMock()) as mocked_token_and_endpoint:
+            mocked_token_and_endpoint.side_effect = new_creds
+
+            http_client = client.HTTPClient(FakeAuthPlugin())
+            http_client.cached_token = 'old_token'
+            http_client.request = mock.MagicMock(side_effect=side_effect)
+
+            http_client.client_request(
+                TestClient(http_client), "GET", "/resource", json={"1": "2"})
+            http_client.request.assert_called_with(
+                'GET',
+                'new_endpoint/resource',
+                headers={'X-Auth-Token': 'new_token'},
+                json={'1': '2'})
+            self.assertEqual('new_token', http_client.cached_token)
 
     def test_client_request_reissue(self):
         reject_token = None
