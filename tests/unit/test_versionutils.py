@@ -232,6 +232,73 @@ class DeprecatedTestCase(test_base.BaseTestCase):
                                as_of='Juno',
                                remove_in='Kilo')
 
+    @mock.patch('openstack.common.versionutils.report_deprecated_feature')
+    def test_deprecated_exception(self, mock_log):
+        @versionutils.deprecated(as_of=versionutils.deprecated.ICEHOUSE,
+                                 remove_in=+1)
+        class OldException(Exception):
+            pass
+
+        class NewException(OldException):
+            pass
+
+        try:
+            raise NewException()
+        except OldException:
+            pass
+
+        self.assert_deprecated(mock_log, what='OldException()',
+                               as_of='Icehouse', remove_in='Juno')
+
+    @mock.patch('openstack.common.versionutils.report_deprecated_feature')
+    def test_deprecated_exception_old(self, mock_log):
+        @versionutils.deprecated(as_of=versionutils.deprecated.ICEHOUSE,
+                                 remove_in=+1)
+        class OldException(Exception):
+            pass
+
+        try:
+            raise OldException()
+        except OldException:
+            pass
+
+        self.assert_deprecated(mock_log, what='OldException()',
+                               as_of='Icehouse', remove_in='Juno')
+
+    @mock.patch('openstack.common.versionutils.report_deprecated_feature')
+    def test_deprecated_exception_new(self, mock_log):
+        @versionutils.deprecated(as_of=versionutils.deprecated.ICEHOUSE,
+                                 remove_in=+1)
+        class OldException(Exception):
+            pass
+
+        class NewException(OldException):
+            pass
+
+        try:
+            raise NewException()
+        except NewException:
+            pass
+
+        mock_log.assert_not_called()
+
+    @mock.patch('openstack.common.versionutils.report_deprecated_feature')
+    def test_deprecated_exception_unrelated(self, mock_log):
+        @versionutils.deprecated(as_of=versionutils.deprecated.ICEHOUSE,
+                                 remove_in=+1)
+        class OldException(Exception):
+            pass
+
+        class UnrelatedException(Exception):
+            pass
+
+        try:
+            raise UnrelatedException()
+        except UnrelatedException:
+            pass
+
+        mock_log.assert_not_called()
+
 
 class IsCompatibleTestCase(test_base.BaseTestCase):
     def test_same_version(self):
