@@ -200,13 +200,6 @@ M:
 S: Orphan
 F: network_utils.py
 
-== notifier ==
-
-M: Julien Danjou <julien@danjou.info>
-S: Obsolete
-F: notifier/
-F: middleware/notifier.py
-
 == periodic_task ==
 
 M: Michael Still <mikal@stillhq.com>
@@ -238,13 +231,6 @@ F: quota.py
 M: Sandy Walsh <sandy.walsh@rackspace.com>
 S: Maintained
 F: request_utils.py
-
-== rpc ==
-
-M: Mark McLoughlin <markmc@redhat.com>
-M: Russell Bryant <rbryant@redhat.com>
-S: Obsolete
-F: rpc/
 
 == scheduler ==
 
@@ -317,15 +303,6 @@ F: versionutils.py
 M:
 S: Orphan
 F: xmlutils.py
-
-== zmq ==
-
-M: Mike Wilson <geekinutah@gmail.com>
-M: Paul Mathews <pmathews@bluehost.com>
-S: Obsolete
-F: rpc/impl_zmq.py
-F: rpc/matchmaker*.py
-F: rpc/zmq_receiver.py
 
 == reports ==
 
