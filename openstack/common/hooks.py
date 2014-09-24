@@ -47,11 +47,11 @@ Example Hook object with function parameters:
 """
 
 import functools
+import logging
 
 import stevedore
 
 from openstack.common._i18n import _, _LE
-from openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
 NS = 'openstack.common.hooks'
