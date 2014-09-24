@@ -21,14 +21,17 @@ This can be used in the OpenStack command definition files.
 For example, in a nova command module (under nova/cmd):
 
 .. code-block:: python
-   :emphasize-lines: 8,9,10
+   :emphasize-lines: 11,12,13
+
+   from oslo_log import log as logging
 
    CONF = cfg.CONF
    # maybe import some options here...
 
    def main():
+       logging.register_options(CONF)
        config.parse_args(sys.argv)
-       logging.setup('blah')
+       logging.setup(CONF, 'blah')
 
        TextGuruMeditation.register_section('Some Special Section',
                                            special_section_generator)

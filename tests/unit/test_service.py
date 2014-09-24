@@ -21,6 +21,7 @@ Unit Tests for service class
 from __future__ import print_function
 
 import errno
+import logging
 import multiprocessing
 import os
 import signal
@@ -37,7 +38,6 @@ from oslotest import moxstubout
 from six.moves import mox
 
 from openstack.common import eventlet_backdoor
-from openstack.common import log as logging
 from openstack.common import service
 
 
