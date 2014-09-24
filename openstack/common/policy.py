@@ -77,6 +77,7 @@ as it allows particular rules to be explicitly disabled.
 
 import abc
 import ast
+import logging
 import os
 import re
 
@@ -88,7 +89,6 @@ import six.moves.urllib.request as urlrequest
 from openstack.common import fileutils
 from openstack.common._i18n import _, _LE, _LW
 from openstack.common import jsonutils
-from openstack.common import log as logging
 
 
 policy_opts = [
