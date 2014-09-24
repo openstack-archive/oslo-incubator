@@ -21,7 +21,7 @@ from oslo.config import cfg
 import webob.dec
 import webob.exc
 
-from openstack.common.gettextutils import _
+from openstack.common._i18n import _
 from openstack.common.middleware import base
 from openstack.common import versionutils
 

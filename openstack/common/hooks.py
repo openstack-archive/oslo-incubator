@@ -50,7 +50,7 @@ import functools
 
 import stevedore
 
-from openstack.common.gettextutils import _, _LE
+from openstack.common._i18n import _, _LE
 from openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
