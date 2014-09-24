@@ -16,14 +16,14 @@
 #    under the License.
 
 from oslo.config import cfg
+from oslotest import base
 
 from openstack.common.fixture import config
-from tests import utils
 
 conf = cfg.CONF
 
 
-class ConfigTestCase(utils.BaseTestCase):
+class ConfigTestCase(base.BaseTestCase):
     def setUp(self):
         super(ConfigTestCase, self).setUp()
         self.config_fixture = self.useFixture(config.Config(conf))

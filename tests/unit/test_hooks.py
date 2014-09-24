@@ -18,7 +18,7 @@
 import stevedore
 
 from openstack.common import hooks
-from tests import utils
+from oslotest import base
 
 
 class SampleHookA(object):
@@ -69,7 +69,7 @@ class MockEntryPoint(object):
         return self.cls
 
 
-class HookTestCase(utils.BaseTestCase):
+class HookTestCase(base.BaseTestCase):
     hook_name = 'test_hook'
     extensions = []
 
