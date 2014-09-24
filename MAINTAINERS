@@ -54,12 +54,6 @@ M: Alessio Ababilov <aababilov@griddynamics.com>
 S: Maintained
 F: apiclient/
 
-== audit ==
-
-M: Gordon Chung <gord@live.ca>
-S: Obsolete
-F: middleware/audit.py
-
 == cache ==
 
 M: Flavio Percoco <flavio@redhat.com>
@@ -187,12 +181,6 @@ F: loopingcall.py
 M:
 S: Orphan
 F: memorycache.py
-
-== middleware ==
-
-M: Gordon Chung <gord@live.ca>
-S: Obsolete
-F: middleware/
 
 == network_utils ==
 
