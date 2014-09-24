@@ -1,5 +1,2 @@
 # List of obsolete modules and files as glob patterns (since some
 # files in a module may still belong in the incubator).
-openstack/common/test.py oslotest
-openstack/common/fixture/moxstubout.py oslotest
-openstack/common/fixture/mockpatch.py oslotest
