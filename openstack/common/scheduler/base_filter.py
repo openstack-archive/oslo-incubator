@@ -17,7 +17,7 @@
 Filter support
 """
 
-from openstack.common.gettextutils import _LI
+from openstack.common._i18n import _LI
 from openstack.common import log as logging
 from openstack.common.scheduler import base_handler
 

@@ -23,7 +23,7 @@ import logging
 import webob.dec
 import webob.exc
 
-from openstack.common.gettextutils import _LE
+from openstack.common._i18n import _LE
 from openstack.common.middleware import base
 from openstack.common import versionutils
 

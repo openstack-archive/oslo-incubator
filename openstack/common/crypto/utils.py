@@ -19,7 +19,7 @@ from Crypto import Random
 from oslo.utils import importutils
 import six
 
-from openstack.common.gettextutils import _
+from openstack.common._i18n import _
 
 bchr = six.int2byte
 

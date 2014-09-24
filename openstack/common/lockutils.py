@@ -29,7 +29,7 @@ import weakref
 from oslo.config import cfg
 
 from openstack.common import fileutils
-from openstack.common.gettextutils import _, _LE, _LI
+from openstack.common._i18n import _, _LE, _LI
 
 
 LOG = logging.getLogger(__name__)
