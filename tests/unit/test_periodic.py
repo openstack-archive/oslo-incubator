@@ -19,10 +19,10 @@ Unit Tests for periodic_task decorator and PeriodicTasks class.
 """
 
 import mock
+from oslo.config import fixture as config
 from oslotest import base as test_base
 from testtools import matchers
 
-from openstack.common.fixture import config
 from openstack.common import periodic_task
 
 

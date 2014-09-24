@@ -23,11 +23,11 @@ import threading
 import time
 
 from oslo.config import cfg
+from oslo.config import fixture as config
 from oslotest import base as test_base
 import six
 from six import moves
 
-from openstack.common.fixture import config
 from openstack.common.fixture import lockutils as fixtures
 from openstack.common import lockutils
 

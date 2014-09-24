@@ -14,10 +14,10 @@
 #    under the License.
 
 import mock
+from oslo.config import fixture as config
 from oslotest import base as test_base
 from oslotest import mockpatch
 
-from openstack.common.fixture import config
 from openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
