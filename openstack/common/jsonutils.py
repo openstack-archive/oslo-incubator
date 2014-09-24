@@ -62,7 +62,7 @@ from oslo.utils import timeutils
 import six
 import six.moves.xmlrpc_client as xmlrpclib
 
-from openstack.common import gettextutils
+# from openstack.common import gettextutils
 
 netaddr = importutils.try_import("netaddr")
 
@@ -150,8 +150,8 @@ def to_primitive(value, convert_instances=False, convert_datetime=True,
 
         if convert_datetime and isinstance(value, datetime.datetime):
             return timeutils.strtime(value)
-        elif isinstance(value, gettextutils.Message):
-            return value.data
+        # elif isinstance(value, gettextutils.Message):
+        #     return value.data
         elif hasattr(value, 'iteritems'):
             return recursive(dict(value.iteritems()), level=level + 1)
         elif hasattr(value, '__iter__'):

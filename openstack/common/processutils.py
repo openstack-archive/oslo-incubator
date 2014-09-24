@@ -30,7 +30,7 @@ from eventlet import greenthread
 from oslo.utils import strutils
 import six
 
-from openstack.common.gettextutils import _
+from openstack.common._i18n import _
 
 
 LOG = logging.getLogger(__name__)
