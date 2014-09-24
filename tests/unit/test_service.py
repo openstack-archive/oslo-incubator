@@ -31,12 +31,12 @@ import traceback
 import eventlet
 from eventlet import event
 import mock
+from oslo.config import fixture as config
 from oslotest import base as test_base
 from oslotest import moxstubout
 from six.moves import mox
 
 from openstack.common import eventlet_backdoor
-from openstack.common.fixture import config
 from openstack.common import log as logging
 from openstack.common import service
 
