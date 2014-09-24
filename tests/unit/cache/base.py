@@ -15,11 +15,12 @@
 
 import time
 
+from oslotest import base
+
 from openstack.common.cache import cache
-from tests import utils
 
 
-class CacheBaseTest(utils.BaseTestCase):
+class CacheBaseTest(base.BaseTestCase):
 
     cache_url = None
 

@@ -13,13 +13,13 @@
 #    under the License.
 
 from oslo.config import cfg
+from oslotest import base
 
 from openstack.common.cache._backends import memory
 from openstack.common.cache import cache
-from tests import utils
 
 
-class TestCacheModule(utils.BaseTestCase):
+class TestCacheModule(base.BaseTestCase):
 
     def test_oslo_config(self):
         conf = cfg.ConfigOpts()
