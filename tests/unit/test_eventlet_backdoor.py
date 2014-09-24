@@ -21,11 +21,11 @@ import errno
 import socket
 
 import eventlet
+from oslo.config import fixture as config
 from oslotest import base as test_base
 from oslotest import moxstubout
 
 from openstack.common import eventlet_backdoor
-from openstack.common.fixture import config
 
 
 class BackdoorPortTest(test_base.BaseTestCase):
