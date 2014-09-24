@@ -44,7 +44,7 @@ from six import moves
 
 _PY26 = sys.version_info[0:2] == (2, 6)
 
-from openstack.common.gettextutils import _
+from openstack.common._i18n import _
 from openstack.common import jsonutils
 from openstack.common import local
 

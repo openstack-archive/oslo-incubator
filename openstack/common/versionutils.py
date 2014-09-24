@@ -23,7 +23,7 @@ import inspect
 import pkg_resources
 import six
 
-from openstack.common.gettextutils import _
+from openstack.common._i18n import _
 from openstack.common import log as logging
 
 

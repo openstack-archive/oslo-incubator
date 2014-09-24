@@ -62,7 +62,7 @@ def find_file(filename):
 
 
 def check_directory(path):
-    skipped_entries = ['__init__.py', 'deprecated', '__pycache__']
+    skipped_entries = ['__init__.py', 'deprecated', '__pycache__', '_i18n.py']
     for i in os.listdir(path):
         if i.endswith('.pyc') or i in skipped_entries:
             continue

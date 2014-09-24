@@ -23,7 +23,7 @@ import re
 
 from oslo.utils import strutils
 
-from openstack.common.gettextutils import _
+from openstack.common._i18n import _
 
 
 class QemuImgInfo(object):
