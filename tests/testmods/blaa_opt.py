@@ -23,3 +23,10 @@ opts = [
 ]
 
 CONF.register_opts(opts)
+
+opts2 = [
+    cfg.BoolOpt('baz', default=True),
+    cfg.BoolOpt('quux', default='$baz')
+]
+
+CONF.register_opts(opts2)

@@ -248,6 +248,14 @@ def _sanitize_default(name, value):
     return value
 
 
+def _is_string_template(opt_default):
+    try:
+        return str(opt_default)[0] is '$'
+    except IndexError:
+        pass
+    return False
+
+
 def _print_opt(opt):
     opt_name, opt_default, opt_help = opt.dest, opt.default, opt.help
     if not opt_help:
@@ -270,7 +278,7 @@ def _print_opt(opt):
                       (deprecated_group,
                        deprecated_opt.name))
     try:
-        if opt_default is None:
+        if opt_default is None or _is_string_template(opt_default):
             print('#%s=<None>' % opt_name)
         elif opt_type == STROPT:
             assert(isinstance(opt_default, six.string_types))
