@@ -10,15 +10,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslotest import base
 
 from openstack.common.fixture import logging as logging_fixture
 from openstack.common import log as logging
-from tests import utils
 
 LOG = logging.getLogger(__name__)
 
 
-class TestLoggingFixture(utils.BaseTestCase):
+class TestLoggingFixture(base.BaseTestCase):
     def test_logging_handle_error(self):
         LOG.info('pid of first child is %(foo)s', 1)
         self.useFixture(logging_fixture.get_logging_handle_error_fixture())
