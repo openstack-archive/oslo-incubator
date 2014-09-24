@@ -19,13 +19,13 @@ import os
 
 import mock
 from oslo.config import cfg
+from oslo.config import fixture as config
 from oslotest import base as test_base
 import six
 import six.moves.urllib.parse as urlparse
 import six.moves.urllib.request as urlrequest
 
 from openstack.common import fileutils
-from openstack.common.fixture import config
 from openstack.common.fixture import lockutils
 from openstack.common import jsonutils
 from openstack.common import policy

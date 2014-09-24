@@ -11,12 +11,11 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
+from oslo.config import fixture as config
 from oslotest import base as test_base
 import six
 import webob
 
-from openstack.common.fixture import config
 from openstack.common.middleware import sizelimit
 
 
