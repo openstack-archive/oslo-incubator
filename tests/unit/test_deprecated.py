@@ -13,12 +13,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import logging
+
 import mock
 from oslo.config import fixture as config
 from oslotest import base as test_base
 from oslotest import mockpatch
 
-from openstack.common import log as logging
+from openstack.common import versionutils
+
 
 LOG = logging.getLogger(__name__)
 
@@ -33,17 +36,21 @@ class DeprecatedConfigTestCase(test_base.BaseTestCase):
         crit_fixture = self.useFixture(mockpatch.PatchObject(LOG, 'critical'))
         self.crit_mock = crit_fixture.mock
 
-        self.config = self.useFixture(config.Config()).config
+        self.config_fixture = self.useFixture(config.Config())
+        self.config_fixture.register_opts(versionutils.opts)
+        self.config = self.config_fixture.config
 
     def test_deprecated(self):
-        LOG.deprecated('test')
+        versionutils.report_deprecated_feature(LOG, 'test')
         self.warn_mock.assert_called_once_with('Deprecated: test')
         self.assertFalse(self.crit_mock.called)
 
     def test_deprecated_fatal(self):
         self.config(fatal_deprecations=True)
-        self.assertRaises(logging.DeprecatedConfig,
-                          LOG.deprecated, "test2")
+        self.assertRaises(versionutils.DeprecatedConfig,
+                          versionutils.report_deprecated_feature,
+                          LOG,
+                          "test2")
         self.crit_mock.assert_called_once_with('Deprecated: test2')
         self.assertFalse(self.warn_mock.called)
 
@@ -51,9 +58,9 @@ class DeprecatedConfigTestCase(test_base.BaseTestCase):
         # If the same message is used multiple times then it's only logged
         # once.
 
-        LOG.deprecated('only once!')
-        LOG.deprecated('only once!')
-        LOG.deprecated('only once!')
+        versionutils.report_deprecated_feature(LOG, 'only once!')
+        versionutils.report_deprecated_feature(LOG, 'only once!')
+        versionutils.report_deprecated_feature(LOG, 'only once!')
 
         self.warn_mock.assert_called_once_with('Deprecated: only once!')
 
@@ -62,12 +69,12 @@ class DeprecatedConfigTestCase(test_base.BaseTestCase):
         msg1 = 'tdlodm_message 1'
         msg2 = 'tdlodm_message 2'
 
-        LOG.deprecated(msg1)
-        LOG.deprecated(msg2)
-        LOG.deprecated(msg1)
-        LOG.deprecated(msg1)
-        LOG.deprecated(msg2)
-        LOG.deprecated(msg2)
+        versionutils.report_deprecated_feature(LOG, msg1)
+        versionutils.report_deprecated_feature(LOG, msg2)
+        versionutils.report_deprecated_feature(LOG, msg1)
+        versionutils.report_deprecated_feature(LOG, msg1)
+        versionutils.report_deprecated_feature(LOG, msg2)
+        versionutils.report_deprecated_feature(LOG, msg2)
 
         exp_calls = [
             mock.call('Deprecated: tdlodm_message 1'),
@@ -80,10 +87,10 @@ class DeprecatedConfigTestCase(test_base.BaseTestCase):
         # If the same message format with different arguments is used then each
         # set of message + argument is logged once (for a simple argument)
 
-        LOG.deprecated('only once! %s', 'arg1')
-        LOG.deprecated('only once! %s', 'arg1')
-        LOG.deprecated('only once! %s', 'arg2')
-        LOG.deprecated('only once! %s', 'arg2')
+        versionutils.report_deprecated_feature(LOG, 'only once! %s', 'arg1')
+        versionutils.report_deprecated_feature(LOG, 'only once! %s', 'arg1')
+        versionutils.report_deprecated_feature(LOG, 'only once! %s', 'arg2')
+        versionutils.report_deprecated_feature(LOG, 'only once! %s', 'arg2')
 
         exp_calls = [
             mock.call('Deprecated: only once! %s', 'arg1'),
@@ -105,15 +112,25 @@ class DeprecatedConfigTestCase(test_base.BaseTestCase):
         msg_fmt_2_arg_2 = 6, None, 'purple'
         msg_fmt_2_arg_3 = 6, None, 'something'  # same first args.
 
-        LOG.deprecated(msg_fmt_1, msg_fmt_1_arg_1)
-        LOG.deprecated(msg_fmt_1, msg_fmt_1_arg_2)  # logged: args different
-        LOG.deprecated(msg_fmt_1, msg_fmt_1_arg_1)  # no log: same msg+args
+        versionutils.report_deprecated_feature(LOG, msg_fmt_1, msg_fmt_1_arg_1)
+        # logged: args different
+        versionutils.report_deprecated_feature(LOG, msg_fmt_1, msg_fmt_1_arg_2)
+        # no log: same msg+args
+        versionutils.report_deprecated_feature(LOG, msg_fmt_1, msg_fmt_1_arg_1)
 
-        LOG.deprecated(msg_fmt_2, msg_fmt_2_arg_1)
-        LOG.deprecated(msg_fmt_2, *msg_fmt_2_arg_2)  # logged: args different
-        LOG.deprecated(msg_fmt_2, *msg_fmt_2_arg_3)  # logged: args different
-        LOG.deprecated(msg_fmt_2, *msg_fmt_2_arg_3)  # no log: same msg+args
-        LOG.deprecated(msg_fmt_2, *msg_fmt_2_arg_2)  # no log: same msg+args
+        versionutils.report_deprecated_feature(LOG, msg_fmt_2, msg_fmt_2_arg_1)
+        # logged: args different
+        versionutils.report_deprecated_feature(LOG, msg_fmt_2,
+                                               *msg_fmt_2_arg_2)
+        # logged: args different
+        versionutils.report_deprecated_feature(LOG, msg_fmt_2,
+                                               *msg_fmt_2_arg_3)
+        # no log: same msg+args
+        versionutils.report_deprecated_feature(LOG, msg_fmt_2,
+                                               *msg_fmt_2_arg_3)
+        # no log: same msg+args
+        versionutils.report_deprecated_feature(LOG, msg_fmt_2,
+                                               *msg_fmt_2_arg_2)
 
         exp_calls = [
             mock.call('Deprecated: %s' % msg_fmt_1, msg_fmt_1_arg_1),
