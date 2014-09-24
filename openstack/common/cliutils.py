@@ -30,8 +30,8 @@ import prettytable
 import six
 from six import moves
 
+from openstack.common._i18n import _
 from openstack.common.apiclient import exceptions
-from openstack.common.gettextutils import _
 from openstack.common import uuidutils
 
 

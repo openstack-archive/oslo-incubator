@@ -36,8 +36,8 @@ except ImportError:
 from oslo.utils import importutils
 import requests
 
+from openstack.common._i18n import _
 from openstack.common.apiclient import exceptions
-from openstack.common.gettextutils import _
 
 
 _logger = logging.getLogger(__name__)

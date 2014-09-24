@@ -25,7 +25,7 @@ import sys
 
 import six
 
-from openstack.common.gettextutils import _
+from openstack.common._i18n import _
 
 
 class ClientException(Exception):

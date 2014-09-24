@@ -17,7 +17,7 @@ import ssl
 
 from oslo.config import cfg
 
-from openstack.common.gettextutils import _
+from openstack.common._i18n import _
 
 
 ssl_opts = [

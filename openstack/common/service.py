@@ -38,7 +38,7 @@ from eventlet import event
 from oslo.config import cfg
 
 from openstack.common import eventlet_backdoor
-from openstack.common.gettextutils import _LE, _LI, _LW
+from openstack.common._i18n import _LE, _LI, _LW
 from openstack.common import log as logging
 from openstack.common import systemd
 from openstack.common import threadgroup
