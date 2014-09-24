@@ -14,9 +14,10 @@
 
 import re
 
+from oslotest import base
+
 from openstack.common.report.models import base as base_model
 from openstack.common.report import report
-from tests import utils
 
 
 class BasicView(object):
@@ -31,7 +32,7 @@ def basic_generator():
     return base_model.ReportModel(data={'string': 'value', 'int': 1})
 
 
-class TestBasicReport(utils.BaseTestCase):
+class TestBasicReport(base.BaseTestCase):
     def setUp(self):
         super(TestBasicReport, self).setUp()
 
@@ -60,7 +61,7 @@ class TestBasicReport(utils.BaseTestCase):
         self.assertEqual(self.report.run(), "int: 1;string: value;")
 
 
-class TestBaseModel(utils.BaseTestCase):
+class TestBaseModel(base.BaseTestCase):
     def test_submodel_attached_view(self):
         class TmpView(object):
             def __call__(self, model):
