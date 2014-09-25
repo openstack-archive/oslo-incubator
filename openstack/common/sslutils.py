@@ -32,9 +32,14 @@ ssl_opts = [
                     "the server securely."),
 ]
 
-
 CONF = cfg.CONF
-CONF.register_opts(ssl_opts, "ssl")
+config_section = 'ssl'
+CONF.register_opts(ssl_opts, config_section)
+
+
+def list_opts():
+    "Entry point for oslo-config-generator"
+    return [(config_section, ssl_opts)]
 
 
 def is_enabled():

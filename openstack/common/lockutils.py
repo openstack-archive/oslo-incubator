@@ -43,7 +43,6 @@ util_opts = [
                help='Directory to use for lock files.')
 ]
 
-
 CONF = cfg.CONF
 CONF.register_opts(util_opts)
 
