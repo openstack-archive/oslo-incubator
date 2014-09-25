@@ -50,6 +50,11 @@ CONF = cfg.CONF
 CONF.register_opts(common_quota_opts)
 
 
+def list_opts():
+    "Entry point for oslo-config-generator"
+    return [(None, common_quota_opts)]
+
+
 class QuotaException(Exception):
     """Base exception for quota.
 
