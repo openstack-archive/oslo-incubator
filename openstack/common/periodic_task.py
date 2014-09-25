@@ -36,6 +36,11 @@ LOG = logging.getLogger(__name__)
 DEFAULT_INTERVAL = 60.0
 
 
+def list_opts():
+    "Entry point for oslo-config-generator"
+    return [(None, periodic_opts)]
+
+
 class InvalidPeriodicTaskArg(Exception):
     message = _("Unexpected argument for periodic task creation: %(arg)s.")
 

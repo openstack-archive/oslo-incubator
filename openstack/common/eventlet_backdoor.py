@@ -49,6 +49,12 @@ CONF.register_opts(eventlet_backdoor_opts)
 LOG = logging.getLogger(__name__)
 
 
+def list_opts():
+    """Entry point for oslo-config-generator.
+    """
+    return [(None, eventlet_backdoor_opts)]
+
+
 class EventletBackdoorConfigValueError(Exception):
     def __init__(self, port_range, help_msg, ex):
         msg = ('Invalid backdoor_port configuration %(range)s: %(ex)s. '

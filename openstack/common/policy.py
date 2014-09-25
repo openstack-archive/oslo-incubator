@@ -113,6 +113,11 @@ LOG = logging.getLogger(__name__)
 _checks = {}
 
 
+def list_opts():
+    "Entry point for oslo-config-generator"
+    return [(None, policy_opts)]
+
+
 class PolicyNotAuthorized(Exception):
 
     def __init__(self, rule):

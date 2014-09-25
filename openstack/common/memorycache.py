@@ -28,6 +28,11 @@ CONF = cfg.CONF
 CONF.register_opts(memcache_opts)
 
 
+def list_opts():
+    "Entry point for oslo-config-generator"
+    return [(None, memcache_opts)]
+
+
 def get_client(memcached_servers=None):
     client_cls = Client
 
