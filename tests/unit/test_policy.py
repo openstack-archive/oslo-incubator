@@ -987,3 +987,35 @@ class GenericCheckTestCase(PolicyBaseTestCase):
         self.assertEqual(check(dict(enabled=True),
                                {},
                                self.enforcer), True)
+
+    def test_deep_credentials_dictionary_lookup(self):
+        check = policy.GenericCheck("a.b.c.d", 'APPLES')
+
+        credentials = {'a': {'b': {'c': {'d': 'APPLES'}}}}
+
+        self.assertEqual(check({},
+                               credentials,
+                               self.enforcer), True)
+
+    def test_missing_credentials_dictionary_lookup(self):
+        credentials = {'a': 'APPLES', 'o': {'t': 'ORANGES'}}
+
+        # First a valid check - rest of case is expecting failures
+        # Should prove the basic credentials structure before we test
+        # for failure cases.
+        check = policy.GenericCheck("o.t", 'ORANGES')
+        self.assertEqual(check({},
+                               credentials,
+                               self.enforcer), True)
+
+        # Case where final key is missing
+        check = policy.GenericCheck("o.v", 'ORANGES')
+        self.assertEqual(check({},
+                               credentials,
+                               self.enforcer), False)
+
+        # Attempt to access key under a missing dictionary
+        check = policy.GenericCheck("q.v", 'APPLES')
+        self.assertEqual(check({},
+                               credentials,
+                               self.enforcer), False)
