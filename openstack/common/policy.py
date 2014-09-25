@@ -77,6 +77,7 @@ as it allows particular rules to be explicitly disabled.
 
 import abc
 import ast
+import copy
 import os
 import re
 
@@ -111,6 +112,11 @@ CONF.register_opts(policy_opts)
 LOG = logging.getLogger(__name__)
 
 _checks = {}
+
+
+def list_opts():
+    """Entry point for oslo-config-generator."""
+    return [(None, copy.deepcopy(policy_opts))]
 
 
 class PolicyNotAuthorized(Exception):
