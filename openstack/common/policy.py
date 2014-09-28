@@ -16,7 +16,82 @@
 """
 Common Policy Engine Implementation
 
-Policies can be expressed in one of two forms: A list of lists, or a
+Policies are expressed as a target and an associated rule::
+
+    "<target>": "<rule>"
+
+The "target" is specific to the service that is conducting policy
+enforcement.  Typically, the target refers to an API call.
+
+A rule is made up of zero or more checks.  A number of different check
+types are supported, which can be divided into generic checks and
+special checks.
+
+A :class:`generic policy.GenericCheck` check is used to perform matching
+against attributes that are sent along with the API calls.  These
+attributes can be used by the policy engine (on the right side of the
+expression), by using the following syntax::
+
+    <some_value>:user.id
+
+Contextual attributes of objects identified by their IDs are loaded
+from the database. They are also available to the policy engine and
+can be checked through the `target` keyword::
+
+    <some_value>:target.role.name
+
+All these attributes (related to users, API calls, and context) can be
+checked against each other or against constants, be it literals (True,
+<a_number>) or strings.  It is important to note that these attributes
+are specific to the service that is conducting policy enforcement.
+
+It is possible to perform policy checks on the following user attributes
+obtained through the token::
+
+    user_id
+    domain_id or project_id (depending on the token scope)
+    list of roles held for the given token scope
+
+For example, a check on the domain_id would be defined as::
+
+    domain_id:<some_value>
+
+Special checks allow for more flexibility than is possible using generic
+checks.  The built-in special check types are "role", "rule", and "http"
+checks.
+
+A :class:`role policy.RoleCheck` check is used to check if a specific
+role is present in the supplied credentials.  A role check is expressed
+as::
+
+    "role:<role_name>"
+
+A :class:`rule policy.RuleCheck` check is used to reference another
+defined rule by its target.  This allows for common checks to be defined
+once as a reusable rule, which is then referenced within other rules.
+It also allows one to define a set of checks as a more descriptive name
+to aid in readabilty of policy.  A rule check is expressed as::
+
+    "rule:<rule_target>"
+
+The following example shows a "role" check that is defined as a rule,
+which is then used via a "rule" check::
+
+    "admin_required": "role:admin
+    "<target>": "rule:admin_required"
+
+A :class:`http policy.HttpCheck` check is used to make a HTTP request to
+a remote server to hdetermine the results of the check.  The target and
+credentials are passed to the remote server for evaluation.  The action
+is authorized if the remote server returns a response of "True". A http
+check is expressed as::
+
+    "http:<target URL>"
+
+It is also possible for additional special check types to be registered
+using the :func:`~policy.register` function.
+
+Policy rules can be expressed in one of two forms: A list of lists, or a
 string written in the new policy language.
 
 In the list-of-lists representation, each check inside the innermost
@@ -46,33 +121,19 @@ policy rule::
 
     project_id:%(project_id)s and not role:dunce
 
-It is possible to perform policy checks on the following user
-attributes (obtained through the token): user_id, domain_id or
-project_id::
-
-    domain_id:<some_value>
-
-Attributes sent along with API calls can be used by the policy engine
-(on the right side of the expression), by using the following syntax::
-
-    <some_value>:user.id
-
-Contextual attributes of objects identified by their IDs are loaded
-from the database. They are also available to the policy engine and
-can be checked through the `target` keyword::
-
-    <some_value>:target.role.name
-
-All these attributes (related to users, API calls, and context) can be
-checked against each other or against constants, be it literals (True,
-<a_number>) or strings.
-
 Finally, two special policy checks should be mentioned; the policy
 check "@" will always accept an access, and the policy check "!" will
 always reject an access.  (Note that if a rule is either the empty
 list ("[]") or the empty string, this is equivalent to the "@" policy
 check.)  Of these, the "!" policy check is probably the most useful,
 as it allows particular rules to be explicitly disabled.
+
+A default rule can be defined, which will be enforced when a rule does
+not exist for the target that is being checked.  By default, the rule
+associated with the target name of "default" will be used as the default
+rule.  It is possible to use a different target as the default rule by
+setting the "policy_default_rule" configuration setting to the desired
+target.
 """
 
 import abc
