@@ -20,7 +20,12 @@ repodir=$(cd $bindir/../../.. && pwd)
 # Make sure no pager is configured so the output is not blocked
 export PAGER=
 
-libs=$($bindir/list_oslo_projects.py | egrep -v -e '(oslo.version|cookiecutter|incubator)')
+if [ -z "$*" ]
+then
+    libs=$($bindir/list_oslo_projects.py | egrep -v -e '(oslo.version|cookiecutter|incubator)')
+else
+    libs="$*"
+fi
 
 # Assuming the tags were created in chronological order, get the most
 # recent one. This will break if we ever go back and create a patch
