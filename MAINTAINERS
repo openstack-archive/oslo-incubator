@@ -79,12 +79,6 @@ M:
 S: Obsolete
 F: context.py
 
-== config ==
-M: Julien Danjou <julien@danjou.info>
-M: Zhongyue Luo <zhongyue.nah@intel.com>
-S: Obsolete
-F: config/
-
 == crypto ==
 
 M: Simo Sorce <simo@redhat.com>
