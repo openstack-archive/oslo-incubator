@@ -157,7 +157,7 @@ def print_list(objs, fields, formatters=None, sortby_index=0,
         kwargs = {}
     else:
         kwargs = {'sortby': field_labels[sortby_index]}
-    pt = prettytable.PrettyTable(field_labels, caching=False)
+    pt = prettytable.PrettyTable(field_labels)
     pt.align = 'l'
 
     for o in objs:
@@ -184,7 +184,7 @@ def print_dict(dct, dict_property="Property", wrap=0):
     :param dict_property: name of the first column
     :param wrap: wrapping for the second column
     """
-    pt = prettytable.PrettyTable([dict_property, 'Value'], caching=False)
+    pt = prettytable.PrettyTable([dict_property, 'Value'])
     pt.align = 'l'
     for k, v in six.iteritems(dct):
         # convert dict to str to check length
