@@ -79,12 +79,6 @@ M:
 S: Obsolete
 F: context.py
 
-== crypto ==
-
-M: Simo Sorce <simo@redhat.com>
-S: Maintained
-F: crypto/
-
 == eventlet_backdoor ==
 
 M:
