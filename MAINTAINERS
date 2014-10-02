@@ -85,12 +85,6 @@ M: Zhongyue Luo <zhongyue.nah@intel.com>
 S: Obsolete
 F: config/
 
-== crypto ==
-
-M: Simo Sorce <simo@redhat.com>
-S: Maintained
-F: crypto/
-
 == eventlet_backdoor ==
 
 M:
