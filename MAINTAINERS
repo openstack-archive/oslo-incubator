@@ -115,12 +115,6 @@ M: Mark McLoughlin <markmc@redhat.com>
 S: Obsolete
 F: gettextutils.py
 
-== hooks ==
-
-M: Andrey Kurilin <akurilin@mirantis.com>
-S: Maintained
-F: hooks.py
-
 == imageutils ==
 
 M: Zhongyue Luo <zhongyue.nah@intel.com>
