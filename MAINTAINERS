@@ -214,12 +214,6 @@ M: Michael Still <mikal@stillhq.com>
 S: Maintained
 F: service.py
 
-== sslutils ==
-
-M:
-S: Orphan
-F: sslutils.py
-
 == systemd ==
 
 M: Alan Pevec <apevec@redhat.com>
