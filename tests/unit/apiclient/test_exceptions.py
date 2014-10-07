@@ -77,3 +77,12 @@ class ExceptionsArgsTest(test_base.BaseTestCase):
         self.assert_exception(
             exceptions.BadRequest, method, url, status_code, json_data,
             check_description=False)
+
+    def test_from_response_internal_error(self):
+        method = "POST"
+        url = "/fake-unknown"
+        status_code = 500
+        json_data = {"fake": {"message": "fake message",
+                              "details": "fake details"}}
+        self.assert_exception(
+            exceptions.HttpServerError, method, url, status_code, json_data)
