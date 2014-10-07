@@ -42,8 +42,17 @@ class ExceptionsArgsTest(test_base.BaseTestCase):
             url)
         self.assertTrue(isinstance(ex, ex_cls))
         if check_description:
-            self.assertEqual(ex.message, json_data["error"]["message"])
-            self.assertEqual(ex.details, json_data["error"]["details"])
+            if "error" in json_data:
+                self.assertEqual(ex.message, json_data["error"]["message"])
+                self.assertEqual(ex.details, json_data["error"]["details"])
+            else:
+                if json_data:
+                    self.assertEqual(
+                        ex.message,
+                        json_data[list(json_data.keys())[0]]["message"])
+                    self.assertEqual(
+                        ex.details,
+                        json_data[list(json_data.keys())[0]]["details"])
         self.assertEqual(ex.method, method)
         self.assertEqual(ex.url, url)
         self.assertEqual(ex.http_status, status_code)
@@ -73,7 +82,17 @@ class ExceptionsArgsTest(test_base.BaseTestCase):
         method = "POST"
         url = "/fake-unknown"
         status_code = 400
-        json_data = {"alien": 123}
+        json_data = {"error": {"message": "123",
+                               "details": "456"}}
         self.assert_exception(
             exceptions.BadRequest, method, url, status_code, json_data,
             check_description=False)
+
+    def test_from_response_internal_error(self):
+        method = "POST"
+        url = "/fake-unknown"
+        status_code = 500
+        json_data = {"fake": {"message": "fake message",
+                              "details": "fake details"}}
+        self.assert_exception(
+            exceptions.HttpServerError, method, url, status_code, json_data)
