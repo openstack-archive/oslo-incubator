@@ -27,22 +27,22 @@ from openstack.common._i18n import _
 
 
 class QemuImgInfo(object):
-    BACKING_FILE_RE = re.compile((r"^(.*?)\s*\(actual\s+path\s*:"
-                                  r"\s+(.*?)\)\s*$"), re.I)
-    TOP_LEVEL_RE = re.compile(r"^([\w\d\s\_\-]+):(.*)$")
-    SIZE_RE = re.compile(r"(\d*\.?\d+)(\w+)?(\s*\(\s*(\d+)\s+bytes\s*\))?",
+    BACKING_FILE_RE = re.compile((r'^(.*?)\s*\(actual\s+path\s*:'
+                                  r'\s+(.*?)\)\s*$'), re.I)
+    TOP_LEVEL_RE = re.compile(r'^([\w\d\s\_\-]+):(.*)$')
+    SIZE_RE = re.compile(r'(\d*\.?\d+)(\w+)?(\s*\(\s*(\d+)\s+bytes\s*\))?',
                          re.I)
 
     def __init__(self, cmd_output=None):
         details = self._parse(cmd_output or '')
-        self.image = details.get('image')
         self.backing_file = details.get('backing_file')
-        self.file_format = details.get('file_format')
-        self.virtual_size = details.get('virtual_size')
         self.cluster_size = details.get('cluster_size')
         self.disk_size = details.get('disk_size')
-        self.snapshots = details.get('snapshot_list', [])
         self.encrypted = details.get('encrypted')
+        self.file_format = details.get('file_format')
+        self.image = details.get('image')
+        self.snapshots = details.get('snapshot_list', [])
+        self.virtual_size = details.get('virtual_size')
 
     def __str__(self):
         lines = [
@@ -54,10 +54,10 @@ class QemuImgInfo(object):
             'backing_file: %s' % self.backing_file,
         ]
         if self.snapshots:
-            lines.append("snapshots: %s" % self.snapshots)
+            lines.append('snapshots: %s' % self.snapshots)
         if self.encrypted:
-            lines.append("encrypted: %s" % self.encrypted)
-        return "\n".join(lines)
+            lines.append('encrypted: %s' % self.encrypted)
+        return '\n'.join(lines)
 
     def _canonicalize(self, field):
         # Standardize on underscores/lc/no dash and no spaces
@@ -65,7 +65,7 @@ class QemuImgInfo(object):
         # this format allows for better integration with python
         # - i.e. for usage in kwargs and such...
         field = field.lower().strip()
-        for c in (" ", "-"):
+        for c in (' ', '-'):
             field = field.replace(c, '_')
         return field
 
@@ -101,22 +101,21 @@ class QemuImgInfo(object):
             real_details = real_details.strip().lower()
         elif root_cmd == 'snapshot_list':
             # Next line should be a header, starting with 'ID'
-            if not lines_after or not lines_after[0].startswith("ID"):
-                msg = _("Snapshot list encountered but no header found!")
+            if not lines_after or not lines_after.pop(0).startswith('ID'):
+                msg = _('Snapshot list encountered but no header found!')
                 raise ValueError(msg)
-            del lines_after[0]
             real_details = []
             # This is the sprintf pattern we will try to match
             # "%-10s%-20s%7s%20s%15s"
             # ID TAG VM SIZE DATE VM CLOCK (current header)
             while lines_after:
-                line = lines_after[0]
+                line = lines_after.pop(0)
                 line_pieces = line.split()
                 if len(line_pieces) != 6:
                     break
                 # Check against this pattern in the final position
                 # "%02d:%02d:%02d.%03d"
-                date_pieces = line_pieces[5].split(":")
+                date_pieces = line_pieces[5].split(':')
                 if len(date_pieces) != 3:
                     break
                 real_details.append({
@@ -124,9 +123,8 @@ class QemuImgInfo(object):
                     'tag': line_pieces[1],
                     'vm_size': line_pieces[2],
                     'date': line_pieces[3],
-                    'vm_clock': line_pieces[4] + " " + line_pieces[5],
+                    'vm_clock': '%s %s' % (line_pieces[4], line_pieces[5])
                 })
-                del lines_after[0]
         return real_details
 
     def _parse(self, cmd_output):
