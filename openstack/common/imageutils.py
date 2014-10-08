@@ -101,16 +101,15 @@ class QemuImgInfo(object):
             real_details = real_details.strip().lower()
         elif root_cmd == 'snapshot_list':
             # Next line should be a header, starting with 'ID'
-            if not lines_after or not lines_after[0].startswith("ID"):
+            if not lines_after or not lines_after.pop(0).startswith("ID"):
                 msg = _("Snapshot list encountered but no header found!")
                 raise ValueError(msg)
-            del lines_after[0]
             real_details = []
             # This is the sprintf pattern we will try to match
             # "%-10s%-20s%7s%20s%15s"
             # ID TAG VM SIZE DATE VM CLOCK (current header)
             while lines_after:
-                line = lines_after[0]
+                line = lines_after.pop(0)
                 line_pieces = line.split()
                 if len(line_pieces) != 6:
                     break
@@ -126,7 +125,6 @@ class QemuImgInfo(object):
                     'date': line_pieces[3],
                     'vm_clock': line_pieces[4] + " " + line_pieces[5],
                 })
-                del lines_after[0]
         return real_details
 
     def _parse(self, cmd_output):
