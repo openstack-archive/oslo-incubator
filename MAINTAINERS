@@ -250,12 +250,6 @@ M:
 S: Orphan
 F: versionutils.py
 
-== xmlutils ==
-
-M:
-S: Orphan
-F: xmlutils.py
-
 == reports ==
 
 M: Solly Ross <sross@redhat.com>
