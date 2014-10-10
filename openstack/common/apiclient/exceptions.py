@@ -34,14 +34,6 @@ class ClientException(Exception):
     pass
 
 
-class MissingArgs(ClientException):
-    """Supplied arguments are not sufficient for calling a function."""
-    def __init__(self, missing):
-        self.missing = missing
-        msg = _("Missing arguments: %s") % ", ".join(missing)
-        super(MissingArgs, self).__init__(msg)
-
-
 class ValidationError(ClientException):
     """Error in validation on API client side."""
     pass
