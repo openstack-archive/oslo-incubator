@@ -26,20 +26,16 @@ import sys
 import six
 
 from openstack.common._i18n import _
+from openstack.common import cliutils
+
+
+MissingArgs = cliutils.MissingArgs
 
 
 class ClientException(Exception):
     """The base exception class for all exceptions this library raises.
     """
     pass
-
-
-class MissingArgs(ClientException):
-    """Supplied arguments are not sufficient for calling a function."""
-    def __init__(self, missing):
-        self.missing = missing
-        msg = _("Missing arguments: %s") % ", ".join(missing)
-        super(MissingArgs, self).__init__(msg)
 
 
 class ValidationError(ClientException):
