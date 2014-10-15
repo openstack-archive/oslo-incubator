@@ -64,6 +64,8 @@ class TestOpenstackGenerators(base.BaseTestCase):
     def test_config_model(self):
         conf = cfg.ConfigOpts()
         conf.register_opt(cfg.StrOpt('crackers', default='triscuit'))
+        conf.register_opt(cfg.StrOpt('secrets', secret=True,
+                                     default='should not show'))
         conf.register_group(cfg.OptGroup('cheese', title='Cheese Info'))
         conf.register_opt(cfg.IntOpt('sharpness', default=1),
                           group='cheese')
@@ -71,17 +73,22 @@ class TestOpenstackGenerators(base.BaseTestCase):
                           group='cheese')
         conf.register_opt(cfg.BoolOpt('from_cow', default=True),
                           group='cheese')
+        conf.register_opt(cfg.StrOpt('group_secrets', secret=True,
+                                     default='should not show'),
+                          group='cheese')
 
         model = os_cgen.ConfigReportGenerator(conf)()
         model.set_current_view_type('text')
 
         target_str = ('\ncheese: \n'
                       '  from_cow = True\n'
+                      '  group_secrets = *******\n'
                       '  name = cheddar\n'
                       '  sharpness = 1\n'
                       '\n'
                       'default: \n'
-                      '  crackers = triscuit')
+                      '  crackers = triscuit\n'
+                      '  secrets = *******')
         self.assertEqual(target_str, str(model))
 
     def test_package_report_generator(self):
