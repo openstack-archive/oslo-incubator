@@ -284,8 +284,8 @@ class CheckFunctionTestCase(PolicyBaseTestCase):
 
         try:
             self.enforcer.enforce('rule', 'target', 'creds',
-                                  True, MyException, "arg1",
-                                  "arg2", kw1="kwarg1", kw2="kwarg2")
+                                  True, MyException, False, True,
+                                  "arg1", "arg2", kw1="kwarg1", kw2="kwarg2")
         except MyException as exc:
             self.assertEqual(exc.args, ("arg1", "arg2"))
             self.assertEqual(exc.kwargs, dict(kw1="kwarg1", kw2="kwarg2"))
