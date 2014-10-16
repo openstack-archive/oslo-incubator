@@ -199,16 +199,19 @@ class Enforcer(object):
     :param default_rule: Default rule to use, CONF.default_rule will
                          be used if none is specified.
     :param use_conf: Whether to load rules from cache or config file.
+    :param overwrite: Whether to overwrite existing rules when reload rules
+                      from config file.
     """
 
     def __init__(self, policy_file=None, rules=None,
-                 default_rule=None, use_conf=True):
+                 default_rule=None, use_conf=True, overwrite=True):
         self.default_rule = default_rule or CONF.policy_default_rule
         self.rules = Rules(rules, self.default_rule)
 
         self.policy_path = None
         self.policy_file = policy_file or CONF.policy_file
         self.use_conf = use_conf
+        self.overwrite = overwrite
 
     def set_rules(self, rules, overwrite=True, use_conf=False):
         """Create a new Rules object based on the provided dict of rules.
@@ -240,7 +243,7 @@ class Enforcer(object):
 
         Policy file is cached and will be reloaded if modified.
 
-        :param force_reload: Whether to overwrite current rules.
+        :param force_reload: Whether to reload rules from config file.
         """
 
         if force_reload:
@@ -250,7 +253,8 @@ class Enforcer(object):
             if not self.policy_path:
                 self.policy_path = self._get_policy_path(self.policy_file)
 
-            self._load_policy_file(self.policy_path, force_reload)
+            self._load_policy_file(self.policy_path, force_reload,
+                                   overwrite=self.overwrite)
             for path in CONF.policy_dirs:
                 try:
                     path = self._get_policy_path(path)
@@ -272,9 +276,9 @@ class Enforcer(object):
     def _load_policy_file(self, path, force_reload, overwrite=True):
             reloaded, data = fileutils.read_cached_file(
                 path, force_reload=force_reload)
-            if reloaded or not self.rules:
+            if reloaded or not self.rules or not overwrite:
                 rules = Rules.load_json(data, self.default_rule)
-                self.set_rules(rules, overwrite)
+                self.set_rules(rules, overwrite=overwrite, use_conf=True)
                 LOG.debug("Rules successfully reloaded")
 
     def _get_policy_path(self, path):
