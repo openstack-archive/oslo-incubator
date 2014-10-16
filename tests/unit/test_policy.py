@@ -200,12 +200,63 @@ class EnforcerTest(PolicyBaseTestCase):
         creds = {'roles': ''}
         self.assertEqual(enforcer.enforce(action, {}, creds), True)
 
-    def test_enforcer_force_reload_true(self):
-        self.enforcer.set_rules({'test': 'test'})
-        self.enforcer.load_rules(force_reload=True)
-        self.assertNotIn({'test': 'test'}, self.enforcer.rules)
+    def test_enforcer_force_reload_with_overwrite(self):
+        # Prepare in memory fake policies.
+        self.enforcer.set_rules({'test': policy.parse_rule('role:test')})
+        self.enforcer.set_rules({'default': policy.parse_rule('role:fakeZ')},
+                                overwrite=False)  # Keeps 'test' role.
+        self.assertTrue(self.enforcer.enforce("test", {},
+                                              {"roles": ["test"]}))
+        self.assertTrue(self.enforcer.enforce("default", {},
+                                              {"roles": ["fakeZ"]}))
+
+        # Reload from policy configuration files,
+        # overwrite fake ones, then old policies
+        # disappeared.
+        self.assertTrue(self.enforcer.enforce("default", {},
+                                              {"roles": ["fakeB"]},
+                                              force_reload=True,
+                                              overwrite=True))
+        self.assertFalse(self.enforcer.enforce("test", {},
+                                               {"roles": ["test"]}))
+
+        # Check against rule dict again from enforcer object directly.
+        self.assertNotIn('test', self.enforcer.rules)
         self.assertIn('default', self.enforcer.rules)
         self.assertIn('admin', self.enforcer.rules)
+        loaded_rules = jsonutils.loads(str(self.enforcer.rules))
+        self.assertEqual(len(loaded_rules), 2)
+        self.assertIn('role:fakeB', loaded_rules['default'])
+        self.assertIn('is_admin:True', loaded_rules['admin'])
+
+    def test_enforcer_force_reload_without_overwrite(self):
+        # Prepare in memory fake policies.
+        self.enforcer.set_rules({'test': policy.parse_rule('role:test')})
+        self.enforcer.set_rules({'default': policy.parse_rule('role:fakeZ')},
+                                overwrite=False)  # Keeps 'test' role.
+        self.assertTrue(self.enforcer.enforce("test", {}, {"roles": ["test"]}))
+        self.assertTrue(self.enforcer.enforce("default", {},
+                                              {"roles": ["fakeZ"]}))
+
+        # Reload from policy configuration files,
+        # but keep existing fake ones, then old policies
+        # still exists afterwards if there is no rule
+        # that overwrites it.
+        self.assertFalse(self.enforcer.enforce("default", {},
+                                               {"roles": ["fakeZ"]},
+                                               force_reload=True,
+                                               overwrite=False))
+        self.assertTrue(self.enforcer.enforce("test", {}, {"roles": ["test"]}))
+
+        # Check against rule dict again from enforcer object directly.
+        self.assertIn('test', self.enforcer.rules)
+        self.assertIn('default', self.enforcer.rules)
+        self.assertIn('admin', self.enforcer.rules)
+        loaded_rules = jsonutils.loads(str(self.enforcer.rules))
+        self.assertEqual(len(loaded_rules), 3)
+        self.assertIn('role:test', loaded_rules['test'])
+        self.assertIn('role:fakeB', loaded_rules['default'])
+        self.assertIn('is_admin:True', loaded_rules['admin'])
 
     def test_enforcer_force_reload_false(self):
         self.enforcer.set_rules({'test': 'test'})
@@ -293,8 +344,8 @@ class CheckFunctionTestCase(PolicyBaseTestCase):
 
         try:
             self.enforcer.enforce('rule', 'target', 'creds',
-                                  True, MyException, "arg1",
-                                  "arg2", kw1="kwarg1", kw2="kwarg2")
+                                  True, MyException, False, True,
+                                  "arg1", "arg2", kw1="kwarg1", kw2="kwarg2")
         except MyException as exc:
             self.assertEqual(exc.args, ("arg1", "arg2"))
             self.assertEqual(exc.kwargs, dict(kw1="kwarg1", kw2="kwarg2"))
