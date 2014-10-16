@@ -200,12 +200,99 @@ class EnforcerTest(PolicyBaseTestCase):
         creds = {'roles': ''}
         self.assertEqual(enforcer.enforce(action, {}, creds), True)
 
-    def test_enforcer_force_reload_true(self):
-        self.enforcer.set_rules({'test': 'test'})
-        self.enforcer.load_rules(force_reload=True)
-        self.assertNotIn({'test': 'test'}, self.enforcer.rules)
+    def test_enforcer_force_reload_with_overwrite(self):
+        # Prepare in memory fake policies.
+        self.enforcer.set_rules({'test': policy.parse_rule('role:test')},
+                                use_conf=True)
+        self.enforcer.set_rules({'default': policy.parse_rule('role:fakeZ')},
+                                overwrite=False,  # Keeps 'test' role.
+                                use_conf=True)
+
+        self.enforcer.overwrite = True
+
+        # Call enforce(), it will load rules from
+        # policy configuration files, to overwrite
+        # existing fake ones.
+        self.assertFalse(self.enforcer.enforce("test", {},
+                                               {"roles": ["test"]}))
+        self.assertTrue(self.enforcer.enforce("default", {},
+                                              {"roles": ["fakeB"]}))
+
+        # Check against rule dict again from
+        # enforcer object directly.
+        self.assertNotIn('test', self.enforcer.rules)
         self.assertIn('default', self.enforcer.rules)
         self.assertIn('admin', self.enforcer.rules)
+        loaded_rules = jsonutils.loads(str(self.enforcer.rules))
+        self.assertEqual(len(loaded_rules), 2)
+        self.assertIn('role:fakeB', loaded_rules['default'])
+        self.assertIn('is_admin:True', loaded_rules['admin'])
+
+    def test_enforcer_force_reload_without_overwrite(self):
+        # Prepare in memory fake policies.
+        self.enforcer.set_rules({'test': policy.parse_rule('role:test')},
+                                use_conf=True)
+        self.enforcer.set_rules({'default': policy.parse_rule('role:fakeZ')},
+                                overwrite=False,  # Keeps 'test' role.
+                                use_conf=True)
+
+        self.enforcer.overwrite = False
+
+        # Call enforce(), it will load rules from
+        # policy configuration files, to merge with
+        # existing fake ones.
+        self.assertTrue(self.enforcer.enforce("test", {},
+                                              {"roles": ["test"]}))
+        # The existing rules have a same key with
+        # new loaded ones will be overwrote.
+        self.assertFalse(self.enforcer.enforce("default", {},
+                                               {"roles": ["fakeZ"]}))
+
+        # Check against rule dict again from
+        # enforcer object directly.
+        self.assertIn('test', self.enforcer.rules)
+        self.assertIn('default', self.enforcer.rules)
+        self.assertIn('admin', self.enforcer.rules)
+        loaded_rules = jsonutils.loads(str(self.enforcer.rules))
+        self.assertEqual(len(loaded_rules), 3)
+        self.assertIn('role:test', loaded_rules['test'])
+        self.assertIn('role:fakeB', loaded_rules['default'])
+        self.assertIn('is_admin:True', loaded_rules['admin'])
+
+    def test_enforcer_keep_use_conf_flag_after_reload(self):
+        # We initialized enforcer with
+        # policy configure files.
+        enforcer = policy.Enforcer()
+        self.assertTrue(enforcer.use_conf)
+        self.assertTrue(enforcer.enforce("default", {},
+                                         {"roles": ["fakeB"]}))
+        self.assertFalse(enforcer.enforce("test", {},
+                                          {"roles": ["test"]}))
+        # After enforcement the flag should
+        # be remained there.
+        self.assertTrue(enforcer.use_conf)
+        self.assertFalse(enforcer.enforce("_dynamic_test_rule", {},
+                                          {"roles": ["test"]}))
+        # Then if configure file got changed,
+        # reloading will be triggered when calling
+        # enforcer(), this case could happen only
+        # when use_conf flag equals True.
+        rules = jsonutils.loads(str(enforcer.rules))
+        with open(enforcer.policy_path, 'r') as f:
+            ori_rules = f.read()
+
+        def _remove_dynamic_test_rule():
+            with open(enforcer.policy_path, 'w') as f:
+                f.write(ori_rules)
+        self.addCleanup(_remove_dynamic_test_rule)
+
+        rules['_dynamic_test_rule'] = 'role:test'
+
+        with open(enforcer.policy_path, 'w') as f:
+            f.write(jsonutils.dumps(rules))
+
+        self.assertTrue(enforcer.enforce("_dynamic_test_rule", {},
+                                         {"roles": ["test"]}))
 
     def test_enforcer_force_reload_false(self):
         self.enforcer.set_rules({'test': 'test'})
