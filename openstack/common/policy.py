@@ -235,12 +235,14 @@ class Enforcer(object):
         self.default_rule = None
         self.policy_path = None
 
-    def load_rules(self, force_reload=False):
+    def load_rules(self, force_reload=False, overwrite=True):
         """Loads policy_path's rules.
 
         Policy file is cached and will be reloaded if modified.
 
-        :param force_reload: Whether to overwrite current rules.
+        :param force_reload: Whether to reload rules from policy file.
+        :param overwrite: Whether to overwrite current rules or update them
+                          with the new rules.
         """
 
         if force_reload:
@@ -250,7 +252,7 @@ class Enforcer(object):
             if not self.policy_path:
                 self.policy_path = self._get_policy_path(self.policy_file)
 
-            self._load_policy_file(self.policy_path, force_reload)
+            self._load_policy_file(self.policy_path, force_reload, overwrite)
             for path in CONF.policy_dirs:
                 try:
                     path = self._get_policy_path(path)
@@ -297,8 +299,8 @@ class Enforcer(object):
 
         raise cfg.ConfigFilesNotFoundError((path,))
 
-    def enforce(self, rule, target, creds, do_raise=False,
-                exc=None, *args, **kwargs):
+    def enforce(self, rule, target, creds, do_raise=False, exc=None,
+                force_reload=False, overwrite=True, *args, **kwargs):
         """Checks authorization of a rule against the target and credentials.
 
         :param rule: A string or BaseCheck instance specifying the rule
@@ -314,6 +316,9 @@ class Enforcer(object):
                     positional and keyword arguments) will be passed to
                     the exception class. If not specified, PolicyNotAuthorized
                     will be used.
+        :param force_reload: Whether to reload rules from policy file.
+        :param overwrite: Whether to overwrite current rules or update them
+                          with the new rules.
 
         :return: Returns False if the policy does not allow the action and
                 exc is not provided; otherwise, returns a value that
@@ -322,7 +327,7 @@ class Enforcer(object):
                 from the expression.
         """
 
-        self.load_rules()
+        self.load_rules(force_reload=force_reload, overwrite=overwrite)
 
         # Allow the rule to be a Check tree
         if isinstance(rule, BaseCheck):
