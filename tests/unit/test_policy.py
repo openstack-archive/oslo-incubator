@@ -200,12 +200,30 @@ class EnforcerTest(PolicyBaseTestCase):
         creds = {'roles': ''}
         self.assertEqual(enforcer.enforce(action, {}, creds), True)
 
-    def test_enforcer_force_reload_true(self):
+    def test_enforcer_force_reload_true_overwrite_true(self):
         self.enforcer.set_rules({'test': 'test'})
-        self.enforcer.load_rules(force_reload=True)
-        self.assertNotIn({'test': 'test'}, self.enforcer.rules)
+        self.enforcer.load_rules(force_reload=True, overwrite=True)
+        self.assertNotIn('test', self.enforcer.rules)
         self.assertIn('default', self.enforcer.rules)
         self.assertIn('admin', self.enforcer.rules)
+        self.assertEqual('role', self.enforcer.rules['default'].kind)
+        self.assertEqual('fakeB', self.enforcer.rules['default'].match)
+        self.assertEqual('is_admin', self.enforcer.rules['admin'].kind)
+        self.assertEqual('True', self.enforcer.rules['admin'].match)
+
+    def test_enforcer_force_reload_true_overwrite_false(self):
+        self.enforcer.set_rules({'test': 'test',
+                                 'default': 'rule:foo',
+                                 'admin': 'is_admin:False'})
+        self.enforcer.load_rules(force_reload=True, overwrite=False)
+        self.assertIn('test', self.enforcer.rules)
+        self.assertIn('default', self.enforcer.rules)
+        self.assertIn('admin', self.enforcer.rules)
+        self.assertEqual('test', self.enforcer.rules['test'])
+        self.assertEqual('role', self.enforcer.rules['default'].kind)
+        self.assertEqual('fakeB', self.enforcer.rules['default'].match)
+        self.assertEqual('is_admin', self.enforcer.rules['admin'].kind)
+        self.assertEqual('True', self.enforcer.rules['admin'].match)
 
     def test_enforcer_force_reload_false(self):
         self.enforcer.set_rules({'test': 'test'})
@@ -284,8 +302,8 @@ class CheckFunctionTestCase(PolicyBaseTestCase):
 
         try:
             self.enforcer.enforce('rule', 'target', 'creds',
-                                  True, MyException, "arg1",
-                                  "arg2", kw1="kwarg1", kw2="kwarg2")
+                                  True, MyException, False, True,
+                                  "arg1", "arg2", kw1="kwarg1", kw2="kwarg2")
         except MyException as exc:
             self.assertEqual(exc.args, ("arg1", "arg2"))
             self.assertEqual(exc.kwargs, dict(kw1="kwarg1", kw2="kwarg2"))
