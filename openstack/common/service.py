@@ -193,9 +193,12 @@ class ServiceLauncher(Launcher):
         systemd.notify_once()
         while True:
             self.handle_signal()
-            status, signo = self._wait_for_exit_or_signal(ready_callback)
-            if not _is_sighup_and_daemon(signo):
-                return status
+            try:
+                status, signo = self._wait_for_exit_or_signal(ready_callback)
+                if not _is_sighup_and_daemon(signo):
+                    return status
+            except eventlet.greenlet.GreenletExit:
+                LOG.info(_("Wait called after thread killed. Cleaning up."))
             self.restart()
 
 
@@ -405,7 +408,7 @@ class ProcessLauncher(object):
                 self.running = True
                 self.sigcaught = None
         except eventlet.greenlet.GreenletExit:
-            LOG.info(_LI("Wait called after thread killed.  Cleaning up."))
+            LOG.info(_LI("Wait called after thread killed. Cleaning up."))
 
         self.stop()
 
