@@ -147,7 +147,12 @@ def execute(*cmd, **kwargs):
             raise NoRootWrapSpecified(
                 message=_('Command requested root, but did not '
                           'specify a root helper.'))
-        cmd = shlex.split(root_helper) + list(cmd)
+        if shell:
+            # root helper has to be injected into the command string
+            cmd = [' '.join((root_helper, cmd[0]))] + list(cmd[1:])
+        else:
+            # root helper has to be tokenized into argument list
+            cmd = shlex.split(root_helper) + list(cmd)
 
     cmd = map(str, cmd)
     sanitized_cmd = strutils.mask_password(' '.join(cmd))
