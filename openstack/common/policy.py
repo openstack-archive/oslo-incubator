@@ -101,7 +101,7 @@ policy_opts = [
                       'found.')),
     cfg.MultiStrOpt('policy_dirs',
                     default=['policy.d'],
-                    help=_('The directories of policy configuration files is '
+                    help=_('Directories where policy configuration files are '
                            'stored')),
 ]
 
@@ -299,7 +299,7 @@ class Enforcer(object):
         :param do_raise: Whether to raise an exception or not if check
                         fails.
         :param exc: Class of the exception to raise if the check fails.
-                    Any remaining arguments passed to check() (both
+                    Any remaining arguments passed to enforce() (both
                     positional and keyword arguments) will be passed to
                     the exception class. If not specified, PolicyNotAuthorized
                     will be used.
