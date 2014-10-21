@@ -158,6 +158,12 @@ M:
 S: Orphan
 F: memorycache.py
 
+== middleware ==
+
+ M: Steven Hardy <shardy@redhat.com>
+ S: Obsolete
+ F: middleware/
+
 == periodic_task ==
 
 M: Michael Still <mikal@stillhq.com>
