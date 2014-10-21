@@ -98,6 +98,7 @@ class HTTPClient(object):
         self.http = http or requests.Session()
 
         self.cached_token = None
+        self.last_request_id = None
 
     def _http_log_req(self, method, url, kwargs):
         if not self.debug:
@@ -176,6 +177,8 @@ class HTTPClient(object):
             self.times.append(("%s %s" % (method, url),
                                start_time, time.time()))
         self._http_log_resp(resp)
+
+        self.last_request_id = resp.headers.get('x-openstack-request-id')
 
         if resp.status_code >= 400:
             _logger.debug(
@@ -326,6 +329,10 @@ class BaseClient(object):
     def client_request(self, method, url, **kwargs):
         return self.http_client.client_request(
             self, method, url, **kwargs)
+
+    @property
+    def last_request_id(self):
+        return self.http_client.last_request_id
 
     def head(self, url, **kwargs):
         return self.client_request("HEAD", url, **kwargs)
