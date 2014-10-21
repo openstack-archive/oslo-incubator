@@ -193,8 +193,8 @@ class Enforcer(object):
 
     def __init__(self, policy_file=None, rules=None,
                  default_rule=None, use_conf=True):
-        self.rules = Rules(rules, default_rule)
         self.default_rule = default_rule or CONF.policy_default_rule
+        self.rules = Rules(rules, self.default_rule)
 
         self.policy_path = None
         self.policy_file = policy_file or CONF.policy_file

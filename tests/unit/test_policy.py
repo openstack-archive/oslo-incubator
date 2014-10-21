@@ -245,6 +245,15 @@ class EnforcerTest(PolicyBaseTestCase):
         self.enforcer.load_rules()
         self.assertEqual(self.enforcer.rules, {'test': 'test1'})
 
+    def test_enforcer_default_rule_name(self):
+        enforcer = policy.Enforcer(default_rule='foo_rule')
+        self.assertEqual('foo_rule', enforcer.rules.default_rule)
+        self.CONF.set_override('policy_default_rule', 'bar_rule')
+        enforcer = policy.Enforcer(default_rule='foo_rule')
+        self.assertEqual('foo_rule', enforcer.rules.default_rule)
+        enforcer = policy.Enforcer()
+        self.assertEqual('bar_rule', enforcer.rules.default_rule)
+
 
 class FakeCheck(policy.BaseCheck):
     def __init__(self, result=None):
