@@ -97,12 +97,6 @@ M: Monty Taylor <mordred@inaugust.com>
 S: Graduating
 F: fixture/
 
-== funcutils ==
-
-M: Joshua Harlow <harlowja@yahoo-inc.com>
-S: Maintained
-F: funcutils.py
-
 == imageutils ==
 
 M: Zhongyue Luo <zhongyue.nah@intel.com>
