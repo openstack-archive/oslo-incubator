@@ -97,12 +97,6 @@ M: Monty Taylor <mordred@inaugust.com>
 S: Graduating
 F: fixture/
 
-== funcutils ==
-
-M: Joshua Harlow <harlowja@yahoo-inc.com>
-S: Maintained
-F: funcutils.py
-
 == hooks ==
 
 M: Andrey Kurilin <akurilin@mirantis.com>
