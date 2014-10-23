@@ -15,6 +15,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import logging
+
+import fixtures
 import mock
 from oslotest import base as test_base
 import requests
@@ -205,6 +208,48 @@ class ClientTest(test_base.BaseTestCase):
             self.assertRaises(
                 exceptions.Unauthorized, http_client.client_request,
                 TestClient(http_client), "GET", "/resource", json={"1": "2"})
+
+    def test_log_req(self):
+        self.logger = self.useFixture(
+            fixtures.FakeLogger(
+                format="%(message)s",
+                level=logging.DEBUG,
+                nuke_handlers=True
+            )
+        )
+        cs = client.HTTPClient(FakeAuthPlugin())
+        cs.debug = True
+        cs._http_log_req('GET', '/foo', {'headers': {}})
+        BOGUS_HEADERS_1 = {'headers': {'X-Auth-Token': 'totally_bogus'}}
+        cs._http_log_req('GET', '/foo', BOGUS_HEADERS_1)
+        BOGUS_HEADERS_2 = {'headers': {
+            'X-Subject-Token': 'totally_bogus_subject_token'}
+        }
+        cs._http_log_req('GET', '/foo/bar', BOGUS_HEADERS_2)
+        BOGUS_HEADERS_3 = {'headers': {
+            'X-Foo': 'bar',
+            'X-Auth-Token': 'totally_bogus',
+            'X-Subject-Token': 'totally_bogus_subject_token'
+        }
+        }
+        cs._http_log_req('GET', '/foo', BOGUS_HEADERS_3)
+
+        output = self.logger.output.split('\n')
+
+        self.assertIn("REQ: curl -i -X 'GET' '/foo'", output)
+        self.assertIn("REQ: curl -i -X 'GET' '/foo' -H 'X-Auth-Token: "
+                      "{SHA1}b42162b6ffdbd7c3c37b7c95b7ba9f51dda0236d'",
+                      output)
+        self.assertIn("REQ: curl -i -X 'GET' '/foo/bar' -H 'X-Subject-Token: "
+                      "{SHA1}1999873bee4b1aed81b7abb168044a8cbbbccbd6'",
+                      output)
+        self.assertIn("REQ: curl -i -X 'GET' '/foo' "
+                      "-H 'X-Subject-Token: "
+                      "{SHA1}1999873bee4b1aed81b7abb168044a8cbbbccbd6' "
+                      "-H 'X-Foo: bar' "
+                      "-H 'X-Auth-Token: "
+                      "{SHA1}b42162b6ffdbd7c3c37b7c95b7ba9f51dda0236d'",
+                      output)
 
 
 class FakeClientTest(test_base.BaseTestCase):
