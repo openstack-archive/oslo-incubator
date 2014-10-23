@@ -17,8 +17,10 @@
 Unit Tests for thread groups
 """
 
+import multiprocessing
 import time
 
+import eventlet
 from oslotest import base as test_base
 
 from openstack.common import threadgroup
@@ -79,3 +81,75 @@ class ThreadGroupTestCase(test_base.BaseTestCase):
         self.assertEqual(1, len(self.tg.timers))
         self.tg.stop_timers()
         self.assertEqual(0, len(self.tg.timers))
+
+    def _test_pool_auto_expand(self, auto_expand):
+        tg = threadgroup.ThreadGroup(1)
+
+        # that's a hack to enable auto expansion while still starting
+        # with only one thread in the pool
+        tg.auto_expand_pool = auto_expand
+
+        self.wait_time = None
+        self.no_wait_time = None
+
+        def wait_callback():
+            # one second should be enough for another thread to spawn
+            # and complete execution, unless it's blocked due to no free
+            # threads in the greenthread pool (which is the case when
+            # auto_resize is False)
+            eventlet.greenthread.sleep(1)
+            self.wait_time = time.clock()
+
+        def no_wait_callback():
+            self.no_wait_time = time.clock()
+
+        tg.add_thread(wait_callback)
+        tg.add_thread(no_wait_callback)
+
+        tg.stop(True)
+
+        self.assertTrue(self.no_wait_time is not None)
+        self.assertTrue(self.wait_time is not None)
+
+        self.assertEqual(self.wait_time > self.no_wait_time, auto_expand)
+
+    def test_pool_auto_expand_negative(self):
+        self._test_pool_auto_expand(False)
+
+    def test_pool_auto_expand_positive(self):
+        self._test_pool_auto_expand(True)
+
+    def test_pool_size(self):
+        tg = threadgroup.ThreadGroup(1)
+
+        # that's a hack to enable auto expansion while still starting
+        # with only one thread in the pool
+        tg.auto_expand_pool = True
+
+        ready = multiprocessing.Event()
+
+        def wait_for_event():
+            ready.wait()
+
+        self.assertEqual(tg.pool.size, 1)
+
+        expected_size = 1
+        for i in range(100):
+            tg.add_thread(wait_for_event)
+
+            # while at it, determine the expected size that should be
+            # the first power of two that will accomodate all the
+            # threads, and still leaving more than 50% of the pool as
+            # free for later spawns
+            if expected_size < i / .5:
+                expected_size *= 2
+        self.assertEqual(tg.pool.size, expected_size)
+
+        # now allow all the threads to complete execution and free pool
+        # resources
+        ready.set()
+        tg.stop(True)
+
+        # once all the threads are complete, the pool size is still the
+        # same because there is no big reason to shrink it
+        self.assertEqual(tg.pool.size, expected_size)
