@@ -11,6 +11,9 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
+from __future__ import division
+
 import threading
 
 import eventlet
@@ -56,9 +59,19 @@ class ThreadGroup(object):
     * keep track of timers and greenthreads (making it easier to stop them
       when need be).
     * provide an easy API to add timers.
+
+    If thread_pool_size is 0, the underlying thread pool size is unlimited.
     """
     def __init__(self, thread_pool_size=10):
-        self.pool = greenpool.GreenPool(thread_pool_size)
+        self.auto_expand_pool = (thread_pool_size == 0)
+        if self.auto_expand_pool:
+            # it doesn't really matter which initial size is chosen for
+            # an auto expanding pool since large size does not result in
+            # any additional system resource booking, so default value
+            # is good enough
+            self.pool = greenpool.GreenPool()
+        else:
+            self.pool = greenpool.GreenPool(thread_pool_size)
         self.threads = []
         self.timers = []
 
@@ -77,7 +90,12 @@ class ThreadGroup(object):
         self.timers.append(pulse)
 
     def add_thread(self, callback, *args, **kwargs):
-        gt = self.pool.spawn(callback, *args, **kwargs)
+        pool = self.pool
+        if self.auto_expand_pool:
+            pool_size = pool.size
+            if pool.free() / pool_size < .5:
+                pool.resize(pool_size * 2)
+        gt = pool.spawn(callback, *args, **kwargs)
         th = Thread(gt, self)
         self.threads.append(th)
         return th
