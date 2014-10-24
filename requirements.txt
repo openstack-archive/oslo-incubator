@@ -7,7 +7,7 @@ anyjson>=0.3.3
 argparse
 eventlet>=0.15.2
 greenlet>=0.3.2
-Jinja2
+Jinja2>=2.6  # BSD License (3 clause)
 lockfile>=0.8
 netaddr>=0.7.12
 oslo.config>=1.4.0  # Apache-2.0
