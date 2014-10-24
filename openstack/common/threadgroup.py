@@ -128,6 +128,8 @@ class ThreadGroup(object):
         for x in self.timers:
             try:
                 x.wait()
+            except eventlet.greenlet.GreenletExit:
+                pass
             except Exception as ex:
                 LOG.exception(ex)
         current = threading.current_thread()
