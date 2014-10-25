@@ -38,7 +38,7 @@ from eventlet import event
 from oslo.config import cfg
 
 from openstack.common import eventlet_backdoor
-from openstack.common._i18n import _LE, _LI, _LW
+from openstack.common._i18n import _LE, _LI
 from openstack.common import log as logging
 from openstack.common import systemd
 from openstack.common import threadgroup
@@ -335,9 +335,14 @@ class ProcessLauncher(object):
     def _wait_child(self):
         try:
             # Don't block if no child processes have exited
-            pid, status = os.waitpid(0, os.WNOHANG)
-            if not pid:
-                return None
+            status = os.waitpid(0, os.WNOHANG)[1]
+            wrap = None
+            # In python3, keys() will return a view, need to wrap it to a list
+            for pid in list(self.children.keys()):
+                process_file_path = '/proc/%d' % pid
+                if not os.path.exists(process_file_path):
+                    wrap = self.children.pop(pid)
+                    wrap.children.remove(pid)
         except OSError as exc:
             if exc.errno not in (errno.EINTR, errno.ECHILD):
                 raise
@@ -352,12 +357,6 @@ class ProcessLauncher(object):
             LOG.info(_LI('Child %(pid)s exited with status %(code)d'),
                      dict(pid=pid, code=code))
 
-        if pid not in self.children:
-            LOG.warning(_LW('pid %d not in child list'), pid)
-            return None
-
-        wrap = self.children.pop(pid)
-        wrap.children.remove(pid)
         return wrap
 
     def _respawn_children(self):
