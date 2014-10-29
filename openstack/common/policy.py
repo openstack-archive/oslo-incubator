@@ -77,6 +77,7 @@ as it allows particular rules to be explicitly disabled.
 
 import abc
 import ast
+import copy
 import os
 import re
 
@@ -883,7 +884,17 @@ class HttpCheck(Check):
         """
 
         url = ('http:' + self.match) % target
-        data = {'target': jsonutils.dumps(target),
+
+        # Convert instances of object() in target temporarily to
+        # empty dict to avoid circular reference detection
+        # errors in jsonutils.dumps().
+        temp_target = copy.deepcopy(target)
+        for key in target.keys():
+            element = target.get(key)
+            if type(element) is object:
+                temp_target[key] = {}
+
+        data = {'target': jsonutils.dumps(temp_target),
                 'credentials': jsonutils.dumps(creds)}
         post_data = urlparse.urlencode(data)
         f = urlrequest.urlopen(url, post_data)

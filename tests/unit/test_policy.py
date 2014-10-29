@@ -907,7 +907,6 @@ class HttpCheckTestCase(PolicyBaseTestCase):
                        return_value=six.StringIO('True'))
     def test_accept(self, mock_urlopen):
         check = policy.HttpCheck('http', '//example.com/%(name)s')
-
         self.assertEqual(check(dict(name='target', spam='spammer'),
                                dict(user='user', roles=['a', 'b', 'c']),
                                self.enforcer),
@@ -940,6 +939,31 @@ class HttpCheckTestCase(PolicyBaseTestCase):
             target=dict(name='target', spam='spammer'),
             credentials=dict(user='user', roles=['a', 'b', 'c']),
         ))
+
+    @mock.patch.object(urlrequest, 'urlopen',
+                       return_value=six.StringIO('True'))
+    def test_http_with_objects_in_target(self, mock_urlopen):
+
+        check = policy.HttpCheck('http', '//example.com/%(name)s')
+        target = {'a': object(),
+                  'name': 'target',
+                  'b': 'test data'}
+        self.assertEqual(check(target,
+                               dict(user='user', roles=['a', 'b', 'c']),
+                               self.enforcer),
+                         True)
+
+    @mock.patch.object(urlrequest, 'urlopen',
+                       return_value=six.StringIO('True'))
+    def test_http_with_strings_in_target(self, mock_urlopen):
+        check = policy.HttpCheck('http', '//example.com/%(name)s')
+        target = {'a': 'some_string',
+                  'name': 'target',
+                  'b': 'test data'}
+        self.assertEqual(check(target,
+                               dict(user='user', roles=['a', 'b', 'c']),
+                               self.enforcer),
+                         True)
 
 
 class GenericCheckTestCase(PolicyBaseTestCase):
