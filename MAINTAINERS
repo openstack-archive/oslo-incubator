@@ -121,12 +121,6 @@ M: Zhongyue Luo <zhongyue.nah@intel.com>
 S: Maintained
 F: imageutils.py
 
-== local ==
-
-M:
-S: Graduating
-F: local.py
-
 == lockutils ==
 
 M: Michael Still <mikal@stillhq.com>

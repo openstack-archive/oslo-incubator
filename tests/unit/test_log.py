@@ -28,7 +28,6 @@ import six
 
 from openstack.common import context
 from openstack.common import fileutils
-from openstack.common import local
 from openstack.common import log
 
 
@@ -304,17 +303,17 @@ class ContextFormatterTestCase(LogTestBase):
 
     def test_context_is_taken_from_tls_variable(self):
         ctxt = _fake_context()
-        local.store.context = ctxt
+        log.set_context(ctxt)
         try:
             self.log.info("bar")
             expected = "HAS CONTEXT [%s]: bar\n" % ctxt.request_id
             self.assertEqual(expected, self.stream.getvalue())
         finally:
-            del local.store.context
+            log.set_context(None)
 
     def test_contextual_information_is_imparted_to_3rd_party_log_records(self):
         ctxt = _fake_context()
-        local.store.context = ctxt
+        log.set_context(ctxt)
         try:
             sa_log = logging.getLogger('sqlalchemy.engine')
             sa_log.setLevel(logging.INFO)
@@ -324,7 +323,7 @@ class ContextFormatterTestCase(LogTestBase):
                         "sqlalchemy\n" % ctxt.request_id)
             self.assertEqual(expected, self.stream.getvalue())
         finally:
-            del local.store.context
+            log.set_context(None)
 
     # def test_message_logging_3rd_party_log_records(self):
     #     ctxt = _fake_context()

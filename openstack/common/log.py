@@ -35,6 +35,7 @@ import logging.handlers
 import os
 import socket
 import sys
+import threading
 import traceback
 
 from oslo.config import cfg
@@ -46,7 +47,6 @@ from six import moves
 _PY26 = sys.version_info[0:2] == (2, 6)
 
 from openstack.common._i18n import _
-from openstack.common import local
 
 
 _DEFAULT_LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
@@ -224,6 +224,17 @@ def _get_log_file_path(binary=None):
     return None
 
 
+_context_store = threading.local()
+
+
+def set_context(ctxt):
+    _context_store.context = ctxt
+
+
+def get_context():
+    return getattr(_context_store, 'context', None)
+
+
 class BaseLoggerAdapter(logging.LoggerAdapter):
 
     def audit(self, msg, *args, **kwargs):
@@ -310,9 +321,7 @@ class ContextAdapter(BaseLoggerAdapter):
             kwargs['extra'] = {}
         extra = kwargs['extra']
 
-        context = kwargs.pop('context', None)
-        if not context:
-            context = getattr(local.store, 'context', None)
+        context = kwargs.pop('context', None) or get_context()
         if context:
             extra.update(_dictify_context(context))
 
@@ -598,7 +607,7 @@ class ContextFormatter(logging.Formatter):
     For information about what variables are available for the formatter see:
     http://docs.python.org/library/logging.html#formatter
 
-    If available, uses the context value stored in TLS - local.store.context
+    If available, uses the context value stored in TLS via set_context().
 
     """
 
@@ -634,7 +643,7 @@ class ContextFormatter(logging.Formatter):
         record.version = self.version
 
         # store request info
-        context = getattr(local.store, 'context', None)
+        context = get_context()
         if context:
             d = _dictify_context(context)
             for k, v in d.items():
