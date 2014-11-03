@@ -33,6 +33,7 @@ class FakeResponse(object):
 class ExceptionsArgsTest(test_base.BaseTestCase):
 
     def assert_exception(self, ex_cls, method, url, status_code, json_data,
+                         error_msg=None, error_details=None,
                          check_description=True):
         ex = exceptions.from_response(
             FakeResponse(status_code=status_code,
@@ -42,8 +43,10 @@ class ExceptionsArgsTest(test_base.BaseTestCase):
             url)
         self.assertTrue(isinstance(ex, ex_cls))
         if check_description:
-            self.assertEqual(ex.message, json_data["error"]["message"])
-            self.assertEqual(ex.details, json_data["error"]["details"])
+            expected_msg = error_msg or json_data["error"]["message"]
+            expected_details = error_details or json_data["error"]["details"]
+            self.assertEqual(ex.message, expected_msg)
+            self.assertEqual(ex.details, expected_details)
         self.assertEqual(ex.method, method)
         self.assertEqual(ex.url, url)
         self.assertEqual(ex.http_status, status_code)
@@ -77,3 +80,24 @@ class ExceptionsArgsTest(test_base.BaseTestCase):
         self.assert_exception(
             exceptions.BadRequest, method, url, status_code, json_data,
             check_description=False)
+
+    def test_from_response_with_different_response_format(self):
+        method = "GET"
+        url = "/fake-wsme"
+        status_code = 400
+        json_data1 = {"error_message": {"debuginfo": None,
+                                       "faultcode": "Client",
+                                       "faultstring": "fake message"}}
+        message = six.text_type(
+            json_data1["error_message"]["faultstring"])
+        details = six.text_type(json_data1)
+        self.assert_exception(
+            exceptions.BadRequest, method, url, status_code, json_data1,
+            message, details)
+
+        json_data2 = {"badRequest": {"message": "fake message", "code": 400}}
+        message = six.text_type(json_data2["badRequest"]["message"])
+        details = six.text_type(json_data2)
+        self.assert_exception(
+            exceptions.BadRequest, method, url, status_code, json_data2,
+            message, details)
