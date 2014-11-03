@@ -45,7 +45,11 @@ from six import moves
 
 _PY26 = sys.version_info[0:2] == (2, 6)
 
-from openstack.common._i18n import _
+try:
+    from openstack.common._i18n import _
+except ImportError:
+    _ = lambda x: x
+
 from openstack.common import local
 
 
