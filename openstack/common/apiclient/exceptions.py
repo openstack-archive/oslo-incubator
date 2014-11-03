@@ -439,10 +439,11 @@ def from_response(response, method, url):
         except ValueError:
             pass
         else:
-            if isinstance(body, dict) and isinstance(body.get("error"), dict):
-                error = body["error"]
-                kwargs["message"] = error.get("message")
-                kwargs["details"] = error.get("details")
+            if isinstance(body, dict):
+                error = body.get(body.keys()[0], {})
+                kwargs["message"] = (error.get("message") or
+                                     error.get("faultstring"))
+                kwargs["details"] = error.get("details") or six.text_type(body)
     elif content_type.startswith("text/"):
         kwargs["details"] = response.text
 
