@@ -326,66 +326,9 @@ class ContextFormatterTestCase(LogTestBase):
         finally:
             del local.store.context
 
-    # def test_message_logging_3rd_party_log_records(self):
-    #     ctxt = _fake_context()
-    #     local.store.context = ctxt
-    #     local.store.context.request_id = six.text_type('99')
-    #     try:
-    #         sa_log = logging.getLogger('sqlalchemy.engine')
-    #         sa_log.setLevel(logging.INFO)
-    #         message = gettextutils.Message('test ' + six.unichr(128))
-    #         sa_log.info(message)
-
-    #         expected = ("HAS CONTEXT [%s]: %s\n" % (ctxt.request_id,
-    #                                                 six.text_type(message)))
-    #         self.assertEqual(expected, self.stream.getvalue())
-    #     finally:
-    #         del local.store.context
-
     def test_debugging_log(self):
         self.log.debug("baz")
         self.assertEqual("NOCTXT: baz --DBG\n", self.stream.getvalue())
-
-    # def test_message_logging(self):
-    #     # NOTE(luisg): Logging message objects with unicode objects
-    #     # may cause trouble by the logging mechanism trying to coerce
-    #     # the Message object, with a wrong encoding. This test case
-    #     # tests that problem does not occur.
-    #     ctxt = _fake_context()
-    #     ctxt.request_id = six.text_type('99')
-    #     message = gettextutils.Message('test ' + six.unichr(128))
-    #     self.log.info(message, context=ctxt)
-    #     expected = "HAS CONTEXT [%s]: %s\n" % (ctxt.request_id,
-    #                                            six.text_type(message))
-    #     self.assertEqual(expected, self.stream.getvalue())
-
-    # def test_unicode_conversion_in_adapter(self):
-    #     ctxt = _fake_context()
-    #     ctxt.request_id = six.text_type('99')
-    #     message = "Exception is (%s)"
-    #     ex = Exception(gettextutils.Message('test' + six.unichr(128)))
-    #     self.log.debug(message, ex, context=ctxt)
-    #     message = six.text_type(message) % ex
-    #     expected = "HAS CONTEXT [%s]: %s --DBG\n" % (ctxt.request_id,
-    #                                                  message)
-    #     self.assertEqual(expected, self.stream.getvalue())
-
-    # def test_unicode_conversion_in_formatter(self):
-    #     ctxt = _fake_context()
-    #     local.store.context = ctxt
-    #     ctxt.request_id = six.text_type('99')
-    #     try:
-    #         no_adapt_log = logging.getLogger('no_adapt')
-    #         no_adapt_log.setLevel(logging.INFO)
-    #         message = "Exception is (%s)"
-    #         ex = Exception(gettextutils.Message('test' + six.unichr(128)))
-    #         no_adapt_log.info(message, ex)
-    #         message = six.text_type(message) % ex
-    #         expected = "HAS CONTEXT [%s]: %s\n" % (ctxt.request_id,
-    #                                                message)
-    #         self.assertEqual(expected, self.stream.getvalue())
-    #     finally:
-    #         del local.store.context
 
 
 class ExceptionLoggingTestCase(LogTestBase):
