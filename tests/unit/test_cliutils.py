@@ -12,9 +12,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import sys
+
 import fixtures
 import mock
 from oslotest import base as test_base
+import six
 
 from openstack.common import cliutils
 
@@ -547,6 +550,46 @@ class PrintResultTestCase(test_base.BaseTestCase):
         self.assertRaises(ValueError, cliutils.print_list,
                           objs, ["Name", "Value"], sortby_index=None,
                           field_labels=field_labels)
+
+
+class PrintResultStringTestCase(test_base.BaseTestCase):
+
+    def test_print_list_string(self):
+        objs = [_FakeResult("k1", 1)]
+        field_labels = ["Another Name", "Another Value"]
+
+        orig = sys.stdout
+        sys.stdout = six.StringIO()
+        cliutils.print_list(objs, ["Name", "Value"], sortby_index=0,
+                            field_labels=field_labels)
+        out = sys.stdout.getvalue()
+        sys.stdout.close()
+        sys.stdout = orig
+        expected = '''\
++--------------+---------------+
+| Another Name | Another Value |
++--------------+---------------+
+| k1           | 1             |
++--------------+---------------+
+'''
+        self.assertEqual(expected, out)
+
+    def test_print_dict_string(self):
+        orig = sys.stdout
+        sys.stdout = six.StringIO()
+        cliutils.print_dict({"K": "k", "Key": "Value"})
+        out = sys.stdout.getvalue()
+        sys.stdout.close()
+        sys.stdout = orig
+        expected = '''\
++----------+-------+
+| Property | Value |
++----------+-------+
+| K        | k     |
+| Key      | Value |
++----------+-------+
+'''
+        self.assertEqual(expected, out)
 
 
 class DecoratorsTestCase(test_base.BaseTestCase):
