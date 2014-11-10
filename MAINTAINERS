@@ -103,12 +103,6 @@ M: Joshua Harlow <harlowja@yahoo-inc.com>
 S: Maintained
 F: funcutils.py
 
-== gettextutils ==
-
-M: Mark McLoughlin <markmc@redhat.com>
-S: Obsolete
-F: gettextutils.py
-
 == hooks ==
 
 M: Andrey Kurilin <akurilin@mirantis.com>
@@ -139,12 +133,6 @@ F: lockutils.py
 M:
 S: Graduating
 F: log.py
-
-== log_handler ==
-
-M:
-S: Graduating
-F: log_handler.py
 
 == loopingcall ==
 
@@ -190,6 +178,12 @@ M: Sergey Skripnick <sskripnick@mirantis.com>
 S: Maintained
 F: quota.py
 
+== reports ==
+
+M: Solly Ross <sross@redhat.com>
+S: Maintained
+F: report/
+
 == requestutils ==
 
 M: Sandy Walsh <sandy.walsh@rackspace.com>
@@ -220,12 +214,6 @@ M: Alan Pevec <apevec@redhat.com>
 S: Maintained
 F: systemd.py
 
-== test ==
-
-M:
-S: Graduating
-F: test.py
-
 == threadgroup ==
 
 M:
@@ -243,9 +231,3 @@ F: uuidutils.py
 M:
 S: Orphan
 F: versionutils.py
-
-== reports ==
-
-M: Solly Ross <sross@redhat.com>
-S: Maintained
-F: report/
