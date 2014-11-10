@@ -111,7 +111,7 @@ class MatchMakerRedis(mm_common.HeartbeatMatchMakerBase):
             self.register(self.topic_host[host], host)
 
     def is_alive(self, topic, host):
-        if self.redis.ttl(host) == -1:
+        if self.redis.ttl(host) == None:
             self.expire(topic, host)
             return False
         return True
