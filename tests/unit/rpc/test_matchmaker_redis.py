@@ -116,7 +116,7 @@ class MatchMakerRedisHeartbeatTestCase(test.BaseTestCase,
         ttl2 = self.driver.redis.ttl(key_host)
 
         # Tests that host has actually expired.
-        self.assertEqual(ttl2, -1)
+        self.assertEqual(ttl2, None)
 
     def test_expired_hosts_removed(self):
         """Test that expired hosts are removed from results."""
