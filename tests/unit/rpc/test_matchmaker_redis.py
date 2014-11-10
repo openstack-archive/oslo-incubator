@@ -102,10 +102,10 @@ class MatchMakerRedisHeartbeatTestCase(test_base.BaseTestCase,
         self.assertTrue(ttl > -1)
 
     def test_expires_hosts(self):
-        """Tests that hosts expire.
+        """Tests hosts expiration.
 
         Registers a host, ensures it is registered, then waits for it to
-        expire. Ensures is no longer registered.
+        expire. Finally, ensures it is no longer registered.
         """
         self.driver.register(self.topic, self.hosts[0])
 
@@ -115,12 +115,10 @@ class MatchMakerRedisHeartbeatTestCase(test_base.BaseTestCase,
         eventlet.sleep(ttl + 1)
         ttl2 = self.driver.redis.ttl(key_host)
 
-        # Tests that host has actually expired.
-        self.assertEqual(ttl2, -1)
+        # Tests that host has actually expired
+        self.assertEqual(ttl2, None)
 
-    def test_expired_hosts_removed(self):
-        """Test that expired hosts are removed from results."""
-        self.test_expires_hosts()
+        # Tests that host is removed from results
         self.assertEqual(self.driver.queues(self.topic), [])
 
 
