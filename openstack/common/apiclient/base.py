@@ -20,6 +20,20 @@
 Base utilities to build API operation managers and objects on top of.
 """
 
+########################################################################
+##
+## THIS MODULE IS DEPRECATED
+##
+## Please refer to
+## https://etherpad.openstack.org/p/kilo-oslo-library-proposals for
+## the discussion leading to this deprecation.
+##
+## We recommend checking out the python-openstacksdk project
+## (https://launchpad.net/python-openstacksdk) instead.
+##
+########################################################################
+
+
 # E1102: %s is not callable
 # pylint: disable=E1102
 
