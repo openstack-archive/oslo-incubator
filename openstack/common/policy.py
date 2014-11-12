@@ -102,7 +102,7 @@ policy_opts = [
     cfg.MultiStrOpt('policy_dirs',
                     default=['policy.d'],
                     help=_('Directories where policy configuration files are '
-                           'stored')),
+                           'stored.')),
 ]
 
 CONF = cfg.CONF
@@ -245,7 +245,7 @@ class Enforcer(object):
                 try:
                     path = self._get_policy_path(path)
                 except cfg.ConfigFilesNotFoundError:
-                    LOG.warn(_LW("Can not find policy directories %s"), path)
+                    LOG.warn(_LW("Can not find policy directory: %s"), path)
                     continue
                 self._walk_through_policy_directory(path,
                                                     self._load_policy_file,
