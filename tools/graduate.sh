@@ -91,10 +91,10 @@ done
 # Purge all parents for those commits
 
 set_roots="
-if [ '' $(for root in $roots; do echo " -o \"\$GIT_COMMIT\" == '$root' "; done) ]; then
-    echo ''
+if [ 1 -eq 0 $(for root in $roots; do echo " -o \"\$GIT_COMMIT\" = '$root' "; done) ]; then
+    echo '';
 else
-    cat
+    cat;
 fi"
 
 # Enhance git_commit_non_empty_tree to skip merges with:
