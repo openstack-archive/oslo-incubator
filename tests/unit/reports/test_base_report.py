@@ -79,16 +79,9 @@ class TestBaseModel(base.BaseTestCase):
 
     def test_str_throws_error_with_no_attached_view(self):
         model = base_model.ReportModel(data={'c': [1, 2, 3]})
-
-        # ugly code for python 2.6 compat, since python 2.6
-        # does not have assertRaisesRegexp
-        try:
+        with self.assertRaisesRegexp(Exception,
+            'Cannot stringify model: no attached view'):
             str(model)
-        except Exception as e:
-            err_str = 'Cannot stringify model: no attached view'
-            self.assertEqual(str(e), err_str)
-        else:
-            self.assertTrue(False)
 
     def test_str_returns_string_with_attached_view(self):
         model = base_model.ReportModel(data={'a': 1, 'b': 2},
