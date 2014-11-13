@@ -22,7 +22,7 @@
 # Stop if there are any command failures
 set -e
 
-COOKIECUTTER_TEMPLATE_REPO=https://git.openstack.org/openstack-dev/oslo-cookiecutter
+COOKIECUTTER_TEMPLATE_REPO=${COOKIECUTTER_TEMPLATE_REPO:-https://git.openstack.org/openstack-dev/oslo-cookiecutter}
 
 tmpdir=$(mktemp -d -t oslo-graduate.XXXX)
 mkdir -p $tmpdir
