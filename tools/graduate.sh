@@ -120,19 +120,21 @@ git filter-branch --index-filter "$pruner" --parent-filter "$set_roots" --commit
 
 # Move things around
 echo "Moving files into place..."
-git mv openstack oslo
-if [[ -d oslo/common/$new_lib ]]; then
-    git mv oslo/common/$new_lib oslo/$new_lib
+if [[ -d openstack/common/$new_lib ]]; then
+    git mv openstack/common/$new_lib oslo_${new_lib}
 else
-    git mv oslo/common oslo/$new_lib
+    git mv openstack/common oslo_${new_lib}
 fi
+rmdir openstack
+git mv tests/* oslo_${new_lib}/tests/
+rmdir tests
 
 # Fix imports after moving files
 echo "Fixing imports..."
-if [[ -d oslo/$new_lib ]]; then
-    find . -name '*.py' -exec sed -i "s/openstack.common.${new_lib}/oslo.${new_lib}/" {} \;
+if [[ -d oslo_${new_lib} ]]; then
+    find . -name '*.py' -exec sed -i "s/openstack.common.${new_lib}/oslo_${new_lib}/" {} \;
 else
-    find . -name '*.py' -exec sed -i "s/openstack.common/oslo.${new_lib}/" {} \;
+    find . -name '*.py' -exec sed -i "s/openstack.common/oslo_${new_lib}/" {} \;
 fi
 
 # Apply the cookiecutter template by building out a fresh copy using
