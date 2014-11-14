@@ -251,7 +251,8 @@ class Enforcer(object):
                                                     self._load_policy_file,
                                                     force_reload, False)
 
-    def _walk_through_policy_directory(self, path, func, *args):
+    @staticmethod
+    def _walk_through_policy_directory(path, func, *args):
         # We do not iterate over sub-directories.
         policy_files = next(os.walk(path))[2]
         policy_files.sort()
