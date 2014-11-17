@@ -27,6 +27,7 @@ It also allows setting of formatting information through conf.
 
 """
 
+import copy
 import inspect
 import itertools
 import logging
@@ -173,6 +174,16 @@ CONF.register_cli_opts(common_cli_opts)
 CONF.register_cli_opts(logging_cli_opts)
 CONF.register_opts(generic_log_opts)
 CONF.register_opts(log_opts)
+
+
+def list_opts():
+    """Entry point for oslo-config-generator."""
+    return [(None, copy.deepcopy(common_cli_opts)),
+            (None, copy.deepcopy(logging_cli_opts)),
+            (None, copy.deepcopy(generic_log_opts)),
+            (None, copy.deepcopy(log_opts)),
+            ]
+
 
 # our new audit level
 # NOTE(jkoelker) Since we synthesized an audit level, make the logging
