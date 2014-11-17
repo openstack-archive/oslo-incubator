@@ -185,6 +185,7 @@ def _check_obsolete(path):
 OSLO_LIBS = [
     'concurrency',
     'config',
+    'context',
     'db',
     'i18n',
     'log',
