@@ -51,7 +51,7 @@ Each API has an entry with the following keys:
 == apiclient ==
 
 M: Alessio Ababilov <aababilov@griddynamics.com>
-S: Maintained
+S: Deprecated
 F: apiclient/
 
 == cache ==

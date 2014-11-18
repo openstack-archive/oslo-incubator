@@ -11,6 +11,19 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+########################################################################
+#
+# THIS MODULE IS DEPRECATED
+#
+# Please refer to
+# https://etherpad.openstack.org/p/kilo-oslo-library-proposals for
+# the discussion leading to this deprecation.
+#
+# We recommend checking out the python-openstacksdk project
+# (https://launchpad.net/python-openstacksdk) instead.
+#
+########################################################################
+
 from oslo.utils import encodeutils
 import six
 
