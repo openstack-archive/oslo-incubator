@@ -58,7 +58,7 @@ F: apiclient/
 
 M: Flavio Percoco <flavio@redhat.com>
 M: Morgan Fainberg <m@metacloud.com>
-S: Maintained
+S: Deprecated
 F: cache/
 
 == cliutils ==
