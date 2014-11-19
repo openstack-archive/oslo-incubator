@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import collections as col
 import re
 
 from oslotest import base
@@ -115,3 +116,35 @@ class TestBaseModel(base.BaseTestCase):
         self.assertEqual(model.a, 1)
 
         self.assertRaises(AttributeError, getattr, model, 'b')
+
+    def test_data_as_sequence_is_handled_properly(self):
+        model = base_model.ReportModel(data=['a', 'b'])
+        model.attached_view = BasicView()
+
+        # if we don't handle lists properly, we'll get a TypeError here
+        self.assertEqual('0: a;1: b;', str(model))
+
+    def test_immutable_mappings_produce_mutable_models(self):
+        class SomeImmutableMapping(col.Mapping):
+            def __init__(self):
+                self.data = {'a': 2, 'b': 4, 'c': 8}
+
+            def __getitem__(self, key):
+                return self.data[key]
+
+            def __len__(self):
+                return len(self.data)
+
+            def __iter__(self):
+                return iter(self.data)
+
+        mp = SomeImmutableMapping()
+        model = base_model.ReportModel(data=mp)
+        model.attached_view = BasicView()
+
+        self.assertEqual('a: 2;b: 4;c: 8;', str(model))
+
+        model['d'] = 16
+
+        self.assertEqual('a: 2;b: 4;c: 8;d: 16;', str(model))
+        self.assertEqual({'a': 2, 'b': 4, 'c': 8}, mp.data)
