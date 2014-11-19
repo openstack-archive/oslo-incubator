@@ -103,7 +103,10 @@ policy_opts = [
     cfg.MultiStrOpt('policy_dirs',
                     default=['policy.d'],
                     help=_('Directories where policy configuration files are '
-                           'stored.')),
+                           'stored. They can be either relative to the '
+                           'configuration directory or absolute. The file '
+                           'defined by policy_file must exist for these '
+                           'directories to be searched.')),
 ]
 
 CONF = cfg.CONF
