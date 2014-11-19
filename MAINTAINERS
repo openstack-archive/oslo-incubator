@@ -70,7 +70,7 @@ F: cliutils.py
 == context ==
 
 M:
-S: Obsolete
+S: Graduating
 F: context.py
 
 == crypto ==
