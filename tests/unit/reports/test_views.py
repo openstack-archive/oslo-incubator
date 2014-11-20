@@ -18,7 +18,7 @@ import mock
 from oslotest import base
 
 from openstack.common.report.models import base as base_model
-from openstack.common.report.models import with_default_views as mwdf
+from openstack.common.report.models import with_default_views as mwdv
 from openstack.common.report import report
 from openstack.common.report.views import jinja_view as jv
 from openstack.common.report.views.json import generic as json_generic
@@ -26,7 +26,7 @@ from openstack.common.report.views.text import generic as text_generic
 
 
 def mwdv_generator():
-    return mwdf.ModelWithDefaultViews(data={'string': 'value', 'int': 1})
+    return mwdv.ModelWithDefaultViews(data={'string': 'value', 'int': 1})
 
 
 class TestModelReportType(base.BaseTestCase):
@@ -44,7 +44,7 @@ class TestModelReportType(base.BaseTestCase):
         self.assertEqual('<model><int>1</int><string>value</string></model>',
                          str(model))
 
-    def test_recursive_type_propogation(self):
+    def test_recursive_type_propagation_with_nested_models(self):
         model = mwdv_generator()
         model['submodel'] = mwdv_generator()
 
@@ -52,6 +52,35 @@ class TestModelReportType(base.BaseTestCase):
 
         self.assertEqual(model.submodel.views['json'],
                          model.submodel.attached_view)
+
+    def test_recursive_type_propagation_with_nested_dicts(self):
+        nested_model = mwdv.ModelWithDefaultViews(json_view='abc')
+        data = {'a': 1, 'b': {'c': nested_model}}
+        top_model = base_model.ReportModel(data=data)
+
+        top_model.set_current_view_type('json')
+        self.assertEqual(nested_model.attached_view,
+                         nested_model.views['json'])
+
+    def test_recursive_type_propagation_with_nested_lists(self):
+        nested_model = mwdv_generator()
+        data = {'a': 1, 'b': [nested_model]}
+        top_model = base_model.ReportModel(data=data)
+
+        top_model.set_current_view_type('json')
+        self.assertEqual(nested_model.attached_view,
+                         nested_model.views['json'])
+
+    def test_recursive_type_propogation_on_recursive_structures(self):
+        nested_model = mwdv_generator()
+        data = {'a': 1, 'b': [nested_model]}
+        nested_model['c'] = data
+        top_model = base_model.ReportModel(data=data)
+
+        top_model.set_current_view_type('json')
+        self.assertEqual(nested_model.attached_view,
+                         nested_model.views['json'])
+        del nested_model['c']
 
     def test_report_of_type(self):
         rep = report.ReportOfType('json')
