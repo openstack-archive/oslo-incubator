@@ -70,6 +70,36 @@ class ServiceWithTimer(service.Service):
 class ServiceTestBase(test_base.BaseTestCase):
     """A base class for ServiceLauncherTest and ServiceRestartTest."""
 
+    def _spawn_service(self, workers=1, *args, **kwargs):
+        self.workers = workers
+        pid = os.fork()
+        if pid == 0:
+            os.setsid()
+            # NOTE(johannes): We can't let the child processes exit back
+            # into the unit test framework since then we'll have multiple
+            # processes running the same tests (and possibly forking more
+            # processes that end up in the same situation). So we need
+            # to catch all exceptions and make sure nothing leaks out, in
+            # particular SystemExit, which is raised by sys.exit(). We use
+            # os._exit() which doesn't have this problem.
+            status = 0
+            try:
+                serv = ServiceWithTimer()
+                launcher = service.launch(serv, workers=workers)
+                launcher.wait(*args, **kwargs)
+            except SystemExit as exc:
+                status = exc.code
+            except BaseException:
+                # We need to be defensive here too
+                try:
+                    traceback.print_exc()
+                except BaseException:
+                    print("Couldn't print traceback")
+                status = 2
+            # Really exit
+            os._exit(status)
+        return pid
+
     def _wait(self, cond, timeout):
         start = time.time()
         while not cond():
@@ -103,37 +133,7 @@ class ServiceLauncherTest(ServiceTestBase):
     """Originally from nova/tests/integrated/test_multiprocess_api.py."""
 
     def _spawn(self):
-        self.workers = 2
-        pid = os.fork()
-        if pid == 0:
-            os.setsid()
-            # NOTE(johannes): We can't let the child processes exit back
-            # into the unit test framework since then we'll have multiple
-            # processes running the same tests (and possibly forking more
-            # processes that end up in the same situation). So we need
-            # to catch all exceptions and make sure nothing leaks out, in
-            # particular SystemExit, which is raised by sys.exit(). We use
-            # os._exit() which doesn't have this problem.
-            status = 0
-            try:
-                launcher = service.ProcessLauncher()
-                serv = ServiceWithTimer()
-                launcher.launch_service(serv, workers=self.workers)
-                launcher.wait()
-            except SystemExit as exc:
-                status = exc.code
-            except BaseException:
-                # We need to be defensive here too
-                try:
-                    traceback.print_exc()
-                except BaseException:
-                    print("Couldn't print traceback")
-                status = 2
-
-            # Really exit
-            os._exit(status)
-
-        self.pid = pid
+        self.pid = self._spawn_service(workers=2)
 
         # Wait at most 10 seconds to spawn workers
         cond = lambda: self.workers == len(self._get_workers())
@@ -227,25 +227,14 @@ class ServiceLauncherTest(ServiceTestBase):
 
 class ServiceRestartTest(ServiceTestBase):
 
-    def _spawn_service(self):
+    def _spawn(self):
         ready_event = multiprocessing.Event()
-        pid = os.fork()
-        status = 0
-        if pid == 0:
-            os.setsid()
-            try:
-                serv = ServiceWithTimer()
-                launcher = service.ServiceLauncher()
-                launcher.launch_service(serv)
-                launcher.wait(ready_callback=ready_event.set)
-            except SystemExit as exc:
-                status = exc.code
-            os._exit(status)
-        self.pid = pid
+        self.pid = self._spawn_service(workers=1,
+                                       ready_callback=ready_event.set)
         return ready_event
 
     def test_service_restart(self):
-        ready = self._spawn_service()
+        ready = self._spawn()
 
         timeout = 5
         ready.wait(timeout)
@@ -257,7 +246,7 @@ class ServiceRestartTest(ServiceTestBase):
         self.assertTrue(ready.is_set(), 'Service never back after SIGHUP')
 
     def test_terminate_sigterm(self):
-        ready = self._spawn_service()
+        ready = self._spawn()
         timeout = 5
         ready.wait(timeout)
         self.assertTrue(ready.is_set(), 'Service never became ready')
