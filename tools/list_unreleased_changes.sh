@@ -14,7 +14,7 @@
 #
 # Provide a list of the unreleased changes in the oslo libraries.
 
-bindir=$(dirname $0)
+bindir=$(cd $(dirname $0) && pwd)
 repodir=$(cd $bindir/../../.. && pwd)
 
 # Make sure no pager is configured so the output is not blocked
@@ -32,8 +32,8 @@ fi
 # release.
 function get_last_tag {
     git for-each-ref --sort=taggerdate --format '%(refname)' refs/tags \
-        | tail -n 1 \
-        | sed -e 's|refs/tags/||'
+        | sed -e 's|refs/tags/||' \
+        | ${bindir}/highest_semver.py
 }
 
 # Show the unreleased changes for each library.
