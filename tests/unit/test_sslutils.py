@@ -34,9 +34,14 @@ class SSLUtilsTest(test_base.BaseTestCase):
         else:
             self.assertEqual(sslutils.validate_ssl_version("SSLv2"), protocol)
 
+        try:
+            protocol = ssl.PROTOCOL_SSLv3
+        except AttributeError:
+            pass
+        else:
+            self.assertEqual(sslutils.validate_ssl_version("SSLv3"), protocol)
+
     def test_lowercase_valid_versions(self):
-        self.assertEqual(sslutils.validate_ssl_version("sslv3"),
-                         ssl.PROTOCOL_SSLv3)
         self.assertEqual(sslutils.validate_ssl_version("sslv23"),
                          ssl.PROTOCOL_SSLv23)
         self.assertEqual(sslutils.validate_ssl_version("tlsv1"),
@@ -47,6 +52,14 @@ class SSLUtilsTest(test_base.BaseTestCase):
             pass
         else:
             self.assertEqual(sslutils.validate_ssl_version("sslv2"),
+                             protocol)
+
+        try:
+            protocol = ssl.PROTOCOL_SSLv3
+        except AttributeError:
+            pass
+        else:
+            self.assertEqual(sslutils.validate_ssl_version("sslv3"),
                              protocol)
 
     def test_invalid_version(self):
@@ -62,3 +75,11 @@ class SSLUtilsTest(test_base.BaseTestCase):
             self.assertRaises(RuntimeError,
                               sslutils.validate_ssl_version,
                               "SSLv2")
+
+        # The same is now true of SSLv3
+        try:
+            ssl.PROTOCOL_SSLv3
+        except AttributeError:
+            self.assertRaises(RuntimeError,
+                              sslutils.validate_ssl_version,
+                              "SSLv3")
