@@ -82,13 +82,13 @@ class TestOpenstackGenerators(base.BaseTestCase):
 
         target_str = ('\ncheese: \n'
                       '  from_cow = True\n'
-                      '  group_secrets = *******\n'
+                      '  group_secrets = ***\n'
                       '  name = cheddar\n'
                       '  sharpness = 1\n'
                       '\n'
                       'default: \n'
                       '  crackers = triscuit\n'
-                      '  secrets = *******')
+                      '  secrets = ***')
         self.assertEqual(target_str, str(model))
 
     def test_package_report_generator(self):
