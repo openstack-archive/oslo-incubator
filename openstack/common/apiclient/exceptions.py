@@ -67,8 +67,13 @@ class AuthorizationFailure(ClientException):
     pass
 
 
-class ConnectionRefused(ClientException):
+class ConnectionError(ClientException):
     """Cannot connect to API service."""
+    pass
+
+
+class ConnectionRefused(ConnectionError):
+    """Connection refused while trying to connect to API service."""
     pass
 
 
