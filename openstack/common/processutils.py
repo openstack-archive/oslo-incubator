@@ -24,6 +24,7 @@ import os
 import random
 import shlex
 import signal
+import sys
 
 from eventlet.green import subprocess
 from eventlet import greenthread
@@ -59,15 +60,23 @@ class ProcessExecutionError(Exception):
             description = _("Unexpected error while running command.")
         if exit_code is None:
             exit_code = '-'
+        if six.PY3:
+            data = {'description': description,
+                    'cmd': cmd,
+                    'exit_code': exit_code,
+                    'stdout': os.fsdecode(stdout) if stdout is not None else None,
+                    'stderr': os.fsdecode(stderr) if stderr is not None else None}
+        else:
+            data = {'description': description,
+                    'cmd': cmd,
+                    'exit_code': exit_code,
+                    'stdout': stdout,
+                    'stderr': stderr}
         message = _('%(description)s\n'
                     'Command: %(cmd)s\n'
                     'Exit code: %(exit_code)s\n'
                     'Stdout: %(stdout)r\n'
-                    'Stderr: %(stderr)r') % {'description': description,
-                                             'cmd': cmd,
-                                             'exit_code': exit_code,
-                                             'stdout': stdout,
-                                             'stderr': stderr}
+                    'Stderr: %(stderr)r') % data
         super(ProcessExecutionError, self).__init__(message)
 
 
@@ -149,7 +158,7 @@ def execute(*cmd, **kwargs):
                           'specify a root helper.'))
         cmd = shlex.split(root_helper) + list(cmd)
 
-    cmd = map(str, cmd)
+    cmd = list(map(str, cmd))
     sanitized_cmd = strutils.mask_password(' '.join(cmd))
 
     while attempts > 0:
