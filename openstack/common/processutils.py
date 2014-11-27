@@ -59,6 +59,11 @@ class ProcessExecutionError(Exception):
             description = _("Unexpected error while running command.")
         if exit_code is None:
             exit_code = '-'
+        if six.PY3:
+            if stdout is not None:
+                stdout = os.fsdecode(stdout)
+            if stderr is not None:
+                stderr = os.fsdecode(stderr)
         message = _('%(description)s\n'
                     'Command: %(cmd)s\n'
                     'Exit code: %(exit_code)s\n'
@@ -80,6 +85,32 @@ def _subprocess_setup():
     # Python installs a SIGPIPE handler by default. This is usually not what
     # non-Python subprocesses expect.
     signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+
+
+def _mask_password(message, secret="***"):
+    """Wrapper to mask_password() which supports bytes.
+
+    If message is a bytes string, use the filesystem encoding to process
+    the message, and then encode it back to bytes.
+    """
+    is_bytes = isinstance(message, six.binary_type)
+    if is_bytes:
+        if six.PY3:
+            # os.fsdecode() cannot fail, it escapes non decodable characters to
+            # surrogate characters (see the PEP 383).
+            message = os.fsdecode(message)
+        else:
+            # Decoding from ISO-8859-1 encoding cannot fail. mask_password()
+            # matches patterns encodable to ASCII, so using ISO-8859-1 should
+            # be fine to mask passwords, even if message is encoded to UTF-8.
+            message = message.decode('ISO-8859-1')
+    message = strutils.mask_password(message, secret)
+    if is_bytes:
+        if six.PY3:
+            message = os.fsencode(message)
+        else:
+            message = message.encode('ISO-8859-1')
+    return message
 
 
 def execute(*cmd, **kwargs):
@@ -149,7 +180,7 @@ def execute(*cmd, **kwargs):
                           'specify a root helper.'))
         cmd = shlex.split(root_helper) + list(cmd)
 
-    cmd = map(str, cmd)
+    cmd = list(map(str, cmd))
     sanitized_cmd = strutils.mask_password(' '.join(cmd))
 
     while attempts > 0:
@@ -192,8 +223,8 @@ def execute(*cmd, **kwargs):
             LOG.log(loglevel, 'Result was %s' % _returncode)
             if not ignore_exit_code and _returncode not in check_exit_code:
                 (stdout, stderr) = result
-                sanitized_stdout = strutils.mask_password(stdout)
-                sanitized_stderr = strutils.mask_password(stderr)
+                sanitized_stdout = _mask_password(stdout)
+                sanitized_stderr = _mask_password(stderr)
                 raise ProcessExecutionError(exit_code=_returncode,
                                             stdout=sanitized_stdout,
                                             stderr=sanitized_stderr,
@@ -257,9 +288,9 @@ def ssh_execute(ssh, cmd, process_input=None,
     # NOTE(justinsb): This seems suspicious...
     # ...other SSH clients have buffering issues with this approach
     stdout = stdout_stream.read()
-    sanitized_stdout = strutils.mask_password(stdout)
+    sanitized_stdout = _mask_password(stdout)
     stderr = stderr_stream.read()
-    sanitized_stderr = strutils.mask_password(stderr)
+    sanitized_stderr = _mask_password(stderr)
 
     stdin_stream.close()
 
