@@ -24,6 +24,7 @@ import os
 import random
 import shlex
 import signal
+import sys
 
 from eventlet.green import subprocess
 from eventlet import greenthread
@@ -116,6 +117,13 @@ def execute(*cmd, **kwargs):
     :type shell:            boolean
     :param loglevel:        log level for execute commands.
     :type loglevel:         int.  (Should be logging.DEBUG or logging.INFO)
+    :param encoding:        encoding used to decode stdout and stderr,
+                            sys.getfilesystemencoding() by default.
+    :type encoding:         str
+    :param errors:          error handler used to decode stdout and stderr,
+                            default: 'surrogateescape' on Python 3,
+                            'strict' on Python 2.
+    :type errors:           str
     :returns:               (stdout, stderr) from process execution
     :raises:                :class:`UnknownArgumentError` on
                             receiving unknown arguments
@@ -132,6 +140,8 @@ def execute(*cmd, **kwargs):
     root_helper = kwargs.pop('root_helper', '')
     shell = kwargs.pop('shell', False)
     loglevel = kwargs.pop('loglevel', logging.DEBUG)
+    encoding = kwargs.pop('encoding', sys.getfilesystemencoding())
+    errors = kwargs.pop('errors', 'surrogateescape' if six.PY3 else 'strict')
 
     if isinstance(check_exit_code, bool):
         ignore_exit_code = not check_exit_code
@@ -149,7 +159,7 @@ def execute(*cmd, **kwargs):
                           'specify a root helper.'))
         cmd = shlex.split(root_helper) + list(cmd)
 
-    cmd = map(str, cmd)
+    cmd = list(map(str, cmd))
     sanitized_cmd = strutils.mask_password(' '.join(cmd))
 
     while attempts > 0:
@@ -190,6 +200,11 @@ def execute(*cmd, **kwargs):
             obj.stdin.close()  # pylint: disable=E1101
             _returncode = obj.returncode  # pylint: disable=E1101
             LOG.log(loglevel, 'Result was %s' % _returncode)
+            if result is not None:
+                (stdout, stderr) = result
+                stdout = stdout.decode(encoding, errors)
+                stderr = stderr.decode(encoding, errors)
+                result = (stdout, stderr)
             if not ignore_exit_code and _returncode not in check_exit_code:
                 (stdout, stderr) = result
                 sanitized_stdout = strutils.mask_password(stdout)
@@ -241,7 +256,9 @@ def trycmd(*args, **kwargs):
 
 
 def ssh_execute(ssh, cmd, process_input=None,
-                addl_env=None, check_exit_code=True):
+                addl_env=None, check_exit_code=True,
+                encoding=sys.getfilesystemencoding(),
+                errors='surrogateescape' if six.PY3 else 'strict'):
     sanitized_cmd = strutils.mask_password(cmd)
     LOG.debug('Running cmd (SSH): %s', sanitized_cmd)
     if addl_env:
@@ -257,8 +274,10 @@ def ssh_execute(ssh, cmd, process_input=None,
     # NOTE(justinsb): This seems suspicious...
     # ...other SSH clients have buffering issues with this approach
     stdout = stdout_stream.read()
+    stdout = stdout.decode(encoding, errors)
     sanitized_stdout = strutils.mask_password(stdout)
     stderr = stderr_stream.read()
+    stderr = stderr.decode(encoding, errors)
     sanitized_stderr = strutils.mask_password(stderr)
 
     stdin_stream.close()
