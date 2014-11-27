@@ -113,8 +113,8 @@ class ProcessExecutionErrorTest(test_base.BaseTestCase):
         fd, tmpfilename = tempfile.mkstemp()
         _, tmpfilename2 = tempfile.mkstemp()
         try:
-            fp = os.fdopen(fd, 'w+')
-            fp.write('''#!/bin/sh
+            fp = os.fdopen(fd, 'wb+')
+            fp.write(b'''#!/bin/sh
 # If stdin fails to get passed during one of the runs, make a note.
 if ! grep -q foo
 then
@@ -139,7 +139,7 @@ exit 1
             self.assertRaises(processutils.ProcessExecutionError,
                               processutils.execute,
                               tmpfilename, tmpfilename2, attempts=10,
-                              process_input='foo',
+                              process_input=b'foo',
                               delay_on_retry=False)
             fp = open(tmpfilename2, 'r')
             runs = fp.read()
@@ -183,8 +183,8 @@ exit 1
         fd, tmpfilename = tempfile.mkstemp()
         _, tmpfilename2 = tempfile.mkstemp()
         try:
-            fp = os.fdopen(fd, 'w+')
-            fp.write("""#!/bin/sh
+            fp = os.fdopen(fd, 'wb+')
+            fp.write(b"""#!/bin/sh
 # If we've already run, bail out.
 grep -q foo "$1" && exit 1
 # Mark that we've run before.
@@ -196,7 +196,7 @@ grep foo
             os.chmod(tmpfilename, 0o755)
             processutils.execute(tmpfilename,
                                  tmpfilename2,
-                                 process_input='foo',
+                                 process_input=b'foo',
                                  attempts=2)
         finally:
             os.unlink(tmpfilename)
@@ -225,7 +225,7 @@ grep foo
 
         out, err = processutils.execute('/usr/bin/env', env_variables=env_vars)
 
-        self.assertIn('SUPER_UNIQUE_VAR=The answer is 42', out)
+        self.assertIn(b'SUPER_UNIQUE_VAR=The answer is 42', out)
 
     def test_exception_and_masking(self):
         tmpfilename = self.create_tempfiles(
@@ -244,8 +244,8 @@ grep foo
                                 'something')
 
         self.assertEqual(38, err.exit_code)
-        self.assertEqual(err.stdout, 'onstdout --password="***"\n')
-        self.assertEqual(err.stderr, 'onstderr --password="***"\n')
+        self.assertEqual(err.stdout, b'onstdout --password="***"\n')
+        self.assertEqual(err.stderr, b'onstderr --password="***"\n')
         self.assertEqual(err.cmd, ' '.join([tmpfilename,
                                             'password="***"',
                                             'something']))
