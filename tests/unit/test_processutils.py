@@ -113,8 +113,8 @@ class ProcessExecutionErrorTest(test_base.BaseTestCase):
         fd, tmpfilename = tempfile.mkstemp()
         _, tmpfilename2 = tempfile.mkstemp()
         try:
-            fp = os.fdopen(fd, 'w+')
-            fp.write('''#!/bin/sh
+            fp = os.fdopen(fd, 'wb+')
+            fp.write(b'''#!/bin/sh
 # If stdin fails to get passed during one of the runs, make a note.
 if ! grep -q foo
 then
@@ -139,7 +139,7 @@ exit 1
             self.assertRaises(processutils.ProcessExecutionError,
                               processutils.execute,
                               tmpfilename, tmpfilename2, attempts=10,
-                              process_input='foo',
+                              process_input=b'foo',
                               delay_on_retry=False)
             fp = open(tmpfilename2, 'r')
             runs = fp.read()
@@ -183,8 +183,8 @@ exit 1
         fd, tmpfilename = tempfile.mkstemp()
         _, tmpfilename2 = tempfile.mkstemp()
         try:
-            fp = os.fdopen(fd, 'w+')
-            fp.write("""#!/bin/sh
+            fp = os.fdopen(fd, 'wb+')
+            fp.write(b"""#!/bin/sh
 # If we've already run, bail out.
 grep -q foo "$1" && exit 1
 # Mark that we've run before.
@@ -196,7 +196,7 @@ grep foo
             os.chmod(tmpfilename, 0o755)
             processutils.execute(tmpfilename,
                                  tmpfilename2,
-                                 process_input='foo',
+                                 process_input=b'foo',
                                  attempts=2)
         finally:
             os.unlink(tmpfilename)
@@ -207,7 +207,7 @@ grep foo
 
         def fake_communicate(*args, **kwargs):
             if self.called:
-                return ('', '')
+                return (b'', b'')
             self.called = True
             e = OSError('foo')
             e.errno = errno.EAGAIN
@@ -297,7 +297,7 @@ class FakeSshChannel(object):
         return self.rc
 
 
-class FakeSshStream(six.StringIO):
+class FakeSshStream(six.BytesIO):
     def setup_channel(self, rc):
         self.channel = FakeSshChannel(rc)
 
@@ -307,11 +307,11 @@ class FakeSshConnection(object):
         self.rc = rc
 
     def exec_command(self, cmd):
-        stdout = FakeSshStream('stdout')
+        stdout = FakeSshStream(b'stdout')
         stdout.setup_channel(self.rc)
-        return (six.StringIO(),
+        return (six.BytesIO(),
                 stdout,
-                six.StringIO('stderr'))
+                six.BytesIO(b'stderr'))
 
 
 class SshExecuteTestCase(test_base.BaseTestCase):
@@ -336,13 +336,13 @@ class SshExecuteTestCase(test_base.BaseTestCase):
 
     def _test_compromising_ssh(self, rc, check):
         fixture = self.useFixture(fixtures.FakeLogger(level=logging.DEBUG))
-        fake_stdin = six.StringIO()
+        fake_stdin = six.BytesIO()
 
         fake_stdout = mock.Mock()
         fake_stdout.channel.recv_exit_status.return_value = rc
-        fake_stdout.read.return_value = 'password="secret"'
+        fake_stdout.read.return_value = b'password="secret"'
 
-        fake_stderr = six.StringIO('password="foobar"')
+        fake_stderr = six.BytesIO(b'password="foobar"')
 
         command = 'ls --password="bar"'
 
