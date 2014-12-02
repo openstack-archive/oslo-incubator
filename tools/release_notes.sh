@@ -13,13 +13,18 @@
 #    under the License.
 #
 # Generate a standard set of release notes for a repository.
-#
-# Usage: release_notes.sh <repo_name> starttag endrev
-#
-# Example: release_notes.sh ../openstack/oslo.config 1.4.0 HEAD
 
 bindir=$(cd $(dirname $0) && pwd)
 repodir=$(cd $bindir/../../.. && pwd)
+
+if [ $# -ne 3 ]
+then
+    echo "Usage: $0 <lib> <start_rev> <end_rev>"
+    echo "  lib       -- library directory, for example 'openstack/cliff'"
+    echo "  start_rev -- start revision, for example '1.8.0'"
+    echo "  end_rev   -- end revision, for example '1.9.0'"
+    exit 1
+fi
 
 lib=$1
 start_rev=$2
@@ -29,14 +34,38 @@ range="${start_rev}..${end_rev}"
 
 cd $repodir/$lib
 
-echo "$lib  $range"
-echo
+project=$(basename $lib)
+bug_url=$(grep "Bugs" README.rst | cut -f2- -d: | sed -e 's/ //')
+lp_url=$(echo "$bug_url" | sed -e 's/bugs.//')
+milestone_url="${lp_url}/+milestone/${end_rev}"
+
+cat <<EOF
+The Oslo team is pleased to announce release $end_rev of $project.
+
+
+
+For more details, please see the git log history below and
+ $milestone_url
+
+Please report issues through launchpad:
+ $bug_url
+
+----------------------------------------
+
+Changes in $lib  $range
+
+EOF
+
 git log --no-color --oneline --no-merges $range
+
 echo
 echo "  diffstat (except docs and test files):"
 echo
 git diff --stat --no-color $range | egrep -v '(/tests/|^ doc)'
+
 echo
 echo "  Requirements updates:"
 echo
 git diff -U0 --no-color $range *requirements*.txt | sed -e 's/^/ /g'
+
+echo
