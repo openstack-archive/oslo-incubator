@@ -123,6 +123,41 @@ class SessionErrorWrapperTestCase(test_base.DbTestCase):
                         _raise_if_deadlock_error):
                     self.assertRaises(db_exc.DBDeadlock, _session.commit)
 
+    def test_context_commit_wrapper(self):
+        # test a commit that raises at the point of commit within
+        # a context manager "with session.begin():"
+
+        _session = self.sessionmaker()
+
+        trans = _session.begin()
+        # patch SQLAlchemy connection._commit_impl to
+        # raise a deadlock exception during commit only.
+        deadlock_on_commit = mock.Mock(
+            side_effect=sqla_exc.OperationalError(
+                "simulated deadlock", None, None))
+
+        # patch our own _raise_if_deadlock_error filter to treat
+        # this OperationalError as a DBDeadlock.
+        def _raise_if_deadlock_error(operational_error, engine_name):
+            self.assertIsInstance(
+                operational_error, sqla_exc.OperationalError)
+            self.assertTrue(
+                "simulated deadlock" in str(operational_error))
+            raise db_exc.DBDeadlock(operational_error)
+
+        connection = _session.connection()
+
+        with mock.patch.object(
+                connection, '_commit_impl', deadlock_on_commit):
+            def run_as_ctxmanager():
+                with trans:
+                    pass
+
+            with mock.patch.object(
+                    session, "_raise_if_deadlock_error",
+                    _raise_if_deadlock_error):
+                self.assertRaises(db_exc.DBDeadlock, run_as_ctxmanager)
+
     def test_execute_wrapper(self):
         _session = self.sessionmaker()
         with _session.begin():

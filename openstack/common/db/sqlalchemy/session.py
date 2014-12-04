@@ -432,9 +432,11 @@ def _wrap_db_error(f):
     def _wrap(self, *args, **kwargs):
         try:
             assert issubclass(
-                self.__class__, sqlalchemy.orm.session.Session
+                self.__class__, (
+                    sqlalchemy.orm.session.Session, SessionTransactionWrapper)
             ), ('_wrap_db_error() can only be applied to methods of '
-                'subclasses of sqlalchemy.orm.session.Session.')
+                'subclasses of sqlalchemy.orm.session.Session or '
+                ' SessionTransactionWrapper')
 
             return f(self, *args, **kwargs)
         except UnicodeEncodeError:
@@ -715,6 +717,25 @@ class Session(sqlalchemy.orm.session.Session):
     @_wrap_db_error
     def commit(self, *args, **kwargs):
         return super(Session, self).commit(*args, **kwargs)
+
+    def begin(self, **kw):
+        trans = super(Session, self).begin(**kw)
+        trans.__class__ = SessionTransactionWrapper
+        return trans
+
+
+class SessionTransactionWrapper(sqlalchemy.orm.session.SessionTransaction):
+    @property
+    def bind(self):
+        return self.session.bind
+
+    @_wrap_db_error
+    def commit(self, *args, **kwargs):
+        return super(SessionTransactionWrapper, self).commit(*args, **kwargs)
+
+    @_wrap_db_error
+    def rollback(self, *args, **kwargs):
+        return super(SessionTransactionWrapper, self).rollback(*args, **kwargs)
 
 
 def get_maker(engine, autocommit=True, expire_on_commit=False):
