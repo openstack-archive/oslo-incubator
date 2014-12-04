@@ -236,14 +236,15 @@ class ClientTest(test_base.BaseTestCase):
 
         output = self.logger.output.split('\n')
 
-        self.assertIn("REQ: curl -i -X 'GET' '/foo'", output)
-        self.assertIn("REQ: curl -i -X 'GET' '/foo' -H 'X-Auth-Token: "
+        self.assertIn("REQ: curl -g -i -X 'GET' '/foo'", output)
+        self.assertIn("REQ: curl -g -i -X 'GET' '/foo' -H 'X-Auth-Token: "
                       "{SHA1}b42162b6ffdbd7c3c37b7c95b7ba9f51dda0236d'",
                       output)
-        self.assertIn("REQ: curl -i -X 'GET' '/foo/bar' -H 'X-Subject-Token: "
+        self.assertIn("REQ: curl -g -i -X 'GET' '/foo/bar'"
+                      " -H 'X-Subject-Token: "
                       "{SHA1}1999873bee4b1aed81b7abb168044a8cbbbccbd6'",
                       output)
-        self.assertIn("REQ: curl -i -X 'GET' '/foo' "
+        self.assertIn("REQ: curl -g -i -X 'GET' '/foo' "
                       "-H 'X-Subject-Token: "
                       "{SHA1}1999873bee4b1aed81b7abb168044a8cbbbccbd6' "
                       "-H 'X-Foo: bar' "
