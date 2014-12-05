@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Code-Review+2: Julien Danjou <julien@danjou.info>
+Code-Review+2: Doug Hellmann <doug@doughellmann.com>
+Workflow+1: Doug Hellmann <doug@doughellmann.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 05 Dec 2014 20:11:05 +0000
+Reviewed-on: https://review.openstack.org/138860
+Project: openstack/oslo-incubator
+Branch: refs/heads/stable/juno
