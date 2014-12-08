@@ -26,6 +26,8 @@ then
     exit 1
 fi
 
+set -e
+
 lib=$1
 start_rev=$2
 end_rev=$3
