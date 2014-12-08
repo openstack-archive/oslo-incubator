@@ -67,12 +67,6 @@ M:
 S: Orphan
 F: cliutils.py
 
-== context ==
-
-M:
-S: Graduating
-F: context.py
-
 == crypto ==
 
 M: Simo Sorce <simo@redhat.com>
