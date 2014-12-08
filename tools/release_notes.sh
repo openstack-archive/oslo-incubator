@@ -43,8 +43,6 @@ cat <<EOF
 The Oslo team is pleased to announce the release of
 ${project} ${end_rev}: $(python setup.py --description)
 
-
-
 For more details, please see the git log history below and
  $milestone_url
 
