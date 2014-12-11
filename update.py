@@ -210,7 +210,7 @@ def _copy_file(path, dest, base):
 
     replacements = []
 
-    replacements.append(('oslo(?!test)', base))
+    replacements.append(('oslo(?!(test|-incubator))', base))
     replacements.append(('OSLO', base.upper()))
 
     # Restore the imports for modules that are part of the oslo
