@@ -16,6 +16,7 @@
 import errno
 import os
 import shutil
+import stat
 import tempfile
 
 import mock
@@ -26,14 +27,18 @@ from six.moves import mox
 from openstack.common import fileutils
 
 
+TEST_PERMISSIONS = stat.S_IRWXU
+
+
 class EnsureTree(test_base.BaseTestCase):
     def test_ensure_tree(self):
         tmpdir = tempfile.mkdtemp()
         try:
             testdir = '%s/foo/bar/baz' % (tmpdir,)
-            fileutils.ensure_tree(testdir)
+            fileutils.ensure_tree(testdir, TEST_PERMISSIONS)
             self.assertTrue(os.path.isdir(testdir))
-
+            self.assertEqual(os.stat(testdir).st_mode,
+                             TEST_PERMISSIONS | stat.S_IFDIR)
         finally:
             if os.path.exists(tmpdir):
                 shutil.rmtree(tmpdir)
