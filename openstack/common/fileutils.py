@@ -26,13 +26,14 @@ LOG = logging.getLogger(__name__)
 _FILE_CACHE = {}
 
 
-def ensure_tree(path):
+def ensure_tree(path, mode=0o777):
     """Create a directory (and any ancestor directories required)
 
     :param path: Directory to create
+    :param mode: Directory creation permissions
     """
     try:
-        os.makedirs(path)
+        os.makedirs(path, mode)
     except OSError as exc:
         if exc.errno == errno.EEXIST:
             if not os.path.isdir(path):

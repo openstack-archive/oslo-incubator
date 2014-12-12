@@ -31,9 +31,9 @@ class EnsureTree(test_base.BaseTestCase):
         tmpdir = tempfile.mkdtemp()
         try:
             testdir = '%s/foo/bar/baz' % (tmpdir,)
-            fileutils.ensure_tree(testdir)
+            fileutils.ensure_tree(testdir, 0o711)
             self.assertTrue(os.path.isdir(testdir))
-
+            self.assertEqual(os.stat(testdir).st_mode & 0o777, 0o711)
         finally:
             if os.path.exists(tmpdir):
                 shutil.rmtree(tmpdir)
