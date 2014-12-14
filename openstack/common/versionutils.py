@@ -194,8 +194,8 @@ def is_compatible(requested_version, current_version, same_major=True):
         True.
     :returns: True if compatible, False if not
     """
-    requested_parts = pkg_resources.parse_version(requested_version)
-    current_parts = pkg_resources.parse_version(current_version)
+    requested_parts = list(pkg_resources.parse_version(requested_version))
+    current_parts = list(pkg_resources.parse_version(current_version))
 
     if same_major and (requested_parts[0] != current_parts[0]):
         return False
