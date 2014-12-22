@@ -427,6 +427,7 @@ class FancyRecordTestCase(LogTestBase):
         self.config(logging_context_format_string="%(color)s "
                                                   "[%(request_id)s]: "
                                                   "%(instance)s"
+                                                  "%(resource)s"
                                                   "%(message)s",
                     logging_default_format_string="%(missing)s: %(message)s")
         self.colorlog = log.getLogger()
@@ -467,6 +468,18 @@ class FancyRecordTestCase(LogTestBase):
         ctxt.instance_uuid = '1234'
         self._validate_keys(ctxt, ('[%s]: [instance: %s]' %
                                    (ctxt.request_id, ctxt.instance_uuid)))
+
+    def test_resource_key_in_log_msg(self):
+        infocolor = '\033[00;36m'
+        ctxt = _fake_context()
+        fake_resource = {'name': 'resource-202260f9-1224-'
+                                 '490d-afaf-6a744c13141f'}
+        self.colorlog.info("info", context=ctxt, resource=fake_resource)
+
+        infoexpected = "%s [%s]: [resource-202260f9-1224-490d-"\
+                       "afaf-6a744c13141f] info\n" % (infocolor,
+                                                      ctxt.request_id)
+        self.assertEqual(infoexpected, self.stream.getvalue())
 
 
 class DomainTestCase(LogTestBase):
