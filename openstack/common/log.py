@@ -133,18 +133,18 @@ log_opts = [
     cfg.StrOpt('logging_context_format_string',
                default='%(asctime)s.%(msecs)03d %(process)d %(levelname)s '
                        '%(name)s [%(request_id)s %(user_identity)s] '
-                       '%(instance)s%(message)s',
+                       '%(instance)s%(resource)s%(message)s',
                help='Format string to use for log messages with context.'),
     cfg.StrOpt('logging_default_format_string',
                default='%(asctime)s.%(msecs)03d %(process)d %(levelname)s '
-                       '%(name)s [-] %(instance)s%(message)s',
+                       '%(name)s [-] %(instance)s%(resource)s%(message)s',
                help='Format string to use for log messages without context.'),
     cfg.StrOpt('logging_debug_format_suffix',
                default='%(funcName)s %(pathname)s:%(lineno)d',
                help='Data to append to log format when level is DEBUG.'),
     cfg.StrOpt('logging_exception_prefix',
                default='%(asctime)s.%(msecs)03d %(process)d TRACE %(name)s '
-               '%(instance)s',
+               '%(instance)s%(resource)s',
                help='Prefix each line of exception output with this format.'),
     cfg.ListOpt('default_log_levels',
                 default=DEFAULT_LOG_LEVELS,
@@ -339,6 +339,13 @@ class ContextAdapter(BaseLoggerAdapter):
         extra['instance'] = instance_extra
 
         extra.setdefault('user_identity', kwargs.pop('user_identity', None))
+        resource = kwargs.pop('resource', None)
+        if resource:
+            # Most OpenStack resources have a name field of the
+            # form <resource>-<uuid>, so let's just use that
+            identifier = resource.get('name', None)
+            if identifier:
+                extra.setdefault('resource', ('[' + resource.get('name', '') + '] '))
 
         extra['project'] = self.project
         extra['version'] = self.version
@@ -651,7 +658,7 @@ class ContextFormatter(logging.Formatter):
         # NOTE(sdague): default the fancier formatting params
         # to an empty string so we don't throw an exception if
         # they get used
-        for key in ('instance', 'color', 'user_identity'):
+        for key in ('instance', 'color', 'user_identity', 'resource'):
             if key not in record.__dict__:
                 record.__dict__[key] = ''
 
