@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Code-Review+2: Julien Danjou <julien@danjou.info>
+Workflow+1: Ihar Hrachyshka <ihrachys@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Mon, 22 Dec 2014 11:10:15 +0000
+Reviewed-on: https://review.openstack.org/133515
+Project: openstack/oslo-incubator
+Branch: refs/heads/stable/juno
