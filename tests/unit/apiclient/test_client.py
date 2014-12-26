@@ -252,6 +252,26 @@ class ClientTest(test_base.BaseTestCase):
                       "{SHA1}b42162b6ffdbd7c3c37b7c95b7ba9f51dda0236d'",
                       output)
 
+    def _test_log_req_insecure(self, verify, expected):
+        self.logger = self.useFixture(
+            fixtures.FakeLogger(
+                format="%(message)s",
+                level=logging.DEBUG,
+                nuke_handlers=True
+            )
+        )
+
+        cs = client.HTTPClient(FakeAuthPlugin(), debug=True, verify=verify)
+        cs._http_log_req('GET', '/foo', {'headers': {}})
+        output = self.logger.output.split('\n')
+        self.assertIn(expected, output)
+
+    def test_log_req_insecure(self):
+        expected = "REQ: curl -g -i -X 'GET' '/foo'"
+        self._test_log_req_insecure(True, expected)
+        expected = "REQ: curl -g -i --insecure -X 'GET' '/foo'"
+        self._test_log_req_insecure(False, expected)
+
 
 class FakeClientTest(test_base.BaseTestCase):
 
