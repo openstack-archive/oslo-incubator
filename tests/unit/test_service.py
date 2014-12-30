@@ -273,7 +273,6 @@ class _Service(service.Service):
 
 
 class LauncherTest(test_base.BaseTestCase):
-
     def setUp(self):
         super(LauncherTest, self).setUp()
         self.mox = self.useFixture(moxstubout.MoxStubout()).mox
@@ -387,3 +386,39 @@ class ProcessLauncherTest(test_base.BaseTestCase):
         self.assertEqual([mock.call(22, signal.SIGTERM),
                           mock.call(222, signal.SIGTERM)],
                          mock_kill.mock_calls)
+
+
+class GracefulShutdownTestService(service.Service):
+    def __init__(self):
+        super(GracefulShutdownTestService, self).__init__()
+        self.finished_task = event.Event()
+
+    def start(self, sleep_amount):
+        def sleep_and_send(finish_event):
+            time.sleep(sleep_amount)
+            print("Event finished: " + str(sleep_amount))
+            finish_event.send()
+        self.tg.add_thread(sleep_and_send, self.finished_task)
+
+
+def exercise_graceful_test_service(sleep_amount, time_to_wait, graceful):
+    svc = GracefulShutdownTestService()
+    svc.start(sleep_amount)
+    svc.stop(graceful)
+
+    def wait_for_task(svc):
+        svc.finished_task.wait()
+
+    return eventlet.timeout.with_timeout(time_to_wait, wait_for_task,
+                                         svc=svc, timeout_value="Timeout!")
+
+
+class ServiceTest(test_base.BaseTestCase):
+    def test_graceful_stop(self):
+        # Here we wait long enough for the task to gracefully finish.
+        self.assertEqual(None, exercise_graceful_test_service(1, 2, True))
+
+    def test_ungraceful_stop(self):
+        # Here we stop ungracefully, and will never see the task finish.
+        self.assertEqual("Timeout!",
+                         exercise_graceful_test_service(1, 2, False))
