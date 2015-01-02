@@ -32,6 +32,9 @@ class UUIDUtilsTest(test_base.BaseTestCase):
     def test_is_uuid_like(self):
         self.assertTrue(uuidutils.is_uuid_like(str(uuid.uuid4())))
 
+    def test_is_uuid_like_insensitive(self):
+        self.assertTrue(uuidutils.is_uuid_like(str(uuid.uuid4()).upper()))
+
     def test_id_is_uuid_like(self):
         self.assertFalse(uuidutils.is_uuid_like(1234567))
 
