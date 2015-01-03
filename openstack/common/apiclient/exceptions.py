@@ -465,7 +465,7 @@ def from_response(response, method, url):
                     kwargs["details"] = (error.get("details") or
                                          six.text_type(body))
     elif content_type.startswith("text/"):
-        kwargs["details"] = response.text
+        kwargs["details"] = getattr(response, 'text', None)
 
     try:
         cls = _code_map[response.status_code]
