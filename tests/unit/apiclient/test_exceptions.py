@@ -101,3 +101,37 @@ class ExceptionsArgsTest(test_base.BaseTestCase):
         self.assert_exception(
             exceptions.BadRequest, method, url, status_code, json_data2,
             message, details)
+
+    def test_from_response_with_text_response_format(self):
+        method = "GET"
+        url = "/fake-wsme"
+        status_code = 400
+        text_data1 = "error_message: fake message"
+
+        ex = exceptions.from_response(
+            FakeResponse(status_code=status_code,
+                         headers={"Content-Type": "text/html"},
+                         text=text_data1),
+            method,
+            url)
+        self.assertTrue(isinstance(ex, exceptions.BadRequest))
+        self.assertEqual(ex.details, text_data1)
+        self.assertEqual(ex.method, method)
+        self.assertEqual(ex.url, url)
+        self.assertEqual(ex.http_status, status_code)
+
+    def test_from_response_with_text_response_format_with_no_body(self):
+        method = "GET"
+        url = "/fake-wsme"
+        status_code = 401
+
+        ex = exceptions.from_response(
+            FakeResponse(status_code=status_code,
+                         headers={"Content-Type": "text/html"}),
+            method,
+            url)
+        self.assertTrue(isinstance(ex, exceptions.Unauthorized))
+        self.assertEqual(ex.details, None)
+        self.assertEqual(ex.method, method)
+        self.assertEqual(ex.url, url)
+        self.assertEqual(ex.http_status, status_code)
