@@ -36,6 +36,11 @@ tox_envbin=$project_dir/.tox/$venv/bin
 
 our_name=$(python setup.py --name)
 
+# Build the egg-info, including the source file list,
+# so we install all of the files, even if the package
+# list or name has changed.
+python setup.py egg_info
+
 # Replace the pip-installed package with the version in our source
 # tree. Look to see if we are already installed before trying to
 # uninstall ourselves, to avoid failures from packages that do not use us
