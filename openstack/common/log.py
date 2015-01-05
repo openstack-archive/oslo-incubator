@@ -514,6 +514,22 @@ def _setup_logging_from_conf(project, version):
             logging.ERROR)
         log_root.addHandler(handler)
 
+    if CONF.use_syslog:
+        try:
+            facility = _find_facility_from_conf()
+            # TODO(bogdando) use the format provided by RFCSysLogHandler
+            #   after existing syslog format deprecation in J
+            if CONF.use_syslog_rfc_format:
+                syslog = RFCSysLogHandler(address='/dev/log',
+                                          facility=facility)
+            else:
+                syslog = logging.handlers.SysLogHandler(address='/dev/log',
+                                                        facility=facility)
+            log_root.addHandler(syslog)
+        except socket.error:
+            log_root.error('Unable to add syslog handler. Verify that syslog '
+                           'is running.')
+
     datefmt = CONF.log_date_format
     for handler in log_root.handlers:
         # NOTE(alaski): CONF.log_format overrides everything currently.  This
@@ -545,22 +561,6 @@ def _setup_logging_from_conf(project, version):
             logger.setLevel(level)
         else:
             logger.setLevel(level_name)
-
-    if CONF.use_syslog:
-        try:
-            facility = _find_facility_from_conf()
-            # TODO(bogdando) use the format provided by RFCSysLogHandler
-            #   after existing syslog format deprecation in J
-            if CONF.use_syslog_rfc_format:
-                syslog = RFCSysLogHandler(address='/dev/log',
-                                          facility=facility)
-            else:
-                syslog = logging.handlers.SysLogHandler(address='/dev/log',
-                                                        facility=facility)
-            log_root.addHandler(syslog)
-        except socket.error:
-            log_root.error('Unable to add syslog handler. Verify that syslog '
-                           'is running.')
 
 
 _loggers = {}
