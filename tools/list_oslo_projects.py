@@ -20,6 +20,7 @@ from __future__ import print_function
 import os
 
 import oslo_tool_config as cfg
+
 import yaml
 
 

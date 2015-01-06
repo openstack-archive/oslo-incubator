@@ -19,7 +19,7 @@ generators for generating the model in
 :mod:`openstack.common.report.models.conf`.
 """
 
-from oslo.config import cfg
+from oslo_config import cfg
 
 from openstack.common.report.models import conf as cm
 
@@ -30,11 +30,11 @@ class ConfigReportGenerator(object):
     This generator returns
     :class:`openstack.common.report.models.conf.ConfigModel`,
     by default using the configuration options stored
-    in :attr:`oslo.config.cfg.CONF`, which is where
+    in :attr:`oslo_config.cfg.CONF`, which is where
     OpenStack stores everything.
 
     :param cnf: the configuration option object
-    :type cnf: :class:`oslo.config.cfg.ConfigOpts`
+    :type cnf: :class:`oslo_config.cfg.ConfigOpts`
     """
 
     def __init__(self, cnf=cfg.CONF):
