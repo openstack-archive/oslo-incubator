@@ -18,8 +18,8 @@
 
 import copy
 
-from oslo.config import cfg
 from oslo.utils import timeutils
+from oslo_config import cfg
 
 memcache_opts = [
     cfg.ListOpt('memcached_servers',

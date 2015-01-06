@@ -23,7 +23,7 @@ import glob
 import os
 import sys
 
-from oslo.config import cfg
+from oslo_config import cfg
 
 # Extend sys.path to find update.py
 my_dir = os.path.dirname(__file__)
