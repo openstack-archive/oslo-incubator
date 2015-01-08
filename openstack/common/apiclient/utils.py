@@ -25,11 +25,11 @@
 ########################################################################
 
 from oslo.utils import encodeutils
+from oslo.utils import uuidutils
 import six
 
 from openstack.common._i18n import _
 from openstack.common.apiclient import exceptions
-from openstack.common import uuidutils
 
 
 def find_resource(manager, name_or_id, **find_args):
