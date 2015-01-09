@@ -133,7 +133,8 @@ class HttpError(ClientException):
         self.response = response
         self.url = url
         self.method = method
-        formatted_string = "%s (HTTP %s)" % (self.message, self.http_status)
+        formatted_string = "%s (HTTP %s):%s" % (self.message, self.http_status,\
+            self.response.json()['error_message']['faultstring'])
         if request_id:
             formatted_string += " (Request-ID: %s)" % request_id
         super(HttpError, self).__init__(formatted_string)
