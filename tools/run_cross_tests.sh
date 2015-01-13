@@ -10,7 +10,10 @@
 set -e
 
 project_dir="$1"
-venv="$2"
+shift
+venv="$1"
+shift
+posargs="$*"
 
 if [ -z "$project_dir" -o -z "$venv" ]
 then
@@ -19,11 +22,12 @@ ERROR: Missing argument(s)
 
 Usage:
 
-  $0 PROJECT_DIR VIRTUAL_ENV
+  $0 PROJECT_DIR VIRTUAL_ENV [POSARGS]
 
 Example, run the python 2.7 tests for python-neutronclient:
 
   $0 /opt/stack/python-neutronclient py27
+  $0 /opt/stack/nova py27 xenapi
 
 EOF
     exit 1
@@ -52,7 +56,7 @@ fi
 $tox_envbin/pip install -U .
 
 # Run the tests
-(cd $project_dir && tox -e $venv)
+(cd $project_dir && tox -e $venv -- $posargs)
 result=$?
 
 
