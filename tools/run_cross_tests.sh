@@ -51,7 +51,7 @@ python setup.py egg_info
 # yet.
 if $tox_envbin/pip freeze | grep -q $our_name
 then
-    $tox_envbin/pip uninstall -y $our_name
+    $tox_envbin/pip uninstall -y $our_name || echo "Ignoring error"
 fi
 $tox_envbin/pip install -U .
 
