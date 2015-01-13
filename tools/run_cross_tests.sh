@@ -10,7 +10,10 @@
 set -e
 
 project_dir="$1"
-venv="$2"
+shift
+venv="$1"
+shift
+posargs="$*"
 
 if [ -z "$project_dir" -o -z "$venv" ]
 then
@@ -52,7 +55,7 @@ fi
 $tox_envbin/pip install -U .
 
 # Run the tests
-(cd $project_dir && tox -e $venv)
+(cd $project_dir && tox -e $venv -- $posargs)
 result=$?
 
 
