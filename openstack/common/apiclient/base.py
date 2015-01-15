@@ -40,7 +40,7 @@ Base utilities to build API operation managers and objects on top of.
 import abc
 import copy
 
-from oslo.utils import strutils
+from oslo_utils import strutils
 import six
 from six.moves.urllib import parse
 
