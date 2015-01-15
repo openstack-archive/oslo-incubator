@@ -180,6 +180,15 @@ class ManagerMetaTestCase(test_base.BaseTestCase):
         self.assertThat(
             m._periodic_spacing, matchers.Not(matchers.Contains('baz')))
 
+        @periodic_task.periodic_task
+        def external():
+            return 42
+
+        m.add_periodic_task(external)
+        self.assertThat(m._periodic_tasks, matchers.HasLength(3))
+        self.assertEqual(periodic_task.DEFAULT_INTERVAL,
+                         m._periodic_spacing['external'])
+
 
 class ManagerTestCase(test_base.BaseTestCase):
     """Tests the periodic tasks portion of the manager class."""
