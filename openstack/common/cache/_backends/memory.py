@@ -14,8 +14,8 @@
 
 import collections
 
-from oslo.utils import timeutils
 from oslo_concurrency import lockutils
+from oslo_utils import timeutils
 
 from openstack.common.cache import backends
 
