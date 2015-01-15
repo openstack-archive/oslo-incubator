@@ -20,8 +20,8 @@ import copy
 import datetime
 
 from oslo.config import cfg
-from oslo.utils import importutils
-from oslo.utils import timeutils
+from oslo_utils import importutils
+from oslo_utils import timeutils
 import six
 
 from openstack.common._i18n import _, _LE
