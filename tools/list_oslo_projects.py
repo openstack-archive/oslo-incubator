@@ -19,35 +19,13 @@ from __future__ import print_function
 
 import os
 
-from oslo.config import cfg
+import oslo_tool_config as cfg
 import yaml
 
 
-DEFAULT_CONFIG_FILES = [
-    './oslo.conf',
-    os.path.expanduser('~/.oslo.conf'),
-]
-
-
 def main():
-    conf = cfg.ConfigOpts()
-    conf.register_cli_opt(
-        cfg.StrOpt(
-            'repo_root',
-            default='.',
-            help='directory containing the git repositories',
-        )
-    )
-    # Look for a few configuration files, and load the ones we find.
-    default_config_files = [
-        f
-        for f in DEFAULT_CONFIG_FILES
-        if os.path.exists(f)
-    ]
-    conf(
-        project='oslo',
-        default_config_files=default_config_files,
-    )
+    conf = cfg.get_config_parser()
+    cfg.parse_arguments(conf)
 
     # Find the governance repository.
     gov_repo = os.path.expanduser(os.path.join(conf.repo_root,
