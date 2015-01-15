@@ -20,8 +20,8 @@ import os
 import mock
 from oslo.config import cfg
 from oslo.config import fixture as config
-from oslo.serialization import jsonutils
 from oslo_concurrency.fixture import lockutils
+from oslo_serialization import jsonutils
 from oslotest import base as test_base
 import six
 import six.moves.urllib.parse as urlparse
