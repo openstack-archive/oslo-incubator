@@ -10,9 +10,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""Compatibility shim for Kilo, while operators migrate to oslo.middleware."""
+"""Compatibility shim for Kilo, while operators migrate to oslo_middleware."""
 
-from oslo.middleware import request_id
+from oslo_middleware import request_id
 
 from openstack.common import versionutils
 
@@ -22,6 +22,6 @@ HTTP_RESP_HEADER_REQUEST_ID = 'x-openstack-request-id'
 
 
 @versionutils.deprecated(as_of=versionutils.deprecated.KILO,
-                         in_favor_of='oslo.middleware.RequestId')
+                         in_favor_of='oslo_middleware.RequestId')
 class RequestIdMiddleware(request_id.RequestId):
     pass
