@@ -66,7 +66,20 @@ class PeriodicTasksTestCase(test_base.BaseTestCase):
             def doit_with_tocks(self, context):
                 self.called['tocks'] += 1
 
+        external_called = {'ext1': 0, 'ext2': 0}
+
+        @periodic_task.periodic_task
+        def ext1(self, context):
+            external_called['ext1'] += 1
+
+        @periodic_task.periodic_task(
+            spacing=10 + periodic_task.DEFAULT_INTERVAL)
+        def ext2(self, context):
+            external_called['ext2'] += 1
+
         serv = AService()
+        serv.add_periodic_task(ext1)
+        serv.add_periodic_task(ext2)
         serv.run_periodic_tasks(None)
         # Time: 340
         self.assertEqual(serv.called['doit'], 0)
@@ -74,6 +87,8 @@ class PeriodicTasksTestCase(test_base.BaseTestCase):
         # New last run will be 350
         self.assertEqual(serv.called['ticks'], 1)
         self.assertEqual(serv.called['tocks'], 0)
+        self.assertEqual(external_called['ext1'], 0)
+        self.assertEqual(external_called['ext2'], 0)
 
         time = time + periodic_task.DEFAULT_INTERVAL
         mock_time.return_value = time
@@ -86,6 +101,8 @@ class PeriodicTasksTestCase(test_base.BaseTestCase):
         # Closest multiple of 70 is 420
         self.assertEqual(serv.called['ticks'], 1)
         self.assertEqual(serv.called['tocks'], 0)
+        self.assertEqual(external_called['ext1'], 1)
+        self.assertEqual(external_called['ext2'], 0)
 
         time = time + periodic_task.DEFAULT_INTERVAL / 2
         mock_time.return_value = time
@@ -94,6 +111,8 @@ class PeriodicTasksTestCase(test_base.BaseTestCase):
         self.assertEqual(serv.called['urg'], 1)
         self.assertEqual(serv.called['ticks'], 2)
         self.assertEqual(serv.called['tocks'], 1)
+        self.assertEqual(external_called['ext1'], 1)
+        self.assertEqual(external_called['ext2'], 1)
 
         time = time + periodic_task.DEFAULT_INTERVAL
         mock_time.return_value = time
@@ -102,6 +121,8 @@ class PeriodicTasksTestCase(test_base.BaseTestCase):
         self.assertEqual(serv.called['urg'], 2)
         self.assertEqual(serv.called['ticks'], 3)
         self.assertEqual(serv.called['tocks'], 2)
+        self.assertEqual(external_called['ext1'], 2)
+        self.assertEqual(external_called['ext2'], 2)
 
     @mock.patch('time.time')
     def test_called_correct(self, mock_time):
@@ -179,6 +200,15 @@ class ManagerMetaTestCase(test_base.BaseTestCase):
         self.assertEqual(4, m._periodic_spacing['bar'])
         self.assertThat(
             m._periodic_spacing, matchers.Not(matchers.Contains('baz')))
+
+        @periodic_task.periodic_task
+        def external():
+            return 42
+
+        m.add_periodic_task(external)
+        self.assertThat(m._periodic_tasks, matchers.HasLength(3))
+        self.assertEqual(periodic_task.DEFAULT_INTERVAL,
+                         m._periodic_spacing['external'])
 
 
 class ManagerTestCase(test_base.BaseTestCase):
