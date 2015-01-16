@@ -48,7 +48,10 @@ Noteable changes
 {{ noteables }}
 {% endif -%}
 
-{{ change_header }}
+{{ change_header }}{% if skip_requirement_merges %}
+
+NOTE: Skipping requirement commits...
+{%- endif %}
 
 {% for change in changes -%}
 {{ change }}
@@ -90,6 +93,14 @@ def run_cmd(cmd, cwd=None):
     return stdout, stderr
 
 
+def is_skippable_commit(args, line):
+    if args.skip_requirement_merges:
+        _sha, message = line.split(" ", 1)
+        if message.lower() == 'updated from global requirements':
+            return True
+    return False
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog='release_notes',
@@ -111,6 +122,10 @@ def main():
     parser.add_argument("--noteable-changes", metavar='path',
                         action="store",
                         help="a file containing any noteable changes")
+    parser.add_argument("--skip-requirement-merges",
+                        action='store_true', default=False,
+                        help="skip requirement update commit messages"
+                             " (default: False)")
     args = parser.parse_args()
 
     library_path = os.path.abspath(args.library)
@@ -128,7 +143,13 @@ def main():
     git_range = "%s..%s" % (args.start_revision, args.end_revision)
     cmd = ["git", "log", "--no-color", "--oneline", "--no-merges", git_range]
     stdout, stderr = run_cmd(cmd, cwd=library_path)
-    changes = [line.strip() for line in stdout.splitlines() if line.strip()]
+    changes = []
+    for commit_line in stdout.splitlines():
+        commit_line = commit_line.strip()
+        if not commit_line or is_skippable_commit(args, commit_line):
+            continue
+        else:
+            changes.append(commit_line)
 
     # Filter out any requirement file changes...
     requirement_changes = []
@@ -180,6 +201,7 @@ def main():
         'range': git_range,
         'lib': library_path,
         'milestone_url': milestone_url,
+        'skip_requirement_merges': args.skip_requirement_merges,
         'bug_url': bug_url,
         'changes': changes,
         'requirement_changes': requirement_changes,
