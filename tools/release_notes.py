@@ -33,11 +33,11 @@ The Oslo team is pleased to announce the release of:
 
 For more details, please see the git log history below and:
 
-{{ milestone_url }}
+    {{ milestone_url }}
 
 Please report issues through launchpad:
 
-{{ bug_url }}
+    {{ bug_url }}
 """
 
 # This will just be replaced with template values (no wrapping applied).
@@ -46,8 +46,7 @@ Noteable changes
 ----------------
 
 {{ noteables }}
-{% endif -%}
-
+{% endif %}
 {{ change_header }}{% if skip_requirement_merges %}
 
 NOTE: Skipping requirement commits...
@@ -62,12 +61,14 @@ Diffstat (except docs and test files)
 {% for change in diff_stats -%}
 {{ change }}
 {% endfor %}
+{% if requirement_changes %}
 Requirements updates
 --------------------
 
 {% for change in requirement_changes -%}
 {{ change }}
 {% endfor %}
+{% endif %}
 """
 
 CHANGES_ONLY_TPL = """{{ change_header }}
@@ -199,7 +200,7 @@ def main():
     noteables = ''
     if args.noteable_changes:
         with open(args.noteable_changes, 'r') as fh:
-            noteables = fh.read()
+            noteables = fh.read().rstrip()
 
     lp_url = bug_url.replace("bugs.", "").rstrip("/")
     milestone_url = lp_url + "/+milestone/%s" % args.end_revision
