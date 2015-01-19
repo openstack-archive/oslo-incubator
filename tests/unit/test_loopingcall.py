@@ -15,8 +15,8 @@
 import time
 
 from eventlet import greenthread
+from mox3 import mox
 from oslotest import base as test_base
-from six.moves import mox
 
 from openstack.common import loopingcall
 
