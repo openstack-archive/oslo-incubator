@@ -28,7 +28,7 @@ For example, in a nova command module (under nova/cmd):
 
    def main():
        config.parse_args(sys.argv)
-       logging.setup('blah')
+       logging.setup(CONF, 'blah')
 
        TextGuruMeditation.register_section('Some Special Section',
                                            special_section_generator)
