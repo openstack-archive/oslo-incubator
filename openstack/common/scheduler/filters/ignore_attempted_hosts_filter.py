@@ -13,7 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from openstack.common import log as logging
+from oslo_log import log as logging
+
 from openstack.common.scheduler import filters
 
 LOG = logging.getLogger(__name__)

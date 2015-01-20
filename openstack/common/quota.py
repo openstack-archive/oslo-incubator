@@ -22,10 +22,10 @@ import datetime
 from oslo.config import cfg
 from oslo.utils import importutils
 from oslo.utils import timeutils
+from oslo_log import log as logging
 import six
 
 from openstack.common._i18n import _, _LE
-from openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
 
@@ -193,7 +193,7 @@ class DbQuotaDriver(object):
             default_quotas = self.db.quota_class_get_default(context)
         for resource in resources.values():
             if resource.name not in default_quotas:
-                LOG.deprecated(
+                LOG.warning(
                     "Default quota for resource: %(res)s is set "
                     "by the default quota flag: quota_%(res)s, "
                     "it is now deprecated. Please use the "

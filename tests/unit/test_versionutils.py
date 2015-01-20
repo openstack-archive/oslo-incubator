@@ -38,7 +38,7 @@ class DeprecatedTestCase(test_base.BaseTestCase):
                 expected_msg = getattr(
                     decorator,
                     '_deprecated_msg_with_no_alternative_no_removal')
-        mock_log.deprecated.assert_called_with(expected_msg, expected_details)
+        mock_log.warning.assert_called_with(expected_msg, expected_details)
 
     @mock.patch('openstack.common.versionutils.LOG', mock.Mock())
     def test_deprecating_a_function_returns_correct_value(self):

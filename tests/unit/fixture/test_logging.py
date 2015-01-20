@@ -10,10 +10,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo_log import log as logging
 from oslotest import base
 
 from openstack.common.fixture import logging as logging_fixture
-from openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
 
