@@ -18,9 +18,9 @@ Tests For Scheduler Host Filters.
 """
 
 from oslo.serialization import jsonutils
+from oslo_context import context
 from oslotest import base as test_base
 
-from openstack.common import context
 from openstack.common.scheduler import filters
 from openstack.common.scheduler.filters import extra_specs_ops
 from tests.unit.scheduler import fake_hosts as fakes

@@ -23,10 +23,10 @@ import mock
 from oslo.config import cfg
 from oslo.config import fixture as config
 from oslo.serialization import jsonutils
+from oslo_context import context
 from oslotest import base as test_base
 import six
 
-from openstack.common import context
 from openstack.common import fileutils
 from openstack.common import local
 from openstack.common import log
@@ -461,12 +461,6 @@ class FancyRecordTestCase(LogTestBase):
     def test_fancy_key_in_log_msg(self):
         ctxt = _fake_context()
         self._validate_keys(ctxt, '[%s]:' % ctxt.request_id)
-
-    def test_instance_key_in_log_msg(self):
-        ctxt = _fake_context()
-        ctxt.instance_uuid = '1234'
-        self._validate_keys(ctxt, ('[%s]: [instance: %s]' %
-                                   (ctxt.request_id, ctxt.instance_uuid)))
 
 
 class DomainTestCase(LogTestBase):
