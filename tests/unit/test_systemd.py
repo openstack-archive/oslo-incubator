@@ -36,7 +36,7 @@ class SystemdTestCase(test_base.BaseTestCase):
 
         def mock_socket(cls, *args):
 
-            class FakeSocket():
+            class FakeSocket(object):
                 def connect(fs, socket):
                     pass
 

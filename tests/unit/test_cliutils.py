@@ -159,13 +159,13 @@ class ValidateArgsTest(test_base.BaseTestCase):
                           self._test_function_with_default, y=2, z=3)
 
     def test_bound_method_no_args(self):
-        class Foo:
+        class Foo(object):
             def bar(self):
                 pass
         cliutils.validate_args(Foo().bar)
 
     def _test_bound_method_with_args(self, *args, **kwargs):
-        class Foo:
+        class Foo(object):
             def bar(self, x, y):
                 pass
         cliutils.validate_args(Foo().bar, *args, **kwargs)
@@ -192,7 +192,7 @@ class ValidateArgsTest(test_base.BaseTestCase):
                           self._test_bound_method_with_args, y=2)
 
     def _test_bound_method_with_default(self, *args, **kwargs):
-        class Foo:
+        class Foo(object):
             def bar(self, x, y, z=3):
                 pass
         cliutils.validate_args(Foo().bar, *args, **kwargs)
@@ -232,13 +232,13 @@ class ValidateArgsTest(test_base.BaseTestCase):
                           self._test_bound_method_with_default, y=2, z=3)
 
     def test_unbound_method_no_args(self):
-        class Foo:
+        class Foo(object):
             def bar(self):
                 pass
         cliutils.validate_args(Foo.bar, Foo())
 
     def _test_unbound_method_with_args(self, *args, **kwargs):
-        class Foo:
+        class Foo(object):
             def bar(self, x, y):
                 pass
         cliutils.validate_args(Foo.bar, Foo(), *args, **kwargs)
@@ -265,7 +265,7 @@ class ValidateArgsTest(test_base.BaseTestCase):
                           self._test_unbound_method_with_args, y=2)
 
     def _test_unbound_method_with_default(self, *args, **kwargs):
-        class Foo:
+        class Foo(object):
             def bar(self, x, y, z=3):
                 pass
         cliutils.validate_args(Foo.bar, Foo(), *args, **kwargs)
@@ -296,14 +296,14 @@ class ValidateArgsTest(test_base.BaseTestCase):
                           self._test_unbound_method_with_default, y=2, z=3)
 
     def test_class_method_no_args(self):
-        class Foo:
+        class Foo(object):
             @classmethod
             def bar(cls):
                 pass
         cliutils.validate_args(Foo.bar)
 
     def _test_class_method_with_args(self, *args, **kwargs):
-        class Foo:
+        class Foo(object):
             @classmethod
             def bar(cls, x, y):
                 pass
@@ -331,7 +331,7 @@ class ValidateArgsTest(test_base.BaseTestCase):
                           self._test_class_method_with_args, y=2)
 
     def _test_class_method_with_default(self, *args, **kwargs):
-        class Foo:
+        class Foo(object):
             @classmethod
             def bar(cls, x, y, z=3):
                 pass
@@ -363,14 +363,14 @@ class ValidateArgsTest(test_base.BaseTestCase):
                           self._test_class_method_with_default, y=2, z=3)
 
     def test_static_method_no_args(self):
-        class Foo:
+        class Foo(object):
             @staticmethod
             def bar():
                 pass
         cliutils.validate_args(Foo.bar)
 
     def _test_static_method_with_args(self, *args, **kwargs):
-        class Foo:
+        class Foo(object):
             @staticmethod
             def bar(x, y):
                 pass
@@ -398,7 +398,7 @@ class ValidateArgsTest(test_base.BaseTestCase):
                           self._test_static_method_with_args, y=2)
 
     def _test_static_method_with_default(self, *args, **kwargs):
-        class Foo:
+        class Foo(object):
             @staticmethod
             def bar(x, y, z=3):
                 pass

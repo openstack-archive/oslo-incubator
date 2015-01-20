@@ -13,8 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-# @author: Zhongyue Luo, Intel Corporation.
-#
 
 import sys
 
