@@ -20,11 +20,11 @@ Helpers for comparing version strings.
 import functools
 import inspect
 
+from oslo_log import log as logging
 import pkg_resources
 import six
 
 from openstack.common._i18n import _
-from openstack.common import log as logging
 
 
 LOG = logging.getLogger(__name__)
@@ -127,7 +127,7 @@ class deprecated(object):
 
             @six.wraps(func_or_cls)
             def wrapped(*args, **kwargs):
-                LOG.deprecated(msg, details)
+                LOG.warning(msg, details)
                 return func_or_cls(*args, **kwargs)
             return wrapped
         elif inspect.isclass(func_or_cls):
@@ -139,7 +139,7 @@ class deprecated(object):
             # and added to the oslo-incubator requrements
             @functools.wraps(orig_init, assigned=('__name__', '__doc__'))
             def new_init(self, *args, **kwargs):
-                LOG.deprecated(msg, details)
+                LOG.warning(msg, details)
                 orig_init(self, *args, **kwargs)
             func_or_cls.__init__ = new_init
             return func_or_cls

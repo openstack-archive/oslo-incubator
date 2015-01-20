@@ -11,12 +11,13 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 import threading
 
 import eventlet
 from eventlet import greenpool
+from oslo_log import log as logging
 
-from openstack.common import log as logging
 from openstack.common import loopingcall
 
 

@@ -16,10 +16,10 @@ import random
 import time
 
 from oslo.config import cfg
+from oslo_log import log as logging
 import six
 
 from openstack.common._i18n import _, _LE, _LI
-from openstack.common import log as logging
 
 
 periodic_opts = [

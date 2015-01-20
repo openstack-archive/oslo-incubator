@@ -18,11 +18,11 @@
 import sys
 import time
 
+from oslo_log import log as logging
 from eventlet import event
 from eventlet import greenthread
 
 from openstack.common._i18n import _LE, _LW
-from openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
 
