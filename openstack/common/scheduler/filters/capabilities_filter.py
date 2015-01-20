@@ -13,9 +13,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo_log import log as logging
 import six
 
-from openstack.common import log as logging
 from openstack.common.scheduler import filters
 from openstack.common.scheduler.filters import extra_specs_ops
 

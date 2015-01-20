@@ -22,10 +22,10 @@ import datetime
 from oslo.config import cfg
 from oslo.utils import importutils
 from oslo.utils import timeutils
+from oslo_log import log as logging
 import six
 
 from openstack.common._i18n import _, _LE
-from openstack.common import log as logging
 
 LOG = logging.getLogger(__name__)
 
