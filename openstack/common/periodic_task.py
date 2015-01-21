@@ -55,14 +55,15 @@ def periodic_task(*args, **kwargs):
            interval of 60 seconds.
 
         2. With arguments:
-           @periodic_task(spacing=N [, run_immediately=[True|False]])
+           @periodic_task(spacing=N [, run_immediately=[True|False]]
+           [, name=[None|"string"])
            this will be run on approximately every N seconds. If this number is
            negative the periodic task will be disabled. If the run_immediately
            argument is provided and has a value of 'True', the first run of the
            task will be shortly after task scheduler starts.  If
            run_immediately is omitted or set to 'False', the first time the
            task runs will be approximately N seconds after the task scheduler
-           starts.
+           starts. If name is not provided, __name__ of function is used.
     """
     def decorator(f):
         # Test for old style invocation
@@ -76,6 +77,7 @@ def periodic_task(*args, **kwargs):
             f._periodic_enabled = False
         else:
             f._periodic_enabled = kwargs.pop('enabled', True)
+        f._periodic_name = kwargs.pop('name', f.__name__)
 
         # Control frequency
         f._periodic_spacing = kwargs.pop('spacing', 0)
@@ -112,7 +114,7 @@ class _PeriodicTasksMeta(type):
 
         :return: whether task was actually enabled
         """
-        name = task.__name__
+        name = task._periodic_name
 
         if task._periodic_spacing < 0:
             LOG.info(_LI('Skipping periodic task %(task)s because '
@@ -193,7 +195,8 @@ class PeriodicTasks(object):
         The task should already be decorated by @periodic_task.
         """
         if self.__class__._add_periodic_task(task):
-            self._periodic_last_run[task.__name__] = task._periodic_last_run
+            self._periodic_last_run[task._periodic_name] = (
+                task._periodic_last_run)
 
     def run_periodic_tasks(self, context, raise_on_error=False):
         """Tasks to be run at a periodic interval."""

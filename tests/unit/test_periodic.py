@@ -173,6 +173,26 @@ class PeriodicTasksTestCase(test_base.BaseTestCase):
                           serv.run_periodic_tasks,
                           None, raise_on_error=True)
 
+    def test_name(self):
+        class AService(periodic_task.PeriodicTasks):
+            @periodic_task.periodic_task(name='better-name')
+            def tick(self, context):
+                pass
+
+            @periodic_task.periodic_task
+            def tack(self, context):
+                pass
+
+        @periodic_task.periodic_task(name='another-name')
+        def foo(self, context):
+            pass
+
+        serv = AService()
+        serv.add_periodic_task(foo)
+        self.assertIn('better-name', serv._periodic_last_run)
+        self.assertIn('another-name', serv._periodic_last_run)
+        self.assertIn('tack', serv._periodic_last_run)
+
 
 class ManagerMetaTestCase(test_base.BaseTestCase):
     """Tests for the meta class which manages the creation of periodic tasks.
