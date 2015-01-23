@@ -194,12 +194,6 @@ M:
 S: Orphan
 F: threadgroup.py
 
-== uuidutils ==
-
-M: Zhongyue Luo <zhongyue.nah@intel.com>
-S: Maintained
-F: uuidutils.py
-
 == versionutils ==
 
 M:
