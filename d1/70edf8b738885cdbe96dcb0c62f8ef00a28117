@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Code-Review+2: Adam Gandelman <adamg@ubuntu.com>
+Workflow+1: Adam Gandelman <adamg@ubuntu.com>
+Code-Review+1: Chris Krelle <nobodycam@gmail.com>
+Code-Review+2: Ihar Hrachyshka <ihrachys@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Sat, 24 Jan 2015 02:46:24 +0000
+Reviewed-on: https://review.openstack.org/149008
+Project: openstack/oslo-incubator
+Branch: refs/heads/stable/juno
