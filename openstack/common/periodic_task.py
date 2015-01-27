@@ -105,6 +105,36 @@ def periodic_task(*args, **kwargs):
 
 
 class _PeriodicTasksMeta(type):
+    def _add_periodic_task(cls, task):
+        """Add a periodic task to the list of periodic tasks.
+
+        The task should already be decorated by @periodic_task.
+
+        :return: whether task was actually enabled
+        """
+        name = task.__name__
+
+        if task._periodic_spacing < 0:
+            LOG.info(_LI('Skipping periodic task %(task)s because '
+                         'its interval is negative'),
+                     {'task': name})
+            return False
+        if not task._periodic_enabled:
+            LOG.info(_LI('Skipping periodic task %(task)s because '
+                         'it is disabled'),
+                     {'task': name})
+            return False
+
+        # A periodic spacing of zero indicates that this task should
+        # be run on the default interval to avoid running too
+        # frequently.
+        if task._periodic_spacing == 0:
+            task._periodic_spacing = DEFAULT_INTERVAL
+
+        cls._periodic_tasks.append((name, task))
+        cls._periodic_spacing[name] = task._periodic_spacing
+        return True
+
     def __init__(cls, names, bases, dict_):
         """Metaclass that allows us to collect decorated periodic tasks."""
         super(_PeriodicTasksMeta, cls).__init__(names, bases, dict_)
@@ -125,28 +155,7 @@ class _PeriodicTasksMeta(type):
 
         for value in cls.__dict__.values():
             if getattr(value, '_periodic_task', False):
-                task = value
-                name = task.__name__
-
-                if task._periodic_spacing < 0:
-                    LOG.info(_LI('Skipping periodic task %(task)s because '
-                                 'its interval is negative'),
-                             {'task': name})
-                    continue
-                if not task._periodic_enabled:
-                    LOG.info(_LI('Skipping periodic task %(task)s because '
-                                 'it is disabled'),
-                             {'task': name})
-                    continue
-
-                # A periodic spacing of zero indicates that this task should
-                # be run on the default interval to avoid running too
-                # frequently.
-                if task._periodic_spacing == 0:
-                    task._periodic_spacing = DEFAULT_INTERVAL
-
-                cls._periodic_tasks.append((name, task))
-                cls._periodic_spacing[name] = task._periodic_spacing
+                cls._add_periodic_task(value)
 
 
 def _nearest_boundary(last_run, spacing):
@@ -177,6 +186,14 @@ class PeriodicTasks(object):
         self._periodic_last_run = {}
         for name, task in self._periodic_tasks:
             self._periodic_last_run[name] = task._periodic_last_run
+
+    def add_periodic_task(self, task):
+        """Add a periodic task to the list of periodic tasks.
+
+        The task should already be decorated by @periodic_task.
+        """
+        if self.__class__._add_periodic_task(task):
+            self._periodic_last_run[task.__name__] = task._periodic_last_run
 
     def run_periodic_tasks(self, context, raise_on_error=False):
         """Tasks to be run at a periodic interval."""
