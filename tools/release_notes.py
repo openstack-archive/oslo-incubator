@@ -70,6 +70,12 @@ Requirements updates
 {% endfor %}
 """
 
+CHANGES_ONLY_TPL = """{{ change_header }}
+{% for change in changes -%}
+{{ change }}
+{% endfor %}
+"""
+
 
 def expand_template(contents, params):
     if not params:
@@ -106,19 +112,25 @@ def main():
         prog='release_notes',
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--library", metavar='path', action="store",
+    parser.add_argument("library", metavar='path', action="store",
                         help="library directory, for example"
                              " 'openstack/cliff'",
-                        required=True)
-    parser.add_argument("--start-revision", metavar='revision',
+                        )
+    parser.add_argument("start_revision", metavar='revision',
                         action="store",
                         help="start revision, for example '1.8.0'",
-                        required=True)
-    parser.add_argument("--end-revision", metavar='revision',
+                        )
+    parser.add_argument("end_revision", metavar='revision',
                         action="store",
+                        nargs='?',
                         help="end revision, for example '1.9.0'"
                              " (default: HEAD)",
                         default="HEAD")
+    parser.add_argument('--changes-only',
+                        action='store_true',
+                        default=False,
+                        help='List only the change summary, without details',
+                        )
     parser.add_argument("--noteable-changes", metavar='path',
                         action="store",
                         help="a file containing any noteable changes")
@@ -209,10 +221,13 @@ def main():
         'noteables': noteables,
         'change_header': "\n".join(change_header),
     }
-    header = expand_template(HEADER_RELEASE_TPL.strip(), params)
-    for line in parawrap.wrap(header):
-        print(line)
-    print(expand_template(CHANGE_RELEASE_TPL, params))
+    if args.changes_only:
+        print(expand_template(CHANGES_ONLY_TPL, params))
+    else:
+        header = expand_template(HEADER_RELEASE_TPL.strip(), params)
+        for line in parawrap.wrap(header):
+            print(line)
+        print(expand_template(CHANGE_RELEASE_TPL, params))
     return 0
 
 

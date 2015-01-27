@@ -52,6 +52,6 @@ do
     then
         echo "$lib has not yet been released"
     else
-        $bindir/release_notes.sh $lib $prev_tag HEAD
+        $bindir/release_notes.py --changes-only $repodir/$lib $prev_tag
     fi
 done
