@@ -4,7 +4,6 @@
 
 coverage>=3.6
 discover
-fixtures>=0.3.14
 hacking>=0.10.0,<0.11
 oslosphinx>=2.2.0  # Apache-2.0
 oslotest>=1.2.0  # Apache-2.0

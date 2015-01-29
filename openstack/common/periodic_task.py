@@ -12,6 +12,7 @@
 #    under the License.
 
 import copy
+import logging
 import random
 import time
 
@@ -19,7 +20,6 @@ from oslo.config import cfg
 import six
 
 from openstack.common._i18n import _, _LE, _LI
-from openstack.common import log as logging
 
 
 periodic_opts = [
