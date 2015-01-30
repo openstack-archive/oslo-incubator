@@ -152,12 +152,6 @@ M: Solly Ross <sross@redhat.com>
 S: Maintained
 F: report/
 
-== requestutils ==
-
-M: Sandy Walsh <sandy.walsh@rackspace.com>
-S: Maintained
-F: request_utils.py
-
 == scheduler ==
 
 M:
