@@ -9,6 +9,7 @@ Contents:
    :maxdepth: 1
 
    contributing
+   hacking
 
 Code Documentation
 ==================
