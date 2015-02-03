@@ -27,9 +27,6 @@ else
     libs="$*"
 fi
 
-# Assuming the tags were created in chronological order, get the most
-# recent one. This will break if we ever go back and create a patch
-# release.
 function get_last_tag {
     git for-each-ref --sort=taggerdate --format '%(refname)' refs/tags \
         | sed -e 's|refs/tags/||' \
