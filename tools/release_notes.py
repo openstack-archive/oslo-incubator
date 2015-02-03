@@ -17,6 +17,7 @@
 import argparse
 import glob
 import os
+import random
 import subprocess
 import sys
 
@@ -24,10 +25,24 @@ import jinja2
 from oslo_concurrency import processutils
 import parawrap
 
+
+EMOTIONS = [
+    'chuffed',
+    'content',
+    'eager',
+    'excited',
+    'glad',
+    'happy',
+    'overjoyed',
+    'pleased',
+    'pumped',
+    'thrilled',
+]
+
 # This will be replaced with template values and then wrapped using parawrap
 # to correctly wrap at paragraph boundaries...
 HEADER_RELEASE_TPL = """
-The Oslo team is pleased to announce the release of:
+The Oslo team is {{ emotion }} to announce the release of:
 
 {{ project }} {{ end_rev }}: {{ description }}
 
@@ -221,6 +236,7 @@ def main():
         'diff_stats': diff_stats,
         'notables': notables,
         'change_header': "\n".join(change_header),
+        'emotion': random.choice(EMOTIONS),
     }
     if args.changes_only:
         print(expand_template(CHANGES_ONLY_TPL, params))
