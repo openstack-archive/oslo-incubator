@@ -102,8 +102,9 @@ import six.moves.urllib.parse as urlparse
 import six.moves.urllib.request as urlrequest
 
 from openstack.common import fileutils
-from openstack.common._i18n import _, _LE, _LI
+from openstack.common._i18n import _, _LE, _LW
 
+_policy_dir_default = 'policy.d'
 
 policy_opts = [
     cfg.StrOpt('policy_file',
@@ -114,7 +115,7 @@ policy_opts = [
                help=_('Default rule. Enforced when a requested rule is not '
                       'found.')),
     cfg.MultiStrOpt('policy_dirs',
-                    default=['policy.d'],
+                    default=[_policy_dir_default],
                     help=_('Directories where policy configuration files are '
                            'stored. They can be relative to any directory '
                            'in the search path defined by the config_dir '
@@ -270,11 +271,15 @@ class Enforcer(object):
                                    overwrite=self.overwrite)
             for path in CONF.policy_dirs:
                 try:
-                    path = self._get_policy_path(path)
+                    conf_path = self._get_policy_path(path)
                 except cfg.ConfigFilesNotFoundError:
-                    LOG.info(_LI("Can not find policy directory: %s"), path)
+                    # most often default path not setup, only warn if
+                    # we can't see explicitly set path
+                    if path != _policy_dir_default:
+                        LOG.warning(
+                            _LW("Can not find policy directory: %s"), path)
                     continue
-                self._walk_through_policy_directory(path,
+                self._walk_through_policy_directory(conf_path,
                                                     self._load_policy_file,
                                                     force_reload, False)
 
