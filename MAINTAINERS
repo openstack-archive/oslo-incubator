@@ -133,12 +133,6 @@ M: Michael Still <mikal@stillhq.com>
 S: Maintained
 F: periodic_task.py
 
-== policy ==
-
-M:
-S: Graduating
-F: policy.py
-
 == quota ==
 
 M: Sergey Skripnick <sskripnick@mirantis.com>
