@@ -107,6 +107,23 @@ class TestGuruMeditationReport(base.BaseTestCase):
         curr_line = skip_body_lines(curr_line + len(target_str_gt),
                                     report_lines)
 
+        # followed by the processes header
+        target_str_p_head = ['========================================================================',  # noqa
+                             '====                           Processes                            ====',  # noqa
+                             '========================================================================']  # noqa
+        end_bound = curr_line + len(target_str_p_head)
+        self.assertEqual(target_str_p_head,
+                         report_lines[curr_line:end_bound])
+
+        curr_line += len(target_str_p_head)
+
+        # followed by at least one process
+        self.assertTrue(re.match("Process \d+ \(under \d+\)",
+                                 report_lines[curr_line]))
+
+        # followed by some more process stuff
+        curr_line = skip_body_lines(curr_line + 1, report_lines)
+
         # followed finally by the configuration
         target_str_config = ['========================================================================',  # noqa
                              '====                         Configuration                          ====',  # noqa

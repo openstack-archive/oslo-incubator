@@ -59,6 +59,7 @@ import sys
 from oslo_utils import timeutils
 
 from openstack.common.report.generators import conf as cgen
+from openstack.common.report.generators import process as prgen
 from openstack.common.report.generators import threading as tgen
 from openstack.common.report.generators import version as pgen
 from openstack.common.report import report
@@ -179,6 +180,9 @@ class GuruMeditation(object):
         self.add_section('Green Threads',
                          tgen.GreenThreadReportGenerator())
 
+        self.add_section('Processes',
+                         prgen.ProcessReportGenerator())
+
         self.add_section('Configuration',
                          cgen.ConfigReportGenerator())
 
@@ -207,6 +211,8 @@ class TextGuruMeditation(GuruMeditation, report.TextReport):
     - Threads List
 
     - Green Threads List
+
+    - Process List
 
     - Configuration Options
 
