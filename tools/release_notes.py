@@ -41,11 +41,11 @@ Please report issues through launchpad:
 """
 
 # This will just be replaced with template values (no wrapping applied).
-CHANGE_RELEASE_TPL = """{% if noteables %}
-Noteable changes
+CHANGE_RELEASE_TPL = """{% if notables %}
+Notable changes
 ----------------
 
-{{ noteables }}
+{{ notables }}
 {% endif -%}
 
 {{ change_header }}{% if skip_requirement_merges %}
@@ -131,9 +131,9 @@ def main():
                         default=False,
                         help='List only the change summary, without details',
                         )
-    parser.add_argument("--noteable-changes", metavar='path',
+    parser.add_argument("--notable-changes", metavar='path',
                         action="store",
-                        help="a file containing any noteable changes")
+                        help="a file containing any notable changes")
     parser.add_argument("--skip-requirement-merges",
                         action='store_true', default=False,
                         help="skip requirement update commit messages"
@@ -196,10 +196,10 @@ def main():
         raise IOError("No bug url found in '%s'"
                       % os.path.join(library_path, 'README.rst'))
 
-    noteables = ''
-    if args.noteable_changes:
-        with open(args.noteable_changes, 'r') as fh:
-            noteables = fh.read()
+    notables = ''
+    if args.notable_changes:
+        with open(args.notable_changes, 'r') as fh:
+            notables = fh.read()
 
     lp_url = bug_url.replace("bugs.", "").rstrip("/")
     milestone_url = lp_url + "/+milestone/%s" % args.end_revision
@@ -218,7 +218,7 @@ def main():
         'changes': changes,
         'requirement_changes': requirement_changes,
         'diff_stats': diff_stats,
-        'noteables': noteables,
+        'notables': notables,
         'change_header': "\n".join(change_header),
     }
     if args.changes_only:
