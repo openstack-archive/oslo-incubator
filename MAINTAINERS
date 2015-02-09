@@ -186,3 +186,9 @@ F: threadgroup.py
 M:
 S: Orphan
 F: versionutils.py
+
+== libironic ==
+
+M:
+S: Maintained
+F: libironic/
