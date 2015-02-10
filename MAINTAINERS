@@ -135,9 +135,8 @@ F: periodic_task.py
 
 == policy ==
 
-M: Flavio Percoco <flavio@redhat.com>
-M: Adam Young <ayoung@redhat.com>
-S: Maintained
+M:
+S: Graduating
 F: policy.py
 
 == quota ==
