@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Workflow+1: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+2: Ben Nemec <openstack@nemebean.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 11 Feb 2015 20:45:26 +0000
+Reviewed-on: https://review.openstack.org/154565
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
