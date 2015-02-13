@@ -15,7 +15,7 @@
 
 import os
 
-from oslo.config import cfg
+from oslo_config import cfg
 
 DEFAULT_CONFIG_FILES = [
     './oslo.conf',

@@ -16,7 +16,7 @@
 import logging
 
 import mock
-from oslo.config import fixture as config
+from oslo_config import fixture as config
 from oslotest import base as test_base
 from oslotest import mockpatch
 

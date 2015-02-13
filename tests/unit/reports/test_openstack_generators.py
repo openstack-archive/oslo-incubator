@@ -17,7 +17,7 @@ import threading
 
 import greenlet
 import mock
-from oslo.config import cfg
+from oslo_config import cfg
 from oslotest import base
 
 from openstack.common.report.generators import conf as os_cgen

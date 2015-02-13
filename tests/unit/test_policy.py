@@ -18,8 +18,8 @@
 import os
 
 import mock
-from oslo.config import cfg
-from oslo.config import fixture as config
+from oslo_config import cfg
+from oslo_config import fixture as config
 from oslo_concurrency.fixture import lockutils
 from oslo_serialization import jsonutils
 from oslotest import base as test_base
