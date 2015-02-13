@@ -77,7 +77,7 @@ import re
 import shutil
 import sys
 
-from oslo.config import cfg
+from oslo_config import cfg
 
 _OBSOLETE_LIST = None
 

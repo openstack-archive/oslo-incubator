@@ -33,7 +33,7 @@ import eventlet
 from eventlet import event
 import mock
 from mox3 import mox
-from oslo.config import fixture as config
+from oslo_config import fixture as config
 from oslotest import base as test_base
 from oslotest import moxstubout
 
