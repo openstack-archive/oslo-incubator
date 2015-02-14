@@ -102,7 +102,7 @@ import six.moves.urllib.parse as urlparse
 import six.moves.urllib.request as urlrequest
 
 from openstack.common import fileutils
-from openstack.common._i18n import _, _LE, _LI
+from openstack.common._i18n import _, _LE
 
 
 policy_opts = [
@@ -272,7 +272,7 @@ class Enforcer(object):
                 try:
                     path = self._get_policy_path(path)
                 except cfg.ConfigFilesNotFoundError:
-                    LOG.info(_LI("Can not find policy directory: %s"), path)
+                    LOG.debug("Can not find policy directory: %s", path)
                     continue
                 self._walk_through_policy_directory(path,
                                                     self._load_policy_file,
