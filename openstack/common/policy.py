@@ -127,6 +127,7 @@ CONF = cfg.CONF
 CONF.register_opts(policy_opts)
 
 LOG = logging.getLogger(__name__)
+_logged_missing_dirs = set()
 
 _checks = {}
 
@@ -272,7 +273,13 @@ class Enforcer(object):
                 try:
                     path = self._get_policy_path(path)
                 except cfg.ConfigFilesNotFoundError:
-                    LOG.info(_LI("Can not find policy directory: %s"), path)
+                    # NOTE(bnemec): Some services create new Enforcers
+                    # frequently.  We only want to log this message once, so
+                    # check if it's already been done.
+                    if path not in _logged_missing_dirs:
+                        LOG.info(_LI("Can not find policy directory: %s"),
+                                 path)
+                        _logged_missing_dirs.add(path)
                     continue
                 self._walk_through_policy_directory(path,
                                                     self._load_policy_file,

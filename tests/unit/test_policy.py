@@ -17,6 +17,7 @@
 
 import os
 
+import fixtures
 import mock
 from oslo.config import cfg
 from oslo.config import fixture as config
@@ -1139,3 +1140,28 @@ class GenericCheckTestCase(PolicyBaseTestCase):
         self.assertEqual(check({},
                                credentials,
                                self.enforcer), False)
+
+
+class CheckEnforcerLogging(PolicyBaseTestCase):
+    def test_logged_once(self):
+        self.log_fixture = self.useFixture(fixtures.FakeLogger())
+        self.CONF.set_override('policy_dirs', ['foo.d'])
+        self.enforcer = policy.Enforcer()
+        self.enforcer.load_rules(True)
+        template = 'Can not find policy directory: %s'
+        self.assertEqual(1,
+                         self.log_fixture.output.count(template % 'foo.d'))
+        # Make sure it only gets logged once after multiple calls to
+        # load_rules
+        self.enforcer.load_rules(True)
+        self.assertEqual(1,
+                         self.log_fixture.output.count(template % 'foo.d'))
+        # Make sure it still only gets logged once even after creating a new
+        # Enforcer.  Also make sure an additional directory does get logged.
+        self.CONF.set_override('policy_dirs', ['foo.d', 'bar.d'])
+        self.enforcer = policy.Enforcer()
+        self.enforcer.load_rules(True)
+        self.assertEqual(1,
+                         self.log_fixture.output.count(template % 'foo.d'))
+        self.assertEqual(1,
+                         self.log_fixture.output.count(template % 'bar.d'))
