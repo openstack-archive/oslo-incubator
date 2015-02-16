@@ -28,17 +28,14 @@ def main():
     conf = cfg.get_config_parser()
     cfg.parse_arguments(conf)
 
-    # Find the governance repository.
     gov_repo = os.path.expanduser(os.path.join(conf.repo_root,
                                                'openstack/governance'))
 
-    # Parse the program file within the repository.
-    program_input = os.path.join(gov_repo, 'reference/programs.yaml')
-    with open(program_input, 'r') as f:
-        program = yaml.load(f.read())
+    project_input = os.path.join(gov_repo, 'reference/projects.yaml')
+    with open(project_input, 'r') as f:
+        project = yaml.load(f.read())
 
-    # Print the list of repositories.
-    repos = [p['repo'] for p in program['Common Libraries']['projects']]
+    repos = [p['repo'] for p in project['Oslo']['projects']]
     for r in sorted(repos):
         print(r)
 
