@@ -333,8 +333,8 @@ class ProcessLauncher(object):
 
     def _wait_child(self):
         try:
-            # Don't block if no child processes have exited
-            pid, status = os.waitpid(0, os.WNOHANG)
+            # Block while any of child processes have exited
+            pid, status = os.waitpid(0, 0)
             if not pid:
                 return None
         except OSError as exc:
