@@ -33,12 +33,12 @@ def main():
                                                'openstack/governance'))
 
     # Parse the program file within the repository.
-    program_input = os.path.join(gov_repo, 'reference/programs.yaml')
+    program_input = os.path.join(gov_repo, 'reference/projects.yaml')
     with open(program_input, 'r') as f:
         program = yaml.load(f.read())
 
     # Print the list of repositories.
-    repos = [p['repo'] for p in program['Common Libraries']['projects']]
+    repos = [p['repo'] for p in program['Oslo']['projects']]
     for r in sorted(repos):
         print(r)
 
