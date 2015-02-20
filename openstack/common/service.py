@@ -21,7 +21,9 @@ import errno
 import logging
 import os
 import random
+import resource
 import signal
+import subprocess
 import sys
 import time
 
@@ -36,6 +38,7 @@ except ImportError:
 import eventlet
 from eventlet import event
 from oslo_config import cfg
+from six.moves import range as compat_range
 
 from openstack.common import eventlet_backdoor
 from openstack.common._i18n import _LE, _LI, _LW
@@ -45,6 +48,19 @@ from openstack.common import threadgroup
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
+
+
+def _yield_fds(streams):
+    for s in streams:
+        if isinstance(s, int):
+            yield s
+        else:
+            try:
+                yield s.fileno()
+            except AttributeError:
+                # Someone is *likely* unit testing and is mocking out
+                # these, leave it alone then...
+                pass
 
 
 def _sighup_supported():
@@ -268,7 +284,37 @@ class ProcessLauncher(object):
 
         return status, signo
 
+    def _close_descriptors(self):
+        # Close file-descriptors (for safety purposes) except the instance
+        # pipes (and the standard ones); sharing them with the parent is
+        # typically bad and a general source of errors.
+        max_fds = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
+        if max_fds == resource.RLIM_INFINITY:
+            max_fds = subprocess.MAXFD
+        try:
+            sc_fds = os.sysconf("SC_OPEN_MAX")
+            if sc_fds != -1 and sc_fds < max_fds:
+                max_fds = sc_fds
+        except OSError:
+            pass
+        exclude_fds = sorted(set(_yield_fds([self.readpipe, self.writepipe])))
+        LOG.debug('Closing all descriptors except %s (and the standard'
+                  ' descriptors) [fd upper bound is %s)]', exclude_fds,
+                  max_fds)
+        first = None
+        for fd in compat_range(3, max_fds):
+            if fd in exclude_fds:
+                if first is not None:
+                    os.closerange(first, fd)
+                    first = None
+                continue
+            if first is None:
+                first = fd
+        if first is not None:
+            os.closerange(first, fd + 1)
+
     def _child_process(self, service):
+        self._close_descriptors()
         self._child_process_handle_signal()
 
         # Reopen the eventlet hub to make sure we don't share an epoll
@@ -277,6 +323,7 @@ class ProcessLauncher(object):
 
         # Close write to ensure only parent has it open
         os.close(self.writepipe)
+
         # Create greenthread to watch for parent to close pipe
         eventlet.spawn_n(self._pipe_watcher)
 
