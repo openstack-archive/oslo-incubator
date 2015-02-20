@@ -21,7 +21,9 @@ import errno
 import logging
 import os
 import random
+import resource
 import signal
+import subprocess
 import sys
 import time
 
@@ -36,6 +38,7 @@ except ImportError:
 import eventlet
 from eventlet import event
 from oslo_config import cfg
+import six
 
 from openstack.common import eventlet_backdoor
 from openstack.common._i18n import _LE, _LI, _LW
@@ -272,7 +275,36 @@ class ProcessLauncher(object):
 
         return status, signo
 
+    def _close_descriptors(self):
+        # Close file-descriptors (for safety purposes) except stdout,
+        # stderr, stdin (and the instance pipes); sharing them with the parent
+        # is typically bad and a general source of errors
+        limits = resource.getrlimit(resource.RLIMIT_NOFILE)
+        max_fds = limits[1]
+        if max_fds == resource.RLIM_INFINITY:
+            max_fds = subprocess.MAXFD
+
+        # TODO(harlowja): don't we need to re-setup logging? If the
+        # logger is now broken that'd be not so good...
+        exclude_fds = set()
+        for f in (sys.stdin, sys.stdout, sys.stderr,
+                  self.readpipe, self.writepipe):
+            try:
+                exclude_fds.add(f.fileno())
+            except AttributeError:
+                # Someone is *likely* unit testing and is mocking out
+                # these, leave it alone then...
+                pass
+        for fd in six.moves.range(0, max_fds):
+            if fd in exclude_fds:
+                continue
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+
     def _child_process(self, service):
+        self._close_descriptors()
         self._child_process_handle_signal()
 
         # Reopen the eventlet hub to make sure we don't share an epoll
@@ -281,6 +313,7 @@ class ProcessLauncher(object):
 
         # Close write to ensure only parent has it open
         os.close(self.writepipe)
+
         # Create greenthread to watch for parent to close pipe
         eventlet.spawn_n(self._pipe_watcher)
 
