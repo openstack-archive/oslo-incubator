@@ -21,7 +21,9 @@ import errno
 import logging
 import os
 import random
+import resource
 import signal
+import subprocess
 import sys
 import time
 
@@ -36,6 +38,7 @@ except ImportError:
 import eventlet
 from eventlet import event
 from oslo_config import cfg
+import six
 
 from openstack.common import eventlet_backdoor
 from openstack.common._i18n import _LE, _LI, _LW
@@ -275,12 +278,39 @@ class ProcessLauncher(object):
     def _child_process(self, service):
         self._child_process_handle_signal()
 
+        # Close all file-descriptors (for safety purposes) except stdout,
+        # stderr, stdin; sharing them with the parent is typically bad and
+        # a general source of errors
+        limits = resource.getrlimit(resource.RLIMIT_NOFILE)
+        max_fds = limits[1]
+        if max_fds == resource.RLIM_INFINITY:
+            max_fds = subprocess.MAXFD
+        exclude_fds = set()
+        for f in (sys.stdin, sys.stdout, sys.stderr):
+            try:
+                exclude_fds.add(f.fileno())
+            except AttributeError:
+                # Someone is *likely* unit testing and is mocking out
+                # these, leave it alone then...
+                pass
+        for fd in six.moves.range(0, max_fds):
+            if fd in exclude_fds:
+                continue
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+
         # Reopen the eventlet hub to make sure we don't share an epoll
         # fd with parent and/or siblings, which would be bad
         eventlet.hubs.use_hub()
 
         # Close write to ensure only parent has it open
-        os.close(self.writepipe)
+        try:
+            os.close(self.writepipe)
+        except OSError:
+            pass
+
         # Create greenthread to watch for parent to close pipe
         eventlet.spawn_n(self._pipe_watcher)
 
