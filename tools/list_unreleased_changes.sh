@@ -43,6 +43,6 @@ do
     then
         echo "$lib has not yet been released"
     else
-        $bindir/release_notes.py --changes-only $repodir/$lib $prev_tag origin/master
+        $bindir/release_notes.py --show-dates --changes-only $repodir/$lib $prev_tag origin/master
     fi
 done

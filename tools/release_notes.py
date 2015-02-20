@@ -139,6 +139,9 @@ def main():
                         action='store_true', default=False,
                         help="skip requirement update commit messages"
                              " (default: False)")
+    parser.add_argument("--show-dates",
+                        action='store_true', default=False,
+                        help="show dates in the change log")
     args = parser.parse_args()
 
     library_path = os.path.abspath(args.library)
@@ -152,9 +155,18 @@ def main():
     stdout, stderr = run_cmd(cmd, cwd=library_path)
     description = stdout.strip()
 
+    # Get the python library/program name
+    cmd = [sys.executable, 'setup.py', '--name']
+    stdout, stderr = run_cmd(cmd, cwd=library_path)
+    library_name = stdout.strip()
+
     # Get the commits that are in the desired range...
     git_range = "%s..%s" % (args.start_revision, args.end_revision)
-    cmd = ["git", "log", "--no-color", "--oneline", "--no-merges", git_range]
+    if args.show_dates:
+        format = "--format=%h %ci %s"
+    else:
+        format = "--oneline"
+    cmd = ["git", "log", "--no-color", format, "--no-merges", git_range]
     stdout, stderr = run_cmd(cmd, cwd=library_path)
     changes = []
     for commit_line in stdout.splitlines():
@@ -204,7 +216,7 @@ def main():
 
     lp_url = bug_url.replace("bugs.", "").rstrip("/")
     milestone_url = lp_url + "/+milestone/%s" % args.end_revision
-    change_header = ["Changes in %s %s" % (library_path, git_range)]
+    change_header = ["Changes in %s %s" % (library_name, git_range)]
     change_header.append("-" * len(change_header[0]))
 
     params = {
