@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Code-Review+2: Alan Pevec <apevec@gmail.com>
+Workflow+1: Alan Pevec <apevec@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Sun, 22 Feb 2015 21:06:53 +0000
+Reviewed-on: https://review.openstack.org/156369
+Project: openstack/oslo-incubator
+Branch: refs/heads/stable/juno
