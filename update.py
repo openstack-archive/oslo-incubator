@@ -219,8 +219,8 @@ def _copy_file(path, dest, base):
     # "oslo.sqlite" that we want to have changed to "nova.sqlite" by
     # the above call.
     for oslo_module in OSLO_LIBS:
-        replacements.append((base + '.' + oslo_module,
-                             'oslo.' + oslo_module))
+        replacements.append((base + r'(.)' + oslo_module,
+                             r'oslo\1' + oslo_module))
 
     replacements.append(('^( *)from openstack.common',
                          r'\1from ' + base + '.openstack.common'))
