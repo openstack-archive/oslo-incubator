@@ -222,7 +222,8 @@ def main():
 
     lp_url = bug_url.replace("bugs.", "").rstrip("/")
     milestone_url = lp_url + "/+milestone/%s" % args.end_revision
-    change_header = ["Changes in %s %s" % (library_path, git_range)]
+    change_header = ["Changes in %s %s" % (os.path.basename(library_path),
+                                           git_range)]
     change_header.append("-" * len(change_header[0]))
 
     params = {
