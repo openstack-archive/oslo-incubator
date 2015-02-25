@@ -116,11 +116,8 @@ def run_cmd(cmd, cwd=None):
 
 
 def is_skippable_commit(args, line):
-    if args.skip_requirement_merges:
-        _sha, message = line.split(" ", 1)
-        if message.lower() == 'updated from global requirements':
-            return True
-    return False
+    return (args.skip_requirement_merges and
+            line.lower().endswith('updated from global requirements'))
 
 
 def main():
