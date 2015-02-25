@@ -242,8 +242,7 @@ def main():
         print(expand_template(CHANGES_ONLY_TPL, params))
     else:
         header = expand_template(HEADER_RELEASE_TPL.strip(), params)
-        for line in parawrap.wrap(header):
-            print(line)
+        print(parawrap.fill(header))
         print(expand_template(CHANGE_RELEASE_TPL, params))
     return 0
 
