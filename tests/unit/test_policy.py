@@ -136,12 +136,14 @@ class EnforcerTest(PolicyBaseTestCase):
         self.assertIn('default', self.enforcer.rules)
         self.assertIn('admin', self.enforcer.rules)
 
-    def test_load_directory(self):
+    @mock.patch('openstack.common.policy.LOG')
+    def test_load_directory(self, mock_log):
         self.enforcer.load_rules(True)
         self.assertIsNotNone(self.enforcer.rules)
         loaded_rules = jsonutils.loads(str(self.enforcer.rules))
         self.assertEqual('role:fakeB', loaded_rules['default'])
         self.assertEqual('is_admin:True', loaded_rules['admin'])
+        self.assertEqual(mock_log.debug.call_count, 3)
 
     def test_load_multiple_directories(self):
         self.CONF.set_override('policy_dirs',
