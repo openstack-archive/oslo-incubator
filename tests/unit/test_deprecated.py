@@ -37,7 +37,7 @@ class DeprecatedConfigTestCase(test_base.BaseTestCase):
         self.crit_mock = crit_fixture.mock
 
         self.config_fixture = self.useFixture(config.Config())
-        self.config_fixture.register_opts(versionutils.opts)
+        self.config_fixture.register_opts(versionutils.deprecated_opts)
         self.config = self.config_fixture.config
 
     def test_deprecated(self):
