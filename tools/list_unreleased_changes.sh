@@ -22,7 +22,7 @@ export PAGER=
 
 if [ -z "$*" ]
 then
-    libs=$($bindir/list_oslo_projects.py | egrep -v -e '(oslo.version|cookiecutter|incubator)')
+    libs=$($bindir/list_oslo_projects.py | egrep -v -e '(oslo-specs|cookiecutter|incubator)')
 else
     libs="$*"
 fi
