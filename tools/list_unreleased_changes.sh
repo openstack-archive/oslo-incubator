@@ -16,6 +16,7 @@
 
 bindir=$(cd $(dirname $0) && pwd)
 repodir=$(cd $bindir/../../.. && pwd)
+release_tools=$repodir/openstack-infra/release-tools
 
 # Make sure no pager is configured so the output is not blocked
 export PAGER=
@@ -43,6 +44,9 @@ do
     then
         echo "$lib has not yet been released"
     else
-        $bindir/release_notes.py --show-dates --changes-only $repodir/$lib $prev_tag origin/master
+        $release_tools/release_notes.py \
+            --show-dates \
+            --changes-only \
+            $repodir/$lib $prev_tag origin/master
     fi
 done
