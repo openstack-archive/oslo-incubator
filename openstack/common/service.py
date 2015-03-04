@@ -191,9 +191,9 @@ class ServiceLauncher(Launcher):
 
 
 class ServiceWrapper(object):
-    def __init__(self, service, workers):
+    def __init__(self, service):
         self.service = service
-        self.workers = workers
+        self.workers = service.get_workers_count()
         self.children = set()
         self.forktimes = []
 
@@ -320,8 +320,8 @@ class ProcessLauncher(object):
 
         return pid
 
-    def launch_service(self, service, workers=1):
-        wrap = ServiceWrapper(service, workers)
+    def launch_service(self, service):
+        wrap = ServiceWrapper(service)
 
         LOG.info(_LI('Starting %d workers'), wrap.workers)
         while self.running and len(wrap.children) < wrap.workers:
@@ -383,8 +383,8 @@ class ProcessLauncher(object):
                 if not _is_sighup_and_daemon(self.sigcaught):
                     break
 
-                for pid in self.children:
-                    os.kill(pid, signal.SIGHUP)
+                self._reload_config()
+
                 self.running = True
                 self.sigcaught = None
         except eventlet.greenlet.GreenletExit:
@@ -396,17 +396,52 @@ class ProcessLauncher(object):
         """Terminate child processes and wait on each."""
         self.running = False
         for pid in self.children:
-            try:
-                os.kill(pid, signal.SIGTERM)
-            except OSError as exc:
-                if exc.errno != errno.ESRCH:
-                    raise
+            self._terminate_child(pid)
 
         # Wait for children to die
         if self.children:
             LOG.info(_LI('Waiting on %d children to exit'), len(self.children))
             while self.children:
                 self._wait_child()
+
+    @staticmethod
+    def _terminate_child(pid):
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except OSError as exc:
+            if exc.errno != errno.ESRCH:
+                raise
+
+    def _reload_config(self):
+        cfg.CONF.reload_config_files()
+        visited_wrappers = []
+        tmp_copy = dict(self.children)
+        reload_conf_childs = set(tmp_copy.keys())
+        for pid in tmp_copy:
+            service_wrap = tmp_copy[pid]
+            wrapper_id = id(service_wrap)
+            if wrapper_id in visited_wrappers:
+                continue
+            visited_wrappers.append(wrapper_id)
+            new_conf_workers = service_wrap.service.get_workers_count()
+            new_workers_count = new_conf_workers - service_wrap.workers
+            service_wrap.workers = new_conf_workers
+
+            if new_workers_count > 0:
+                LOG.info(_LI('Starting %d workers'), new_workers_count)
+                while len(service_wrap.children) < service_wrap.workers:
+                    self._start_child(service_wrap)
+            elif new_workers_count < 0:
+                obsolete_workers = - new_workers_count
+                LOG.info(_LI('Stopping %d workers'), obsolete_workers)
+                for kill_counter, pid in enumerate(service_wrap.children):
+                    if kill_counter >= obsolete_workers:
+                        break
+                    reload_conf_childs.remove(pid)
+                    self._terminate_child(pid)
+
+        for pid in reload_conf_childs:
+            os.kill(pid, signal.SIGHUP)
 
 
 class Service(object):
@@ -434,6 +469,10 @@ class Service(object):
 
     def wait(self):
         self._done.wait()
+
+    def get_workers_count(self):
+        """Get workers count."""
+        return 1
 
 
 class Services(object):
@@ -484,12 +523,13 @@ class Services(object):
         done.wait()
 
 
-def launch(service, workers=1):
+def launch(service):
+    workers = service.get_workers_count()
     if workers is None or workers == 1:
         launcher = ServiceLauncher()
         launcher.launch_service(service)
     else:
         launcher = ProcessLauncher()
-        launcher.launch_service(service, workers=workers)
+        launcher.launch_service(service)
 
     return launcher

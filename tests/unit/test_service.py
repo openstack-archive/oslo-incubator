@@ -70,8 +70,8 @@ class ServiceWithTimer(service.Service):
 class ServiceTestBase(test_base.BaseTestCase):
     """A base class for ServiceLauncherTest and ServiceRestartTest."""
 
-    def _spawn_service(self, workers=1, *args, **kwargs):
-        self.workers = workers
+    def _spawn_service(self, *args, **kwargs):
+        self.workers = service.Service.get_workers_count()
         pid = os.fork()
         if pid == 0:
             os.setsid()
@@ -85,7 +85,7 @@ class ServiceTestBase(test_base.BaseTestCase):
             status = 0
             try:
                 serv = ServiceWithTimer()
-                launcher = service.launch(serv, workers=workers)
+                launcher = service.launch(serv)
                 launcher.wait(*args, **kwargs)
             except SystemExit as exc:
                 status = exc.code
@@ -132,8 +132,10 @@ class ServiceTestBase(test_base.BaseTestCase):
 class ServiceLauncherTest(ServiceTestBase):
     """Originally from nova/tests/integrated/test_multiprocess_api.py."""
 
-    def _spawn(self):
-        self.pid = self._spawn_service(workers=2)
+    @mock.patch('openstack.common.service.Service.get_workers_count',
+                return_value=2)
+    def _spawn(self, mock_workers_count):
+        self.pid = self._spawn_service()
 
         # Wait at most 10 seconds to spawn workers
         cond = lambda: self.workers == len(self._get_workers())
@@ -227,10 +229,11 @@ class ServiceLauncherTest(ServiceTestBase):
 
 class ServiceRestartTest(ServiceTestBase):
 
-    def _spawn(self):
+    @mock.patch('openstack.common.service.Service.get_workers_count',
+                return_value=1)
+    def _spawn(self, mock_workers_count):
         ready_event = multiprocessing.Event()
-        self.pid = self._spawn_service(workers=1,
-                                       ready_callback=ready_event.set)
+        self.pid = self._spawn_service(ready_callback=ready_event.set)
         return ready_event
 
     def test_service_restart(self):
@@ -351,22 +354,28 @@ class LauncherTest(test_base.BaseTestCase):
         launcher.stop()
 
     @mock.patch('openstack.common.service.ServiceLauncher.launch_service')
-    def _test_launch_single(self, workers, mock_launch):
+    def _test_launch_single(self, mock_launch):
         svc = service.Service()
-        service.launch(svc, workers=workers)
+        service.launch(svc)
         mock_launch.assert_called_with(svc)
 
-    def test_launch_none(self):
-        self._test_launch_single(None)
+    @mock.patch('openstack.common.service.Service.get_workers_count',
+                return_value=None)
+    def test_launch_none(self, mock_workers_count):
+        self._test_launch_single()
 
-    def test_launch_one_worker(self):
-        self._test_launch_single(1)
+    @mock.patch('openstack.common.service.Service.get_workers_count',
+                return_value=1)
+    def test_launch_one_worker(self, mock_workers_count):
+        self._test_launch_single()
 
+    @mock.patch('openstack.common.service.Service.get_workers_count',
+                return_value=3)
     @mock.patch('openstack.common.service.ProcessLauncher.launch_service')
-    def test_multiple_worker(self, mock_launch):
+    def test_multiple_worker(self, mock_launch, mock_workers_count):
         svc = service.Service()
-        service.launch(svc, workers=3)
-        mock_launch.assert_called_with(svc, workers=3)
+        service.launch(svc)
+        mock_launch.assert_called_with(svc)
 
 
 class ProcessLauncherTest(test_base.BaseTestCase):
