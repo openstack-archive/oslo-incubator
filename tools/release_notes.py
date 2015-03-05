@@ -27,6 +27,7 @@ import parawrap
 
 
 EMOTIONS = [
+    'amped',
     'chuffed',
     'content',
     'delighted',
@@ -35,10 +36,13 @@ EMOTIONS = [
     'glad',
     'gleeful',
     'happy',
+    'jazzed',
     'overjoyed',
     'pleased',
+    'psyched',
     'pumped',
     'satisfied',
+    'stoked',
     'thrilled',
 ]
 
