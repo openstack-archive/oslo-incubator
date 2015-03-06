@@ -191,6 +191,7 @@ OSLO_LIBS = [
     'log',
     'messaging',
     'middleware',
+    'policy',
     'rootwrap',
     'serialization',
     'utils',
