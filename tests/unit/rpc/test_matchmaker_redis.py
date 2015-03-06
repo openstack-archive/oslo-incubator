@@ -121,6 +121,12 @@ class MatchMakerRedisHeartbeatTestCase(test.BaseTestCase,
         # Tests that host is removed from results
         self.assertEqual(self.driver.queues(self.topic), [])
 
+    def test_ack_alive(self):
+        self.driver.ack_alive('ack_alive', 'controller1')
+        self.assertEqual(
+            sorted(self.driver.redis.smembers('ack_alive')),
+            ['ack_alive.controller1'])
+
 
 class MatchMakerRedisTestCase(test.BaseTestCase):
     """Generic tests that do not require a Redis server."""
