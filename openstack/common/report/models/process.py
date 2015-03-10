@@ -36,27 +36,27 @@ class ProcessModel(mwdv.ModelWithDefaultViews):
             text_view=text_views.ProcessView())
 
         self['pid'] = process.pid
-        self['parent_pid'] = process.ppid
+        self['parent_pid'] = process.ppid()
         if hasattr(process, 'uids'):
-            self['uids'] = {'real': process.uids.real,
-                            'effective': process.uids.effective,
-                            'saved': process.uids.saved}
+            self['uids'] = {'real': process.uids().real,
+                            'effective': process.uids().effective,
+                            'saved': process.uids().saved}
         else:
             self['uids'] = {'real': None,
                             'effective': None,
                             'saved': None}
 
         if hasattr(process, 'gids'):
-            self['gids'] = {'real': process.gids.real,
-                            'effective': process.gids.effective,
-                            'saved': process.gids.saved}
+            self['gids'] = {'real': process.gids().real,
+                            'effective': process.gids().effective,
+                            'saved': process.gids().saved}
         else:
             self['gids'] = {'real': None,
                             'effective': None,
                             'saved': None}
 
-        self['username'] = process.username
-        self['command'] = process.cmdline
-        self['state'] = process.status
+        self['username'] = process.username()
+        self['command'] = process.cmdline()
+        self['state'] = process.status()
 
         self['children'] = [ProcessModel(pr) for pr in process.get_children()]
