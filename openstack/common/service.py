@@ -33,6 +33,7 @@ except ImportError:
     # Python 2.6
     UnsupportedOperation = None
 
+from debtcollector import removals
 import eventlet
 from eventlet import event
 from oslo_config import cfg
@@ -198,6 +199,21 @@ class ServiceWrapper(object):
         self.forktimes = []
 
 
+class EventualServiceWrapper(object):
+    def __init__(self, workers,
+                 service_cls, service_args, service_kwargs):
+        self.service_cls = service_cls
+        self.service_args = service_args
+        self.service_kwargs = service_kwargs
+
+        self.workers = workers
+        self.children = set()
+        self.forktimes = []
+
+    def generate_service(self):
+        return self.service_cls(*self.service_args, **self.service_kwargs)
+
+
 class ProcessLauncher(object):
     def __init__(self):
         """Constructor."""
@@ -303,7 +319,11 @@ class ProcessLauncher(object):
 
         pid = os.fork()
         if pid == 0:
-            launcher = self._child_process(wrap.service)
+            if isinstance(wrap, EventualServiceWrapper):
+                service = wrap.generate_service()
+            else:
+                service = wrap.service
+            launcher = self._child_process(service)
             while True:
                 self._child_process_handle_signal()
                 status, signo = self._child_wait_for_exit_or_signal(launcher)
@@ -320,6 +340,76 @@ class ProcessLauncher(object):
 
         return pid
 
+    def launch_service_class(self, service_cls, *args, **kwargs):
+        """Launch a service using a service class + constructor arguments.
+
+        Instead of launching already populated service objects this will take
+        a service class (or similar callable) and positional and keyword
+        arguments that will be passed into that callable/class function. This
+        will create a service object post-fork (in the child process). This
+        helps avoid issues where __init__ has side-effects such as opening
+        sockets (or database handles) which cause problems in child processes
+        when they are shared with the parent.
+
+        The keyword argument 'worker' will **not** be passed to the service_cls
+        callable, but instead will be extracted to be used as the number of
+        child processes to spawn & maintain.
+
+        Example of use::
+
+        >>> from openstack.common import service
+        >>>
+        >>> import eventlet
+        >>>
+        >>> import os
+        >>>
+        >>> from oslo_config import cfg
+        >>> from oslo_log import log as logging
+        >>>
+        >>>
+        >>> def _nothing(output, loop_delay):
+        ...     while True:
+        ...         print(output)
+        ...         eventlet.sleep(loop_delay)
+        ...
+        >>>
+        >>> class NoOpService(service.Service):
+        ...     def __init__(self, output, loop_delay):
+        ...         super(NoOpService, self).__init__()
+        ...         self.output = output
+        ...         self.loop_delay = loop_delay
+        ...         print("Building in: %s" % os.getpid())
+        ...
+        ...     def start(self):
+        ...         print("Starting in: %s" % os.getpid())
+        ...         self.tg.add_thread(_nothing, self.output, self.loop_delay)
+        ...
+        >>>
+        >>> # Setup stuff so this doesn't crash with missing options...
+        ... CONF = cfg.CONF
+        >>> opts = [
+        ...     cfg.StrOpt('config_file', default=''),
+        ... ]
+        >>> CONF.register_opts(opts)
+        >>> logging.register_options(CONF)
+        >>> logging.setup(CONF, "dummy")
+        >>>
+        >>> # Now run...
+        >>> print("Launching on: %s" % os.getpid())
+        >>> launcher = service.ProcessLauncher()
+        >>> launcher.launch_service_class(NoOpService, 'hi', 1.0)
+        >>> launcher.wait()
+        """
+        workers = int(kwargs.pop('workers', 1))
+        wrap = EventualServiceWrapper(workers,
+                                      service_cls, args, kwargs)
+
+        LOG.info(_LI('Starting %d workers'), wrap.workers)
+
+        while self.running and len(wrap.children) < wrap.workers:
+            self._start_child(wrap)
+
+    @removals.remove(message="Please use `launch_service_cls` instead.")
     def launch_service(self, service, workers=1):
         wrap = ServiceWrapper(service, workers)
 
