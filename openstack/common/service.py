@@ -33,6 +33,7 @@ except ImportError:
     # Python 2.6
     UnsupportedOperation = None
 
+from debtcollector import removals
 import eventlet
 from eventlet import event
 from oslo_config import cfg
@@ -198,6 +199,21 @@ class ServiceWrapper(object):
         self.forktimes = []
 
 
+class EventualServiceWrapper(object):
+    def __init__(self, workers,
+                 service_cls, service_args, service_kwargs):
+        self.service_cls = service_cls
+        self.service_args = service_args
+        self.service_kwargs = service_kwargs
+
+        self.workers = workers
+        self.children = set()
+        self.forktimes = []
+
+    def generate_service(self):
+        return self.service_cls(*self.service_args, **self.service_kwargs)
+
+
 class ProcessLauncher(object):
     def __init__(self):
         """Constructor."""
@@ -303,7 +319,11 @@ class ProcessLauncher(object):
 
         pid = os.fork()
         if pid == 0:
-            launcher = self._child_process(wrap.service)
+            if isinstance(wrap, EventualServiceWrapper):
+                service = wrap.generate_service()
+            else:
+                service = wrap.service
+            launcher = self._child_process(service)
             while True:
                 self._child_process_handle_signal()
                 status, signo = self._child_wait_for_exit_or_signal(launcher)
@@ -320,6 +340,17 @@ class ProcessLauncher(object):
 
         return pid
 
+    def launch_service_cls(self, service_cls, *args, **kwargs):
+        workers = kwargs.pop('workers', 1)
+        wrap = EventualServiceWrapper(workers,
+                                      service, args, kwargs)
+
+        LOG.info(_LI('Starting %d workers'), wrap.workers)
+
+        while self.running and len(wrap.children) < wrap.workers:
+            self._start_child(wrap)
+
+    @removals.remove(message="Please use `launch_service_cls` instead.")
     def launch_service(self, service, workers=1):
         wrap = ServiceWrapper(service, workers)
 
