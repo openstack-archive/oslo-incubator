@@ -40,6 +40,8 @@ EMOTIONS = [
     'pumped',
     'satisfied',
     'thrilled',
+    'jubilant',
+    'tickled pink',
 ]
 
 # This will be replaced with template values and then wrapped using parawrap
