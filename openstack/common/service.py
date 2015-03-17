@@ -202,6 +202,7 @@ class ProcessLauncher(object):
     def __init__(self):
         """Constructor."""
 
+        self.service = None
         self.children = {}
         self.sigcaught = None
         self.running = True
@@ -321,6 +322,7 @@ class ProcessLauncher(object):
         return pid
 
     def launch_service(self, service, workers=1):
+        self.service = service
         wrap = ServiceWrapper(service, workers)
 
         LOG.info(_LI('Starting %d workers'), wrap.workers)
@@ -385,6 +387,10 @@ class ProcessLauncher(object):
 
                 for pid in self.children:
                     os.kill(pid, signal.SIGHUP)
+
+                cfg.CONF.reload_config_files()
+                self.service.reset()
+
                 self.running = True
                 self.sigcaught = None
         except eventlet.greenlet.GreenletExit:
