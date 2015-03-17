@@ -371,7 +371,9 @@ class LauncherTest(test_base.BaseTestCase):
 
 class ProcessLauncherTest(test_base.BaseTestCase):
 
-    def test_stop(self):
+    @mock.patch("signal.signal")
+    def test_stop(self, signal_mock):
+        signal_mock.SIGTERM = 15
         launcher = service.ProcessLauncher()
         self.assertTrue(launcher.running)
 
@@ -383,9 +385,27 @@ class ProcessLauncherTest(test_base.BaseTestCase):
 
         self.assertFalse(launcher.running)
         self.assertFalse(launcher.children)
-        self.assertEqual([mock.call(22, signal.SIGTERM),
-                          mock.call(222, signal.SIGTERM)],
+        self.assertEqual([mock.call(22, signal_mock.SIGTERM),
+                          mock.call(222, signal_mock.SIGTERM)],
                          mock_kill.mock_calls)
+
+    @mock.patch(
+        "openstack.common.service.ProcessLauncher._signal_handlers_set",
+        new_callable=lambda: set())
+    def test__signal_handlers_set(self, signal_handlers_set_mock):
+        service.ProcessLauncher()
+        self.assertEqual(1, len(service.ProcessLauncher._signal_handlers_set))
+        service.ProcessLauncher()
+        self.assertEqual(2, len(service.ProcessLauncher._signal_handlers_set))
+
+    @mock.patch(
+        "openstack.common.service.ProcessLauncher._signal_handlers_set",
+        new_callable=lambda: set())
+    def test__handle_class_signals(self, signal_handlers_set_mock):
+        signal_handlers_set_mock.update([mock.Mock(), mock.Mock()])
+        service.ProcessLauncher._handle_class_signals()
+        for m in service.ProcessLauncher._signal_handlers_set:
+            m.assert_called_once_with()
 
 
 class GracefulShutdownTestService(service.Service):
