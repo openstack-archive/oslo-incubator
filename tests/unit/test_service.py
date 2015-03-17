@@ -412,6 +412,37 @@ class ProcessLauncherTest(test_base.BaseTestCase):
         for m in service.ProcessLauncher._signal_handlers_set:
             m.assert_called_once_with()
 
+    @mock.patch("os.kill")
+    @mock.patch("openstack.common.service.ProcessLauncher.stop")
+    @mock.patch("openstack.common.service.ProcessLauncher._respawn_children")
+    @mock.patch("openstack.common.service.ProcessLauncher.handle_signal")
+    @mock.patch("oslo_config.cfg.CONF.log_opt_values")
+    @mock.patch("openstack.common.systemd.notify_once")
+    @mock.patch("oslo_config.cfg.CONF.reload_config_files")
+    @mock.patch("openstack.common.service._is_sighup_and_daemon")
+    def test_parent_process_reload_config(self,
+                                          is_sighup_and_daemon_mock,
+                                          reload_config_files_mock,
+                                          notify_once_mock,
+                                          log_opt_values_mock,
+                                          handle_signal_mock,
+                                          respawn_children_mock,
+                                          stop_mock,
+                                          kill_mock):
+        is_sighup_and_daemon_mock.return_value = True
+        respawn_children_mock.side_effect = [None,
+                                             eventlet.greenlet.GreenletExit()]
+        launcher = service.ProcessLauncher()
+        launcher.sigcaught = 1
+        launcher.children = {}
+
+        wrap_mock = mock.Mock()
+        launcher.children[222] = wrap_mock
+        launcher.wait()
+
+        reload_config_files_mock.assert_called_once_with()
+        wrap_mock.service.reset.assert_called_once_with()
+
 
 class GracefulShutdownTestService(service.Service):
     def __init__(self):
