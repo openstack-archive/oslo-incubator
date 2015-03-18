@@ -14,6 +14,7 @@
 
 from __future__ import print_function
 
+import datetime
 import os
 import re
 import signal
@@ -167,7 +168,8 @@ class TestGuruMeditationReport(base.BaseTestCase):
         os.kill(os.getpid(), signal.SIGUSR1)
         self.assertIn('Guru Meditation', sys.stderr.getvalue())
 
-    @mock.patch('oslo_utils.timeutils.strtime', return_value="NOW")
+    @mock.patch('oslo_utils.timeutils.utcnow',
+                return_value=datetime.datetime(2014, 1, 1, 12, 0, 0))
     def test_register_autorun_log_dir(self, mock_strtime):
         log_dir = self.useFixture(fixtures.TempDir()).path
         gmr.TextGuruMeditation.setup_autorun(
@@ -175,7 +177,7 @@ class TestGuruMeditationReport(base.BaseTestCase):
 
         os.kill(os.getpid(), signal.SIGUSR1)
         with open(os.path.join(
-                log_dir, "fake-service_gurumeditation_NOW")) as df:
+                log_dir, "fake-service_gurumeditation_20140101120000")) as df:
             self.assertIn('Guru Meditation', df.read())
 
     def tearDown(self):
