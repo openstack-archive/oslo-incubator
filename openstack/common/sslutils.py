@@ -72,6 +72,7 @@ def wrap(sock):
         'certfile': CONF.ssl.cert_file,
         'keyfile': CONF.ssl.key_file,
         'cert_reqs': ssl.CERT_NONE,
+        'ssl_version': ssl.PROTOCOL_TLSv1,
     }
 
     if CONF.ssl.ca_file:
