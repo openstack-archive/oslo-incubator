@@ -18,7 +18,6 @@ Helpers for comparing version strings.
 """
 
 import copy
-import functools
 import inspect
 import logging
 
@@ -151,11 +150,7 @@ class deprecated(object):
         elif inspect.isclass(func_or_cls):
             orig_init = func_or_cls.__init__
 
-            # TODO(tsufiev): change `functools` module to `six` as
-            # soon as six 1.7.4 (with fix for passing `assigned`
-            # argument to underlying `functools.wraps`) is released
-            # and added to the oslo-incubator requrements
-            @functools.wraps(orig_init, assigned=('__name__', '__doc__'))
+            @six.wraps(orig_init, assigned=('__name__', '__doc__'))
             def new_init(self, *args, **kwargs):
                 report_deprecated_feature(LOG, msg, details)
                 orig_init(self, *args, **kwargs)
