@@ -393,10 +393,15 @@ class ProcessLauncherTest(test_base.BaseTestCase):
         "openstack.common.service.ProcessLauncher._signal_handlers_set",
         new_callable=lambda: set())
     def test__signal_handlers_set(self, signal_handlers_set_mock):
-        service.ProcessLauncher()
+        callables = set()
+        l1 = service.ProcessLauncher()
+        callables.add(l1._handle_signal)
         self.assertEqual(1, len(service.ProcessLauncher._signal_handlers_set))
-        service.ProcessLauncher()
+        l2 = service.ProcessLauncher()
+        callables.add(l2._handle_signal)
         self.assertEqual(2, len(service.ProcessLauncher._signal_handlers_set))
+        self.assertEqual(callables,
+                         service.ProcessLauncher._signal_handlers_set)
 
     @mock.patch(
         "openstack.common.service.ProcessLauncher._signal_handlers_set",
