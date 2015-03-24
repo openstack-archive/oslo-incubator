@@ -1,0 +1,14 @@
+[dashboard]
+title = Oslo Sync Review Inbox
+description = Review Inbox
+foreach = is:open branch:master file:^.*openstack/common.* status:open NOT owner:self NOT label:Workflow<=-1 label:Verified>=1,jenkins NOT label:Code-Review<=-1,self NOT label:Code-Review>=1,self
+
+[section "Integrated Projects"]
+query = NOT project:openstack/oslo-incubator project:^openstack/.* NOT project:^openstack/python-.*client
+
+[section "Clients"]
+query = project:^openstack/python-.*client
+
+[section "Stackforge Projects"]
+query = project:^stackforge/.*
+
