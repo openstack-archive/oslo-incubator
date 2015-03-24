@@ -1,0 +1,27 @@
+[dashboard]
+title = Oslo Graduation Changes
+description = Changes for Oslo libraries being Graduated
+# NOTE(dhellmann): The space in the message query results in
+# much more accurate query results.
+foreach = is:open
+
+[section "Graduating Libraries"]
+query = (project:openstack/oslo.versionedobjects OR
+    project:openstack/oslo.policy OR project:openstack/debtcollector OR
+    project:openstack/tooz OR project:openstack/oslo.context OR
+    project:openstack/oslo.log OR project:openstack/oslo.reports)
+    NOT owner:self
+    NOT label:Workflow<=-1
+    label:Verified>=1
+
+[section "Incubator"]
+query = project:openstack/oslo-incubator topic:^.*graduate.*
+
+[section "openstack-infra/*"]
+query = project:^openstack-infra/.*  message:" oslo"
+
+[section "openstack-dev/*"]
+query = project:^openstack-dev/.*  message:" oslo"
+
+[section "governance"]
+query = project:openstack/governance  message:" oslo"
