@@ -1,0 +1,12 @@
+Verified+2: Jenkins
+Code-Review+2: Julien Danjou <julien@danjou.info>
+Workflow+1: Julien Danjou <julien@danjou.info>
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+2: Flavio Percoco <fpercoco@redhat.com>
+Workflow+1: Flavio Percoco <fpercoco@redhat.com>
+Code-Review+1: Marian Horban <mhorban@mirantis.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 25 Mar 2015 10:47:18 +0000
+Reviewed-on: https://review.openstack.org/165104
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
