@@ -63,8 +63,17 @@ class TestCachedFile(test_base.BaseTestCase):
         fdata = fileutils._FILE_CACHE['/this/is/a/fake']["data"]
         self.assertEqual(fdata, data)
 
+    @mock.patch('os.path.getmtime', return_value=1)
+    def test_read_cached_dir(self, getmtime):
+        fileutils._FILE_CACHE = {
+            '/this/is/a/fakedir/': {"data": None, "mtime": 1}
+        }
+        fresh, data = fileutils.read_cached_file("/this/is/a/fakedir/")
+        self.assertEqual(None, data)
+
     @mock.patch('os.path.getmtime', return_value=2)
-    def test_read_modified_cached_file(self, getmtime):
+    @mock.patch('os.path.isfile', return_value=True)
+    def test_read_modified_cached_file(self, isfile, getmtime):
 
         fileutils._FILE_CACHE = {
             '/this/is/a/fake': {"data": 1123, "mtime": 1}
@@ -77,6 +86,18 @@ class TestCachedFile(test_base.BaseTestCase):
             fresh, data = fileutils.read_cached_file("/this/is/a/fake")
 
         self.assertEqual(data, fake_contents)
+        self.assertTrue(fresh)
+
+    @mock.patch('os.path.getmtime', return_value=2)
+    def test_read_modified_cached_dir(self, getmtime):
+
+        fileutils._FILE_CACHE = {
+            '/this/is/a/fakedir/': {"data": None, "mtime": 1}
+        }
+
+        fresh, data = fileutils.read_cached_file("/this/is/a/fakedir/")
+
+        self.assertEqual(data, None)
         self.assertTrue(fresh)
 
     def test_delete_cached_file(self):

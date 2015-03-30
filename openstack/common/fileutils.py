@@ -45,7 +45,7 @@ def ensure_tree(path, mode=DEFAULT_MODE):
 
 
 def read_cached_file(filename, force_reload=False):
-    """Read from a file if it has been modified.
+    """Read from a file/directory if it has been modified.
 
     :param force_reload: Whether to reload the file.
     :returns: A tuple with a boolean specifying if the data is fresh
@@ -62,8 +62,11 @@ def read_cached_file(filename, force_reload=False):
 
     if not cache_info or mtime > cache_info.get('mtime', 0):
         LOG.debug("Reloading cached file %s" % filename)
-        with open(filename) as fap:
-            cache_info['data'] = fap.read()
+        if os.path.isfile(filename):
+            with open(filename) as fap:
+                cache_info['data'] = fap.read()
+        else:
+            cache_info['data'] = None
         cache_info['mtime'] = mtime
         reloaded = True
     return (reloaded, cache_info['data'])
