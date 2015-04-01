@@ -56,7 +56,7 @@ class LoopingCallTestCase(test_base.BaseTestCase):
 
     def test_interval_adjustment(self):
         """Ensure the interval is adjusted to account for task duration."""
-        self.num_runs = 3
+        self.num_runs = 4
 
         now = time.time()
         second = 1
@@ -67,6 +67,7 @@ class LoopingCallTestCase(test_base.BaseTestCase):
         greenthread.sleep(mox.IsAlmost(0.02))
         greenthread.sleep(mox.IsAlmost(0.0))
         greenthread.sleep(mox.IsAlmost(0.0))
+        greenthread.sleep(mox.IsAlmost(1.01))
         m.StubOutWithMock(loopingcall, '_ts')
         loopingcall._ts().AndReturn(now)
         loopingcall._ts().AndReturn(now + second - smidgen)
@@ -74,6 +75,8 @@ class LoopingCallTestCase(test_base.BaseTestCase):
         loopingcall._ts().AndReturn(now + second + second)
         loopingcall._ts().AndReturn(now)
         loopingcall._ts().AndReturn(now + second + smidgen)
+        loopingcall._ts().AndReturn(now)
+        loopingcall._ts().AndReturn(now - second)
         loopingcall._ts().AndReturn(now)
         m.ReplayAll()
 

@@ -82,7 +82,7 @@ class FixedIntervalLoopingCall(LoopingCallBase):
                     end = _ts()
                     if not self._running:
                         break
-                    delay = end - start - interval
+                    delay = max(end - start - interval, -interval)
                     if delay > 0:
                         LOG.warn(_LW('task %(func_name)r run outlasted '
                                      'interval by %(delay).2f sec'),
