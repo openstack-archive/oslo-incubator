@@ -25,6 +25,7 @@ from oslo_utils import excutils
 LOG = logging.getLogger(__name__)
 
 _FILE_CACHE = {}
+_DIR_CACHE = {}
 DEFAULT_MODE = stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO
 
 
@@ -78,6 +79,38 @@ def delete_cached_file(filename):
 
     if filename in _FILE_CACHE:
         del _FILE_CACHE[filename]
+
+
+def is_directory_updated(path):
+    """Check if the directory is updated or not.
+
+    :param path: a directory
+    :returns: bool value True if updated, opposite is False.
+              if path is not exist, False.
+    """
+    global _DIR_CACHE
+    mtime = 0
+    cache_info = _DIR_CACHE.setdefault(path, {})
+    if os.path.exists(path):
+        files = [path] + [os.path.join(path, file) for file in
+                          os.listdir(path)]
+        mtime = os.path.getmtime(max(files, key=os.path.getmtime))
+
+    if mtime > cache_info.get('mtime', 0):
+        cache_info['mtime'] = mtime
+        return True
+    return False
+
+
+def reset_directory_status(path):
+    """reset the directory status by delete cached file.
+
+    :param path: path of directory
+    """
+    global _DIR_CACHE
+
+    if path in _DIR_CACHE:
+        del _DIR_CACHE[path]
 
 
 def delete_if_exists(path, remove=os.unlink):

@@ -96,6 +96,48 @@ class TestCachedFile(test_base.BaseTestCase):
         self.assertNotIn(filename, fileutils._FILE_CACHE)
 
 
+class TestDirectoryStatus(test_base.BaseTestCase):
+
+    def setUp(self):
+        super(TestDirectoryStatus, self).setUp()
+        self.mox = mox.Mox()
+        self.addCleanup(self.mox.UnsetStubs)
+
+    @mock.patch('os.path.exists', return_value=True)
+    @mock.patch('os.listdir', return_value=['1.txt', '2.txt'])
+    @mock.patch('os.path.getmtime', return_value=2)
+    def test_get_updated_dir_status_changed(self, mock_get_time, mock_listdir,
+                                            mock_exists):
+
+        updated = fileutils.is_directory_updated("/this/is/a/fakedir/")
+        self.assertTrue(updated)
+
+    @mock.patch('os.path.exists', return_value=True)
+    @mock.patch('os.listdir', return_value=['1.txt', '2.txt'])
+    @mock.patch('os.path.getmtime', return_value=1)
+    def test_get_updated_dir_status_old(self, mock_get_time, mock_listdir,
+                                        mock_exists):
+
+        fileutils._DIR_CACHE = {
+            '/this/is/a/fakedir/': {"mtime": 1}
+        }
+        updated = fileutils.is_directory_updated("/this/is/a/fakedir/")
+        self.assertFalse(updated)
+
+    @mock.patch('os.path.exists', return_value=False)
+    def test_get_updated_dir_not_exists(self, mock_exists):
+        updated = fileutils.is_directory_updated("/this/is/a/fakedir/")
+        self.assertFalse(updated)
+
+    def test_reset_directory_status(self):
+        fileutils._DIR_CACHE = {
+            '/this/is/a/fakedir/': {"mtime": 1}
+        }
+        fileutils.reset_directory_status("/this/is/a/fakedir/")
+
+        self.assertEqual({}, fileutils._DIR_CACHE)
+
+
 class DeleteIfExists(test_base.BaseTestCase):
     def test_file_present(self):
         tmpfile = tempfile.mktemp()
