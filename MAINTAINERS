@@ -145,6 +145,11 @@ M: Solly Ross <sross@redhat.com>
 S: Maintained
 F: report/
 
+== requestutils ==
+M:
+S: Orphan
+F: request_utils.py
+
 == scheduler ==
 
 M:
