@@ -2,6 +2,7 @@
 The Oslo Incubator
 ------------------
 
+
 The Oslo program produces a set of python libraries containing
 infrastructure code shared by OpenStack projects. The APIs provided by
 these libraries should be high quality, stable, consistent and
