@@ -22,20 +22,17 @@ import fileinput
 import sys
 
 
-def try_int(val):
-    try:
-        return int(val)
-    except ValueError:
-        return val
-
-
 tags = []
 for line in fileinput.input(sys.argv[1:]):
     line = line.strip()
     if not line:
         continue
     parts = line.split('.')
-    v = tuple(try_int(val) for val in parts)
+    try:
+        v = tuple(int(val) for val in parts)
+    except ValueError:
+        # This tag is probably an alpha, so ignore it
+        continue
     if len(v) == 3:
         v = v + ('zzz',)  # artifically sort the value higher than alphas
     # Ignore versions where the beginning doesn't look like a number,
