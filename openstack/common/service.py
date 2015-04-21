@@ -206,12 +206,16 @@ class ProcessLauncher(object):
         for handler in cls._signal_handlers_set:
             handler(*args, **kwargs)
 
-    def __init__(self):
-        """Constructor."""
+    def __init__(self, wait_interval=0.01):
+        """Constructor.
 
+        :param wait_interval: The interval to sleep for between checks
+                              of child process exit.
+        """
         self.children = {}
         self.sigcaught = None
         self.running = True
+        self.wait_interval = wait_interval
         rfd, self.writepipe = os.pipe()
         self.readpipe = eventlet.greenio.GreenPipe(rfd, 'r')
         self.handle_signal()
@@ -337,8 +341,8 @@ class ProcessLauncher(object):
 
     def _wait_child(self):
         try:
-            # Block while any of child processes have exited
-            pid, status = os.waitpid(0, 0)
+            # Don't block if no child processes have exited
+            pid, status = os.waitpid(0, os.WNOHANG)
             if not pid:
                 return None
         except OSError as exc:
@@ -367,6 +371,10 @@ class ProcessLauncher(object):
         while self.running:
             wrap = self._wait_child()
             if not wrap:
+                # Yield to other threads if no children have exited
+                # Sleep for a short time to avoid excessive CPU usage
+                # (see bug #1095346)
+                eventlet.greenthread.sleep(self.wait_interval)
                 continue
             while self.running and len(wrap.children) < wrap.workers:
                 self._start_child(wrap)
