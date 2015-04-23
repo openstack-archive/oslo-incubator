@@ -477,3 +477,50 @@ class ServiceTest(test_base.BaseTestCase):
         # Here we stop ungracefully, and will never see the task finish.
         self.assertEqual("Timeout!",
                          exercise_graceful_test_service(1, 2, False))
+
+
+class EventletServerTest(test_base.BaseTestCase):
+    def test_shuts_down_on_sigterm_when_client_connected(self):
+        import subprocess
+        import sys
+        from six.moves import queue
+        from threading import Thread
+
+        def enqueue_output(f, q):
+            while True:
+                line = f.readline()
+                if not line:
+                    break
+                q.put(line)
+            f.close()
+
+        # Start up an eventlet server.
+        server_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'eventlet_service.py')
+        server = subprocess.Popen([sys.executable, server_path],
+                                  stdout=subprocess.PIPE,
+                                  stdin=open('/dev/null'),
+                                  stderr=subprocess.PIPE)
+
+        # Start a thread to read stdout so the app doesn't block.
+        out_q = queue.Queue()
+        out_t = Thread(target=enqueue_output, args=(server.stdout, out_q))
+        out_t.daemon = True
+        out_t.start()
+
+        # Start a thread to read stderr so the app doesn't block.
+        err_q = queue.Queue()
+        err_t = Thread(target=enqueue_output, args=(server.stderr, err_q))
+        err_t.daemon = True
+        err_t.start()
+
+        # The server's line of output is the port it picked.
+        port = int(out_q.get())
+
+        # connect to the server.
+        conn = socket.create_connection(('127.0.0.1', port))
+
+        # send SIGTERM to the server and wait for it to exit while client still
+        # connected.
+        server.send_signal(signal.SIGTERM)
+        server.wait()
