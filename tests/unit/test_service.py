@@ -20,12 +20,16 @@ Unit Tests for service class
 
 from __future__ import print_function
 
+import threading
+
 import errno
 import logging
 import multiprocessing
 import os
 import signal
 import socket
+import subprocess
+import sys
 import time
 import traceback
 
@@ -36,6 +40,7 @@ from mox3 import mox
 from oslo_config import fixture as config
 from oslotest import base as test_base
 from oslotest import moxstubout
+from six.moves import queue
 
 from openstack.common import eventlet_backdoor
 from openstack.common import service
@@ -477,3 +482,52 @@ class ServiceTest(test_base.BaseTestCase):
         # Here we stop ungracefully, and will never see the task finish.
         self.assertEqual("Timeout!",
                          exercise_graceful_test_service(1, 2, False))
+
+
+class EventletServerTest(test_base.BaseTestCase):
+    def test_shuts_down_on_sigterm_when_client_connected(self):
+
+        server_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                   'eventlet_service.py')
+
+        # Start up an eventlet server.
+        server = subprocess.Popen([sys.executable, server_path],
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE,
+                                  bufsize=1000,
+                                  close_fds=True)
+
+        def enqueue_output(f, q):
+            while True:
+                line = f.readline()
+                if not line:
+                    break
+                q.put(line)
+            f.close()
+
+        # Start a thread to read stderr so the app doesn't block.
+        err_q = queue.Queue()
+        err_t = threading.Thread(target=enqueue_output,
+                                 args=(server.stderr, err_q))
+        err_t.daemon = True
+        err_t.start()
+
+        # The server's line of output is the port it picked.
+        port_str = server.stdout.readline()
+        port = int(port_str)
+
+        # connect to the server.
+        conn = socket.create_connection(('127.0.0.1', port))
+
+        # NOTE(blk-u): The sleep shouldn't be necessary. There must be a bug in
+        # the server implementation where it takes some time to set up the
+        # server or signal handlers.
+        time.sleep(1)
+
+        # send SIGTERM to the server and wait for it to exit while client still
+        # connected.
+        server.send_signal(signal.SIGTERM)
+
+        server.wait()
+
+        conn.close()
