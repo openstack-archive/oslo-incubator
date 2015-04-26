@@ -232,6 +232,16 @@ class DeprecatedTestCase(test_base.BaseTestCase):
                                as_of='Juno',
                                remove_in='Kilo')
 
+    @mock.patch('openstack.common.versionutils.report_deprecated_feature')
+    def test_report(self, mock_reporter):
+        versionutils.deprecated.report('v2.0 API',
+                                       versionutils.deprecated.GRIZZLY)
+
+        self.assert_deprecated(mock_reporter,
+                               what='v2.0 API',
+                               as_of='Grizzly',
+                               remove_in='Icehouse')
+
 
 class IsCompatibleTestCase(test_base.BaseTestCase):
     def test_same_version(self):
