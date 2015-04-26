@@ -119,6 +119,41 @@ class deprecated(object):
     _deprecated_msg_with_no_alternative_no_removal = _(
         '%(what)s is deprecated as of %(as_of)s. It will not be superseded.')
 
+    @classmethod
+    def report(cls, what, as_of, in_favor_of=None, remove_in=2):
+
+        def _get_safe_to_remove_release(release):
+            # TODO(dstanek): this function will have to be reimplemented once
+            #    when we get to the X release because once we get to the Y
+            #    release, what is Y+2?
+            new_release = chr(ord(release) + remove_in)
+            if new_release in cls._RELEASES:
+                return cls._RELEASES[new_release]
+            else:
+                return new_release
+
+        details = dict(what=what,
+                       as_of=cls._RELEASES[as_of],
+                       remove_in=_get_safe_to_remove_release(as_of))
+
+        if in_favor_of:
+            details['in_favor_of'] = in_favor_of
+            if remove_in > 0:
+                msg = cls._deprecated_msg_with_alternative
+            else:
+                # There are no plans to remove this function, but it is
+                # now deprecated.
+                msg = cls._deprecated_msg_with_alternative_no_removal
+        else:
+            if remove_in > 0:
+                msg = cls._deprecated_msg_no_alternative
+            else:
+                # There are no plans to remove this function, but it is
+                # now deprecated.
+                msg = cls._deprecated_msg_with_no_alternative_no_removal
+
+        report_deprecated_feature(LOG, msg, details)
+
     def __init__(self, as_of, in_favor_of=None, remove_in=2, what=None):
         """Initialize decorator
 
@@ -139,17 +174,19 @@ class deprecated(object):
     def __call__(self, func_or_cls):
         if not self.what:
             self.what = func_or_cls.__name__ + '()'
-        msg, details = self._build_message()
 
         if inspect.isfunction(func_or_cls):
 
             @six.wraps(func_or_cls)
             def wrapped(*args, **kwargs):
-                report_deprecated_feature(LOG, msg, details)
+                self.report(self.what, self.as_of,
+                            in_favor_of=self.in_favor_of,
+                            remove_in=self.remove_in)
                 return func_or_cls(*args, **kwargs)
             return wrapped
         elif inspect.isclass(func_or_cls):
             orig_init = func_or_cls.__init__
+            orig_self = self
 
             # TODO(tsufiev): change `functools` module to `six` as
             # soon as six 1.7.4 (with fix for passing `assigned`
@@ -157,45 +194,15 @@ class deprecated(object):
             # and added to the oslo-incubator requrements
             @functools.wraps(orig_init, assigned=('__name__', '__doc__'))
             def new_init(self, *args, **kwargs):
-                report_deprecated_feature(LOG, msg, details)
+                orig_self.report(orig_self.what, orig_self.as_of,
+                                 in_favor_of=orig_self.in_favor_of,
+                                 remove_in=orig_self.remove_in)
                 orig_init(self, *args, **kwargs)
             func_or_cls.__init__ = new_init
             return func_or_cls
         else:
             raise TypeError('deprecated can be used only with functions or '
                             'classes')
-
-    def _get_safe_to_remove_release(self, release):
-        # TODO(dstanek): this method will have to be reimplemented once
-        #    when we get to the X release because once we get to the Y
-        #    release, what is Y+2?
-        new_release = chr(ord(release) + self.remove_in)
-        if new_release in self._RELEASES:
-            return self._RELEASES[new_release]
-        else:
-            return new_release
-
-    def _build_message(self):
-        details = dict(what=self.what,
-                       as_of=self._RELEASES[self.as_of],
-                       remove_in=self._get_safe_to_remove_release(self.as_of))
-
-        if self.in_favor_of:
-            details['in_favor_of'] = self.in_favor_of
-            if self.remove_in > 0:
-                msg = self._deprecated_msg_with_alternative
-            else:
-                # There are no plans to remove this function, but it is
-                # now deprecated.
-                msg = self._deprecated_msg_with_alternative_no_removal
-        else:
-            if self.remove_in > 0:
-                msg = self._deprecated_msg_no_alternative
-            else:
-                # There are no plans to remove this function, but it is
-                # now deprecated.
-                msg = self._deprecated_msg_with_no_alternative_no_removal
-        return msg, details
 
 
 def is_compatible(requested_version, current_version, same_major=True):
