@@ -373,6 +373,12 @@ class LauncherTest(test_base.BaseTestCase):
         service.launch(svc, workers=3)
         mock_launch.assert_called_with(svc, workers=3)
 
+    def test_launch_wrong_service_base_class(self):
+        # check that services that do not subclass service.ServiceBase
+        # can not be launched.
+        svc = mock.Mock()
+        self.assertRaises(TypeError, service.launch, svc)
+
 
 class ProcessLauncherTest(test_base.BaseTestCase):
 
