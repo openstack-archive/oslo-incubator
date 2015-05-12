@@ -12,9 +12,8 @@
 
 """Compatibility shim for Kilo, while operators migrate to oslo.middleware."""
 
+from oslo_log import versionutils
 from oslo_middleware import catch_errors
-
-from openstack.common import versionutils
 
 
 @versionutils.deprecated(as_of=versionutils.deprecated.KILO,
