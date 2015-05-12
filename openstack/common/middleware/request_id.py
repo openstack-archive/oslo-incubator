@@ -12,9 +12,8 @@
 
 """Compatibility shim for Kilo, while operators migrate to oslo.middleware."""
 
+from oslo_log import versionutils
 from oslo_middleware import request_id
-
-from openstack.common import versionutils
 
 
 ENV_REQUEST_ID = 'openstack.request_id'
