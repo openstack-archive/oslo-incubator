@@ -15,14 +15,27 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""Generic Node base class for all workers that run on hosts."""
+"""Generic Node base class for all workers that run on hosts.
 
+This module provides two launchers for running services:
+
+    * ServiceLauncher - used for running one or more service in
+      a parent process.
+    * ProcessLauncher - forks a given number of workers in which
+      service(s) are then started.
+
+Please be informed that it is highly recommended to use no more than
+one instance of ServiceLauncher and ProcessLauncher classes per process.
+"""
+
+import abc
 import errno
 import io
 import logging
 import os
 import random
 import signal
+import six
 import sys
 import time
 
@@ -85,6 +98,34 @@ def _set_signals_handler(handler):
     signal.signal(signal.SIGINT, handler)
     if _sighup_supported():
         signal.signal(signal.SIGHUP, handler)
+
+
+@six.add_metaclass(abc.ABCMeta)
+class ServiceBase(object):
+    """Base class for all services."""
+
+    @abc.abstractmethod
+    def start(self):
+        """Start service."""
+        pass
+
+    @abc.abstractmethod
+    def stop(self):
+        """Stop service."""
+        pass
+
+    @abc.abstractmethod
+    def wait(self):
+        """Wait for service to complete."""
+        pass
+
+    @abc.abstractmethod
+    def reset(self):
+        """Reset service.
+
+        Called in case service running in daemon mode receives SIGHUP.
+        """
+        pass
 
 
 class Launcher(object):
@@ -421,7 +462,7 @@ class ProcessLauncher(object):
                 self._wait_child()
 
 
-class Service(object):
+class Service(ServiceBase):
     """Service object for binaries running on hosts."""
 
     def __init__(self, threads=1000):
@@ -497,6 +538,9 @@ class Services(object):
 
 
 def launch(service, workers=1):
+    if not isinstance(service, ServiceBase):
+        raise TypeError("Service %(service)s must be subclass of %(base)s!"
+                        % {'service': service, 'base': ServiceBase})
     if workers is None or workers == 1:
         launcher = ServiceLauncher()
         launcher.launch_service(service)
