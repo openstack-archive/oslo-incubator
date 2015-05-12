@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Code-Review+2: Doug Hellmann <doug@doughellmann.com>
+Workflow+1: Doug Hellmann <doug@doughellmann.com>
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+1: Rajesh Tailor <rajesh.tailor@nttdata.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 12 May 2015 20:12:20 +0000
+Reviewed-on: https://review.openstack.org/165340
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
