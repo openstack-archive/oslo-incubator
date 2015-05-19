@@ -122,3 +122,18 @@ class TestOpenstackGenerators(base.BaseTestCase):
                       'vendor = Cheese Shoppe\n'
                       'version = 1.0.0')
         self.assertEqual(target_str, str(model))
+
+    def test_package_report_generator_without_vendor_string(self):
+        class VersionObj(object):
+            def product_string(self):
+                return 'Sharp Cheddar'
+
+            def version_string_with_package(self):
+                return '1.0.0'
+
+        model = os_pgen.PackageReportGenerator(VersionObj())()
+        model.set_current_view_type('text')
+
+        target_str = ('product = Sharp Cheddar\n'
+                      'version = 1.0.0')
+        self.assertEqual(target_str, str(model))
