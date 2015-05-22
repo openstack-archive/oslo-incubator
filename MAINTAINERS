@@ -76,7 +76,7 @@ F: crypto/
 == eventlet_backdoor ==
 
 M:
-S: Orphan
+S: Graduating
 F: eventlet_backdoor.py
 
 == fileutils ==
@@ -112,7 +112,7 @@ F: log.py
 == loopingcall ==
 
 M:
-S: Orphan
+S: Graduating
 F: loopingcall.py
 
 == memorycache ==
@@ -130,7 +130,7 @@ F: middleware/
 == periodic_task ==
 
 M: Michael Still <mikal@stillhq.com>
-S: Maintained
+S: Graduating
 F: periodic_task.py
 
 == quota ==
@@ -154,25 +154,25 @@ F: scheduler/
 == service ==
 
 M: Michael Still <mikal@stillhq.com>
-S: Maintained
+S: Graduating
 F: service.py
 
 == sslutils ==
 
 M:
-S: Orphan
+S: Graduating
 F: sslutils.py
 
 == systemd ==
 
 M: Alan Pevec <apevec@redhat.com>
-S: Maintained
+S: Graduating
 F: systemd.py
 
 == threadgroup ==
 
 M:
-S: Orphan
+S: Graduating
 F: threadgroup.py
 
 == versionutils ==
