@@ -209,6 +209,7 @@ class ProcessLauncher(object):
         self.sigcaught = None
         self.running = True
         self.wait_interval = wait_interval
+        self.launcher = None
         rfd, self.writepipe = os.pipe()
         self.readpipe = eventlet.greenio.GreenPipe(rfd, 'r')
         self.handle_signal()
@@ -231,16 +232,24 @@ class ProcessLauncher(object):
 
         LOG.info(_LI('Parent process has died unexpectedly, exiting'))
 
+        if self.launcher:
+            self.launcher.stop()
+
         sys.exit(1)
 
     def _child_process_handle_signal(self):
         # Setup child signal handlers differently
+
+        def _sigterm(*args):
+            signal.signal(signal.SIGTERM, signal.SIG_DFL)
+            self.launcher.stop()
+
         def _sighup(*args):
             signal.signal(signal.SIGHUP, signal.SIG_DFL)
             raise SignalExit(signal.SIGHUP)
 
         # Parent signals with SIGTERM when it wants us to go away.
-        signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        signal.signal(signal.SIGTERM, _sigterm)
         if _sighup_supported():
             signal.signal(signal.SIGHUP, _sighup)
         # Block SIGINT and let the parent send us a SIGTERM
@@ -265,8 +274,6 @@ class ProcessLauncher(object):
         except BaseException:
             LOG.exception(_LE('Unhandled exception'))
             status = 2
-        finally:
-            launcher.stop()
 
         return status, signo
 
@@ -305,13 +312,14 @@ class ProcessLauncher(object):
 
         pid = os.fork()
         if pid == 0:
-            launcher = self._child_process(wrap.service)
+            self.launcher = self._child_process(wrap.service)
             while True:
                 self._child_process_handle_signal()
-                status, signo = self._child_wait_for_exit_or_signal(launcher)
+                status, signo = self._child_wait_for_exit_or_signal(self.launcher)
                 if not _is_sighup_and_daemon(signo):
+                    self.launcher.wait()
                     break
-                launcher.restart()
+                self.launcher.restart()
 
             os._exit(status)
 
@@ -407,6 +415,15 @@ class ProcessLauncher(object):
     def stop(self):
         """Terminate child processes and wait on each."""
         self.running = False
+
+        LOG.debug("Stop services.")
+        # NOTE(gtt): Stop service in master process to close sockets.
+        # See LP#1382390 for detail.
+        for service in set(
+                [wrap.service for wrap in self.children.values()]):
+            service.stop()
+
+        LOG.debug("Killing children.")
         for pid in self.children:
             try:
                 os.kill(pid, signal.SIGTERM)
@@ -463,7 +480,6 @@ class Services(object):
         # wait for graceful shutdown of services:
         for service in self.services:
             service.stop()
-            service.wait()
 
         # Each service has performed cleanup, now signal that the run_service
         # wrapper threads can now die:
@@ -474,14 +490,14 @@ class Services(object):
         self.tg.stop()
 
     def wait(self):
+        for service in self.services:
+            service.wait()
         self.tg.wait()
 
     def restart(self):
         self.stop()
-        self.done = event.Event()
         for restart_service in self.services:
             restart_service.reset()
-            self.tg.add_thread(self.run_service, restart_service, self.done)
 
     @staticmethod
     def run_service(service, done):
