@@ -382,17 +382,29 @@ class ProcessLauncherTest(test_base.BaseTestCase):
         launcher = service.ProcessLauncher()
         self.assertTrue(launcher.running)
 
-        launcher.children = [22, 222]
+        pid_nums = [23, 222]
+        fakeServiceWrapper = service.ServiceWrapper(service.Service(), 1)
+        launcher.children = {pid_nums[0]: fakeServiceWrapper,
+                             pid_nums[1]: fakeServiceWrapper}
         with mock.patch('openstack.common.service.os.kill') as mock_kill:
             with mock.patch.object(launcher, '_wait_child') as _wait_child:
-                _wait_child.side_effect = lambda: launcher.children.pop()
-                launcher.stop()
+
+                def fake_wait_child():
+                    pid = pid_nums.pop()
+                    return launcher.children.pop(pid)
+
+                _wait_child.side_effect = fake_wait_child
+                with mock.patch('openstack.common.service.Service.stop') as \
+                        mock_service_stop:
+                    mock_service_stop.side_effect = lambda: None
+                    launcher.stop()
 
         self.assertFalse(launcher.running)
         self.assertFalse(launcher.children)
-        self.assertEqual([mock.call(22, signal_mock.SIGTERM),
-                          mock.call(222, signal_mock.SIGTERM)],
+        self.assertEqual([mock.call(222, signal_mock.SIGTERM),
+                          mock.call(23, signal_mock.SIGTERM)],
                          mock_kill.mock_calls)
+        mock_service_stop.assert_called_once_with()
 
     @mock.patch(
         "openstack.common.service.ProcessLauncher._signal_handlers_set",
@@ -485,8 +497,7 @@ class ServiceTest(test_base.BaseTestCase):
 
 
 class EventletServerTest(test_base.BaseTestCase):
-    def test_shuts_down_on_sigterm_when_client_connected(self):
-
+    def run_server(self):
         server_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                    'eventlet_service.py')
 
@@ -524,10 +535,35 @@ class EventletServerTest(test_base.BaseTestCase):
         # server or signal handlers.
         time.sleep(1)
 
+        return (server, conn)
+
+    def test_shuts_down_on_sigint_when_client_connected(self):
+        server, conn = self.run_server()
+
+        # send SIGINT to the server and wait for it to exit while client still
+        # connected.
+        server.send_signal(signal.SIGINT)
+        server.wait()
+        conn.close()
+
+    def test_graceful_shuts_down_on_sigterm_when_client_connected(self):
+        server, conn = self.run_server()
+
         # send SIGTERM to the server and wait for it to exit while client still
         # connected.
         server.send_signal(signal.SIGTERM)
 
-        server.wait()
+        server_wait_thread = threading.Thread(
+            target=lambda server: server.wait(), args=(server,))
+        server_wait_thread.start()
+
+        # server with graceful shutdown must wait forewer
+        # for closing connection by client
+        # but for test 3 seconds is enough
+        time.sleep(3)
+
+        self.assertEqual(True, server_wait_thread.is_alive())
 
         conn.close()
+
+        server_wait_thread.join()
