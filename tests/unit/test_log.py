@@ -864,3 +864,7 @@ class MaskPasswordTestCase(test.BaseTestCase):
         payload = six.text_type(payload)
         expected = """{'adminPass':'***'}"""
         self.assertEqual(expected, log.mask_password(payload))
+
+        payload = 'test = "original_password" : "my\xe9\x80\x80pass"'
+        expected = 'test = "original_password" : "***"'
+        self.assertEqual(expected, log.mask_password(payload))
