@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Code-Review+2: Flavio Percoco <fpercoco@redhat.com>
+Workflow+1: Ihar Hrachyshka <ihrachys@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Mon, 01 Jun 2015 11:49:27 +0000
+Reviewed-on: https://review.openstack.org/187164
+Project: openstack/oslo-incubator
+Branch: refs/heads/stable/icehouse
