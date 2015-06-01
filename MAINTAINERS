@@ -133,12 +133,6 @@ M: Michael Still <mikal@stillhq.com>
 S: Graduating
 F: periodic_task.py
 
-== quota ==
-
-M: Sergey Skripnick <sskripnick@mirantis.com>
-S: Maintained
-F: quota.py
-
 == reports ==
 
 M: Solly Ross <sross@redhat.com>
