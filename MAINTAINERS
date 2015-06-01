@@ -89,12 +89,6 @@ M:
 S: Orphan
 F: memorycache.py
 
-== quota ==
-
-M: Sergey Skripnick <sskripnick@mirantis.com>
-S: Maintained
-F: quota.py
-
 == reports ==
 
 M:
