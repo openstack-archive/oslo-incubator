@@ -1,7 +1,7 @@
 [dashboard]
 title = Oslo Review Inbox
 description = Review Inbox
-foreach = (project:^openstack/.*oslo.* OR project:^openstack-dev/.*oslo.* OR project:openstack/debtcollector OR project:openstack/pylockfile OR project:openstack/stevedore OR project:openstack/taskflow OR project:openstack/tooz OR project:openstack-dev/cookiecutter OR project:openstack-dev/pbr OR project:openstack/debtcollector) status:open NOT owner:self NOT label:Workflow<=-1 label:Verified>=1 NOT label:Code-Review<=-1,self NOT label:Code-Review>=1,self
+foreach = (project:^openstack/.*oslo.* OR project:^openstack-dev/.*oslo.* OR project:openstack/automaton OR project:openstack/futurist OR project:openstack/debtcollector OR project:openstack/pylockfile OR project:openstack/stevedore OR project:openstack/taskflow OR project:openstack/tooz OR project:openstack-dev/cookiecutter OR project:openstack-dev/pbr OR project:openstack/debtcollector) status:open NOT owner:self NOT label:Workflow<=-1 label:Verified>=1 NOT label:Code-Review<=-1,self NOT label:Code-Review>=1,self
 
 [section "Oslo Specs"]
 query = project:openstack/oslo-specs
