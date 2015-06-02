@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Workflow+1: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+2: Ihar Hrachyshka <ihrachys@redhat.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 02 Jun 2015 00:21:09 +0000
+Reviewed-on: https://review.openstack.org/186881
+Project: openstack/oslo-incubator
+Branch: refs/heads/stable/icehouse
