@@ -165,7 +165,7 @@ class BaseManagerTest(test_base.BaseTestCase):
     def test_resource_req_id(self):
         f = HumanResource(self.tc.human_resources, {'id': 1})
         self.assertEqual(f.name, '256 MB Server')
-        self.assertEqual(f.x_request_id, 'req-test')
+        self.assertFalse(hasattr(f, 'x_request_id'))
         self.http_client.assert_called('GET', '/human_resources/1')
 
     def test_resource_req_id_header(self):
