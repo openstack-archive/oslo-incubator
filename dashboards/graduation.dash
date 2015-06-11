@@ -15,7 +15,8 @@ query = (project:openstack/oslo.versionedobjects OR
 
 [section "New Libraries"]
 query = (project:openstack/futurist OR
-    project:openstack/automaton)
+    project:openstack/automaton OR
+	project:openstack/mox3)
     NOT owner:self
     NOT label:Workflow<=-1
     label:Verified>=1
