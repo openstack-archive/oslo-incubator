@@ -67,7 +67,14 @@ class LoopingCallBase(object):
 class FixedIntervalLoopingCall(LoopingCallBase):
     """A fixed interval looping call."""
 
-    def start(self, interval, initial_delay=None):
+    def _sleep(self, delay):
+        if delay > 0:
+            LOG.warning(_LW('task %(func_name)r run outlasted '
+                            'interval by %(delay).2f sec'),
+                        {'func_name': self.f, 'delay': delay})
+        greenthread.sleep(-delay if delay < 0 else 0)
+
+    def start(self, interval, initial_delay=None, stop_on_exception=True):
         self._running = True
         done = event.Event()
 
@@ -75,28 +82,28 @@ class FixedIntervalLoopingCall(LoopingCallBase):
             if initial_delay:
                 greenthread.sleep(initial_delay)
 
-            try:
-                while self._running:
+            while self._running:
+                try:
                     start = _ts()
                     self.f(*self.args, **self.kw)
                     end = _ts()
                     if not self._running:
                         break
                     delay = end - start - interval
-                    if delay > 0:
-                        LOG.warning(_LW('task %(func_name)r run outlasted '
-                                        'interval by %(delay).2f sec'),
-                                    {'func_name': self.f, 'delay': delay})
-                    greenthread.sleep(-delay if delay < 0 else 0)
-            except LoopingCallDone as e:
-                self.stop()
-                done.send(e.retvalue)
-            except Exception:
-                LOG.exception(_LE('in fixed duration looping call'))
-                done.send_exception(*sys.exc_info())
-                return
-            else:
-                done.send(True)
+                    self._sleep(delay)
+                except LoopingCallDone as e:
+                    self.stop()
+                    done.send(e.retvalue)
+                except Exception:
+                    LOG.exception(_LE('in fixed duration looping call'))
+                    if stop_on_exception:
+                        done.send_exception(*sys.exc_info())
+                        return
+                    # not stopping on exception - need to wait
+                    end = _ts()
+                    delay = end - start - interval
+                    self._sleep(delay)
+            done.send(True)
 
         self.done = done
 

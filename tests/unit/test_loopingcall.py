@@ -81,3 +81,14 @@ class LoopingCallTestCase(test_base.BaseTestCase):
         timer.start(interval=1.01).wait()
         m.UnsetStubs()
         m.VerifyAll()
+
+    def _raise_and_then_done(self):
+        self.num_runs = self.num_runs + 1
+        if self.num_runs == 1:
+            raise Exception()
+        raise loopingcall.LoopingCallDone(False)
+
+    def test_loop_doesnt_stop_on_exception(self):
+        lcall = loopingcall.FixedIntervalLoopingCall(self._raise_and_then_done)
+        lcall.start(interval=0.1, stop_on_exception=False).wait()
+        self.assertEqual(2, self.num_runs)
