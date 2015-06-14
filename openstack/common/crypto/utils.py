@@ -26,15 +26,20 @@
 ########################################################################
 
 import base64
+import os
 
 from Crypto.Hash import HMAC
-from Crypto import Random
 from oslo_utils import importutils
 import six
 
 from openstack.common._i18n import _
 
 bchr = six.int2byte
+
+
+class _Random(object):
+    def read(self, nbytes):
+        return os.urandom(nbytes)
 
 
 class CryptoutilsException(Exception):
@@ -125,7 +130,7 @@ class SymmetricCrypto(object):
         self.hashfn = importutils.import_module('Crypto.Hash.' + hashtype)
 
     def new_key(self, size):
-        return Random.new().read(size)
+        return _Random().read(size)
 
     def encrypt(self, key, msg, b64encode=True):
         """Encrypt the provided msg and returns the cyphertext optionally
@@ -142,7 +147,7 @@ class SymmetricCrypto(object):
 
         :returns enc: a block of encrypted data.
         """
-        iv = Random.new().read(self.cipher.block_size)
+        iv = _Random().read(self.cipher.block_size)
         cipher = self.cipher.new(key, self.cipher.MODE_CBC, iv)
 
         # CBC mode requires a fixed block size. Append padding and length of
