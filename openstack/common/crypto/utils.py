@@ -28,13 +28,21 @@
 import base64
 
 from Crypto.Hash import HMAC
-from Crypto import Random
+from Crypto import Random as Crypto_Random
 from oslo_utils import importutils
 import six
 
 from openstack.common._i18n import _
 
 bchr = six.int2byte
+
+
+def get_random_bytes(n):
+    # NOTE(dims): Since we cannot inspect the pid stored in
+    # _UserFriendlyRNG, we assume the worst and re-initialize using
+    # Crypto.Random.atfork() before we get fresh set of bytes.
+    Crypto_Random.atfork()
+    return Crypto_Random.get_random_bytes(n)
 
 
 class CryptoutilsException(Exception):
@@ -125,7 +133,7 @@ class SymmetricCrypto(object):
         self.hashfn = importutils.import_module('Crypto.Hash.' + hashtype)
 
     def new_key(self, size):
-        return Random.new().read(size)
+        return get_random_bytes(size)
 
     def encrypt(self, key, msg, b64encode=True):
         """Encrypt the provided msg and returns the cyphertext optionally
@@ -142,7 +150,7 @@ class SymmetricCrypto(object):
 
         :returns enc: a block of encrypted data.
         """
-        iv = Random.new().read(self.cipher.block_size)
+        iv = get_random_bytes(self.cipher.block_size)
         cipher = self.cipher.new(key, self.cipher.MODE_CBC, iv)
 
         # CBC mode requires a fixed block size. Append padding and length of
