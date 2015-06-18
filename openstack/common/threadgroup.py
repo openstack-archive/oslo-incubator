@@ -76,6 +76,7 @@ class ThreadGroup(object):
         pulse.start(interval=interval,
                     initial_delay=initial_delay)
         self.timers.append(pulse)
+        return pulse
 
     def add_thread(self, callback, *args, **kwargs):
         gt = self.pool.spawn(callback, *args, **kwargs)
