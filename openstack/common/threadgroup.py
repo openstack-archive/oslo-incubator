@@ -69,6 +69,7 @@ class ThreadGroup(object):
         timer.start(initial_delay=initial_delay,
                     periodic_interval_max=periodic_interval_max)
         self.timers.append(timer)
+        return timer
 
     def add_timer(self, interval, callback, initial_delay=None,
                   *args, **kwargs):
@@ -76,6 +77,7 @@ class ThreadGroup(object):
         pulse.start(interval=interval,
                     initial_delay=initial_delay)
         self.timers.append(pulse)
+        return pulse
 
     def add_thread(self, callback, *args, **kwargs):
         gt = self.pool.spawn(callback, *args, **kwargs)
@@ -85,6 +87,9 @@ class ThreadGroup(object):
 
     def thread_done(self, thread):
         self.threads.remove(thread)
+
+    def timer_done(self, timer):
+        self.timers.remove(timer)
 
     def _stop_threads(self):
         current = threading.current_thread()
