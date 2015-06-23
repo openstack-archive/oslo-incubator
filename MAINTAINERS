@@ -73,12 +73,6 @@ M: Simo Sorce <simo@redhat.com>
 S: Deprecated
 F: crypto/
 
-== eventlet_backdoor ==
-
-M:
-S: Graduating
-F: eventlet_backdoor.py
-
 == fileutils ==
 
 M: Zhongyue Luo <zhongyue.nah@intel.com>
@@ -109,23 +103,11 @@ M:
 S: Graduating
 F: log.py
 
-== loopingcall ==
-
-M:
-S: Graduating
-F: loopingcall.py
-
 == memorycache ==
 
 M:
 S: Orphan
 F: memorycache.py
-
-== periodic_task ==
-
-M: Michael Still <mikal@stillhq.com>
-S: Graduating
-F: periodic_task.py
 
 == quota ==
 
@@ -144,30 +126,6 @@ F: report/
 M:
 S: Orphan
 F: scheduler/
-
-== service ==
-
-M: Michael Still <mikal@stillhq.com>
-S: Graduating
-F: service.py
-
-== sslutils ==
-
-M:
-S: Graduating
-F: sslutils.py
-
-== systemd ==
-
-M: Alan Pevec <apevec@redhat.com>
-S: Graduating
-F: systemd.py
-
-== threadgroup ==
-
-M:
-S: Graduating
-F: threadgroup.py
 
 == versionutils ==
 
