@@ -183,6 +183,7 @@ def _check_obsolete(path):
                   (path, replacement))
 
 OSLO_LIBS = [
+    'cache',
     'concurrency',
     'config',
     'context',
@@ -192,8 +193,10 @@ OSLO_LIBS = [
     'messaging',
     'middleware',
     'policy',
+    'reports',
     'rootwrap',
     'serialization',
+    'service',
     'utils',
     'version',
     'vmware',
