@@ -56,8 +56,6 @@ F: apiclient/
 
 == cache ==
 
-M: Flavio Percoco <flavio@redhat.com>
-M: Morgan Fainberg <m@metacloud.com>
 S: Deprecated
 F: cache/
 
@@ -79,29 +77,11 @@ M: Zhongyue Luo <zhongyue.nah@intel.com>
 S: Maintained
 F: fileutils.py
 
-== fixture ==
-
-M: Monty Taylor <mordred@inaugust.com>
-S: Graduating
-F: fixture/
-
 == imageutils ==
 
 M: Zhongyue Luo <zhongyue.nah@intel.com>
 S: Maintained
 F: imageutils.py
-
-== local ==
-
-M:
-S: Graduating
-F: local.py
-
-== log ==
-
-M:
-S: Graduating
-F: log.py
 
 == memorycache ==
 
@@ -117,8 +97,8 @@ F: quota.py
 
 == reports ==
 
-M: Solly Ross <sross@redhat.com>
-S: Maintained
+M:
+S: Graduating
 F: report/
 
 == scheduler ==
@@ -126,9 +106,3 @@ F: report/
 M:
 S: Orphan
 F: scheduler/
-
-== versionutils ==
-
-M:
-S: Orphan
-F: versionutils.py
