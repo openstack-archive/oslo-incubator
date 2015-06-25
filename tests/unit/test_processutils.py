@@ -57,6 +57,18 @@ class UtilsTest(test_base.BaseTestCase):
                                                         mock_cpu_count):
         self.assertEqual(1, processutils.get_worker_count())
 
+    def test_execute_with_callback(self):
+        on_execute_callback = mock.Mock()
+        on_completion_callback = mock.Mock()
+        processutils.execute("/bin/true")
+        self.assertEqual(0, on_execute_callback.call_count)
+        self.assertEqual(0, on_completion_callback.call_count)
+
+        processutils.execute("/bin/true", on_execute=on_execute_callback,
+                             on_completion=on_completion_callback)
+        self.assertEqual(1, on_execute_callback.call_count)
+        self.assertEqual(1, on_completion_callback.call_count)
+
 
 class ProcessExecutionErrorTest(test_base.BaseTestCase):
 
