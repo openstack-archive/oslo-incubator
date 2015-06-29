@@ -95,12 +95,6 @@ M: Sergey Skripnick <sskripnick@mirantis.com>
 S: Maintained
 F: quota.py
 
-== reports ==
-
-M:
-S: Graduating
-F: report/
-
 == scheduler ==
 
 M:
