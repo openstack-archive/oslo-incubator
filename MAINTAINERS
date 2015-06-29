@@ -89,11 +89,6 @@ M:
 S: Orphan
 F: memorycache.py
 
-== reports ==
-
-M:
-S: Graduating
-F: report/
 
 == scheduler ==
 
