@@ -1,0 +1,18 @@
+Drop use of 'oslo' namespace package
+
+The Oslo libraries have moved all of their code out of the 'oslo'
+namespace package into per-library packages. The namespace package was
+retained during kilo for backwards compatibility, but will be removed by
+the liberty-2 milestone. This change removes the use of the namespace
+package, replacing it with the new package names.
+
+The patches in the libraries will be put on hold until application
+patches have landed, or L2, whichever comes first. At that point, new
+versions of the libraries without namespace packages will be released as
+a major version update.
+
+Please merge this patch, or an equivalent, before L2 to avoid problems
+with those library releases.
+
+Blueprint: remove-namespace-packages
+https://blueprints.launchpad.net/oslo-incubator/+spec/remove-namespace-packages
