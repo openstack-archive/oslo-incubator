@@ -123,6 +123,9 @@ class HTTPClient(object):
             "'%s'" % url,
         ]
 
+        if not kwargs.get('verify', self.verify):
+            string_parts.insert(1, '--insecure')
+
         for element in kwargs['headers']:
             header = ("-H '%s: %s'" %
                       self._safe_header(element, kwargs['headers'][element]))
