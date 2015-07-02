@@ -190,26 +190,27 @@ def execute(*cmd, **kwargs):
             if on_execute:
                 on_execute(obj)
 
-            result = None
-            for _i in six.moves.range(20):
-                # NOTE(russellb) 20 is an arbitrary number of retries to
-                # prevent any chance of looping forever here.
-                try:
-                    if process_input is not None:
-                        result = obj.communicate(process_input)
-                    else:
-                        result = obj.communicate()
-                except OSError as e:
-                    if e.errno in (errno.EAGAIN, errno.EINTR):
-                        continue
-                    raise
-                break
-            obj.stdin.close()  # pylint: disable=E1101
-            _returncode = obj.returncode  # pylint: disable=E1101
-            LOG.log(loglevel, 'Result was %s' % _returncode)
-
-            if on_completion:
-                on_completion(obj)
+            try:
+                result = None
+                for _i in six.moves.range(20):
+                    # NOTE(russellb) 20 is an arbitrary number of retries to
+                    # prevent any chance of looping forever here.
+                    try:
+                        if process_input is not None:
+                            result = obj.communicate(process_input)
+                        else:
+                            result = obj.communicate()
+                    except OSError as e:
+                        if e.errno in (errno.EAGAIN, errno.EINTR):
+                            continue
+                        raise
+                    break
+                obj.stdin.close()  # pylint: disable=E1101
+                _returncode = obj.returncode  # pylint: disable=E1101
+                LOG.log(loglevel, 'Result was %s' % _returncode)
+            finally:
+                if on_completion:
+                    on_completion(obj)
 
             if not ignore_exit_code and _returncode not in check_exit_code:
                 (stdout, stderr) = result

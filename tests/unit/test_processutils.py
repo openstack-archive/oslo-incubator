@@ -20,6 +20,7 @@ import logging
 import multiprocessing
 import os
 import stat
+import subprocess
 import tempfile
 
 import fixtures
@@ -66,6 +67,24 @@ class UtilsTest(test_base.BaseTestCase):
 
         processutils.execute("/bin/true", on_execute=on_execute_callback,
                              on_completion=on_completion_callback)
+        self.assertEqual(1, on_execute_callback.call_count)
+        self.assertEqual(1, on_completion_callback.call_count)
+
+    @mock.patch.object(subprocess.Popen, "communicate")
+    def test_execute_with_callback_and_errors(self, mock_comm):
+        on_execute_callback = mock.Mock()
+        on_completion_callback = mock.Mock()
+
+        def fake_communicate(*args):
+            raise IOError("Broken pipe")
+
+        mock_comm.side_effect = fake_communicate
+
+        self.assertRaises(IOError,
+                          processutils.execute,
+                          "/bin/true",
+                          on_execute=on_execute_callback,
+                          on_completion=on_completion_callback)
         self.assertEqual(1, on_execute_callback.call_count)
         self.assertEqual(1, on_completion_callback.call_count)
 
