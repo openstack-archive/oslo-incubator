@@ -72,7 +72,7 @@ function process_options {
 
 TOOLS_PATH=${TOOLS_PATH:-${PWD}}
 VENV_PATH=${VENV_PATH:-${PWD}}
-VENV_DIR=${VENV_NAME:-.venv}
+VENV_DIR=${VENV_DIR:-.venv}
 WITH_VENV=${TOOLS_PATH}/tools/with_venv.sh
 
 ALWAYS_VENV=0
@@ -99,7 +99,6 @@ process_options $@
 export VENV_PATH
 export TOOLS_PATH
 export VENV_DIR
-export VENV_NAME
 export WITH_VENV
 export VENV=${VENV_PATH}/${VENV_DIR}
 
