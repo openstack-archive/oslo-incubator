@@ -8,7 +8,7 @@ greenlet>=0.3.2
 Jinja2>=2.6 # BSD License (3 clause)
 oslo.concurrency>=2.1.0 # Apache-2.0
 oslo.config>=1.11.0 # Apache-2.0
-oslo.middleware!=2.0.0,>=1.2.0 # Apache-2.0
+oslo.middleware>=2.4.0 # Apache-2.0
 oslo.serialization>=1.4.0 # Apache-2.0
 oslo.utils>=1.9.0 # Apache-2.0
 PrettyTable<0.8,>=0.7
