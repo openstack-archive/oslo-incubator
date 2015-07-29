@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Code-Review+2: lifeless <robertc@robertcollins.net>
+Workflow+1: lifeless <robertc@robertcollins.net>
+Submitted-by: Jenkins
+Submitted-at: Wed, 29 Jul 2015 04:38:30 +0000
+Reviewed-on: https://review.openstack.org/206830
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
