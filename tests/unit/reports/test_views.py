@@ -15,6 +15,7 @@
 import copy
 
 import mock
+import six
 
 from openstack.common.report.models import base as base_model
 from openstack.common.report.models import with_default_views as mwdf
@@ -364,12 +365,13 @@ class TestJinjaView(utils.BaseTestCase):
         super(TestJinjaView, self).setUp()
         self.model = base_model.ReportModel(data={'int': 1, 'string': 'value'})
 
-    @mock.patch('six.moves.builtins.open', new=MM_OPEN)
+    @mock.mock_open(MM_OPEN)
     def test_load_from_file(self):
         self.model.attached_view = jv.JinjaView(path='a/b/c/d.jinja.txt')
 
-        self.assertEqual('int is 1, string is value', str(self.model))
-        self.MM_FILE.assert_called_with_once('a/b/c/d.jinja.txt')
+        self.assertEqual('int is 1, string is value',
+                         six.text_type(self.model))
+        self.MM_FILE.assert_called_once_with('a/b/c/d.jinja.txt')
 
     def test_direct_pass(self):
         self.model.attached_view = jv.JinjaView(text=self.TEMPL_STR)
