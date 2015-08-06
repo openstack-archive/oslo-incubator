@@ -369,7 +369,7 @@ class TestJinjaView(utils.BaseTestCase):
         self.model.attached_view = jv.JinjaView(path='a/b/c/d.jinja.txt')
 
         self.assertEqual('int is 1, string is value', str(self.model))
-        self.MM_FILE.assert_called_with_once('a/b/c/d.jinja.txt')
+        self.MM_FILE.assert_called_once_with('a/b/c/d.jinja.txt')
 
     def test_direct_pass(self):
         self.model.attached_view = jv.JinjaView(text=self.TEMPL_STR)
