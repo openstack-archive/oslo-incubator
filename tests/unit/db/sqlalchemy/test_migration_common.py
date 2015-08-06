@@ -174,7 +174,7 @@ class TestMigrationCommon(test_base.DbTestCase):
             mock_find_repo.return_value = self.return_value
             migration.db_sync(self.engine, self.path, self.test_version)
 
-            mock_sanity.assert_called_once()
+            mock_sanity.assert_called_once_with()
 
     def test_db_sync_sanity_skipped(self):
         with contextlib.nested(
@@ -186,7 +186,7 @@ class TestMigrationCommon(test_base.DbTestCase):
             mock_find_repo.return_value = self.return_value
             migration.db_sync(self.engine, self.path, self.test_version, False)
 
-            mock_sanity.assert_not_called()
+            self.assertFalse(mock_sanity.called)
 
     def test_db_sanity_table_not_utf8(self):
         with mock.patch.object(self, 'engine') as mock_eng:
