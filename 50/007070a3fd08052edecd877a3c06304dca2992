@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Workflow+1: Davanum Srinivas (dims) <davanum@gmail.com>
+Code-Review+2: Matt Riedemann <mriedem@us.ibm.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 07 Aug 2015 14:10:58 +0000
+Reviewed-on: https://review.openstack.org/206711
+Project: openstack/oslo-incubator
+Branch: refs/heads/stable/juno
