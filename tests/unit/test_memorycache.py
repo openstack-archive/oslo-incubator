@@ -44,6 +44,14 @@ class MemorycacheTest(test_base.BaseTestCase):
         self.client.delete('foo')
         self.assertIsNone(self.client.get('foo'))
 
+    def test_get_multi(self):
+        self.client.set('foo', 'bar')
+        self.client.set('foo1', 'bar1')
+        self.assertEqual(self.client.get_multi(['foo', 'foo1']),
+                         {'foo': 'bar', 'foo1': 'bar1'})
+        self.assertEqual(self.client.get_multi(['foo', 'bar']),
+                         {'foo': 'bar'})
+
     def test_timeout(self):
         now = time.time()
         with mock.patch('time.time') as time_mock:
