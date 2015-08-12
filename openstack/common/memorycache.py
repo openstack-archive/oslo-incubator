@@ -54,19 +54,29 @@ class Client(object):
         """Ignores the passed in args."""
         self.cache = {}
 
-    def get(self, key):
-        """Retrieves the value for a key or None.
-
-        This expunges expired keys during each get.
-        """
-
+    def _expunge(self):
+        """expunges expired keys"""
         now = timeutils.utcnow_ts()
         for k in list(self.cache):
             (timeout, _value) = self.cache[k]
             if timeout and now >= timeout:
                 del self.cache[k]
 
+    def get(self, key):
+        """Retrieves the value for a key or None."""
+        self._expunge()
+
         return self.cache.get(key, (0, None))[1]
+
+    def get_multi(self, keys):
+        self._expunge()
+
+        values = {}
+        for key in keys:
+            value = self.cache.get(key, (0, None))[1]
+            if value:
+                values[key] = value
+        return values
 
     def set(self, key, value, time=0, min_compress_len=0):
         """Sets the value for a key."""
