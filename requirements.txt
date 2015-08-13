@@ -2,15 +2,15 @@
 # of appearance. Changing the order has an impact on the overall integration
 # process, which may cause wedges in the gate later.
 
-pbr<2.0,>=1.3
+pbr<2.0,>=1.4
 argparse
 greenlet>=0.3.2
 Jinja2>=2.6 # BSD License (3 clause)
 oslo.concurrency>=2.3.0 # Apache-2.0
-oslo.config>=1.11.0 # Apache-2.0
+oslo.config>=2.1.0 # Apache-2.0
 oslo.middleware>=2.4.0 # Apache-2.0
 oslo.serialization>=1.4.0 # Apache-2.0
-oslo.utils>=1.9.0 # Apache-2.0
+oslo.utils>=2.0.0 # Apache-2.0
 PrettyTable<0.8,>=0.7
 psutil<2.0.0,>=1.1.1
 pycrypto>=2.6
