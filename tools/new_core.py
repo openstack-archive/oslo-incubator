@@ -25,7 +25,7 @@ import parawrap
 CORE_TPL = """
 Greetings all stackers,
 
-I propose that we add {{FULL_NAME}} to the {{TEAM_CORE}} team.
+I propose that we add {{FULL_NAME}}[1] to the {{TEAM_CORE}}[2] team.
 
 {{FIRST_NAME}} has been actively contributing to {{TEAM}} for a while now, both
 in helping make {{TEAM}} better via code contribution(s) and by helping with
@@ -40,9 +40,7 @@ Please respond with +1/-1.
 
 Thanks much!
 
---
-
-{{ME}}
+- {{ME}}
 """
 CORE_TPL = CORE_TPL.strip()
 
@@ -58,21 +56,32 @@ def generate_email(args):
     params = {
         'FULL_NAME': args.who,
         'HE_SHE': args.gender.title(),
-        'LINKS': [],
         'TEAM_CORE': '%s-core' % args.team,
         'ME': args.sender,
     }
+    params['TEAM'] = args.team.strip().lower()
     params['HE_SHE_LOWER'] = params['HE_SHE'].lower()
-    params['TEAM'] = params['TEAM_CORE'].split("-")[0].strip().lower()
     params['FIRST_NAME'] = params['FULL_NAME'].split()[0]
     contents = expand_template(CORE_TPL, params)
-    return parawrap.fill(contents.strip(), width=75)
+    contents = parawrap.fill(contents.strip(), width=75)
+    # Put the links on after so they are not affected by the wrapping...
+    links = [
+        'https://launchpad.net/~%s' % args.who_launchpad_id,
+        'https://launchpad.net/%s' % params['TEAM'],
+    ]
+    contents += "\n\n"
+    for i, link in enumerate(links, 1):
+        contents += "[%s] %s\n" % (i, link)
+    return contents.rstrip()
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--adding-who', action="store", dest="who",
                         required=True, metavar="<full-name>")
+    parser.add_argument('--adding-who-launchpad-id', action="store",
+                        dest="who_launchpad_id",
+                        required=True, metavar="<launchpad-id>")
     parser.add_argument('--from-who', action="store", dest="sender",
                         metavar="<full-name>", required=True)
     parser.add_argument('--team', action="store", dest="team",
