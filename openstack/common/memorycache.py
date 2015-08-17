@@ -17,13 +17,21 @@
 """Super simple fake memcache client."""
 
 import copy
+import signal
+import threading
+import time
 
 from oslo_config import cfg
 from oslo_utils import timeutils
 
+
 memcache_opts = [
     cfg.ListOpt('memcached_servers',
                 help='Memcached servers or None for in process cache.'),
+    cfg.IntOpt('memcache_cleanup_timer',
+               default=60,
+               help='Time, in seconds, for which the cleanup thread wakes '
+                    'up to remove stale items from the cache'),
 ]
 
 CONF = cfg.CONF
@@ -49,22 +57,60 @@ def get_client(memcached_servers=None):
 
 class Client(object):
     """Replicates a tiny subset of memcached client interface."""
+    cleanup_thread = None
+    sigterm_received = False
 
     def __init__(self, *args, **kwargs):
         """Ignores the passed in args."""
         self.cache = {}
+        signal.signal(signal.SIGHUP, self._signal_handler)
+        signal.signal(signal.SIGINT, self._signal_handler)
+        signal.signal(signal.SIGQUIT, self._signal_handler)
+        signal.signal(signal.SIGALRM, self._signal_handler)
+        signal.signal(signal.SIGTERM, self._signal_handler)
+
+    def _init_cleanup_thread(self):
+        if self.cleanup_thread is None or not self.cleanup_thread.is_alive():
+            self.cleanup_thread = threading.Thread(target=self._cleanup_worker)
+            self.cleanup_thread.start()
+
+    def _signal_handler(self, signum, frame):
+        self.sigterm_received = True
+
+    def _cleanup_worker(self):
+        while True:
+            contains_timed_object = False
+            now = timeutils.utcnow_ts()
+
+            for k in list(self.cache):
+                (timeout, _value) = self.cache[k]
+                if timeout:
+                    if now >= timeout:
+                        del self.cache[k]
+                    else:
+                        contains_timed_object = True
+            # cache is empty or the cache contains no timed objects
+            # kill the thread
+            if not len(self.cache) or not contains_timed_object:
+                return
+            for x in range(CONF.memcache_cleanup_timer):
+                # signal was received.  kill the thread
+                if self.sigterm_received:
+                    return
+                # time.sleep doesn't handle SIGTERM.  We're going to loop
+                # in short time intervals to kill the thread quicker if a
+                # signal is received
+                time.sleep(1)
 
     def get(self, key):
         """Retrieves the value for a key or None.
-
-        This expunges expired keys during each get.
         """
-
+        if key not in self.cache:
+            return None
         now = timeutils.utcnow_ts()
-        for k in list(self.cache):
-            (timeout, _value) = self.cache[k]
-            if timeout and now >= timeout:
-                del self.cache[k]
+        (timeout, _value) = self.cache[key]
+        if timeout and now >= timeout:
+            del self.cache[key]
 
         return self.cache.get(key, (0, None))[1]
 
@@ -73,6 +119,8 @@ class Client(object):
         timeout = 0
         if time != 0:
             timeout = timeutils.utcnow_ts() + time
+            self._init_cleanup_thread()
+
         self.cache[key] = (timeout, value)
         return True
 
@@ -80,6 +128,10 @@ class Client(object):
         """Sets the value for a key if it doesn't exist."""
         if self.get(key) is not None:
             return False
+
+        if time != 0:
+            self._init_cleanup_thread()
+
         return self.set(key, value, time, min_compress_len)
 
     def incr(self, key, delta=1):
