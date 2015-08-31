@@ -31,6 +31,7 @@
 
 trouble_with=""
 branched=""
+gerrit_user=`id -un`
 
 # Figure out if git-hooks is installed and should be used.
 # https://github.com/icefox/git-hooks
@@ -158,6 +159,25 @@ function get_one_repo {
     return $RC
 }
 
+# Try to identify the git username used for this repo.
+# Default is to use the OS user if nothing identified
+function get_gerrit_userid {
+    typeset basedir=$(dirname $0)
+    typeset real_gerrit_user
+
+    git_config_file="$basedir/../.git/config"
+    if [ -f $git_config_file ]
+    then
+        real_gerrit_user=`grep "url = ssh" $git_config_file | cut -d/ -f3 | cut -d@ -f1`
+        if [ ! -z $real_gerrit_user ]
+        then
+          gerrit_user=$real_gerrit_user
+        fi
+    fi
+
+    return
+}
+
 # If we are given a list of projects on the command line, we will only
 # work on those. Otherwise, ask gerrit for the full list of openstack
 # projects, ignoring the ones in the attic. Stackforge projects are
@@ -167,7 +187,14 @@ function get_one_repo {
 projects="$*"
 if [ -z "$projects" ]
 then
-    projects=$(ssh review.openstack.org -p 29418 gerrit ls-projects | grep -v 'attic')
+    get_gerrit_userid
+    projects=$(ssh -l $gerrit_user review.openstack.org -p 29418 gerrit ls-projects | grep -v 'attic')
+    RC=$?
+    if [ $RC -ne 0 ]
+    then
+        echo "Unable to obtain a list of projects from gerrit. Check your ssh key for $gerrit_user."
+        exit $RC
+    fi
 else
     # Go ahead and set things up so we will work with stackforge
     # repositories, in case the caller has specified one on the
