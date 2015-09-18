@@ -446,22 +446,28 @@ class Resource(object):
     HUMAN_ID = False
     NAME_ATTR = 'name'
 
-    def __init__(self, manager, info, loaded=False):
+    def __init__(self, manager, info, loaded=False, request_ids=None):
         """Populate and bind to a manager.
 
         :param manager: BaseManager object
         :param info: dictionary representing resource attributes
         :param loaded: prevent lazy-loading if set to True
+        :param request_ids: request-id or list of request-ids
         """
         self.manager = manager
         self._info = info
         self._add_details(info)
         self._loaded = loaded
+        if isinstance(request_ids, list):
+            self.request_ids = request_ids
+        else:
+            self.request_ids = [request_ids]
 
     def __repr__(self):
         reprkeys = sorted(k
                           for k in self.__dict__.keys()
-                          if k[0] != '_' and k != 'manager')
+                          if k[0] != '_' and
+                          k not in ['manager', 'request_ids'])
         info = ", ".join("%s=%s" % (k, getattr(self, k)) for k in reprkeys)
         return "<%s %s>" % (self.__class__.__name__, info)
 
@@ -531,3 +537,79 @@ class Resource(object):
 
     def to_dict(self):
         return copy.deepcopy(self._info)
+
+
+class ListWithMeta(list):
+    """Wrapper class for 'list' data type.
+
+    Wrapper class for list data type with 'request_ids' attribute.
+    """
+    def __init__(self, values, request_ids):
+        super(ListWithMeta, self).__init__(values)
+        if isinstance(request_ids, list):
+            self.request_ids = request_ids
+        else:
+            self.request_ids = [request_ids]
+
+
+class DictWithMeta(dict):
+    """Wrapper class for 'dict' data type.
+
+    Wrapper class for dict data type with 'request_ids' attribute.
+    """
+    def __init__(self, values, request_ids):
+        super(DictWithMeta, self).__init__(values)
+        if isinstance(request_ids, list):
+            self.request_ids = request_ids
+        else:
+            self.request_ids = [request_ids]
+
+
+class TupleWithMeta(tuple):
+    """Wrapper class for 'tuple' data type.
+
+    Wrapper class for tuple data type with 'request_ids' attribute.
+    """
+    def __new__(cls, values, request_ids):
+        obj = super(TupleWithMeta, cls).__new__(cls, values)
+        if isinstance(request_ids, list):
+            obj.request_ids = request_ids
+        else:
+            obj.request_ids = [request_ids]
+
+        return obj
+
+
+class BoolWithMeta(int):
+    """Wrapper class for 'bool' data type.
+
+    Wrapper class for bool data type with 'request_ids' attribute.
+    This returns bool like object but 'isinstance' check will fail
+    in this case.
+    """
+    def __new__(cls, value, request_ids):
+        obj = super(BoolWithMeta, cls).__new__(cls, bool(value))
+        if isinstance(request_ids, list):
+            obj.request_ids = request_ids
+        else:
+            obj.request_ids = [request_ids]
+
+        return obj
+
+    def __repr__(self):
+        return ['False', 'True'][self]
+
+
+class StrWithMeta(str):
+    """Wrapper class for 'str' data type.
+
+    Wrapper class for str data type with 'request_ids' attribute.
+    """
+    def __new__(cls, value, request_ids):
+        obj = super(StrWithMeta, cls).__new__(cls, value)
+        if isinstance(request_ids, list):
+            obj.request_ids = request_ids
+        else:
+            obj.request_ids = [request_ids]
+
+        return obj
