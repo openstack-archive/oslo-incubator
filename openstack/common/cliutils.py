@@ -196,7 +196,7 @@ def print_dict(dct, dict_property="Property", wrap=0, dict_value='Value'):
     """
     pt = prettytable.PrettyTable([dict_property, dict_value])
     pt.align = 'l'
-    for k, v in six.iteritems(dct):
+    for k, v in sorted(dct.items()):
         # convert dict to str to check length
         if isinstance(v, dict):
             v = six.text_type(v)
