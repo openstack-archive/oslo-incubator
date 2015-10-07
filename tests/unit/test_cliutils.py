@@ -609,6 +609,23 @@ class PrintResultStringTestCase(test_base.BaseTestCase):
 '''
         self.assertEqual(expected, out)
 
+    def test_print_dict_string_sorted(self):
+        orig = sys.stdout
+        sys.stdout = six.StringIO()
+        cliutils.print_dict({"Foo": "k", "Bar": "Value"}, sort=True)
+        out = sys.stdout.getvalue()
+        sys.stdout.close()
+        sys.stdout = orig
+        expected = '''\
++----------+-------+
+| Property | Value |
++----------+-------+
+| Bar      | Value |
+| Foo      | k     |
++----------+-------+
+'''
+        self.assertEqual(expected, out)
+
 
 class DecoratorsTestCase(test_base.BaseTestCase):
 
