@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Code-Review+2: lifeless <robertc@robertcollins.net>
+Workflow+1: lifeless <robertc@robertcollins.net>
+Code-Review+2: Davanum Srinivas (dims) <davanum@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 07 Oct 2015 20:50:32 +0000
+Reviewed-on: https://review.openstack.org/232164
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
