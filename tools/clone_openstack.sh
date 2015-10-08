@@ -168,6 +168,18 @@ projects="$*"
 if [ -z "$projects" ]
 then
     projects=$(ssh review.openstack.org -p 29418 gerrit ls-projects | grep -v 'attic')
+    RC=$?
+    if [ $RC -ne 0 ]
+    then
+        echo "Unable to obtain a list of projects from gerrit. Check your ssh credientials for review.openstack.org"
+        userid=`id -un`
+        gerrit_userid=`git config --get gitreview.username`
+        if [ $userid != $gerrit_userid ]
+        then
+            echo "Identified a possible userid difference between $userid and $gerrit_userid"
+        fi
+        exit $RC
+    fi
 else
     # Go ahead and set things up so we will work with stackforge
     # repositories, in case the caller has specified one on the
