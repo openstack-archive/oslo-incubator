@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Code-Review+2: Brant Knudson <bknudson@us.ibm.com>
+Workflow+1: Brant Knudson <bknudson@us.ibm.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 09 Oct 2015 13:48:51 +0000
+Reviewed-on: https://review.openstack.org/232884
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
