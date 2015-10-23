@@ -66,8 +66,10 @@ else
     git mv openstack/common oslo_${new_lib}
 fi
 rmdir openstack
-git mv tests/* oslo_${new_lib}/tests/
-rmdir tests
+if [[ -d tests ]]; then
+    git mv tests/* oslo_${new_lib}/tests/
+    rmdir tests
+fi
 
 # Fix imports after moving files
 echo "Fixing imports..."
