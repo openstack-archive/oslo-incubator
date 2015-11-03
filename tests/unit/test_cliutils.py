@@ -499,6 +499,17 @@ class PrintResultTestCase(test_base.BaseTestCase):
         self.mock_get_string.assert_called_with()
         self.mock_init.assert_called_once_with(["Name", "Value"])
 
+    def test_print_list_dict(self):
+        objs = [{'name': 'k1', 'value': 1},
+                {'name': 'k2', 'value': 2}]
+        cliutils.print_list(objs, ["Name", "Value"], sortby_index=None)
+
+        self.assertEqual(self.mock_add_row.call_args_list,
+                         [mock.call(["k1", 1]),
+                          mock.call(["k2", 2])])
+        self.mock_get_string.assert_called_with()
+        self.mock_init.assert_called_once_with(["Name", "Value"])
+
     def test_print_dict(self):
         cliutils.print_dict({"K": "k", "Key": "Value"})
         cliutils.print_dict({"K": "k", "Key": "Long\\nValue"})

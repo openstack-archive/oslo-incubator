@@ -140,7 +140,7 @@ def isunauthenticated(func):
 
 def print_list(objs, fields, formatters=None, sortby_index=0,
                mixed_case_fields=None, field_labels=None):
-    """Print a list of objects as a table, one row per object.
+    """Print a list of objects or dict as a table, one row per object or dict.
 
     :param objs: iterable of :class:`Resource`
     :param fields: attributes that correspond to columns, in order
@@ -176,7 +176,10 @@ def print_list(objs, fields, formatters=None, sortby_index=0,
                     field_name = field.replace(' ', '_')
                 else:
                     field_name = field.lower().replace(' ', '_')
-                data = getattr(o, field_name, '')
+                if isinstance(o, dict):
+                    data = o.get(field_name, '')
+                else:
+                    data = getattr(o, field_name, '')
                 row.append(data)
         pt.add_row(row)
 
