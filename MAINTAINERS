@@ -48,12 +48,6 @@ Each API has an entry with the following keys:
       Obsolete:    Replaced by newer code, or a dead end, or out-dated
  F: Wildcard patterns, relative to openstack/common/
 
-== apiclient ==
-
-M: Alessio Ababilov <aababilov@griddynamics.com>
-S: Deprecated
-F: apiclient/
-
 == cache ==
 
 S: Deprecated
