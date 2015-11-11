@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Code-Review+2: Brant Knudson <bknudson@us.ibm.com>
+Code-Review+2: Victor Stinner <vstinner@redhat.com>
+Workflow+1: Victor Stinner <vstinner@redhat.com>
+Code-Review+1: ChangBo Guo(gcb) <glongwave@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 11 Nov 2015 10:18:42 +0000
+Reviewed-on: https://review.openstack.org/243578
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
