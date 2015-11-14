@@ -55,6 +55,7 @@ class ImageUtilsRawTestCase(test_base.BaseTestCase):
                           exp_disk_size=963434)),
         ('3.1M', dict(disk_size='3.1G',
                       exp_disk_size=3328599655)),
+        ('unavailable', dict(disk_size='unavailable')),
     ]
 
     _garbage_before_snapshot = [
@@ -106,6 +107,10 @@ class ImageUtilsRawTestCase(test_base.BaseTestCase):
         self.assertEqual(image_info.disk_size, self.exp_disk_size)
         if self.snapshot_count is not None:
             self.assertEqual(len(image_info.snapshots), self.snapshot_count)
+        if self.disk_size is not 'unavailable':
+            self.assertEqual(image_info.disk_size, self.exp_disk_size)
+        else:
+            self.assertRaises(ValueError, image_info.disk_size)
 
     def test_qemu_img_info(self):
         img_info = self._initialize_img_info()
