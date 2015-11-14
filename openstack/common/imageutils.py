@@ -34,15 +34,8 @@ class QemuImgInfo(object):
                          re.I)
 
     def __init__(self, cmd_output=None):
-        details = self._parse(cmd_output or '')
-        self.image = details.get('image')
-        self.backing_file = details.get('backing_file')
-        self.file_format = details.get('file_format')
-        self.virtual_size = details.get('virtual_size')
-        self.cluster_size = details.get('cluster_size')
-        self.disk_size = details.get('disk_size')
-        self.snapshots = details.get('snapshot_list', [])
-        self.encrypted = details.get('encrypted')
+        self.details = self._parse(cmd_output or '')
+        self.image = self.details.get('image')
 
     def __str__(self):
         lines = [
@@ -147,6 +140,23 @@ class QemuImgInfo(object):
                 if not root:
                     continue
                 root_details = top_level.group(2).strip()
-                details = self._extract_details(root, root_details, lines)
-                contents[root] = details
+                try:
+                    details = self._extract_details(root, root_details, lines)
+                    contents[root] = details
+                except ValueError:
+                    contents[root] = 'unknown'
         return contents
+
+    # The available key should be one of the following:
+    # backing_file, file_format, virtual_size, cluster_size,
+    # disk_size, snapshots, encrypted.
+    def __getattr__(self, key):
+        if key == 'snapshots':
+            value = self.details.get('snapshot_list', [])
+        else:
+            value = self.details.get(key)
+        if value == 'unknown':
+            msg = _("Can't get %s info of image %s!" % (key, self.image))
+            raise ValueError(msg)
+
+        return value
