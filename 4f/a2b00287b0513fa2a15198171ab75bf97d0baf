@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Code-Review+2: Joshua Harlow <harlowja@yahoo-inc.com>
+Workflow+1: Joshua Harlow <harlowja@yahoo-inc.com>
+Submitted-by: Jenkins
+Submitted-at: Thu, 19 Nov 2015 00:31:58 +0000
+Reviewed-on: https://review.openstack.org/247133
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
