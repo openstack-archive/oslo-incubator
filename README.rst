@@ -16,22 +16,3 @@ library.
 For more information, see our wiki page:
 
    https://wiki.openstack.org/wiki/Oslo
-
-Running Tests
--------------
-
-To run tests in virtualenvs (preferred)::
-
-  sudo pip install tox
-  tox
-
-To run tests in the current environment::
-
-  sudo pip install -r requirements.txt
-  nosetests
-
-To run tests using MySQL or PostgreSQL as a DB backend do::
-
-  OS_TEST_DBAPI_ADMIN_CONNECTION=mysql+pymysql://user:password@host/database tox -e py27
-
-Note, that your DB user must have permissions to create and drop databases.
