@@ -1,8 +1,7 @@
 # NOTE(dhellmann): These requirements are just for the tool scripts and
 # do not need to be synced.
 
+argparse
 oslo.config
-pyyaml
 jinja2
-oslo.concurrency
 parawrap

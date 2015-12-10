@@ -1,2 +1,0 @@
-# List of obsolete modules and files as glob patterns (since some
-# files in a module may still belong in the incubator).
