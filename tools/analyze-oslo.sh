@@ -77,17 +77,14 @@ projects=$(ssh review.openstack.org -p 29418 gerrit ls-projects | grep -v 'attic
 projects="$projects openstack/taskflow openstack/tooz openstack/cliff openstack/debtcollector"
 projects="$projects openstack/futurist openstack/stevedore openstack-dev/cookiecutter"
 projects="$projects openstack/automaton"
-mkdir -p "oslo_reports"
 
 for repo in $projects; do
     get_one_repo "$repo" "$base/$repo"
     RC=$?
     if [ $RC -ne 0 ] ; then
         echo "Unable to obtain $repo"
-    else
-        echo
-        echo "Producing inspector report for $repo"
-        report_base=`basename $repo`
-        (cd $repo && gitinspector -F htmlembedded -r -T > "${current_dir}/oslo_reports/${report_base}.html")
+        exit 1
     fi
 done
+
+python new_core_analyzer.py $projects > "${current_dir}/oslo_reports.txt"
