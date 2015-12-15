@@ -16,9 +16,6 @@
 """Provides methods needed by installation script for OpenStack development
 virtual environments.
 
-Since this script is used to bootstrap a virtualenv from the system's Python
-environment, it should be kept strictly compatible with Python 2.6.
-
 Synced in from openstack-common
 """
 
@@ -45,10 +42,6 @@ class InstallVenv(object):
     def die(self, message, *args):
         print(message % args, file=sys.stderr)
         sys.exit(1)
-
-    def check_python_version(self):
-        if sys.version_info < (2, 6):
-            self.die("Need Python Version >= 2.6")
 
     def run_command_with_code(self, cmd, redirect_output=True,
                               check_exit_code=True):
