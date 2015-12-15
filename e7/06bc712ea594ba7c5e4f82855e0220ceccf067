@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Code-Review+2: Julien Danjou <julien@danjou.info>
+Code-Review+2: ChangBo Guo(gcb) <glongwave@gmail.com>
+Workflow+1: ChangBo Guo(gcb) <glongwave@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 15 Dec 2015 13:09:05 +0000
+Reviewed-on: https://review.openstack.org/257673
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
