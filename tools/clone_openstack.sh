@@ -167,7 +167,7 @@ function get_one_repo {
 projects="$*"
 if [ -z "$projects" ]
 then
-    projects=$(ssh review.openstack.org -p 29418 gerrit ls-projects | grep -v 'attic')
+    projects=$(ssh review.openstack.org -p 29418 gerrit ls-projects | grep '^openstack' | grep -v 'attic')
     RC=$?
     if [ $RC -ne 0 ]
     then
