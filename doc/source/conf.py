@@ -6,6 +6,7 @@ import sys
 import os
 import fileinput
 import fnmatch
+import warnings
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(BASE_DIR, "..", ".."))
@@ -77,11 +78,15 @@ pygments_style = 'sphinx'
 # Output file base name for HTML help builder.
 htmlhelp_basename = '%sdoc' % project
 
-git_cmd = ["git", "log", "--pretty=format:'%ad, commit %h'", "--date=local",
-   "-n1"]
-html_last_updated_fmt = subprocess.Popen(git_cmd,
-                                         stdout=subprocess.PIPE).\
-                                         communicate()[0]
+try:
+    git_cmd = ["git", "log", "--pretty=format:'%ad, commit %h'", "--date=local",
+               "-n1"]
+    html_last_updated_fmt = subprocess.Popen(git_cmd,
+                                             stdout=subprocess.PIPE).\
+                                             communicate()[0]
+except Exception:
+    warnings.warn('Cannot get last updated time from git repository. '
+                  'Not setting "html_last_updated_fmt".')
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass
