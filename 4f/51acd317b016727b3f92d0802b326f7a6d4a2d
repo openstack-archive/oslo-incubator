@@ -1,0 +1,10 @@
+Code-Review+2: Julien Danjou <julien@danjou.info>
+Code-Review+1: Thomas Goirand <thomas@goirand.fr>
+Code-Review+2: Joshua Harlow <jxharlow@godaddy.com>
+Workflow+1: Joshua Harlow <jxharlow@godaddy.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Thu, 14 Apr 2016 20:07:30 +0000
+Reviewed-on: https://review.openstack.org/304981
+Project: openstack/oslo-incubator
+Branch: refs/heads/master
