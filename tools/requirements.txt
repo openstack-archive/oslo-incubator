@@ -7,3 +7,5 @@ jinja2
 parawrap
 requests
 tqdm
+pyyaml
+prompt_toolkit
