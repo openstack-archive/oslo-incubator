@@ -5,3 +5,14 @@ argparse
 oslo.config
 jinja2
 parawrap
+pyyaml
+prompt_toolkit
+
+# This modules makes output yaml much easier to
+# view in a format that pyyaml doesn't by default
+# create.
+pyaml
+
+# We don't want to lose ordering that we get when
+# creating and modifying existing release yaml files.
+yamlordereddictloader
