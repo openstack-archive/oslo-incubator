@@ -1,0 +1,222 @@
+from __future__ import unicode_literals
+
+import contextlib
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+
+import six
+import yaml
+
+from prompt_toolkit.contrib.completers import WordCompleter
+from prompt_toolkit import prompt
+from prompt_toolkit.validation import ValidationError
+from prompt_toolkit.validation import Validator
+
+from tqdm import tqdm
+
+OS_PREFIX = 'openstack/'
+GIT_BASE = 'https://git.openstack.org/'
+RELEASE_REPO = GIT_BASE + "openstack/releases"
+NOTES_URL_TPL = 'http://docs.openstack.org/releasenotes/%s/%s.html'
+ANNOUNCE_EMAIL = 'openstack-dev@lists.openstack.org'
+
+
+class SetValidator(Validator):
+    def __init__(self, allowed_values):
+        super(SetValidator, self).__init__()
+        self.allowed_values = frozenset(allowed_values)
+
+    def validate(self, document):
+        text = document.text
+        if text not in self.allowed_values:
+            raise ValidationError(
+                message='This input is not allowed, '
+                        ' please choose from %s' % self.allowed_values)
+
+
+def clone_a_repo(repo_url, repo_base_path, repo_name):
+    repo_path = os.path.join(repo_base_path, repo_name)
+    if not os.path.isdir(repo_path):
+        cmd = ['git', 'clone', repo_url, repo_name]
+        subprocess.check_output(cmd, cwd=repo_base_path,
+                                stderr=subprocess.STDOUT)
+    return repo_path
+
+
+@contextlib.contextmanager
+def tempdir(**kwargs):
+    # This seems like it was only added in python 3.2
+    # Make it since its useful...
+    # See: http://bugs.python.org/file12970/tempdir.patch
+    tdir = tempfile.mkdtemp(**kwargs)
+    try:
+        yield tdir
+    finally:
+        shutil.rmtree(tdir)
+
+
+def filter_changes(changes):
+    for line in changes:
+        if isinstance(line, six.binary_type):
+            line = line.decode("utf8")
+        pieces = line.split(" ", 1)
+        sha, descr = pieces
+        if descr.startswith("Merge"):
+            continue
+        else:
+            yield line
+
+
+def maybe_create_release(release_repo_path,
+                         last_release, changes,
+                         latest_cycle, project,
+                         short_project):
+    if last_release:
+        print("%s changes to"
+              " release since %s are:"
+              % (len(changes), last_release['version']))
+    else:
+        print("%s changes to release are:" % (len(changes)))
+    for line in changes:
+        print("    " + line)
+    response = prompt(
+        'Create a release in %s containing those changes? ' % latest_cycle,
+        completer=WordCompleter(['yes', 'no']),
+        validator=SetValidator(['yes', 'no']))
+    if response == 'yes':
+        newest_release_path = os.path.join(
+            release_repo_path, 'deliverables',
+            latest_cycle, "%s.yaml" % short_project)
+        if os.path.exists(newest_release_path):
+            with open(newest_release_path, "rb") as fh:
+                newest_release = yaml.safe_load(fh.read())
+        else:
+            newest_release = {
+                'release-notes': NOTES_URL_TPL % (short_project,
+                                                  latest_cycle),
+                'send-announcements-to': ANNOUNCE_EMAIL,
+                'launchpad': short_project,
+                'releases': [],
+                'include-pypi-link': True,
+            }
+        version = prompt("Release version? ")
+        highlights = prompt("Highlights: ", multiline=True)
+        hash = prompt("Hash to release at: ")
+        existing_releases = newest_release['releases']
+        existing_releases.append({
+            'highlights': highlights.strip(),
+            'version': version,
+            'projects': [{
+                'repo': project,
+                'hash': hash,
+            }],
+        })
+        with open(newest_release_path, 'wb') as fh:
+            fh.write(prettify_yaml(newest_release))
+
+
+def find_last_release_path(release_repo_path,
+                           latest_cycle, cycles,
+                           project):
+    latest_cycle_idx = cycles.index(latest_cycle)
+    for a_cycle in reversed(cycles[0:latest_cycle_idx + 1]):
+        release_path = os.path.join(release_repo_path, 'deliverables',
+                                    a_cycle, "%s.yaml" % project)
+        if os.path.isfile(release_path):
+            return a_cycle, release_path
+    return (None, None)
+
+
+def prettify_yaml(obj):
+    formatted = yaml.safe_dump(obj,
+                               line_break="\n",
+                               indent=4,
+                               explicit_start=True,
+                               default_flow_style=False)
+    return formatted
+
+
+def clone_repos(save_dir, project_names):
+    repos = {}
+    pbar = tqdm(project_names)
+    for project, short_project in pbar:
+        pbar.set_description("Cloning %s repo" % short_project)
+        repo_url = GIT_BASE + project
+        repos[project] = clone_a_repo(repo_url, save_dir, short_project)
+    return repos
+
+
+def get_projects_names(oslo_projects):
+    project_names = []
+    for project in sorted(oslo_projects):
+        if project.startswith(OS_PREFIX):
+            short_project = project[len(OS_PREFIX):]
+        else:
+            short_project = project
+        project_names.append((project, short_project))
+    return project_names
+
+
+def main():
+    if len(sys.argv) < 2:
+        print("propose_unreleased_changes.py <release-repo>")
+        return
+    release_repo_path = sys.argv[1]
+    cycles = os.listdir(os.path.join(release_repo_path, 'deliverables'))
+    cycles = sorted([c for c in cycles if not c.startswith("_")])
+    latest_cycle = cycles[-1]
+    try:
+        with open("oslo.json") as fh:
+            oslo_projects = json.loads(fh.read())
+    except IOError:
+        print("Please ensure 'oslo.json' file exists"
+              " under the current directory, it can be created"
+              " by running `list_oslo_projects.py`")
+        return
+    else:
+        project_names = get_projects_names(oslo_projects)
+        with tempdir() as tdir:
+            repos = clone_repos(tdir, project_names)
+            for project, short_project in get_projects_names(oslo_projects):
+                last_release_cycle, last_release_path = find_last_release_path(
+                    release_repo_path, latest_cycle, cycles, short_project)
+                if last_release_path is None or last_release_cycle is None:
+                    last_release = None
+                else:
+                    with open(last_release_path, 'rb') as fh:
+                        project_releases = yaml.safe_load(fh.read())
+                        last_release = project_releases['releases'][-1]
+                print("== Analysis of project '%s' ==" % short_project)
+                if not last_release:
+                    print("It has never had a release.")
+                    cmd = ['git', 'log', '--pretty=oneline']
+                    repo_path = repos[project]
+                    output = subprocess.check_output(cmd, cwd=repo_path)
+                    output = output.strip()
+                    changes = list(filter_changes(output.splitlines()))
+                else:
+                    print("The last release of project %s"
+                          " was:" % short_project)
+                    print("  Released in: %s" % (last_release_cycle))
+                    print("  Version: %s" % last_release['version'])
+                    print("  At sha: %s" % last_release['projects'][0]['hash'])
+                    cmd = ['git', 'log', '--pretty=oneline',
+                           "%s..HEAD" % last_release['projects'][0]['hash']]
+                    repo_path = repos[project]
+                    output = subprocess.check_output(cmd, cwd=repo_path)
+                    output = output.strip()
+                    changes = list(filter_changes(output.splitlines()))
+                if changes:
+                    maybe_create_release(release_repo_path,
+                                         last_release, changes,
+                                         latest_cycle, project,
+                                         short_project)
+                else:
+                    print("  No changes.")
+
+if __name__ == '__main__':
+    main()
