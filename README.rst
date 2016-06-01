@@ -1,18 +1,13 @@
-------------------
-The Oslo Incubator
-------------------
+This project is no longer maintained.
 
-The Oslo program produces a set of python libraries containing
-infrastructure code shared by OpenStack projects. The APIs provided by
-these libraries should be high quality, stable, consistent and
-generally useful.
+The contents of this repository are still available in the Git
+source code management system.  To see the contents of this
+repository before it reached its end of life, please check out the
+previous commit with "git checkout HEAD^1".
 
-The process of developing a new Oslo API usually begins by taking code
-which is common to some OpenStack projects and moving it into this
-repository. Incubation shouldn't be seen as a long term option for any
-API - it is merely a stepping stone to inclusion into a published Oslo
-library.
+For an alternative project, please see oslo.tools at
+http://git.openstack.org/cgit/openstack/oslo.tools
 
-For more information, see our wiki page:
-
-   https://wiki.openstack.org/wiki/Oslo
+For any further questions, please email
+openstack-dev@lists.openstack.org or join #openstack-dev on
+Freenode.
